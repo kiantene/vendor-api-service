@@ -1,10 +1,11 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.action;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.confirmbet.AcceptService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.refund.RefundService;
@@ -14,6 +15,8 @@ import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
@@ -25,100 +28,124 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class GeneralAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private BetService betService;
-    @Autowired
-    private AcceptService acceptService;
-    @Autowired
-    private SettledService settledService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private RefundService refundService;
-    @Autowired
-    private UnsettleService unsettleService;
+    private final HttpService httpService;
+    private final BetService betService;
+    private final AcceptService acceptService;
+    private final SettledService settledService;
+    private final RefundService refundService;
+    private final UnsettleService unsettleService;
+    private final WalletRequestService walletRequestService;
 
-    @PostMapping(path = "/{agentcode}/wagering/usercode/{usercode}/request/{requestid}")
-    public ResponseVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
+    @Autowired
+    public GeneralAction(HttpService httpService,
+                         BetService betService,
+                         AcceptService acceptService,
+                         SettledService settledService,
+                         RefundService refundService,
+                         UnsettleService unsettleService,
+                         WalletRequestService walletRequestService) {
+
+        this.httpService = httpService;
+        this.betService = betService;
+        this.acceptService = acceptService;
+        this.settledService = settledService;
+        this.refundService = refundService;
+        this.unsettleService = unsettleService;
+        this.walletRequestService = walletRequestService;
+    }
+
+    @PostMapping(path = "/{agentCode}/wagering/usercode/{userCode}/request/{requestId}")
+    public ResponseVo handleApiCall(@PathVariable String agentCode, @PathVariable String userCode, @PathVariable String requestId, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
-        List<CommonVo> commonVos = Collections.emptyList();
+        List<CommonVo> commonVoList = new LinkedList<>();
         ResponseVo responseVo = new ResponseVo();
         ResultVo resultVo = new ResultVo();
         CommonVo commonVo = new CommonVo();
+        Action action = null;
 
         try {
-            String body = httpRequestLog.getRequestBody();
-            ObjectMapper objectMapper = new ObjectMapper();
-            ActionsDto dto = objectMapper.readValue(body, ActionsDto.class);
+            ActionsDto actionsDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ActionsDto.class);
 
-            if (dto.getActions().iterator().hasNext()) {
-                Action action = dto.getActions().iterator().next();
+            this.doValidation(actionsDto);
 
-                commonVo.setId(action.getId());
-                Optional.ofNullable(action.getTransaction()).ifPresent(data -> commonVo.setTransactionId(data.getTransactionId()));
-                Optional.ofNullable(action.getWagerInfo()).ifPresent(data -> commonVo.setWagerId(data.getWagerId()));
-                Optional.ofNullable(action.getPlayerInfo()).ifPresent(data -> resultVo.setUserCode(data.getUserCode()));
-            }
+            action = actionsDto.getActions().get(0);
+            ActionsTransactionDto transactionDto = action.getTransaction();
+            ActionsWagerInfoDto wagerInfoDto = action.getWagerInfo();
 
-            // Get game session with username
-            GameSession gameSession;
-            if (Set.of("BETTED", "ACCEPTED").contains(dto.getActions().iterator().next().getName().toUpperCase())) {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getActions().iterator().next().getPlayerInfo().getUserCode());
-            } else {
-                gameSession = null;
-            }
+            Long transactionId = Optional.ofNullable(transactionDto).map(ActionsTransactionDto::getTransactionId).orElse(null);
+            Long wagerId = wagerInfoDto.getWagerId();
+            commonVo = new CommonVo(action.getId(), transactionId, wagerId);
+            resultVo.setUserCode(userCode);
+
+            this.dataMapper(walletRequest, userCode);
 
             // Process Data
-            List<CompletableFuture<CommonVo>> futures = dto.getActions().stream()
-                    .map(action -> CompletableFuture.supplyAsync(() -> actionsSwitching(action, gameSession, httpRequestLog)))
-                    .toList();
+            for (Action data : actionsDto.getActions()) {
+                commonVo = this.actionsSwitching(data, httpRequestLog, walletRequest);
+                commonVoList.add(commonVo);
+            }
 
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-            // Combine the results
-            commonVos = futures.stream()
-                    .map(CompletableFuture::join)
-                    .toList();
-
+        } catch (InsufficientBalanceException e) {
+            httpService.logError(httpRequestLog, e);
+            walletRequest.setErrorMessage(e.getMessage());
+            commonVo.setResponseCode(ResponseCode.INSUFFICIENT_FUND.code);
+            commonVoList.add(commonVo);
 
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
+            walletRequest.setErrorMessage(exception.getMessage());
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+            commonVoList.add(commonVo);
 
         } finally {
-            resultVo.setAvailableBalance((commonVos.isEmpty() || commonVos.iterator().next().getBalance() == null) ? BigDecimal.ZERO : commonVos.iterator().next().getBalance());
-            resultVo.setActions(commonVos.isEmpty() ? Collections.singletonList(commonVo) : commonVos);
+            resultVo.setAvailableBalance(commonVoList.get(0).getBalance());
+            resultVo.setActions(commonVoList);
             responseVo.setResult(resultVo);
-            httpService.end(httpRequestLog, responseVo);
+            if (Set.of("BETTED", "ACCEPTED").contains(Objects.requireNonNull(action).getName().toUpperCase())) {
+                walletRequestService.end(walletRequest, httpRequestLog, responseVo);
+            } else {
+                httpService.end(httpRequestLog, responseVo);
+            }
         }
 
         return responseVo;
     }
 
-    private CommonVo actionsSwitching(Action action, GameSession gameSession, HttpRequestLog httpRequestLog) {
+    private CommonVo actionsSwitching(Action action, HttpRequestLog httpRequestLog, WalletRequest walletRequest) throws
+            AuthenticationException, InvalidRequestException, BetResultIdempotentViolationException,
+            InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException,
+            BetNotFoundException, BetNotAllowedException, InvalidPlayerException {
 
         return switch (action.getName().toUpperCase()) {
-            case "BETTED" -> betService.bet(action, gameSession, httpRequestLog);
-            case "ACCEPTED" -> acceptService.accept(action, gameSession, httpRequestLog);
+            case "BETTED" -> betService.bet(walletRequest, action);
+            case "ACCEPTED" -> acceptService.accept(walletRequest, action);
             case "SETTLED" -> settledService.settled(action, httpRequestLog);
             case "REJECTED", "ROLLBACKED", "CANCELLED" -> refundService.refund(action, httpRequestLog);
             case "UNSETTLED" -> unsettleService.unsettle(action, httpRequestLog);
             default -> throw new IllegalStateException("Unexpected value: " + action.getName());
         };
+    }
+
+    private void dataMapper(WalletRequest walletRequest, String username) {
+        walletRequest.setVendorPlayerUsername(username);
+    }
+
+    private void doValidation(ActionsDto actionsDto) throws InvalidRequestException {
+        // General validation
+        try {
+            ValidationUtils.validateRequest(actionsDto);
+
+        } catch (InvalidRequestException e) {
+            throw new InvalidRequestException(e.getValidation().values().stream().findFirst().orElse("Invalid Request Body"));
+        }
     }
 }
 

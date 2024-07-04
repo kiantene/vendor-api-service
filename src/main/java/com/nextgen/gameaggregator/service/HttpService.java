@@ -5,9 +5,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.HttpResponseLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.logging.ApiResponseLog;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -177,15 +177,11 @@ public class HttpService {
                 httpRequestLog.setUserAgent(request.getHeader("user-agent"));
             }
 
-            httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
-            httpRequestLog.setStartTime(System.currentTimeMillis());
-            String jsonHeaders = new Gson().toJson(headers.toString());
-            httpRequestLog.setHeader(jsonHeaders);
 
         } catch (Exception exception) {
             log.error(exception.getMessage());
@@ -236,25 +232,16 @@ public class HttpService {
 
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
+
             THREAD_POOL.submit(() -> {
                 try {
                     String jsonResponseVo = new Gson().toJson(responseVo);
                     requestLog.setResponseBody(jsonResponseVo);
-                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
-
-                    if (requestLog.getOperatorEnd() != null) {
-                        requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
-                    }
-
-                    if (requestLog.getBetEnd() != null) {
-                        Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
-                        requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
-                    }
 
                     Gson gson = new Gson();
                     log.info(gson.toJson(requestLog));
-                    kafkaService.produceHttpResponseLog(new HttpResponseLog(requestLog));
+                    kafkaService.produceApiResponseLog(new ApiResponseLog(requestLog));
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());

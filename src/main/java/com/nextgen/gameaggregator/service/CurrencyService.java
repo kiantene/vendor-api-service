@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class CurrencyService {
     private final CurrencyRepository currencyRepository;
@@ -19,12 +17,12 @@ public class CurrencyService {
     }
 
     @Cacheable(value = "Currencies", key = "#currencyId", cacheManager = "cacheManager")
-    public Currency getByCurrencyId(Integer currencyId, Currency currency) throws InvalidCurrencyException {
-        if (currency == null) {
-            currency = currencyRepository.findById(currencyId).orElse(null);
-            Optional.ofNullable(currency).orElseThrow(InvalidCurrencyException::new);
-        }
+    public Currency get(Integer currencyId) throws InvalidCurrencyException {
+        return currencyRepository.findById(currencyId).orElseThrow(InvalidCurrencyException::new);
+    }
 
-        return currency;
+    @Cacheable(value = "Currencies", key = "#currencyId", cacheManager = "cacheManager")
+    public Currency getByCurrencyId(Integer currencyId, Currency currency) throws InvalidCurrencyException {
+        return currency == null ? this.get(currencyId) : currency;
     }
 }

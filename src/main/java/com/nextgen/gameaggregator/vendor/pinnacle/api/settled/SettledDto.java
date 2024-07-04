@@ -26,7 +26,11 @@ public class SettledDto extends ActionsWagerInfoDto implements SportBetResultDat
 
     @Override
     public String getRoundId() {
-        return this.getWagerId().toString();
+        if (isMultipleBet()) {
+            return this.getWagerMasterId().toString();
+        } else {
+            return this.getWagerId().toString();
+        }
     }
 
     @Override
@@ -82,5 +86,13 @@ public class SettledDto extends ActionsWagerInfoDto implements SportBetResultDat
     @Override
     public Integer getBetType() {
         return this.getType().equalsIgnoreCase("PARLAY") ? BetType.PARLAY_BET.code : BetType.NORMAL_BET.code;
+    }
+
+    private boolean isMultipleBet() {
+        boolean isMultipleBet = false;
+        if (Objects.nonNull(this.getWagerMasterId())) {
+            isMultipleBet = !this.getWagerId().toString().equalsIgnoreCase(this.getWagerMasterId().toString());
+        }
+        return isMultipleBet;
     }
 }

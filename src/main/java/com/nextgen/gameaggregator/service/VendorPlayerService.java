@@ -23,11 +23,11 @@ public class VendorPlayerService {
         this.gameSessionService = gameSessionService;
     }
 
+    @Cacheable(value = "VendorPlayerUsername", key = "#username", cacheManager = "cacheManager")
     public VendorPlayer getVendorPlayerByUsername(String username) throws InvalidPlayerException {
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(username);
-        Optional.ofNullable(vendorPlayer).orElseThrow(InvalidPlayerException::new);
 
-        return vendorPlayer;
+        return Optional.ofNullable(vendorPlayer).orElseThrow(InvalidPlayerException::new);
     }
 
     @Transactional

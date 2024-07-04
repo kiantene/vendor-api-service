@@ -2,9 +2,11 @@ package com.nextgen.gameaggregator.vendor.ambslot.vo;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class WalletVo {
-    private Double balance;
+    private BigDecimal balance;
 
     private String lastUpdate;
 }

@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -9,97 +11,41 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class ActionsWagerInfoDto {
+    @JsonIgnore
     private String vendorPlayerUsername;
+    @JsonIgnore
     private String transactionDate;
 
-    @JsonProperty("WagerId")
     private Long wagerId;
-
-    @JsonProperty("Type")
     private String type;
-
-    @JsonProperty("BetType")
     private Long betTypes;
-
-    @JsonProperty("Odds")
     private BigDecimal odds;
-
-    @JsonProperty("OddsFormat")
     private Long oddsFormat;
-
-    @JsonProperty("ToWin")
     private BigDecimal toWin;
-
-    @JsonProperty("ToRisk")
     private BigDecimal toRisk;
-
-    @JsonProperty("Stake")
     private BigDecimal stake;
-
-    @JsonProperty("ProfitAndLoss")
     private BigDecimal profitAndLoss;
-
-    @JsonProperty("Period")
     private Long period;
-
-    @JsonProperty("Selection")
     private String selection;
-
-    @JsonProperty("EventId")
     private Long eventId;
-
-    @JsonProperty("EventName")
     private String eventName;
-
-    @JsonProperty("EventDateFm")
     private String eventDateFm;
-
-    @JsonProperty("SettlementTime")
     private String settlementTime;
-
-    @JsonProperty("ResettlementTime")
     private String resettlementTime;
-
-    @JsonProperty("LeagueId")
     private Long leagueId;
-
-    @JsonProperty("SportId")
     private Long sportId;
-
-    @JsonProperty("Sport")
     private String sport;
-
-    @JsonProperty("Inplay")
     private Boolean inplay;
-
-    @JsonProperty("InPlayScore")
     private String inPlayScore;
-
-    @JsonProperty("Handicap")
     private BigDecimal handicap;
-
-    @JsonProperty("SelectionType")
     private String selectionType;
-
-    @JsonProperty("LeagueName")
     private String leagueName;
-
-    @JsonProperty("ParentEventName")
     private String parentEventName;
-
-    @JsonProperty("PlayerIPAddress")
     private String playerIPAddress;
-
-    @JsonProperty("Legs")
     private List<ActionsWagerInfoLegsDto> legs;
-
-    @JsonProperty("WagerMasterId")
     private Long wagerMasterId;
-
-    @JsonProperty("WagerNum")
     private Integer wagerNum;
-
-    @JsonProperty("RoundRobinOptions")
     private List<String> roundRobinOptions;
 }

@@ -22,20 +22,25 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class RollBackService {
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final VendorService vendorService;
+
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    public RollBackService(GameSessionService gameSessionService,
+                           VendorLineService vendorLineService,
+                           WalletService walletService,
+                           HttpService httpService,
+                           VendorService vendorService){
+        this.gameSessionService = gameSessionService;
+
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.vendorService = vendorService;
+    }
 
     public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
         RollBackDto rollBackDto = new RollBackDto();
@@ -65,7 +70,7 @@ public class RollBackService {
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-            dataVo.setMoney(rollBackDto.getMoney());
+            dataVo.setMoney(rollBackDto.getMoney().setScale(2, RoundingMode.DOWN));
             dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
             dataVo.setDealid(rollBackDto.getDealid());
 
@@ -124,7 +129,7 @@ public class RollBackService {
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
-        ValidationUtils.isEquals(token, dto.getApi_token(), InvalidRequestException::new);
+        ValidationUtils.isEquals(token, dto.getApiToken(), InvalidRequestException::new);
 
         // check platform id
         if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){

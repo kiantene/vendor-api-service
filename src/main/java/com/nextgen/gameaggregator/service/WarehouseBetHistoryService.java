@@ -1,12 +1,23 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.GameCategory;
+import com.nextgen.gameaggregator.entity.ga.Vendor;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InvalidCurrencyException;
+import com.nextgen.gameaggregator.exception.InvalidGameCategoryException;
+import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -17,6 +28,8 @@ public class WarehouseBetHistoryService {
     private final VendorService vendorService;
     private final GameCategoryService gameCategoryService;
     private final CurrencyService currencyService;
+
+    private final Integer[] excludeGameCategoryIds = {6}; // skip sport category
     @Autowired
     public WarehouseBetHistoryService (VendorGameService vendorGameService, VendorService vendorService,
                                        GameCategoryService gameCategoryService, CurrencyService currencyService){
@@ -102,4 +115,16 @@ public class WarehouseBetHistoryService {
     }
 
 
+    public Boolean checkIsDelaySettlement( BetHistory warehouseBetHistory ){
+
+        boolean isDelaySettlement = false;
+        if(Arrays.stream(excludeGameCategoryIds).noneMatch(n -> Objects.equals(n, warehouseBetHistory.getGameCategoryId()))){
+            Instant daysAgo = Instant.now().minus(Duration.ofDays(5)); // Subtract 5 days from the current time
+            if(warehouseBetHistory.getVendorBetTime()< daysAgo.toEpochMilli()){
+                isDelaySettlement = true;
+            }
+        }
+
+        return isDelaySettlement;
+    }
 }

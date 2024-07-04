@@ -20,10 +20,16 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class UnsettleService {
+    private final HttpService httpService;
+    private final SportWalletService sportWalletService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private SportWalletService sportWalletService;
+    public UnsettleService(HttpService httpService,
+                           SportWalletService sportWalletService) {
+
+        this.httpService = httpService;
+        this.sportWalletService = sportWalletService;
+    }
 
     public CommonVo unsettle(Action action, HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();

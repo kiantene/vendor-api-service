@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.RawBatchProcessIdempotentLog;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBatchProcessIdempotentLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +13,11 @@ public class RawBatchProcessIdempotentLogService {
     @Autowired
     private RawBatchProcessIdempotentLogRepository rawBatchProcessIdempotentLogRepository;
 
-    public void create(VendorGame.RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog) {
+    public void create(RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog) {
         rawBatchProcessIdempotentLogRepository.save(rawBatchProcessIdempotentLog);
     }
 
-    public VendorGame.RawBatchProcessIdempotentLog checkExists(String id) {
+    public RawBatchProcessIdempotentLog checkExists(String id) {
 
         return rawBatchProcessIdempotentLogRepository.findById(id).orElse(null);
     }

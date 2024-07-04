@@ -5,10 +5,14 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
+import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
@@ -24,16 +28,25 @@ import java.math.BigDecimal;
 @RequestMapping(path = Endpoints.PATH)
 public class BetAction {
 
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
+    public BetAction(HttpService httpService,
+                     GameSessionService gameSessionService,
+                     WalletService walletService,
+                     ValidationService validationService,
+                     VendorService vendorService) {
+
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = Endpoints.WITHDRAW)
     public ResponseVo bet(HttpServletRequest request) {
@@ -68,17 +81,14 @@ public class BetAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            // 6. Send bet request to Operator
+            // 5. Send bet request to Operator
             ResultType resultType = getResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            // 7. Set response data
+            // 6. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(balance.add(dto.getBetAmount())));
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setCurrency(gameSession.getVendorCurrencyCode());
             data.setProvider(dto.getProvider());

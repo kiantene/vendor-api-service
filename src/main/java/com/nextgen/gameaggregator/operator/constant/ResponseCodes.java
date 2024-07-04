@@ -53,6 +53,17 @@ public class ResponseCodes {
 
         public final Integer code;
         public final String description;
+
+        public static Status checkCodeStatus(Integer code) {
+            Status status = SC_UNKNOWN_ERROR;
+            for (Status checkStatus : Status.values()) {
+                if (checkStatus.code.equals(code)) {
+                    status = checkStatus;
+                }
+            }
+            return status;
+        }
+
     }
 
 }

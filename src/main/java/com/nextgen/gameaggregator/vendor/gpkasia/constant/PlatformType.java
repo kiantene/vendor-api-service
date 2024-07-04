@@ -21,5 +21,9 @@ public class PlatformType {
 
     public static final String BOOMINGLATAM = "15";
 
-    public static final List<String> PlatformTypeList = Arrays.asList(BGAMINGASIA, BGAMINGLATAM, SEVENMOJO, SEVENMOJOLATAM, TURBOGAME, TURBOGAMELATAM, BOOMING, BOOMINGLATAM);
+    public static final String SPINOMENAL = "20";
+
+    public static final String SPINOMENALLATAM = "21";
+
+    public static final List<String> PlatformTypeList = Arrays.asList(BGAMINGASIA, BGAMINGLATAM, SEVENMOJO, SEVENMOJOLATAM, TURBOGAME, TURBOGAMELATAM, BOOMING, BOOMINGLATAM, SPINOMENAL, SPINOMENALLATAM);
 }

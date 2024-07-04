@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.exception;
 
 public class InvalidOperatorResponseException extends Exception {
 
-    private Integer OperatorStatus = null;
+    private Integer operatorStatus = null;
 
     public InvalidOperatorResponseException() {
         super();
@@ -13,31 +13,34 @@ public class InvalidOperatorResponseException extends Exception {
     }
 
     public InvalidOperatorResponseException(Integer operatorStatus) {
-        OperatorStatus = operatorStatus;
+        this.operatorStatus = operatorStatus;
     }
 
     public InvalidOperatorResponseException(String message, Integer operatorStatus) {
         super(message);
-        OperatorStatus = operatorStatus;
+        this.operatorStatus = operatorStatus;
     }
 
     public InvalidOperatorResponseException(String message, Throwable cause, Integer operatorStatus) {
         super(message, cause);
-        OperatorStatus = operatorStatus;
+        this.operatorStatus = operatorStatus;
     }
 
     public InvalidOperatorResponseException(Throwable cause, Integer operatorStatus) {
         super(cause);
-        OperatorStatus = operatorStatus;
+        this.operatorStatus = operatorStatus;
     }
 
     public InvalidOperatorResponseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace, Integer operatorStatus) {
         super(message, cause, enableSuppression, writableStackTrace);
-        OperatorStatus = operatorStatus;
+        this.operatorStatus = operatorStatus;
     }
 
     public Integer getOperatorStatus() {
-        return this.OperatorStatus;
+        return this.operatorStatus;
     }
 
+    public void setOperatorStatus(Integer operatorStatus) {
+        this.operatorStatus = operatorStatus;
+    }
 }

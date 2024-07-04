@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.ga.BetResultLog;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
@@ -39,11 +39,11 @@ public class SportUnsettledBetController {
         if (requestService.isTestEnvironment(profilesActive)) {
             VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
-            List<VendorGame.SportUnsettledBetMariaDB> sportUnsettledBetMariaDBList = unsettledBetMariaDBRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+            List<SportUnsettledBetMariaDB> sportUnsettledBetMariaDBList = unsettledBetMariaDBRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
                     json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId());
 
-            List<VendorGame.SportUnsettledBetMariaDB> sortedSportUnsettledBetMariaDBList = sportUnsettledBetMariaDBList.stream()
-                    .sorted(Comparator.comparingLong(VendorGame.SportUnsettledBetMariaDB::getCreateDate))
+            List<SportUnsettledBetMariaDB> sortedSportUnsettledBetMariaDBList = sportUnsettledBetMariaDBList.stream()
+                    .sorted(Comparator.comparingLong(SportUnsettledBetMariaDB::getCreateDate))
                     .collect(Collectors.toList());
 
             detailVo.setSportUnsettledBetMariaDB(sortedSportUnsettledBetMariaDBList);
@@ -62,7 +62,7 @@ public class SportUnsettledBetController {
     @Data
     static class DetailVo {
 
-        public List<VendorGame.SportUnsettledBetMariaDB> sportUnsettledBetMariaDB;
+        public List<SportUnsettledBetMariaDB> sportUnsettledBetMariaDB;
         public BetResultLog betResultLog;
         //public BetRefundLog betRefundLog;
     }

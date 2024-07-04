@@ -24,14 +24,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class GeneralAction {
 
+    private final HttpService httpService;
+    private final BalanceService balanceService;
+    private final BetService betService;
+    private final RollBackService rollBackService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private BalanceService balanceService;
-    @Autowired
-    private BetService betService;
-    @Autowired
-    private RollBackService rollBackService;
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, RollBackService rollBackService){
+        this.httpService = httpService;
+        this.balanceService = balanceService;
+        this.betService = betService;
+
+        this.rollBackService = rollBackService;
+    }
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request){

@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -20,12 +19,11 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
-    @Autowired
-    VendorService vendorService;
 
     @NotBlank
+    @JsonProperty("api_token")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String api_token;
+    private String apiToken;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -33,7 +31,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private Double money;
+    private BigDecimal money;
 
     @NotBlank
     @Size(min = 10, max = 10)
@@ -60,7 +58,7 @@ public class BetDto extends ActionDto implements BetResultData {
     private String gameinfo;
 
     @PositiveOrZero
-    private Double betinfo;
+    private BigDecimal betinfo;
 
     @NotBlank
     @Pattern(regexp = "\\d+")
@@ -69,11 +67,13 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "[01]")
     private String istips;
 
+    @JsonProperty("root_roundid")
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String root_roundid;
+    private String rootRoundid;
 
+    @JsonProperty("root_dealid")
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String root_dealid;
+    private String rootDealid;
 
     @Override
     public String getExternalTransactionId() {
@@ -112,8 +112,8 @@ public class BetDto extends ActionDto implements BetResultData {
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
             //not same mean it is the middle part or end of the bonus game transaction
-            if(!(this.dealid.equals(this.root_dealid) && !(this.bRoundid.equals(this.root_roundid)))){
-                roundId = this.root_dealid;
+            if(!(this.dealid.equals(this.rootDealid) && !(this.bRoundid.equals(this.rootRoundid)))){
+                roundId = this.rootDealid;
             }else{
                 roundId = this.dealid;
             }
@@ -131,16 +131,16 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getBetAmount() {
         BigDecimal betAmount = null;
 
-        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+        List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
-        // not booming platform
-        if(!BoomingPlatform.contains(this.platform)){
+        // not booming or spinomenal platform
+        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
-                betAmount = new BigDecimal(this.money);
+                betAmount = this.money;
             }
         }else{
-            // booming platform
-            betAmount = new BigDecimal(this.betinfo);
+            // booming & spinomenal platform
+            betAmount = this.betinfo;
         }
 
         return betAmount;
@@ -150,16 +150,16 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getWinAmount() {
         BigDecimal winAmount = null;
 
-        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+        List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
-        // not booming platform
-        if(!BoomingPlatform.contains(this.platform)){
+        // not booming or spinomenal platform
+        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
             if (this.code.equals(BetType.POINTOUT)) {
-                winAmount = new BigDecimal(this.money);
+                winAmount = this.money;
             }
         }else{
-            // booming platform
-            winAmount = this.code.equals(BetType.POINTIN) ? new BigDecimal(this.betinfo - this.money) : new BigDecimal(this.betinfo + this.getMoney());
+            // booming & spinomenal platform
+            winAmount = this.code.equals(BetType.POINTIN) ? this.betinfo.subtract(this.money) : this.betinfo.add(this.getMoney());
         }
 
         return winAmount;
@@ -174,16 +174,16 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getEffectiveTurnover() {
         BigDecimal turnover = null;
 
-        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+        List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
         // not booming platform
-        if(!BoomingPlatform.contains(this.platform)){
+        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
-                turnover = new BigDecimal(this.money);
+                turnover = this.money;
             }
         }else{
-            //booming
-            turnover = new BigDecimal(this.betinfo);
+            //booming & spinomenal
+            turnover = this.betinfo;
         }
 
         return turnover;
@@ -222,8 +222,8 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
-        //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+        //booming & spinomenal
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
             betTime = Long.parseLong(this.timestamp) * 1000;
         }
 
@@ -266,8 +266,8 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
-        //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+        //booming & spinomenal
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
             settledTime = Long.parseLong(this.timestamp) * 1000;
         }
 
@@ -283,9 +283,9 @@ public class BetDto extends ActionDto implements BetResultData {
     public Integer getIsFreespin() {
         Integer status = 0;
 
-        //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            if(this.betinfo == 0.00){
+        //booming & spinomenal
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
+            if(this.betinfo.compareTo(BigDecimal.ZERO) == 0){
                 status = 1;
             }
         }
@@ -332,8 +332,8 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
-        //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+        //booming & spinomenal
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
             status = BetStatus.SETTLED;
         }
 

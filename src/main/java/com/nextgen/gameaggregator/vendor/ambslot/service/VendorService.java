@@ -2,15 +2,18 @@ package com.nextgen.gameaggregator.vendor.ambslot.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.nextgen.gameaggregator.vendor.ambslot.constant.EndPoints;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -19,9 +22,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -66,25 +66,34 @@ public class VendorService extends BaseVendorService {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 
-    public static String encryption(String jsonString, String vendor_secrect, int iterations){
+    public static String encryption(String jsonString, String vendorSecrect, int iterations){
         try{
             // Convert the jsonString to bytes
             byte[] passwordBytes = jsonString.getBytes(StandardCharsets.UTF_8);
 
             // Generate a salted hash using PBKDF2 with SHA-512
-            String hash = generatePBKDF2Hash(passwordBytes, vendor_secrect, iterations, 64);
-
-            return hash;
+            return generatePBKDF2Hash(passwordBytes, vendorSecrect, iterations, 64);
         }catch(Exception e){
             return null;
         }
     }
 
+    public static void validateSignature(String signature, String requestBody, String secret)
+            throws JsonProcessingException, InvalidRequestException, InvalidSignatureException {
+
+        if (signature == null) throw new InvalidRequestException("Missing " + EndPoints.HEADER_SIGNATURE + " in header");
+
+        int iterations = 1000;
+        String json = convertObjectMapper(requestBody);
+        String expectedSignature = encryption(json, secret, iterations);
+
+        if (!signature.equals(expectedSignature)) {
+            throw new InvalidSignatureException();
+        }
+    }
+
     public static long convertDateTimeToUnix(String dateTimeString) {
-
-        long millisecondsSinceEpoch = Instant.parse(dateTimeString).toEpochMilli();
-
-        return millisecondsSinceEpoch;
+        return Instant.parse(dateTimeString).toEpochMilli();
     }
 
     public static String convertUnixToDateTime(long unixTimestampMillis){
@@ -101,39 +110,25 @@ public class VendorService extends BaseVendorService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
         // Format ZonedDateTime to a date-time string
-        String formattedDateTime = formatter.format(zonedDateTime);
-
-        return formattedDateTime;
+        return formatter.format(zonedDateTime);
     }
 
-    public static ResultType generateResultType(Double amount){
+    public static ResultType generateResultType(BigDecimal amount){
 
-        if(amount > 0){
+        if(amount.compareTo(BigDecimal.ZERO) > 0){
             return ResultType.WIN;
         }
 
         return ResultType.END;
     }
 
-    public static Map<String, String> headersToHashMap(HttpServletRequest request) {
-        // Create a HashMap to store the headers
-        Map<String, String> headersMap = new HashMap<>();
-
-        // Get all header names
-        Enumeration<String> headerNames = request.getHeaderNames();
-
-        // Iterate through the header names and put them into the HashMap
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            headersMap.put(headerName, headerValue);
-        }
-
-        return headersMap;
-    }
-
     public static String convertObjectMapper(String body) throws JsonProcessingException {
         // Create ObjectMapper instance
          return new ObjectMapper().readTree(body).toString();
+    }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
     }
 }

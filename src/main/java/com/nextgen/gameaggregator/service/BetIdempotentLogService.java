@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetIdempotentLogRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -65,5 +67,19 @@ public class BetIdempotentLogService {
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 
+    }
+
+    public void idempotentCheck(String id) throws DuplicateRequestException {
+        Optional<RawBetIdempotentLog> rawBetIdempotentLogOptional = rawBetIdempotentLogRepository.findById(id);
+
+        if (rawBetIdempotentLogOptional.isPresent()) { // id is found, which means this request has been sent before
+            throw new DuplicateRequestException(id);
+        }
+
+        // create idempotent log if new request
+        RawBetIdempotentLog rawBetIdempotentLog = new RawBetIdempotentLog();
+        rawBetIdempotentLog.setId(id);
+
+        rawBetIdempotentLogRepository.save(rawBetIdempotentLog);
     }
 }

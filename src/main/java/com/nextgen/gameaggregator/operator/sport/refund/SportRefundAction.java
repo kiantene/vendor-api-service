@@ -2,15 +2,16 @@ package com.nextgen.gameaggregator.operator.sport.refund;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.sport.SportsBaseAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -27,24 +28,34 @@ import java.time.Duration;
 import java.util.Optional;
 
 @Service
-public class SportRefundAction {
+public class SportRefundAction extends SportsBaseAction {
+    private final AgentApiCredentialService agentApiCredentialService;
+    private final AuthenticationService authenticationService;
+    private final RequestService requestService;
+    private final CurrencyConversionService currencyConversionService;
+    private final VendorGameRepository vendorGameRepository;
+    private final BetResultRetryLogService betResultRetryLogService;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private RequestService requestService;
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
-    @Autowired
-    private VendorGameRepository vendorGameRepository;
-    @Autowired
-    private BetResultRetryLogService betResultRetryLogService;
+    public SportRefundAction(AgentApiCredentialService agentApiCredentialService,
+                             AuthenticationService authenticationService,
+                             RequestService requestService,
+                             CurrencyConversionService currencyConversionService,
+                             VendorGameRepository vendorGameRepository,
+                             BetResultRetryLogService betResultRetryLogService) {
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
+        this.endpoint = EndPoints.SPORT_REFUND;
+        this.requestType = this.getClass().getSimpleName();
+        this.agentApiCredentialService = agentApiCredentialService;
+        this.authenticationService = authenticationService;
+        this.requestService = requestService;
+        this.currencyConversionService = currencyConversionService;
+        this.vendorGameRepository = vendorGameRepository;
+        this.betResultRetryLogService = betResultRetryLogService;
+    }
+
+    public WalletBalanceVo call(String traceId, SportUnsettledBet betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
             InvalidAgentApiCredentialException, InvalidOperatorResponseException, RecordNotFoundException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -53,7 +64,7 @@ public class SportRefundAction {
         Integer agentId = betInformation.getAgentId();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
@@ -77,31 +88,31 @@ public class SportRefundAction {
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_REFUND);
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_REFUND)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-            }
-            httpRequestLog.setOperatorEnd(endTime);
-        }
-
-        requestService.createRequestLogVo(EndPoints.SPORT_REFUND, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
-
         try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_REFUND)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            requestService.createRequestLogVo(EndPoints.SPORT_REFUND, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
+
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
@@ -143,6 +154,9 @@ public class SportRefundAction {
             defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (Exception exception) {
+            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                httpRequestLog.setErrorMessage(exception.getMessage());
+            }
             defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
@@ -150,13 +164,8 @@ public class SportRefundAction {
                 //do nothing if success
 
             } else {
-                WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-                //create betResultRetryLog info for retry send to operator
-                responseVo.setData(responseData);
-                responseVo.getData().setBalance(BigDecimal.ZERO);
-                responseVo.setStatus(defaultResponses);
-                responseVo.setTraceId(traceId);
-                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_REFUND);
+                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+                betResultRetryLogService.create(httpRequestLog.getOperatorData(), vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.SPORT_REFUND);
             }
 
         }
@@ -164,12 +173,12 @@ public class SportRefundAction {
         return responseVo;
     }
 
-    private SportRefundDto newSportRefundDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase betInformation, String gameCode) {
+    private SportRefundDto newSportRefundDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBet betInformation, String gameCode) {
         SportRefundDto sportRefundDto = new SportRefundDto();
         sportRefundDto.setTraceId(traceId);
         sportRefundDto.setUsername(agentPlayerUsername);
         sportRefundDto.setTransactionId(betInformation.getInternalTransactionId());
-        sportRefundDto.setExternalTransactionId(betInformation.getVendorBetId());
+        sportRefundDto.setExternalTransactionId(betInformation.getExternalTransactionId());
         sportRefundDto.setBetId(betInformation.getBetId());
         sportRefundDto.setRoundId(betInformation.getRoundId());
         sportRefundDto.setGameCode(gameCode);

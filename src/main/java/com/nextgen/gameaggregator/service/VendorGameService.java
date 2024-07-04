@@ -35,7 +35,16 @@ public class VendorGameService {
     public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) throws GameNotSupportedException {
 
         VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
-        Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+        vendorGame = Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+        if (vendorGame.getStatus() == 0) {
+            throw new GameNotSupportedException();
+        }
+        return vendorGame;
+    }
+
+    @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")
+    public VendorGame getByVendorGameId(Integer vendorGameId) throws GameNotSupportedException {
+        VendorGame vendorGame = vendorGameRepository.findById(vendorGameId).orElseThrow(GameNotSupportedException::new);
         if (vendorGame.getStatus() == 0) {
             throw new GameNotSupportedException();
         }

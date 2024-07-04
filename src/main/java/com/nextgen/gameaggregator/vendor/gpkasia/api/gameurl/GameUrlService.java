@@ -33,10 +33,6 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
-
-    @Autowired
-    VendorService vendorService;
-
     @Autowired
     RequestService requestService;
 
@@ -48,14 +44,14 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
         // trim game code by removing "_stg" or "_STG"
-        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
+        String vendorGameCode = VendorService.trimGameCode(gameSession.getVendorGameCode());
 
         formData.add("api_token", credentials.get(Credentials.api_token));
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
         formData.add("platform", credentials.get(Credentials.platform_id));
         formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
-        formData.add("mode", game_code);
+        formData.add("mode", vendorGameCode);
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
@@ -100,8 +96,8 @@ public class GameUrlService implements GameUrl {
         // Trigger create member function by calling vendor api
         ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
 
-        log.info("gpk create player: " + apiResponse.toString());
-        log.info("gpk create player request: " + jsonString);
+//        log.info("gpk create player: " + apiResponse.toString());
+//        log.info("gpk create player request: " + jsonString);
 
         long startTime = System.currentTimeMillis();
 
@@ -112,8 +108,8 @@ public class GameUrlService implements GameUrl {
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
 
-        log.info("gpk create game url: " + apiResponse2.toString());
-        log.info("gpk create game url request: " + jsonString2);
+//        log.info("gpk create game url: " + apiResponse2.toString());
+//        log.info("gpk create game url request: " + jsonString2);
 
         long endTime = System.currentTimeMillis();
 
@@ -125,7 +121,7 @@ public class GameUrlService implements GameUrl {
         try{
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse2);
-            responseVo = new Gson().fromJson((String) apiResponse2.getBody(), GameUrlVo.class);
+            responseVo = new Gson().fromJson(apiResponse2.getBody(), GameUrlVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);

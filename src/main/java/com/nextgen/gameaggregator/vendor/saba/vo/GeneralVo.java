@@ -14,6 +14,10 @@ public class GeneralVo implements HttpResponse {
     protected String msg;
     protected BigDecimal balance;
 
+    public GeneralVo() {
+        this.setResponseCode(ResponseCode.SUCCESS);
+    }
+
     @Override
     public boolean hasError() {
         return !this.status.equals("0");

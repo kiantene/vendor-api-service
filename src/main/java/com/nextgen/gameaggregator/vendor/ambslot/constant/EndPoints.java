@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ambslot.constant;
 
 public class EndPoints {
+    public static final String HEADER_SIGNATURE = "x-ambslot-signature";
 
     public static final Integer TIMEOUT = 10000;
 

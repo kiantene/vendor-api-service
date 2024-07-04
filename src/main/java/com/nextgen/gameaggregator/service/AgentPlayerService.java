@@ -26,11 +26,9 @@ public class AgentPlayerService {
      * @return AgentPlayer entity object containing information of the agent's player
      * @throws RecordNotFoundException if no record found
      */
+    @Cacheable(value = "AgentPlayers", key = "#id", cacheManager = "cacheManager")
     public AgentPlayer get(Long id) throws RecordNotFoundException {
-        Optional<AgentPlayer> optional = agentPlayerRepository.findById(id);
-        optional.orElseThrow(RecordNotFoundException::new);
-
-        return optional.get();
+        return agentPlayerRepository.findById(id).orElseThrow(RecordNotFoundException::new);
     }
 
     @Cacheable(value = "AgentPlayers", key = "#id", cacheManager = "cacheManager")
@@ -40,10 +38,10 @@ public class AgentPlayerService {
         return agentPlayer;
     }
 
-    @Cacheable(value = "AgentPlayers", key = "#agentPlayerId", cacheManager = "cacheManager")
-    public AgentPlayer getByAgentPlayerId(Long agentPlayerId, AgentPlayer agentPlayer) throws RecordNotFoundException {
+    @Cacheable(value = "AgentPlayers", key = "#id", cacheManager = "cacheManager")
+    public AgentPlayer getByAgentPlayerId(Long id, AgentPlayer agentPlayer) throws RecordNotFoundException {
         if (agentPlayer == null) {
-            agentPlayer = agentPlayerRepository.findById(agentPlayerId).orElse(null);
+            agentPlayer = agentPlayerRepository.findById(id).orElse(null);
             Optional.ofNullable(agentPlayer).orElseThrow(RecordNotFoundException::new);
         }
 

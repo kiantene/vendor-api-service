@@ -24,4 +24,6 @@ public class RawBetResultRetryLog {
     private Long nextRetryTime;
     private Integer status;
     private Long createDate;
+    private String betId;
+    private String roundId;
 }

@@ -35,9 +35,6 @@ public class GameUrlService implements GameUrl {
     @Autowired
     RequestService requestService;
 
-    @Autowired
-    VendorService vendorService;
-
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -46,10 +43,10 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
         // trim game code by removing "_stg" or "_STG"
-        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
+        String vendorGameCode = VendorService.trimGameCode(gameSession.getVendorGameCode());
 
         formData.add("username", gameSession.getVendorPlayerUsername());
-        formData.add("gameId", game_code);
+        formData.add("gameId", vendorGameCode);
         formData.add("backLink", gameSession.getLobbyUrl());
         formData.add("agent", credentials.get(Credentials.prefix));
 
@@ -73,39 +70,39 @@ public class GameUrlService implements GameUrl {
         registerData.add("agent", credentials.get(Credentials.prefix));
 
         // Convert map into string format as json
-        String registerDataJSON = vendorService.convertMapToJson(registerData);
-        String formdataJSON = vendorService.convertMapToJson(formData);
+        String registerDataJSON = VendorService.convertMapToJson(registerData);
+        String formdataJSON = VendorService.convertMapToJson(formData);
 
         String secret = credentials.get(Credentials.secret);
         int iterations = 1000;
 
         // Generate x-ambslot-signature value for create member
-        String encrypted_value = vendorService.encryption(registerDataJSON, secret, iterations);
+        String encryptedValue = VendorService.encryption(registerDataJSON, secret, iterations);
 
         // Generate generate x-ambslot-signature value for login game
-        String encrypted_value2 = vendorService.encryption(formdataJSON, secret, iterations);
+        String encryptedValue2 = VendorService.encryption(formdataJSON, secret, iterations);
 
         // Assign value for header
-        headerMap.add("x-ambslot-signature", encrypted_value);
+        headerMap.add("x-ambslot-signature", encryptedValue);
 
-        long startTime = System.currentTimeMillis();
+//        long startTime = System.currentTimeMillis();
 
         // Trigger create member function by calling vendor api
         ResponseEntity<String> apiResponse = createMember(urlScheme, headerMap, registerDataJSON);
 
-        long endTime = System.currentTimeMillis();
+//        long endTime = System.currentTimeMillis();
 
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.CREATE_PLAYER, urlScheme, registerData, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+//        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+//                EndPoints.CREATE_PLAYER, urlScheme, registerData, apiResponse, headerMap, startTime, endTime,
+//                this.getClass().getPackage().getName(), profilesActive);
 
         long startTime2 = System.currentTimeMillis();
 
-        MultiValueMap<String, String> headerMap2 = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap2 = new LinkedMultiValueMap<>();
 
         // Assign value for header
         headerMap2.add("Accept-Language", gameSession.getVendorLanguageCode());
-        headerMap2.add("x-ambslot-signature", encrypted_value2);
+        headerMap2.add("x-ambslot-signature", encryptedValue2);
 
         // generate game url
         ResponseEntity<String> apiResponse2 = launchGame(urlScheme, headerMap2, formdataJSON);
@@ -122,7 +119,7 @@ public class GameUrlService implements GameUrl {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse2);
-            responseVo = new Gson().fromJson((String) apiResponse2.getBody(), GameUrlVo.class);
+            responseVo = new Gson().fromJson(apiResponse2.getBody(), GameUrlVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -149,7 +146,7 @@ public class GameUrlService implements GameUrl {
                 .encode()
                 .toUri();
 
-        ResponseEntity<String> apiResponse = WebClient.create()
+        return WebClient.create()
                 .post()
                 .uri(uri)
                 .headers(requestService.setHeaders(headerMap))
@@ -162,8 +159,6 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
-
-        return apiResponse;
     }
 
     private ResponseEntity<String> launchGame(String urlScheme, MultiValueMap<String, String> headerMap, String formdataJSON){
@@ -173,8 +168,8 @@ public class GameUrlService implements GameUrl {
                 .build()
                 .encode()
                 .toUri();
-
-        ResponseEntity<String> apiResponse = WebClient.create()
+        
+        return WebClient.create()
                 .post()
                 .uri(uri)
                 .headers(requestService.setHeaders(headerMap))
@@ -187,7 +182,5 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
-        
-        return apiResponse;
     }
 }

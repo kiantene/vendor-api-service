@@ -1,72 +1,143 @@
 package com.nextgen.gameaggregator.sport.service;
 
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
+import com.nextgen.gameaggregator.sport.repository.SportUnsettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class SportUnsettledBetService {
 
-    @Autowired
-    private UnsettledBetMariaDBRepository unsettledBetMariaDBRepository;
-    @Autowired
-    private UnsettledBetCouchbaseRepository unsettledBetCouchbaseRepository;
+    private final SportUnsettledBetRepository sportUnsettledBetRepository;
 
-    public SportUnsettledBetCouchbase save(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
-        unsettledBetCouchbaseRepository.save(sportUnsettledBetCouchbase);
-        return sportUnsettledBetCouchbase;
+    @Autowired
+    public SportUnsettledBetService(SportUnsettledBetRepository sportUnsettledBetRepository) {
+        this.sportUnsettledBetRepository = sportUnsettledBetRepository;
     }
 
-    public void delete(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
-        unsettledBetCouchbaseRepository.delete(sportUnsettledBetCouchbase);
+    public SportUnsettledBet save(SportUnsettledBet sportUnsettledBet) {
+        sportUnsettledBetRepository.save(sportUnsettledBet);
+        return sportUnsettledBet;
     }
 
-    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorPlayerUsername, String externalTransactionId) throws BetNotFoundException {
+    public Optional<SportUnsettledBet> getById(String id) {
+        return sportUnsettledBetRepository.findById(id);
+    }
+
+    public void delete(SportUnsettledBet sportUnsettledBet) {
+        sportUnsettledBetRepository.delete(sportUnsettledBet);
+    }
+
+    public SportUnsettledBet couchbaseGetByExternalTransactionId(String vendorPlayerUsername, String externalTransactionId) throws BetNotFoundException {
         String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+        SportUnsettledBet sportUnsettledBet = null;
 
-        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
-        if (sportUnsettledBetCouchbase == null) { // No matching bet record
+        sportUnsettledBet = sportUnsettledBetRepository.findById(mergeId).orElse(null);
+        if (sportUnsettledBet == null) { // No matching bet record
             throw new BetNotFoundException("Cannot find unsettledBet couchbase Id: " + mergeId);
         }
 
-        return sportUnsettledBetCouchbase;
+        return sportUnsettledBet;
     }
 
-    public SportUnsettledBetCouchbase getByVendorPlayerUsernameAndRoundId(String vendorPlayerUsername, String roundId) throws BetNotFoundException {
+    public SportUnsettledBet getByVendorPlayerUsernameAndRoundId(String vendorPlayerUsername, String roundId) throws BetNotFoundException {
         String mergeId = vendorPlayerUsername + '_' + roundId;
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+        SportUnsettledBet sportUnsettledBet = null;
 
-        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
-        if (sportUnsettledBetCouchbase == null) { // No matching bet record
+        sportUnsettledBet = sportUnsettledBetRepository.findById(mergeId).orElse(null);
+        if (sportUnsettledBet == null) { // No matching bet record
             throw new BetNotFoundException("Cannot find Id from SportUnsettledBetCouchbase getByVendorPlayerUsernameAndRoundId: " + mergeId);
         }
 
-        return sportUnsettledBetCouchbase;
+        return sportUnsettledBet;
     }
 
-    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String roundId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
-        String mergeId = vendorPlayerUsername + '_' + roundId;
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+    public SportUnsettledBet getByVendorPlayerUsernameAndVendorBetIdAndRoundId(String vendorPlayerUsername, String vendorBetId, String roundId) throws BetNotFoundException {
+        SportUnsettledBet sportUnsettledBet = null;
 
-        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
-        if (sportUnsettledBetCouchbase != null) {
-            Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBetCouchbase.getVendorBetTime());
+        sportUnsettledBet = sportUnsettledBetRepository.findByVendorPlayerUsernameAndVendorBetIdAndRoundId(vendorPlayerUsername, vendorBetId, roundId);
+        if (sportUnsettledBet == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find Id from SportUnsettledBetCouchbase getByVendorPlayerUsernameAndVendorBetIdAndRoundId: " + vendorPlayerUsername + ", " + vendorBetId + ", " + roundId);
+        }
 
-            if (sportUnsettledBetCouchbase.getExternalTransactionId().equals(externalTransactionId)) {
-                if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
-                    throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+        return sportUnsettledBet;
+    }
+
+    public SportUnsettledBet getByVendorPlayerUsernameAndVendorBetId(String vendorPlayerUsername, String vendorBetId) throws BetNotFoundException {
+        SportUnsettledBet sportUnsettledBet = null;
+
+        sportUnsettledBet = sportUnsettledBetRepository.findByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        if (sportUnsettledBet == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find Id from SportUnsettledBetCouchbase getByVendorPlayerUsernameAndVendorBetId: " + vendorPlayerUsername + ", " + vendorBetId);
+        }
+
+        return sportUnsettledBet;
+    }
+
+//    public SportUnsettledBet idempotentCheck(String vendorPlayerUsername, String roundId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+//        String mergeId = vendorPlayerUsername + '_' + roundId;
+//        SportUnsettledBet sportUnsettledBet = null;
+//
+//        sportUnsettledBet = sportUnsettledBetRepository.findById(mergeId).orElse(null);
+//        if (sportUnsettledBet != null) {
+//            Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBet.getVendorBetTime());
+//
+//            if (sportUnsettledBet.getExternalTransactionId().equals(externalTransactionId)) {
+//                if (sportUnsettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+//                    throw new BetResultIdempotentViolationException(sportUnsettledBet);
+//
+//                } else if (betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
+//                    throw new TransactionStillProcessingException("SportUnsettledBetCouchbase idempotentCheck : " + betTimingDifferenceInMillieSeconds + " seconds.");
+//
+//                } else {
+//                    //do nothing when externalTransactionId is matched, but status is not OK, we will resend the request to operator
+//                }
+//            }
+//        }
+//
+//        return sportUnsettledBet;
+//    }
+
+    public SportUnsettledBet idempotentCheck(String vendorPlayerUsername, String vendorBetId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+        WalletRequest walletRequest = new WalletRequest();
+
+        walletRequest.setVendorPlayerUsername(vendorPlayerUsername);
+        walletRequest.setVendorBetId(vendorBetId);
+        walletRequest.setExternalTransactionId(externalTransactionId);
+
+        return this.idempotentCheck(walletRequest);
+    }
+
+    public SportUnsettledBet idempotentCheck(WalletRequest walletRequest) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+
+        String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
+        String vendorBetId = walletRequest.getVendorBetId();
+        String externalTransactionId = walletRequest.getExternalTransactionId();
+        SportUnsettledBet sportUnsettledBet = null;
+
+        sportUnsettledBet = sportUnsettledBetRepository.findByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        if (Objects.isNull(sportUnsettledBet)) {
+            sportUnsettledBet = sportUnsettledBetRepository.findById(vendorPlayerUsername + '_' + vendorBetId).orElse(null);
+        }
+
+        if (sportUnsettledBet != null) {
+            Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBet.getVendorBetTime());
+
+            if (sportUnsettledBet.getExternalTransactionId().equals(externalTransactionId)) {
+                if (sportUnsettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+                    throw new BetResultIdempotentViolationException(sportUnsettledBet);
 
                 } else if (betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
                     throw new TransactionStillProcessingException("SportUnsettledBetCouchbase idempotentCheck : " + betTimingDifferenceInMillieSeconds + " seconds.");
@@ -77,7 +148,7 @@ public class SportUnsettledBetService {
             }
         }
 
-        return sportUnsettledBetCouchbase;
+        return sportUnsettledBet;
     }
 
     public Long compareWithExistingTimingDifference(Long createdDate) {
@@ -94,12 +165,12 @@ public class SportUnsettledBetService {
 
     }
 
-    public List<VendorGame.SportUnsettledBetMariaDB> mariaDBGetByRoundId(String vendorId, String roundId) throws BetNotFoundException {
+    public List<SportUnsettledBetMariaDB> mariaDBGetByRoundId(String vendorId, String roundId) throws BetNotFoundException {
 
         return null;
     }
 
-    public VendorGame.SportUnsettledBetMariaDB mariaDBGetByRoundIdAndVendorBetId(Integer vendorId, String roundId, String vendorBetId) throws BetNotFoundException {
+    public SportUnsettledBetMariaDB mariaDBGetByRoundIdAndVendorBetId(Integer vendorId, String roundId, String vendorBetId) throws BetNotFoundException {
 
         return null;
     }

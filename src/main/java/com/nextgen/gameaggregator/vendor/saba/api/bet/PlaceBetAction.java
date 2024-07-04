@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.vendor.saba.api.bet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -12,9 +15,9 @@ import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
+import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,22 +27,31 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class PlaceBetAction {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private SportWalletService sportWalletService;
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final SportWalletService sportWalletService;
+    private final WalletRequestService walletRequestService;
+
+    public PlaceBetAction(GameSessionService gameSessionService,
+                          HttpService httpService,
+                          SportWalletService sportWalletService,
+                          WalletRequestService walletRequestService) {
+
+        this.gameSessionService = gameSessionService;
+        this.httpService = httpService;
+        this.sportWalletService = sportWalletService;
+        this.walletRequestService = walletRequestService;
+    }
 
     @PostMapping(path = EndPoints.PLACE_BET)
     public PlaceBetVo action(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        String traceId = walletRequest.getTraceId();
 
         // Construct Vo
         PlaceBetVo vo = new PlaceBetVo();
-        BetEvent betEvent = null;
 
         try {
             // Convert original request body into dto
@@ -47,28 +59,47 @@ public class PlaceBetAction {
             });
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getMessage().getUserId());
+            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
-            betEvent = sportWalletService.placeBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
+            this.dataMapper(walletRequest, dto.getMessage());
+
+            walletRequest = sportWalletService.placeBet(walletRequest);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
-            vo.setRefId(betEvent.getBetInformation().getRoundId());
+            vo.setRefId(walletRequest.getRoundId());
             vo.setLicenseeTxId(traceId);
 
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
+            walletRequest.setErrorMessage(e.getMessage());
 
         } finally {
-            httpService.end(httpRequestLog, vo);
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         }
 
         return vo;
+    }
+
+    private void dataMapper(WalletRequest walletRequest, PlaceBetDto placeBetDto) {
+        String externalTransactionId = VendorService.generateExtTxnId(placeBetDto.getOperationId(), placeBetDto.getRefId());
+
+        walletRequest.setExternalTransactionId(externalTransactionId);
+        walletRequest.setVendorBetId(placeBetDto.getRefId());
+        walletRequest.setRoundId(placeBetDto.getRefId());
+        walletRequest.setBetAmount(placeBetDto.getActualAmount());
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setBetStatus(BetStatus.UNSETTLED);
+        walletRequest.setBetType(BetType.NORMAL_BET.code);
+        walletRequest.setVendorPlayerUsername(placeBetDto.getUserId());
     }
 }

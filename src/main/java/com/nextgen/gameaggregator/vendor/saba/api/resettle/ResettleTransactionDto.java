@@ -24,7 +24,7 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public String getExternalTransactionId() {
-        return operationId;
+        return operationId + "-" + this.getRefId();
     }
 
     @Override

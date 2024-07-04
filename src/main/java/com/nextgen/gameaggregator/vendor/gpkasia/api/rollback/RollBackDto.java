@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
@@ -8,12 +9,15 @@ import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RollBackDto extends ActionDto implements RollbackData {
     @NotBlank
+    @JsonProperty("api_token")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String api_token;
+    private String apiToken;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -21,7 +25,7 @@ public class RollBackDto extends ActionDto implements RollbackData {
 
     @NotNull
     @PositiveOrZero
-    private Double money;
+    private BigDecimal money;
 
     @NotBlank
     @Size(min = 10, max = 10)
