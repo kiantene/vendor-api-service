@@ -1,11 +1,10 @@
 package com.nextgen.gameaggregator.entity.ga;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -130,5 +129,12 @@ public class BetHistory {
         }
 
         this.resettleNum = settledBet.getResettleNum();
+
+        //hotfix v1.1.77, only for PlayNGo missing vendorBetTime.
+        if (this.getVendorId().equals(29)) {
+            this.vendorBetTime = (this.vendorBetTime == null) ? System.currentTimeMillis() : this.vendorBetTime;
+            this.vendorSettleTime = (this.vendorSettleTime == null) ? System.currentTimeMillis() : this.vendorSettleTime;
+            this.resultTime = (this.resultTime == null) ? System.currentTimeMillis() : this.resultTime;
+        }
     }
 }
