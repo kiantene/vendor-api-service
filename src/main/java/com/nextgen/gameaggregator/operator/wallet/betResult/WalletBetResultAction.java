@@ -43,6 +43,7 @@ public class WalletBetResultAction {
     private final BetResultRetryLogService betResultRetryLogService;
     private final Set<Integer> vendorList;
     private final Set<Integer> forceSuccessResultTypeList;
+    private final Set<Integer> betWinVendorList;
 
     @Value("${testing.stub:false}")
     private boolean useStub;
@@ -61,6 +62,7 @@ public class WalletBetResultAction {
         this.betResultRetryLogService = betResultRetryLogService;
         this.vendorList = new HashSet<>();
         this.forceSuccessResultTypeList = new HashSet<>();
+        this.betWinVendorList = new HashSet<>();
 
         this.vendorList.add(1); // PP
         this.vendorList.add(3); // CQ9
@@ -78,6 +80,8 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.WIN.code);
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
+
+        this.betWinVendorList.add(32);
     }
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
@@ -184,7 +188,8 @@ public class WalletBetResultAction {
 
         } finally {
             if (isError) {
-                if (this.vendorList.contains(gameSession.getVendorId()) && this.forceSuccessResultTypeList.contains(resultType.code)) {
+                if ((this.vendorList.contains(gameSession.getVendorId()) && this.forceSuccessResultTypeList.contains(resultType.code))
+                        || (this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
                     responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
                     if (httpRequestLog != null) {
                         betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);

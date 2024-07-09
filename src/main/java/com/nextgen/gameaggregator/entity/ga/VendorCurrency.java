@@ -21,7 +21,5 @@ public class VendorCurrency {
     private Integer status;
     private BigDecimal fromVendorRate;
     private BigDecimal toVendorRate;
-
-    @ManyToOne
-    private Currency currency;
+    private Integer currencyId;
 }

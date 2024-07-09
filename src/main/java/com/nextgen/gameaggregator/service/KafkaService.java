@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
-import com.nextgen.gameaggregator.logging.ApiResponseLog;
+import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
@@ -198,11 +198,12 @@ public class KafkaService {
         }
     }
 
-    public void produceApiResponseLog(ApiResponseLog apiResponseLog) {
+    public void produceApiRequestLog(ApiRequestLog apiRequestLog) {
         try {
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_RESPONSE_LOG, apiResponseLog.getId(), apiResponseLog);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog);
         } catch (Exception e) {
-            log.error(e.getMessage() + " produceHttpResponseLog[" + apiResponseLog.getId() + "]");
+            log.error("[" + apiRequestLog.getRoundId() + "] " + e.getMessage());
+            log.info(new Gson().toJson(apiRequestLog));
         }
     }
 }

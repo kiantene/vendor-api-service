@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
 import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,13 +26,31 @@ public class GameSessionService {
 
     private final RawGameSessionRepository rawGameSessionRepository;
     private final CacheManager cacheManager;
+    private final VendorPlayerService vendorPlayerService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorCurrencyService vendorCurrencyService;
+    private final CurrencyService currencyService;
+    private final VendorGameCodeService vendorGameCodeService;
 
     @Autowired
     public GameSessionService(RawGameSessionRepository rawGameSessionRepository,
-                              CacheManager cacheManager) {
+                              CacheManager cacheManager,
+                              VendorPlayerService vendorPlayerService,
+                              AgentPlayerService agentPlayerService,
+                              VendorGameService vendorGameService,
+                              VendorCurrencyService vendorCurrencyService,
+                              CurrencyService currencyService,
+                              VendorGameCodeService vendorGameCodeService) {
 
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.cacheManager = cacheManager;
+        this.vendorPlayerService = vendorPlayerService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorCurrencyService = vendorCurrencyService;
+        this.currencyService = currencyService;
+        this.vendorGameCodeService = vendorGameCodeService;
     }
 
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
@@ -120,21 +139,6 @@ public class GameSessionService {
         return session;
     }
 
-    @CachePut(value = "GameSessions", key = "#vendorPlayerId", cacheManager = "cacheManager")
-    public GameSession getGameSessionByVendorPlayerId(Long vendorPlayerId) throws AuthenticationException {
-        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerIdOrderByCreateTimeDesc(vendorPlayerId);
-        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
-
-        return session;
-    }
-
-    @Cacheable(value = "GameSessions", key = "{#vendorPlayerId, #vendorGameCode}", cacheManager = "cacheManager")
-    public GameSession getGameSessionByVendorPlayerIdAndVendorGameCode(Long vendorPlayerId, String vendorGameCode) throws AuthenticationException {
-        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerIdAndVendorGameCodeOrderByCreateTimeDesc(vendorPlayerId, vendorGameCode);
-        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
-        return session;
-    }
-
     public void clearGameSession(GameSession gameSession, String username, String vendorGameCode) {
         cacheManager.getCache("GameSessions").evict(gameSession.getAgentId() + "," + username + "," + gameSession.getVendorLineId() + "," + gameSession.getCurrencyId());
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
@@ -201,5 +205,76 @@ public class GameSessionService {
         rawGameSessionRepository.save(gameSession);
 
         return gameSession;
+    }
+
+    @Transactional
+    public VendorPlayer updateNewVendorPlayerUsername(GameSession gameSession, String newVendorPlayerUsername) throws InvalidPlayerException {
+
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(gameSession.getVendorPlayerUsername());
+        vendorPlayer.setUsername(newVendorPlayerUsername);
+
+        this.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
+        gameSession.setVendorPlayerUsername(newVendorPlayerUsername);
+        gameSession.setStatus(Status.ACTIVE.code);
+        this.updateSession(gameSession);
+
+        return vendorPlayerService.saveAndFlush(vendorPlayer);
+    }
+
+    public GameSession generateNewSessionToken(String vendorPlayerUsername) throws InvalidPlayerException {
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerUsername);
+        Long agentPlayerId = vendorPlayer.getAgentPlayerId();
+
+        AgentPlayer agentPlayer;
+
+        try {
+            agentPlayer = agentPlayerService.get(agentPlayerId);
+        } catch (RecordNotFoundException recordNotFoundException) {
+            throw new InvalidPlayerException("agentPlayerId " + agentPlayerId + " cannot be found");
+        }
+
+        GameSession gameSession = new GameSession();
+        gameSession.setAgentId(agentPlayer.getAgentId());
+        gameSession.setAgentPlayerId(agentPlayerId);
+        gameSession.setAgentPlayerUsername(agentPlayer.getUsername());
+        gameSession.setVendorId(vendorPlayer.getVendorId());
+        gameSession.setVendorPlayerId(vendorPlayer.getId());
+        gameSession.setVendorPlayerUsername(vendorPlayerUsername);
+        gameSession.setVendorLineId(vendorPlayer.getVendorLineId());
+        gameSession.setStatus(Status.ACTIVE.code);
+
+        return gameSession;
+    }
+
+    public void updateByVendorGameCode(GameSession gameSession, String vendorGameCode) throws GameNotSupportedException {
+        Integer vendorId = gameSession.getVendorId();
+
+        if (vendorId == null) return;
+
+        VendorGame vendorGame = vendorGameService.getByVendorIdAndVendorGameCode(vendorId, vendorGameCode);
+        gameSession.setVendorGameId(vendorGame.getId());
+        gameSession.setGameCode(vendorGame.getCode());
+        gameSession.setVendorGameCode(vendorGameCode);
+        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+    }
+
+    public void updateByVendorCurrencyCode(GameSession gameSession, String vendorCurrencyCode) throws VendorCurrencyNotSupportException {
+        Integer vendorId = gameSession.getVendorId();
+
+        if (vendorId == null) return;
+
+        VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndVendorCurrencyCode(vendorId, vendorCurrencyCode);
+        gameSession.setCurrencyId(vendorCurrency.getCurrencyId());
+        gameSession.setVendorCurrencyCode(vendorCurrencyCode);
+
+        Integer currencyId = vendorCurrency.getCurrencyId();
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+        gameSession.setCurrencyCode(currencyCode);
     }
 }

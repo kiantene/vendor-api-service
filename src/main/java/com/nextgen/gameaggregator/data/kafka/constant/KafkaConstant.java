@@ -17,7 +17,7 @@ public class KafkaConstant {
     public static final String TOPIC_RAW_SETTLED_BET = "topic_raw_settled_bet";
     public static final String TOPIC_TRANSFER_HISTORY = "topic_transfer_history";
     public static final String TOPIC_BET_RESULT_DLQ = "topic_bet_result_dlq_v2";
-    public static final String TOPIC_API_RESPONSE_LOG = "api_response_log_v1";
+    public static final String TOPIC_API_REQUEST_LOG = "api_request_log_v1";
 
     public static final String TOPIC_BET_HISTORY_DELAY_SETTLEMENT = "topic_bet_history_delay_settlement";
 }

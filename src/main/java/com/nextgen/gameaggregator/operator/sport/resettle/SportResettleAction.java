@@ -48,6 +48,8 @@ public class SportResettleAction {
     private VendorGameRepository vendorGameRepository;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
+    @Autowired
+    private CurrencyService currencyService;
 
     public WalletBalanceVo call(String traceId, SportSettledBet sportSettledBet, SportResettleData sportResettleData, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
@@ -153,7 +155,7 @@ public class SportResettleAction {
                 //do nothing if success
 
             } else {
-                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportSettledBet);
+                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), dto.getCurrency(), sportSettledBet);
                 betResultRetryLogService.create(httpRequestLog.getOperatorData(), vendorCurrency.getVendorId(), agentPlayer.getAgentId(), sportSettledBet.getBetId(), sportSettledBet.getRoundId(), sportSettledBet.getInternalTransactionId(), EndPoints.SPORT_RESETTLE);
             }
 
@@ -177,6 +179,15 @@ public class SportResettleAction {
             debitAmount = winAmount.subtract(newWinAmount);
         }
 
+        Integer currencyId = vendorCurrency.getCurrencyId();
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+
         SportResettleDto sportResettleDto = new SportResettleDto();
         sportResettleDto.setTraceId(traceId);
         sportResettleDto.setUsername(agentPlayerUsername);
@@ -191,7 +202,7 @@ public class SportResettleAction {
         sportResettleDto.setDebitAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(debitAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setCreditAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(creditAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setGameCode(gameCode);
-        sportResettleDto.setCurrency(vendorCurrency.getCurrency().getCode());
+        sportResettleDto.setCurrency(currencyCode);
         sportResettleDto.setTimestamp(sportSettledBet.getVendorBetTime());
 
         return sportResettleDto;

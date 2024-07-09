@@ -41,6 +41,8 @@ public class SportAdjustmentAction {
     private RequestService requestService;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
+    @Autowired
+    private CurrencyService currencyService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -146,11 +148,20 @@ public class SportAdjustmentAction {
     private SportAdjustmentDto newSportAdjustmentDto(String traceId, BetInformation betInformation, String agentPlayerUsername, VendorCurrency vendorCurrency) {
         BigDecimal amount = new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
 
+        Integer currencyId = vendorCurrency.getCurrencyId();
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+
         SportAdjustmentDto sportAdjustmentDto = new SportAdjustmentDto();
         sportAdjustmentDto.setTraceId(traceId);
         sportAdjustmentDto.setTransactionId(betInformation.getInternalTransactionId());
         sportAdjustmentDto.setUsername(agentPlayerUsername);
-        sportAdjustmentDto.setCurrency(vendorCurrency.getCurrency().getCode());
+        sportAdjustmentDto.setCurrency(currencyCode);
         sportAdjustmentDto.setExternalTransactionId(betInformation.getVendorBetId());
         sportAdjustmentDto.setRoundId(betInformation.getRoundId());
         sportAdjustmentDto.setTimestamp(betInformation.getVendorBetTime());

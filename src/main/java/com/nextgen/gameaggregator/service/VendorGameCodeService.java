@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,5 +36,9 @@ public class VendorGameCodeService {
         }
 
         return vendorGameCode;
+    }
+
+    public List<VendorGameCode> getByVendorGameIdAndLanguageId(Integer vendorGameId, Integer languageId) {
+        return vendorGameCodeRepository.findByVendorGameIdAndLanguageId(vendorGameId, languageId);
     }
 }

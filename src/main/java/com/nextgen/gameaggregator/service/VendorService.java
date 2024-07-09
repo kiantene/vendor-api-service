@@ -30,6 +30,9 @@ public class VendorService extends BaseVendorService {
     @Autowired
     private VendorCurrencyRepository vendorCurrencyRepository;
 
+    @Autowired
+    private CurrencyService currencyService;
+
     public Vendor verifyVendorByCodeAndWalletType(String code, Integer walletType) throws InvalidVendorException, DisabledVendorException {
 
         Vendor vendor = vendorReaderRepository.findByCode(code);
@@ -72,9 +75,16 @@ public class VendorService extends BaseVendorService {
         List<VendorCurrency> VendorCurrencyCodes = vendorCurrencyRepository.findByVendorId(VendorId);
         Optional.ofNullable(VendorCurrencyCodes).orElseThrow(CurrencyNotSupportedException::new);
 
+
         HashMap<String, Currency> vendorCurrencies = new HashMap<>();
         for (VendorCurrency vendorCurrency : VendorCurrencyCodes) {
-            vendorCurrencies.put(vendorCurrency.getCurrency().getId().toString(), vendorCurrency.getCurrency());
+            Integer currencyId = vendorCurrency.getCurrencyId();
+            try {
+                Currency currency = currencyService.get(currencyId);
+                vendorCurrencies.put(currencyId.toString(), currency);
+            } catch (InvalidCurrencyException invalidCurrencyException) {
+                // do nothing to suppress the error
+            }
         }
         return vendorCurrencies;
     }

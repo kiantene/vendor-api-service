@@ -15,12 +15,10 @@ import java.util.Optional;
 @Service
 public class VendorPlayerService {
     private final VendorPlayerRepository vendorPlayerRepository;
-    private final GameSessionService gameSessionService;
 
     @Autowired
-    public VendorPlayerService(VendorPlayerRepository vendorPlayerRepository, GameSessionService gameSessionService) {
+    public VendorPlayerService(VendorPlayerRepository vendorPlayerRepository) {
         this.vendorPlayerRepository = vendorPlayerRepository;
-        this.gameSessionService = gameSessionService;
     }
 
     @Cacheable(value = "VendorPlayerUsername", key = "#username", cacheManager = "cacheManager")
@@ -30,17 +28,7 @@ public class VendorPlayerService {
         return Optional.ofNullable(vendorPlayer).orElseThrow(InvalidPlayerException::new);
     }
 
-    @Transactional
-    public VendorPlayer updateNewVendorPlayerUsername(GameSession gameSession, String newVendorPlayerUsername) throws InvalidPlayerException {
-
-        VendorPlayer vendorPlayer = getVendorPlayerByUsername(gameSession.getVendorPlayerUsername());
-        vendorPlayer.setUsername(newVendorPlayerUsername);
-
-        gameSessionService.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
-        gameSession.setVendorPlayerUsername(newVendorPlayerUsername);
-        gameSession.setStatus(Status.ACTIVE.code);
-        gameSessionService.updateSession(gameSession);
-
+    public VendorPlayer saveAndFlush(VendorPlayer vendorPlayer) {
         return vendorPlayerRepository.saveAndFlush(vendorPlayer);
     }
 

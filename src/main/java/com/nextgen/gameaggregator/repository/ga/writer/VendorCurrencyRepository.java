@@ -13,4 +13,6 @@ public interface VendorCurrencyRepository extends JpaRepository<VendorCurrency, 
 
     @Cacheable(value = "VendorCurrencies", key = "{#vendorId, #currencyId}", cacheManager = "cacheManager")
     VendorCurrency findByVendorIdAndCurrencyId(Integer vendorId, Integer currencyId);
+
+    VendorCurrency findByVendorIdAndVendorCurrencyCode(Integer vendorId, String vendorCurrencyCode);
 }

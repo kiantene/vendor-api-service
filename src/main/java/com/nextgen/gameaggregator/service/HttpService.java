@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.logging.ApiResponseLog;
+import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -239,9 +239,7 @@ public class HttpService {
                     requestLog.setResponseBody(jsonResponseVo);
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    Gson gson = new Gson();
-                    log.info(gson.toJson(requestLog));
-                    kafkaService.produceApiResponseLog(new ApiResponseLog(requestLog));
+                    kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());

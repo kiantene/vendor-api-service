@@ -32,20 +32,17 @@ public class SettleAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
-    private final ValidationService validationService;
 
     @Autowired
     public SettleAction(HttpService httpService,
                         GameSessionService gameSessionService,
                         WalletService walletService,
-                        VendorService vendorService,
-                        ValidationService validationService) {
+                        VendorService vendorService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-        this.validationService = validationService;
     }
 
     @PostMapping(path = Endpoints.DEPOSIT)
@@ -70,8 +67,17 @@ public class SettleAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrency());
+                gameSession.setToken(dto.getSession_token());
+                gameSession.setVendorToken(dto.getSession_token());
+            }
 
             userId = gameSession.getVendorPlayerUsername();
             currency = gameSession.getVendorCurrencyCode();
@@ -139,8 +145,7 @@ public class SettleAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException |
-                 DisabledVendorLineException | DisabledAgentPlayerException |
-                 DisabledGameException | MergedBetDataIntegrityException | InsufficientBalanceException |
+                 MergedBetDataIntegrityException | InsufficientBalanceException |
                  TransactionStillProcessingException | GameNotSupportedException |
                  CurrencyNotSupportedException internalErrorExeption) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
@@ -162,8 +167,7 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException,
-            DisabledGameException, AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
 
         // Check game session status (0 = inactive)
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -174,9 +178,6 @@ public class SettleAction {
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }
 
     private ResultType getResultType(SettleDto dto) {
