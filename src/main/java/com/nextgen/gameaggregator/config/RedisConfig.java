@@ -118,6 +118,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorCurrency", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(6)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorCurrencyCode", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Languages", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Platforms", RedisCacheConfiguration.defaultCacheConfig()

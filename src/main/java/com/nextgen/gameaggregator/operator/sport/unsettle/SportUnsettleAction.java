@@ -47,6 +47,8 @@ public class SportUnsettleAction {
     private VendorGameRepository vendorGameRepository;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
+    @Autowired
+    private CurrencyService currencyService;
 
     public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
             InvalidAgentApiCredentialException, InvalidOperatorResponseException {
@@ -61,7 +63,16 @@ public class SportUnsettleAction {
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
-        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
+        Integer currencyId = vendorCurrency.getCurrencyId();
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+
+        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), currencyCode, betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -152,7 +163,7 @@ public class SportUnsettleAction {
                 //do nothing if success
 
             } else {
-                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), currencyCode, betInformation);
                 betResultRetryLogService.create(httpRequestLog.getOperatorData(), vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.SPORT_UNSETTLE);
             }
         }

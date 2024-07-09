@@ -42,6 +42,13 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGames", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
+    public VendorGame getByVendorIdAndVendorGameCode(Integer vendorId, String vendorGameCode) throws GameNotSupportedException {
+
+        VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+        return Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+    }
+
     @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameId(Integer vendorGameId) throws GameNotSupportedException {
         VendorGame vendorGame = vendorGameRepository.findById(vendorGameId).orElseThrow(GameNotSupportedException::new);

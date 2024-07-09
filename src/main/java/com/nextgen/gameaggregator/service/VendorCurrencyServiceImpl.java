@@ -25,4 +25,16 @@ public class VendorCurrencyServiceImpl implements VendorCurrencyService {
 
         return vendorCurrency;
     }
+
+    @Override
+    @Cacheable(value = "VendorCurrencyCode", key = "{#vendorId, #vendorCurrencyCode}", cacheManager = "cacheManager")
+    public VendorCurrency findByVendorIdAndVendorCurrencyCode(Integer vendorId, String vendorCurrencyCode) throws VendorCurrencyNotSupportException {
+        VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndVendorCurrencyCode(vendorId, vendorCurrencyCode);
+
+        if (vendorCurrency == null) {
+            throw new VendorCurrencyNotSupportException();
+        }
+
+        return vendorCurrency;
+    }
 }

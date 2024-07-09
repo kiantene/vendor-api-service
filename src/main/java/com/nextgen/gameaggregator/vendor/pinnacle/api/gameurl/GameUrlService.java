@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
@@ -37,6 +38,8 @@ public class GameUrlService implements GameUrl {
     private RequestService requestService;
     @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -149,7 +152,7 @@ public class GameUrlService implements GameUrl {
             JsonParser jsonParser = JsonParserFactory.getJsonParser();
             String userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
 
-            vendorPlayerService.updateNewVendorPlayerUsername(gameSession, userCode);
+            gameSessionService.updateNewVendorPlayerUsername(gameSession, userCode);
 
             RequestService.successResponseLog(requestLogVo);
         } catch (Exception ex) {

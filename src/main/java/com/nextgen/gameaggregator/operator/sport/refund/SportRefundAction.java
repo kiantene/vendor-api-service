@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.operator.sport.refund;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -35,6 +34,7 @@ public class SportRefundAction extends SportsBaseAction {
     private final CurrencyConversionService currencyConversionService;
     private final VendorGameRepository vendorGameRepository;
     private final BetResultRetryLogService betResultRetryLogService;
+    private final CurrencyService currencyService;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -43,7 +43,8 @@ public class SportRefundAction extends SportsBaseAction {
                              RequestService requestService,
                              CurrencyConversionService currencyConversionService,
                              VendorGameRepository vendorGameRepository,
-                             BetResultRetryLogService betResultRetryLogService) {
+                             BetResultRetryLogService betResultRetryLogService,
+                             CurrencyService currencyService) {
 
         this.endpoint = EndPoints.SPORT_REFUND;
         this.requestType = this.getClass().getSimpleName();
@@ -53,6 +54,7 @@ public class SportRefundAction extends SportsBaseAction {
         this.currencyConversionService = currencyConversionService;
         this.vendorGameRepository = vendorGameRepository;
         this.betResultRetryLogService = betResultRetryLogService;
+        this.currencyService = currencyService;
     }
 
     public WalletBalanceVo call(String traceId, SportUnsettledBet betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
@@ -68,7 +70,16 @@ public class SportRefundAction extends SportsBaseAction {
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
-        SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
+        Integer currencyId = vendorCurrency.getCurrencyId();
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+
+        SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), currencyCode, betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -164,7 +175,7 @@ public class SportRefundAction extends SportsBaseAction {
                 //do nothing if success
 
             } else {
-                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), currencyCode, betInformation);
                 betResultRetryLogService.create(httpRequestLog.getOperatorData(), vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.SPORT_REFUND);
             }
 
