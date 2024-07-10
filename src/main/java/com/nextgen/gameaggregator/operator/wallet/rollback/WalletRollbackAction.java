@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -28,24 +27,34 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
 public class WalletRollbackAction {
-    @Autowired
-    RequestService requestService;
+    private final RequestService requestService;
+    private final AuthenticationService authenticationService;
+    private final AgentApiCredentialService agentApiCredentialService;
+    private final VendorService vendorService;
+    private final CurrencyConversionService currencyConversionService;
+    private final BetResultRetryLogService betResultRetryLogService;
     @Value("${testing.stub:false}")
     private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
+
+    public WalletRollbackAction(RequestService requestService, AuthenticationService authenticationService,
+                                AgentApiCredentialService agentApiCredentialService,
+                                VendorService vendorService, CurrencyConversionService currencyConversionService,
+                                BetResultRetryLogService betResultRetryLogService) {
+        this.requestService = requestService;
+        this.authenticationService = authenticationService;
+        this.agentApiCredentialService = agentApiCredentialService;
+        this.vendorService = vendorService;
+        this.currencyConversionService = currencyConversionService;
+        this.betResultRetryLogService = betResultRetryLogService;
+    }
 
     public WalletBalanceVo
     call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog)
@@ -57,7 +66,8 @@ public class WalletRollbackAction {
         }
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBalanceVo responseVo;
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
+        WalletBalanceVo responseVo = new WalletBalanceVo();
 
         VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
@@ -82,6 +92,8 @@ public class WalletRollbackAction {
         }
 
         RequestLogVo requestLogVo = null;
+        boolean isError = false;
+        ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
@@ -95,6 +107,10 @@ public class WalletRollbackAction {
                     .toEntity(String.class)
                     .retry(3)
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .onErrorResume(TimeoutException.class, e -> {
+                        isTimeout.set(true);
+                        return Mono.error(e);
+                    })
                     .block();
 
             long endTime = System.currentTimeMillis();
@@ -103,8 +119,11 @@ public class WalletRollbackAction {
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
                 }
+            }
+
+            if (isTimeout.get()) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
             }
 
             requestLogVo = requestService.createRequestLogVo(
@@ -142,39 +161,28 @@ public class WalletRollbackAction {
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
-            throw new InvalidOperatorResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            isError = true;
+            operatorStatus = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
-            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
-            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
-
-            //only PP for now
-            if (gameSession.getVendorId() == 1 || gameSession.getVendorId() == 36) {
-                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
-                    responseVo = this.processForceSuccess(gameSession, traceId);
-                } else {
-                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
-                }
-            } else {
-                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
-            }
+            isError = true;
+            operatorStatus = ResponseCodes.Status.checkCodeStatus(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            long endTime = System.currentTimeMillis();
-            httpRequestLog.setOperatorEnd(endTime);
-            Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+            isError = true;
+            operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
-            requestLogVo = requestService.createRequestLogVo(
-                    EndPoints.WALLET_ROLLBACK, apiUrl, dto, null, headerMap, startTime, endTime,
-                    this.getClass().getPackage().getName(), profilesActive);
-
-            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
-                defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+        } finally {
+            if (isError) {
+                responseVo = this.processForceSuccess(gameSession, traceId);
+                if (httpRequestLog != null) {
+                    betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(),
+                            agentId, dto.getBetId(), dto.getRoundId(), dto.getTransactionId(), EndPoints.WALLET_ROLLBACK);
+                }
+            } else {
+                //this is not error.
             }
-
-            throw new InvalidOperatorResponseException(exception.getMessage(), defaultOperatorErrorResponse);
         }
 
         return responseVo;

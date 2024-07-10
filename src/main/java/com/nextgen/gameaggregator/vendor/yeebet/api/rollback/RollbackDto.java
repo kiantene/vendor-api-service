@@ -42,6 +42,6 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return Instant.now().getEpochSecond();
+        return System.currentTimeMillis();
     }
 }
