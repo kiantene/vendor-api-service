@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -83,7 +82,7 @@ public class SettleAction {
             currency = gameSession.getVendorCurrencyCode();
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
-            
+
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
@@ -170,7 +169,7 @@ public class SettleAction {
     private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
 
         // Check game session status (0 = inactive)
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+        //if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);

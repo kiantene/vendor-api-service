@@ -763,6 +763,7 @@ public class WalletService {
                 try {
                     loggingService.logStart();
                     unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
+                    balance = (unsettledBet.getBalance() == null) ? balance : unsettledBet.getBalance();
                     loggingService.logProcessTime("unsettledBetService.findBetsForRollback", traceId);
                 } catch (BetNotFoundException betNotFoundException) {
                     betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
@@ -810,7 +811,7 @@ public class WalletService {
                 settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
             }
 
-            balance = balanceVo.getData().getBalance();
+            balance = (balanceVo.getData().getBalance().equals(BigDecimal.ZERO)) ? balance : balanceVo.getData().getBalance();
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balance);
             walletRequest.setBalanceAfter(balance);
