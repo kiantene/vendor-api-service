@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.BetIdempotentLogService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
-import com.nextgen.gameaggregator.vendor.saba.api.confirmbet.RefundWalletRequest;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -23,8 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import static com.nextgen.gameaggregator.vendor.saba.constant.EndPoints.VENDOR_CODE;
 
 @Slf4j
 @RestController
@@ -52,8 +49,7 @@ public class CancelBetAction {
     public GeneralVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        RefundWalletRequest walletRequest = new RefundWalletRequest(httpRequestLog.getId());
-        walletRequest.setRequestBody(httpRequestLog.getRequestBody());
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         // Construct Vo
         GeneralVo vo = new GeneralVo();
@@ -63,13 +59,13 @@ public class CancelBetAction {
             });
 
             CancelBetDto cancelBetDto = dto.getMessage();
+            final String vendorPlayerUsername = cancelBetDto.getUserId();
             final String operationId = cancelBetDto.getOperationId();
 
             // check operationId for idempotent and throw error to vendor
-            String idempotencyKey = VENDOR_CODE + "_" + operationId;
-            betIdempotentLogService.idempotentCheck(idempotencyKey);
+            String idempotentKey = vendorPlayerUsername + "_" + operationId;
+            betIdempotentLogService.idempotentCheck(idempotentKey);
 
-            final String vendorPlayerUsername = cancelBetDto.getUserId();
             walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
             walletRequest.setTimestamp(cancelBetDto.getTimestamp());
 

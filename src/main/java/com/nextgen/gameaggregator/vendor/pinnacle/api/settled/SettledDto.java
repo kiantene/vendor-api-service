@@ -70,12 +70,13 @@ public class SettledDto extends ActionsWagerInfoDto implements SportBetResultDat
 
     @Override
     public Long getResultTime() {
-        return VendorService.convertDateTimeStringToTimestamp(Objects.requireNonNullElse(this.getResettlementTime(), this.getSettlementTime()), Formats.DATE_TIME_FORMAT, Formats.GMT_MINUS_FOUR);
+        return this.getVendorSettleTime();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.convertDateTimeStringToTimestamp(Objects.requireNonNullElse(this.getResettlementTime(), this.getSettlementTime()), Formats.DATE_TIME_FORMAT, Formats.GMT_MINUS_FOUR);
+        String dateTimeString = Objects.requireNonNullElse(this.getResettlementTime(), this.getSettlementTime());
+        return VendorService.convertDateTimeStringToTimestamp(dateTimeString, Formats.DATE_TIME_FORMAT);
     }
 
     @Override

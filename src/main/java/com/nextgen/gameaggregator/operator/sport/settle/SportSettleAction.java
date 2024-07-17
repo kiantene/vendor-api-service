@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.sport.SportsBaseAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
@@ -27,7 +28,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 @Service
-public class SportSettleAction {
+public class SportSettleAction extends SportsBaseAction {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -49,6 +50,11 @@ public class SportSettleAction {
     private BetResultRetryLogService betResultRetryLogService;
     @Autowired
     private CurrencyService currencyService;
+
+    public SportSettleAction() {
+        this.endpoint = EndPoints.SPORT_SETTLE;
+        this.requestType = this.getClass().getSimpleName();
+    }
 
     public WalletBalanceVo call(String traceId, SportUnsettledBet sportUnsettledBet, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, RecordNotFoundException {
 

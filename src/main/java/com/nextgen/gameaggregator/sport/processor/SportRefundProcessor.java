@@ -2,20 +2,27 @@ package com.nextgen.gameaggregator.sport.processor;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.SportMasterUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.sport.refund.RefundWalletRequest;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundAction;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundDto;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.BetResultRetryLogService;
+import com.nextgen.gameaggregator.service.KafkaService;
+import com.nextgen.gameaggregator.service.VendorCurrencyService;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.service.SportSettledBetService;
 import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,13 +62,18 @@ public class SportRefundProcessor {
     }
 
     public WalletRequest process(WalletRequest walletRequest) throws
-            BetNotFoundException, BetNotAllowedException,
-            InvalidOperatorResponseException, BetResultIdempotentViolationException {
+            BetNotFoundException, BetNotAllowedException, InvalidOperatorResponseException,
+            BetResultIdempotentViolationException, InvalidPlayerException, InvalidRequestException {
 
         walletRequest.setBetStart(System.currentTimeMillis());
 
-        String agentPlayerUsername = walletRequest.getOperatorUsername();
+        // validate walletRequest
+        ValidationUtils.doSportProcessorValidation(new RefundWalletRequest(walletRequest));
+
         String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
+        walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
+
+        String agentPlayerUsername = walletRequest.getOperatorUsername();
         String vendorBetId = walletRequest.getVendorBetId();
         Integer vendorId = walletRequest.getVendorId();
         BigDecimal fromVendorRate;
@@ -96,14 +108,13 @@ public class SportRefundProcessor {
                 //If the bet is not found in sportSettledBet, then the bet should continue and settle as usual.
             }
 
+            sportUnsettledBet.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
+
             Integer currencyId = sportUnsettledBet.getCurrencyId();
 
             walletRequestService.updateByVendorGameId(walletRequest, sportUnsettledBet.getVendorGameId());
             walletRequestService.updateByCurrencyId(walletRequest, currencyId);
-
             VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
-            sportUnsettledBet.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
-
             fromVendorRate = vendorCurrency.getFromVendorRate();
             toVendorRate = vendorCurrency.getToVendorRate();
             walletRequest.setBetId(sportUnsettledBet.getBetId());
@@ -117,7 +128,6 @@ public class SportRefundProcessor {
 
         try {
             SportRefundDto dto = new SportRefundDto(walletRequest);
-            // TODO: validate dto before sending to operator
             WalletBalanceVo walletBalanceVo = sportRefundAction.callToOperator(walletRequest, dto);
             BigDecimal balance = walletRequestService.convertAmountToVendorRate(walletBalanceVo, toVendorRate);
             walletRequest.setBalanceAfter(balance);
@@ -129,6 +139,8 @@ public class SportRefundProcessor {
 
             // initiate retry
             betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), sportUnsettledBet.getBetId(), sportUnsettledBet.getRoundId(), sportUnsettledBet.getInternalTransactionId(), EndPoints.SPORT_REFUND);
+        } finally {
+            walletRequest.setBetEnd(System.currentTimeMillis());
         }
 
         sportUnsettledBet.setBalance(walletRequest.getBalanceAfter());

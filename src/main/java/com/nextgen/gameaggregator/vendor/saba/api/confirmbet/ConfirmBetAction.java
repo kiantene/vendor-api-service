@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
@@ -27,18 +26,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ConfirmBetAction {
 
-    private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
 
     @Autowired
-    public ConfirmBetAction(GameSessionService gameSessionService,
-                            HttpService httpService,
+    public ConfirmBetAction(HttpService httpService,
                             SportWalletService sportWalletService,
                             WalletRequestService walletRequestService) {
 
-        this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
@@ -59,9 +55,6 @@ public class ConfirmBetAction {
             });
 
             this.dataMapper(walletRequest, dto.getMessage());
-
-            String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
-            walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
 
             // 4. Process unsettle data
             sportWalletService.confirmBet(walletRequest);

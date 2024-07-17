@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.repository.ga.reader.VendorReaderRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorCurrencyRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorLanguageCodeRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -21,17 +20,26 @@ import java.util.Optional;
 @Slf4j
 public class VendorService extends BaseVendorService {
 
-    @Autowired
-    private VendorReaderRepository vendorReaderRepository;
+    private final VendorReaderRepository vendorReaderRepository;
+    private final VendorLanguageCodeRepository vendorLanguageCodeRepository;
+    private final VendorCurrencyRepository vendorCurrencyRepository;
+    private final CurrencyService currencyService;
 
-    @Autowired
-    private VendorLanguageCodeRepository vendorLanguageCodeRepository;
+    public VendorService(VendorReaderRepository vendorReaderRepository,
+                         VendorLanguageCodeRepository vendorLanguageCodeRepository,
+                         VendorCurrencyRepository vendorCurrencyRepository,
+                         CurrencyService currencyService) {
 
-    @Autowired
-    private VendorCurrencyRepository vendorCurrencyRepository;
+        this.vendorReaderRepository = vendorReaderRepository;
+        this.vendorLanguageCodeRepository = vendorLanguageCodeRepository;
+        this.vendorCurrencyRepository = vendorCurrencyRepository;
+        this.currencyService = currencyService;
+    }
 
-    @Autowired
-    private CurrencyService currencyService;
+    @Cacheable(value = "Vendors", key = "{#id}", cacheManager = "cacheManager", unless = "#result == null")
+    public Vendor getById(Integer id) throws InvalidVendorException {
+        return vendorReaderRepository.findById(id).orElseThrow(InvalidVendorException::new);
+    }
 
     public Vendor verifyVendorByCodeAndWalletType(String code, Integer walletType) throws InvalidVendorException, DisabledVendorException {
 
@@ -152,11 +160,8 @@ public class VendorService extends BaseVendorService {
 
     @Cacheable(value = "Vendors", key = "{#vendorId}", cacheManager = "cacheManager", unless = "#result == null")
     public Vendor getByVendorId(Integer vendorId, Vendor vendor) throws InvalidVendorException {
-        if (vendor == null) {
-            vendor = vendorReaderRepository.findById(vendorId).orElse(null);
-            Optional.ofNullable(vendor).orElseThrow(InvalidVendorException::new);
-        }
+        if (vendor != null) return vendor;
 
-        return vendor;
+        return this.getById(vendorId);
     }
 }

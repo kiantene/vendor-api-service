@@ -11,12 +11,14 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetDto;
+import com.nextgen.gameaggregator.operator.sport.updatebet.UpdateBetWalletRequest;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.BetResultRetryLogService;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.VendorCurrencyService;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,15 +56,20 @@ public class SportUpdateBetProcessor {
 
     public WalletRequest process(WalletRequest walletRequest) throws
             BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException,
-            BetNotFoundException, BetNotAllowedException {
+            BetNotFoundException, BetNotAllowedException, InvalidRequestException, InvalidPlayerException {
 
         walletRequest.setBetStart(System.currentTimeMillis());
 
+        // validate walletRequest
+        ValidationUtils.doSportProcessorValidation(new UpdateBetWalletRequest(walletRequest));
+
+        String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
         BigDecimal balance = BigDecimal.ZERO;
         BigDecimal fromVendorRate;
         BigDecimal toVendorRate;
         Integer defaultResponses = ResponseCodes.Status.SC_OK.code;
-        Integer vendorId = walletRequest.getVendorId();
+
+        walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
 
         SportUnsettledBet unsettledBet = Optional.ofNullable(sportUnsettledBetService.idempotentCheck(walletRequest))
                 .orElseThrow(() -> new BetNotFoundException("Sport confirm bet idempotent check failed"));
@@ -73,7 +80,7 @@ public class SportUpdateBetProcessor {
         this.prepareBetDataForWalletRequest(walletRequest, unsettledBet);
 
         try {
-            VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, unsettledBet.getCurrencyId());
+            VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(walletRequest.getVendorId(), unsettledBet.getCurrencyId());
             fromVendorRate = vendorCurrency.getFromVendorRate();
             toVendorRate = vendorCurrency.getToVendorRate();
 
@@ -85,7 +92,6 @@ public class SportUpdateBetProcessor {
 
         try {
             SportUpdateBetDto dto = new SportUpdateBetDto(walletRequest, fromVendorRate);
-            // TODO: validate dto before sending to operator
             WalletBalanceVo walletBalanceVo = sportUpdateBetAction.callToOperator(walletRequest, dto);
 
             balance = walletRequestService.convertAmountToVendorRate(walletBalanceVo, toVendorRate);
@@ -100,7 +106,7 @@ public class SportUpdateBetProcessor {
         } finally {
             if (!defaultResponses.equals(ResponseCodes.Status.SC_OK.code)) {
                 // create result retry log data and prepare for message resend
-                betResultRetryLogService.create(walletRequest.getOperatorData(), vendorId, walletRequest.getAgentId(), unsettledBet.getBetId(), unsettledBet.getRoundId(), unsettledBet.getInternalTransactionId(), EndPoints.SPORT_UPDATE_BET);
+                betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), unsettledBet.getBetId(), unsettledBet.getRoundId(), unsettledBet.getInternalTransactionId(), EndPoints.SPORT_UPDATE_BET);
             }
 
             // Update record in sport_unsettled_bet (Couchbase)

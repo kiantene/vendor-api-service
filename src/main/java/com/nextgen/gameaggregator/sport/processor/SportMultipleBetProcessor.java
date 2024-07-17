@@ -5,19 +5,18 @@ import com.nextgen.gameaggregator.entity.ga.SportMasterUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.dto.MultipleBetDto;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.sport.bet.MultipleBetWalletRequest;
 import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.VendorCurrencyService;
 import com.nextgen.gameaggregator.service.VendorGameService;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -48,10 +47,13 @@ public class SportMultipleBetProcessor {
 
     public WalletRequest process(WalletRequest walletRequest)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException,
-            InsufficientBalanceException, InvalidOperatorResponseException {
+            InsufficientBalanceException, InvalidOperatorResponseException, InvalidRequestException {
 
         walletRequest.setBetStart(System.currentTimeMillis());
         walletRequest.setResultType(ResultType.BET.code);
+
+        // validate walletRequest
+        ValidationUtils.doSportProcessorValidation(new MultipleBetWalletRequest(walletRequest));
 
         Integer vendorId = walletRequest.getVendorId();
         Integer currencyId = walletRequest.getCurrencyId();

@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,17 +26,24 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping(path = "transaction/")
 @Slf4j
 public class TransactionsListAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private ValidationService validationService;
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final TransactionListService transactionListService;
 
-    @Autowired
-    private TransactionListService transactionListService;
+    public TransactionsListAction(HttpService httpService,
+                                  ValidationService validationService,
+                                  TransactionListService transactionListService) {
+
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.transactionListService = transactionListService;
+    }
 
     @PostMapping(path = "list")
     public OperatorResponseVo<TransactionsListData> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestType("TransactionList");
+        httpRequestLog.setResponseLogged(false);
         OperatorResponseVo<TransactionsListData> responseVo = new OperatorResponseVo<>();
         try {
             // Retrieve request body in original string format and convert into dto
@@ -46,7 +52,6 @@ public class TransactionsListAction {
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setId(dto.getTraceId());
-            log.info(dto.toString());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -54,6 +59,7 @@ public class TransactionsListAction {
             // 2. Check if api key is valid
             String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
 
             // 3. Validate the signature
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
@@ -74,38 +80,43 @@ public class TransactionsListAction {
 
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
-            log.error(illegalArgumentException.toString());
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+            httpService.logError(httpRequestLog, illegalArgumentException);
 
         } catch (JsonProcessingException jsonProcessingException) {
-            jsonProcessingException.printStackTrace();
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+            httpService.logError(httpRequestLog, jsonProcessingException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (InvalidFromTimeException invalidFromTimeException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_FROM_TIME);
+            httpService.logError(httpRequestLog, invalidFromTimeException);
 
         } catch (InvalidDateRangeException invalidDateRangeException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_DATE_RANGE);
+            httpService.logError(httpRequestLog, invalidDateRangeException);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
+
         return responseVo;
     }
 }

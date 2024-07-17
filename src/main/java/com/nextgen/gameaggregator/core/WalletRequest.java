@@ -59,6 +59,9 @@ public class WalletRequest {
 
     // Sports Bet Info
     protected BigDecimal newBetAmount;
+    protected BigDecimal newWinAmount;
+    protected BigDecimal creditAmount;
+    protected BigDecimal debitAmount;
 
     // Operator Info
     private String requestType;

@@ -5,11 +5,13 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConfirmBetDto implements SportBetResultData {
     private String action;

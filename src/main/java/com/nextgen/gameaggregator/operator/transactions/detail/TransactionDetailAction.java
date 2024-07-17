@@ -42,6 +42,7 @@ public class TransactionDetailAction {
     @PostMapping(path = "detail")
     public OperatorResponseVo<TransactionDetailData> detail(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestType("TransactionDetails");
         OperatorResponseVo<TransactionDetailData> responseVo = new OperatorResponseVo<>();
         try {
 
@@ -58,6 +59,8 @@ public class TransactionDetailAction {
             // 2. Check if api key is valid
             String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Integer agentId = apiCredential.getAgent().getId();
+            httpRequestLog.setAgentId(agentId);
 
             // 3. Validate the signature
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
@@ -67,13 +70,15 @@ public class TransactionDetailAction {
             Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
 
             //5. check bet history detail
-            IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getBetId());
+            IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(agentId, dto.getBetId());
 
             //6. check vendor line
             VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());
+            Integer vendorId = vendorLine.getVendorId();
+            httpRequestLog.setVendorId(vendorId);
 
             //7. check if vendor language supported
-            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendorId(), language);
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorId, language);
 
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
@@ -87,39 +92,49 @@ public class TransactionDetailAction {
             responseVo.setData(transactionDetailData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
-            log.error(illegalArgumentException.toString());
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+            httpService.logError(httpRequestLog, illegalArgumentException);
 
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
+            httpService.logError(httpRequestLog, jsonProcessingException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
+            httpService.logError(httpRequestLog, invalidVendorResponseException);
 
         } catch (InvalidVendorLineException invalidVendorLineException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (InvalidLanguageException invalidLanguageException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
+            httpService.logError(httpRequestLog, invalidLanguageException);
 
         } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
+            httpService.logError(httpRequestLog, vendorLanguageNotSupportedException);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
@@ -128,9 +143,9 @@ public class TransactionDetailAction {
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
-
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
+
         return responseVo;
     }
 }

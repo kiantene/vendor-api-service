@@ -51,6 +51,7 @@ public class HttpRequestLog {
     private Long betEnd;
     private Long betTimeTaken;
     private Long operatorTimestamp;
+    private boolean responseLogged;
 
     @JsonIgnore
     private WalletRequest walletRequest;
@@ -59,6 +60,7 @@ public class HttpRequestLog {
         this.id = UUID.randomUUID().toString();
         this.startTime = System.currentTimeMillis();
         walletRequest = new WalletRequest(this.id);
+        this.responseLogged = true;
     }
 
     public HttpRequestLog(HttpRequestLog httpRequestLog) {

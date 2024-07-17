@@ -31,7 +31,7 @@ public class RefundDto extends ActionsWagerInfoDto implements SportRefundData {
 
     @Override
     public Long getTimestamp() {
-        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR, Formats.GMT_MINUS_FOUR);
+        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR);
     }
 
     private boolean isMultipleBet() {

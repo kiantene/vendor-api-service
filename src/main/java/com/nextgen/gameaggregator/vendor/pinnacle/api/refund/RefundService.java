@@ -1,54 +1,50 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.refund;
 
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
-import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
 @Slf4j
 public class RefundService {
-    private final HttpService httpService;
     private final SportWalletService sportWalletService;
 
     @Autowired
-    public RefundService(HttpService httpService, SportWalletService sportWalletService) {
-        this.httpService = httpService;
+    public RefundService(SportWalletService sportWalletService) {
+
         this.sportWalletService = sportWalletService;
     }
 
-    public CommonVo refund(Action action, HttpRequestLog httpRequestLog) {
-        String traceId = httpRequestLog.getId();
-        Long transactionId = Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionId).orElse(null);
-        Long wagerId = Optional.ofNullable(action.getWagerInfo()).map(ActionsWagerInfoDto::getWagerId).orElse(null);
-        CommonVo commonVo = new CommonVo(action.getId(), transactionId, wagerId);
+    public CommonVo refund(WalletRequest walletRequest, Action action, CommonVo commonVo) throws
+            InvalidPlayerException, BetNotAllowedException, BetResultIdempotentViolationException,
+            TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidRequestException {
 
-        try {
-            RefundDto refundDto = new ModelMapper().map(action.getWagerInfo(), RefundDto.class);
-            refundDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
-            refundDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
-            refundDto.setExternalTransactionId(action.getId().toString());
+        ActionsTransactionDto transactionDto = action.getTransaction();
+        ActionsWagerInfoDto wagerInfoDto = action.getWagerInfo();
+        this.dataMapper(walletRequest, wagerInfoDto, transactionDto);
 
-            BetEvent response = sportWalletService.refund(traceId, refundDto, httpRequestLog);
-            commonVo.setBalance(response.getLastBalance());
-
-        } catch (Exception e) {
-            httpService.logError(httpRequestLog, e);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-
-        }
+        walletRequest = sportWalletService.refund(walletRequest);
+        commonVo.setBalance(walletRequest.getBalanceAfter());
 
         return commonVo;
+    }
+
+    private void dataMapper(WalletRequest walletRequest, ActionsWagerInfoDto wagerInfoDto, ActionsTransactionDto transactionDto) {
+        walletRequest.setVendorBetId(wagerInfoDto.getWagerId().toString());
+        walletRequest.setRoundId(Objects.requireNonNullElse(wagerInfoDto.getWagerMasterId(), wagerInfoDto.getWagerId()).toString());
+        String transactionDate = transactionDto.getTransactionDate(); // TODO : need do checking if transactionDto is null
+        Long timestamp = VendorService.convertDateTimeStringToTimestamp(transactionDate, Formats.DATE_TIME_FORMAT_T_SEPARATOR);
+        walletRequest.setTimestamp(timestamp);
     }
 }

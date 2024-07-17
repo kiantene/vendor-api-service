@@ -21,34 +21,51 @@ import java.util.Map;
 @RequestMapping(path = "game/")
 @Slf4j
 public class GameUrlAction {
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final GameUrlService gameUrlService;
+    private final VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
+    private final VendorService vendorService;
+    private final GameCategoryService gameCategoryService;
+    private final LanguageService languageService;
+    private final VendorGameService vendorGameService;
+    private final LoggingService loggingService;
+    private final VendorGameDeactivatedService vendorGameDeactivatedService;
+    private final WarehouseBetHistoryService warehouseBetHistoryService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private GameUrlService gameUrlService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private GameCategoryService gameCategoryService;
-    @Autowired
-    private LanguageService languageService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private VendorGameDeactivatedService vendorGameDeactivatedService;
-    @Autowired
-    private WarehouseBetHistoryService warehouseBetHistoryService;
+    public GameUrlAction(HttpService httpService,
+                         ValidationService validationService,
+                         GameUrlService gameUrlService,
+                         VendorLineService vendorLineService,
+                         GameSessionService gameSessionService,
+                         VendorService vendorService,
+                         GameCategoryService gameCategoryService,
+                         LanguageService languageService,
+                         VendorGameService vendorGameService,
+                         LoggingService loggingService,
+                         VendorGameDeactivatedService vendorGameDeactivatedService,
+                         WarehouseBetHistoryService warehouseBetHistoryService) {
+
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.gameUrlService = gameUrlService;
+        this.vendorLineService = vendorLineService;
+        this.gameSessionService = gameSessionService;
+        this.vendorService = vendorService;
+        this.gameCategoryService = gameCategoryService;
+        this.languageService = languageService;
+        this.vendorGameService = vendorGameService;
+        this.loggingService = loggingService;
+        this.vendorGameDeactivatedService = vendorGameDeactivatedService;
+        this.warehouseBetHistoryService = warehouseBetHistoryService;
+    }
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestType("GameUrl");
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
 
         try {
@@ -57,6 +74,7 @@ public class GameUrlAction {
             GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
+            httpRequestLog.setOperatorUsername(dto.getUsername());
 
             // 1. Validate all fields in the request object
             loggingService.logStart();
@@ -67,6 +85,9 @@ public class GameUrlAction {
             String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
             loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Agent agent = apiCredential.getAgent();
+            Integer agentId = agent.getId();
+            httpRequestLog.setAgentId(agentId);
             loggingService.logProcessTime("gameUrl ｜ validationService.validateApiKey", traceId);
 
             // 3. Validate the signature
@@ -77,15 +98,14 @@ public class GameUrlAction {
 
             // 4. Check if trace Id has been sent before
             loggingService.logStart();
-            gameUrlService.checkDuplicateRequest(apiCredential.getAgent().getId(), dto.getTraceId());
+            gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkDuplicateRequest", traceId);
 
             // 5.1 Check if Currency exist
             loggingService.logStart();
             Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
             // 5.2 Check if Agent Currency supported
-            AgentCurrency agentCurrency =
-                    gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
+            AgentCurrency agentCurrency = gameUrlService.checkAgentCurrencySupported(agent, currency);
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentCurrencySupported", traceId);
 
             // 6. check if platform supported
@@ -101,7 +121,8 @@ public class GameUrlAction {
             // 8. Check if game is supported
             loggingService.logStart();
             VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
-            Vendor vendor = vendorService.getByVendorId(vendorGame.getVendorId(), null);
+            Integer vendorId = vendorGame.getVendorId();
+            Vendor vendor = vendorService.getById(vendorId);
             GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId(), null);
             loggingService.logProcessTime("gameUrl ｜ vendorGameService.checkGameSupported", traceId);
 
@@ -113,13 +134,12 @@ public class GameUrlAction {
 
             // Check if is game deactivated (agent, masterAgent, house level)
             loggingService.logStart();
-            vendorGameDeactivatedService.checkGameSupported(apiCredential.getAgent(), vendorGame.getId());
+            vendorGameDeactivatedService.checkGameSupported(agent, vendorGame.getId());
             loggingService.logProcessTime("gameUrl ｜ vendorGameDeactivatedService.checkGameSupported", traceId);
 
             // 10. Retrieve vendor line credentials by category
             loggingService.logStart();
-            VendorLine vendorLine = vendorLineService.findAgentVendorLine(
-                    apiCredential.getAgent(), vendor, agentCurrency.getCurrency(), gameCategory);
+            VendorLine vendorLine = vendorLineService.findAgentVendorLine(agent, vendor, agentCurrency.getCurrency(), gameCategory);
             loggingService.logProcessTime("gameUrl ｜ vendorLineService.findAgentVendorLine", traceId);
 
             // 11. get vendor line credential
@@ -127,12 +147,12 @@ public class GameUrlAction {
 
             // 12. check if vendor language supported
             loggingService.logStart();
-            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendorId(), language);
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorId, language);
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorLanguageCode", traceId);
 
             // 13. check if vendor currency supported
             loggingService.logStart();
-            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendorId(), agentCurrency.getCurrency().getId());
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorId, agentCurrency.getCurrency().getId());
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
 
             // 14. check if vendor platform supported
@@ -142,7 +162,7 @@ public class GameUrlAction {
 
             // 15. Check if Agent player account exists
             loggingService.logStart();
-            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
+            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(agent, dto.getUsername());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentPlayer", traceId);
 
             // 16. Check if Vendor player account exists
@@ -163,9 +183,6 @@ public class GameUrlAction {
             loggingService.logProcessTime("gameUrl ｜ gameSessionService.createSession", traceId);
 
             // setGameSessionInfo
-            httpRequestLog.setId(traceId);
-            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
-            httpRequestLog.setOperatorUsername(dto.getUsername());
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
             httpRequestLog.setVendorId(gameSession.getVendorId());
@@ -179,68 +196,89 @@ public class GameUrlAction {
             responseVo.setData(gameUrlData);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());
+            httpService.logError(httpRequestLog, illegalArgumentException);
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
             jsonProcessingException.printStackTrace();
+            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
         } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
+            httpService.logError(httpRequestLog, invalidSignatureException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
 
         } catch (DuplicateRequestException duplicateRequestException) {
+            httpService.logError(httpRequestLog, duplicateRequestException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
 
         } catch (InvalidCurrencyException invalidCurrencyException) {
+            httpService.logError(httpRequestLog, invalidCurrencyException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
 
         } catch (InvalidPlatformException invalidPlatformException) {
+            httpService.logError(httpRequestLog, invalidPlatformException);
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_PLATFORM);
 
         } catch (InvalidLanguageException invalidLanguageException) {
+            httpService.logError(httpRequestLog, invalidLanguageException);
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
+            httpService.logError(httpRequestLog, gameNotSupportedException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_GAME);
 
         } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_DISABLED);
 
         } catch (GamePlatformNotSupportException gamePlatformNotSupportException) {
+            httpService.logError(httpRequestLog, gamePlatformNotSupportException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_PLATFORM_NOT_SUPPORTED);
 
         } catch (GameCurrencyNotSupportException gameCurrencyNotSupportException) {
+            httpService.logError(httpRequestLog, gameCurrencyNotSupportException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_CURRENCY_NOT_SUPPORTED);
 
         } catch (GameLanguageNotSupportException gameLanguageNotSupportException) {
+            httpService.logError(httpRequestLog, gameLanguageNotSupportException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_LANGUAGE_NOT_SUPPORTED);
 
         } catch (InvalidVendorLineException vendorLineNotFoundException) {
+            httpService.logError(httpRequestLog, vendorLineNotFoundException);
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
 
         } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
+            httpService.logError(httpRequestLog, vendorLanguageNotSupportedException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
+            httpService.logError(httpRequestLog, vendorCurrencyNotSupportException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_CURRENCY_NOT_SUPPORTED);
 
         } catch (VendorPlatformNotSupportedException vendorPlatformNotSupportedException) {
+            httpService.logError(httpRequestLog, vendorPlatformNotSupportedException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_PLATFORM_NOT_SUPPORTED);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_USER_DISABLED);
 
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
@@ -255,9 +293,9 @@ public class GameUrlAction {
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
-
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
+
         return responseVo;
     }
 }
