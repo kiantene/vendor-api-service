@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
-import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
@@ -25,7 +24,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -45,7 +43,7 @@ public class BetService {
     }
 
     @NotNull
-    private static List<MultipleBetDto> getMultipleBetDtos(ActionsWagerInfoDto wagerInfoDto) throws InvalidRequestException {
+    private static List<MultipleBetDto> getMultipleBetDtos(ActionsWagerInfoDto wagerInfoDto, String externalTransactionId) throws InvalidRequestException {
         int wagerNum = wagerInfoDto.getWagerNum();
         BigDecimal stake = wagerInfoDto.getStake();
         long wagerId = wagerInfoDto.getWagerId();
@@ -61,39 +59,23 @@ public class BetService {
         for (int i = 1; i <= wagerNum; i++) {
             MultipleBetDto multipleBetDto = new MultipleBetDto();
             multipleBetDto.setVendorBetId(wagerId + "_" + i);
+            multipleBetDto.setExternalTransactionId(externalTransactionId);
             multipleBetDto.setBetAmount(betAmount);
             multipleBetList.add(multipleBetDto);
         }
         return multipleBetList;
     }
 
-    private static String getPinnacleGameCode(ActionsWagerInfoDto wagerInfoDto) {
-        return Optional.ofNullable(wagerInfoDto.getSportId())
-                .map(String::valueOf)
-                .orElseGet(() ->
-                        Optional.ofNullable(wagerInfoDto.getLegs())
-                                .filter(legs -> !legs.isEmpty())
-                                .map(legs -> String.valueOf(legs.get(0).getSportId()))
-                                .orElse(null)
-                );
-    }
-
-    public CommonVo bet(WalletRequest walletRequest, Action action)
+    public CommonVo bet(WalletRequest walletRequest, Action action, CommonVo commonVo)
             throws AuthenticationException, InvalidRequestException, BetResultIdempotentViolationException,
             InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException {
 
         ActionsWagerInfoDto wagerInfoDto = action.getWagerInfo();
-        ActionsTransactionDto transactionDto = action.getTransaction();
 
-        String externalTransactionId = action.getId().toString();
-        Long wagerId = wagerInfoDto.getWagerId();
-        Long transactionId = Optional.ofNullable(transactionDto).map(ActionsTransactionDto::getTransactionId).orElse(null);
-        String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
-
-        CommonVo commonVo = new CommonVo(action.getId(), transactionId, wagerId);
-        GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+        GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(walletRequest.getVendorPlayerUsername());
         walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-        this.dataMapper(walletRequest, externalTransactionId, wagerInfoDto);
+        
+        this.dataMapper(walletRequest, wagerInfoDto);
 
         if (this.isMultipleBet(wagerInfoDto)) {
             walletRequest = sportWalletService.placeMultipleBets(walletRequest);
@@ -105,23 +87,21 @@ public class BetService {
         return commonVo;
     }
 
-    private void dataMapper(WalletRequest walletRequest, String externalTransactionId, ActionsWagerInfoDto wagerInfoDto) throws InvalidRequestException {
-        walletRequest.setExternalTransactionId(externalTransactionId);
+    private void dataMapper(WalletRequest walletRequest, ActionsWagerInfoDto wagerInfoDto) throws InvalidRequestException {
         walletRequest.setVendorBetId(wagerInfoDto.getWagerId().toString());
         walletRequest.setRoundId(wagerInfoDto.getWagerId().toString());
-        walletRequest.setVendorGameCode(getPinnacleGameCode(wagerInfoDto));
         walletRequest.setBetAmount(wagerInfoDto.getStake());
         walletRequest.setNewBetAmount(wagerInfoDto.getStake());
         walletRequest.setEffectiveTurnover(wagerInfoDto.getStake());
 
-        Long vendorBetTime = VendorService.convertDateTimeStringToTimestamp(wagerInfoDto.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR, Formats.GMT_MINUS_FOUR);
+        Long vendorBetTime = VendorService.convertDateTimeStringToTimestamp(wagerInfoDto.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR);
         walletRequest.setVendorBetTime(vendorBetTime);
 
         Integer betType = wagerInfoDto.getType().equalsIgnoreCase("PARLAY") ? BetType.PARLAY_BET.code : BetType.NORMAL_BET.code;
         walletRequest.setBetType(betType);
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
         if (this.isMultipleBet(wagerInfoDto)) {
-            walletRequest.setBetIds(getMultipleBetDtos(wagerInfoDto));
+            walletRequest.setBetIds(getMultipleBetDtos(wagerInfoDto, walletRequest.getExternalTransactionId()));
         }
     }
 

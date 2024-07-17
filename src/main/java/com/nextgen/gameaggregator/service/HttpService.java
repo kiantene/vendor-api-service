@@ -236,7 +236,9 @@ public class HttpService {
             THREAD_POOL.submit(() -> {
                 try {
                     String jsonResponseVo = new Gson().toJson(responseVo);
-                    requestLog.setResponseBody(jsonResponseVo);
+                    if (requestLog.isResponseLogged()) {
+                        requestLog.setResponseBody(jsonResponseVo);
+                    }
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
                     kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));

@@ -155,7 +155,7 @@ public class GameSessionService {
     }
 
 
-    public void terminateSessionByUserName(String userName) throws AuthenticationException {
+    public void terminateSessionByUserName(String userName) {
         List<GameSession> gameSessionList = rawGameSessionRepository.findByAgentPlayerUsernameAndStatus(userName, Status.ACTIVE.code);
         for (GameSession gameSession : gameSessionList) {
             this.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());

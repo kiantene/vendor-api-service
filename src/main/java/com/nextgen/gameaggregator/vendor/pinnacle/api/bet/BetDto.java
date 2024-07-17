@@ -59,7 +59,7 @@ public class BetDto extends ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR, Formats.GMT_MINUS_FOUR);
+        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR);
     }
 
     @Override

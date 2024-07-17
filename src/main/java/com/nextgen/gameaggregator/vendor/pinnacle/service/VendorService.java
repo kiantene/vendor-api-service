@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.service;
 
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import com.nextgen.gameaggregator.vendor.pinnacle.utils.Signature;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -63,10 +64,9 @@ public class VendorService {
         return vendorPlayerUsername.startsWith(prefix);
     }
 
-    public static Long convertDateTimeStringToTimestamp(String dateTimeString, String dateTimeFormat, ZoneId zoneId) {
-
-        if (Objects.isNull(dateTimeString) || Objects.isNull(dateTimeFormat) || Objects.isNull(zoneId))
-            return System.currentTimeMillis();
+    public static Long convertDateTimeStringToTimestamp(String dateTimeString, String dateTimeFormat) {
+        ZoneId zoneId = Formats.GMT_MINUS_FOUR;
+        if (Objects.isNull(dateTimeString)) return System.currentTimeMillis();
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimeFormat);
         ZonedDateTime zonedDateTime = LocalDateTime.parse(dateTimeString, formatter).atZone(zoneId);

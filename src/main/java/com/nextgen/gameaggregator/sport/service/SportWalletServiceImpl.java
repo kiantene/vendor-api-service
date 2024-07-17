@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -23,22 +22,16 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
-import com.nextgen.gameaggregator.sport.processor.SportMultipleBetProcessor;
-import com.nextgen.gameaggregator.sport.processor.SportRefundProcessor;
-import com.nextgen.gameaggregator.sport.processor.SportSingleBetProcessor;
-import com.nextgen.gameaggregator.sport.processor.SportUpdateBetProcessor;
+import com.nextgen.gameaggregator.sport.processor.*;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -52,6 +45,7 @@ public class SportWalletServiceImpl implements SportWalletService {
     private final SportSettleAction sportSettleAction;
     private final SportSettledBetService sportSettledBetService;
     private final SportUnsettledBetService sportUnsettledBetService;
+    private final SportResettleBetProcessor sportResettleBetProcessor;
     private final SportRefundAction sportRefundAction;
     private final SportUnsettleAction sportUnsettleAction;
     private final VendorPlayerService vendorPlayerService;
@@ -60,8 +54,9 @@ public class SportWalletServiceImpl implements SportWalletService {
     private final SportSingleBetProcessor sportSingleBetProcessor;
     private final SportMultipleBetProcessor sportMultipleBetProcessor;
     private final SportUpdateBetProcessor sportUpdateBetProcessor;
+    private final SportSettleBetProcessor sportSettleBetProcessor;
+    private final SportUnsettleBetProcessor sportUnsettleBetProcessor;
     private final SportRefundProcessor sportRefundProcessor;
-    private final WalletRequestService walletRequestService;
 
     @Autowired
     public SportWalletServiceImpl(AgentPlayerService agentPlayerService,
@@ -72,6 +67,7 @@ public class SportWalletServiceImpl implements SportWalletService {
                                   SportSettleAction sportSettleAction,
                                   SportSettledBetService sportSettledBetService,
                                   SportUnsettledBetService sportUnsettledBetService,
+                                  SportResettleBetProcessor sportResettleBetProcessor,
                                   SportRefundAction sportRefundAction,
                                   SportUnsettleAction sportUnsettleAction,
                                   VendorPlayerService vendorPlayerService,
@@ -79,8 +75,9 @@ public class SportWalletServiceImpl implements SportWalletService {
                                   SportSingleBetProcessor sportSingleBetProcessor,
                                   SportMultipleBetProcessor sportMultipleBetProcessor,
                                   SportUpdateBetProcessor sportUpdateBetProcessor,
-                                  SportRefundProcessor sportRefundProcessor,
-                                  WalletRequestService walletRequestService) {
+                                  SportSettleBetProcessor sportSettleBetProcessor,
+                                  SportUnsettleBetProcessor sportUnsettleBetProcessor,
+                                  SportRefundProcessor sportRefundProcessor) {
 
         this.agentPlayerService = agentPlayerService;
         this.kafkaService = kafkaService;
@@ -90,6 +87,7 @@ public class SportWalletServiceImpl implements SportWalletService {
         this.sportSettleAction = sportSettleAction;
         this.sportSettledBetService = sportSettledBetService;
         this.sportUnsettledBetService = sportUnsettledBetService;
+        this.sportResettleBetProcessor = sportResettleBetProcessor;
         this.sportRefundAction = sportRefundAction;
         this.sportUnsettleAction = sportUnsettleAction;
         this.vendorPlayerService = vendorPlayerService;
@@ -97,14 +95,15 @@ public class SportWalletServiceImpl implements SportWalletService {
         this.sportSingleBetProcessor = sportSingleBetProcessor;
         this.sportMultipleBetProcessor = sportMultipleBetProcessor;
         this.sportUpdateBetProcessor = sportUpdateBetProcessor;
+        this.sportSettleBetProcessor = sportSettleBetProcessor;
+        this.sportUnsettleBetProcessor = sportUnsettleBetProcessor;
         this.sportRefundProcessor = sportRefundProcessor;
-        this.walletRequestService = walletRequestService;
     }
 
     @Override
     public WalletRequest placeBet(WalletRequest walletRequest) throws
             InsufficientBalanceException, InvalidOperatorResponseException,
-            BetResultIdempotentViolationException, TransactionStillProcessingException {
+            BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidRequestException {
 
         return sportSingleBetProcessor.process(walletRequest);
     }
@@ -112,15 +111,15 @@ public class SportWalletServiceImpl implements SportWalletService {
     @Override
     public WalletRequest placeMultipleBets(WalletRequest walletRequest) throws
             BetResultIdempotentViolationException, TransactionStillProcessingException,
-            InvalidOperatorResponseException, InsufficientBalanceException {
+            InvalidOperatorResponseException, InsufficientBalanceException, InvalidRequestException {
 
         return sportMultipleBetProcessor.process(walletRequest);
     }
 
     @Override
     public WalletRequest confirmBet(WalletRequest walletRequest) throws
-            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
-            InvalidOperatorResponseException, TransactionStillProcessingException {
+            InvalidPlayerException, BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException, InvalidRequestException {
 
         return sportUpdateBetProcessor.process(walletRequest);
     }
@@ -128,12 +127,23 @@ public class SportWalletServiceImpl implements SportWalletService {
     @Override
     public WalletRequest refund(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
-            InvalidOperatorResponseException, TransactionStillProcessingException {
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidPlayerException, InvalidRequestException {
 
         return sportRefundProcessor.process(walletRequest);
     }
 
     @Override
+    public WalletRequest settle(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidRequestException, InvalidPlayerException {
+
+        return sportSettleBetProcessor.process(walletRequest);
+    }
+
+    @Override
+    @Deprecated
     public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         String vendorPlayerUsername = sportBetResultData.getVendorPlayerUsername();
@@ -168,7 +178,7 @@ public class SportWalletServiceImpl implements SportWalletService {
                 }
 
             } else {
-                //if settledBet is found but externalTransactionId is not matched, then is new status changed of this bet
+                // if settledBet is found but externalTransactionId is not matched, then is new status changed of this bet
                 resettleNum = sportSettledBet.getResettleNum() + 1;
                 unsettleResettleNum = sportSettledBet.getUnsettledResettleNum();
             }
@@ -249,15 +259,8 @@ public class SportWalletServiceImpl implements SportWalletService {
         return betEvent;
     }
 
-    @Async
-    public void batchSettle(List<SportBetResultData> sportBetResultDataList) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
-        for (SportBetResultData sportBetResultData : sportBetResultDataList) {
-            String traceId = UUID.randomUUID().toString();
-            this.settle(traceId, sportBetResultData, null);
-        }
-    }
-
     @Override
+    @Deprecated
     public BetEvent refund(String traceId, SportRefundData sportRefundData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException, RecordNotFoundException {
 
@@ -376,6 +379,16 @@ public class SportWalletServiceImpl implements SportWalletService {
     }
 
     @Override
+    public WalletRequest unsettle(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidRequestException, InvalidPlayerException {
+
+        return sportUnsettleBetProcessor.process(walletRequest);
+    }
+
+    @Override
+    @Deprecated
     public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException, BetResultIdempotentViolationException {
 
@@ -485,6 +498,16 @@ public class SportWalletServiceImpl implements SportWalletService {
     }
 
     @Override
+    public WalletRequest resettle(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidRequestException, InvalidPlayerException {
+
+        return sportResettleBetProcessor.process(walletRequest);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
     public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException {
 
         String vendorPlayerUsername = sportResettleData.getVendorPlayerUsername();

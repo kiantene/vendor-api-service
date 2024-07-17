@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,8 @@ public class SportsBaseAction {
             throws InvalidOperatorResponseException {
 
         walletRequest.setRequestType(this.requestType);
+        // Validate Operator Dto
+        ValidationUtils.doOperatorDtoValidation(dto);
         final String apiUrl = walletRequest.getOperatorEndpoint();
         final String signature = this.generateSignature(dto, walletRequest.getApiSecret());
         AtomicBoolean isTimeout = new AtomicBoolean(false);

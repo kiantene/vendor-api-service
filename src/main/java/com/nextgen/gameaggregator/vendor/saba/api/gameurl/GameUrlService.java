@@ -97,7 +97,8 @@ public class GameUrlService implements GameUrl {
 
             String skinParam = this.getSkinParamForUrl(credentials, gameSession);
             String langParam = "&lang=" + gameSession.getVendorLanguageCode();
-            responseVo.setData(responseVo.getGameUrl() + skinParam + langParam);
+            String homeUrlParam = "&homeUrl=" + gameSession.getLobbyUrl();
+            responseVo.setData(responseVo.getGameUrl() + skinParam + langParam + homeUrlParam);
 
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);

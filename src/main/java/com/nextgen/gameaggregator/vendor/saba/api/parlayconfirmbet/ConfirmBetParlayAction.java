@@ -84,11 +84,11 @@ public class ConfirmBetParlayAction {
             walletRequest.setRoundId(roundId);
             walletRequest.setNewRoundId(roundId);
             walletRequest.setVendorBetTime(System.currentTimeMillis());
-            walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
+            walletRequest.setVendorPlayerUsername(vendorPlayerUsername);
 
             if (!isMultipleBet) { // if only 1 transaction, then don't need to use threading
                 this.dataMapper(walletRequest, txnList.get(0), operationId, roundId);
-                walletRequest = sportWalletService.confirmBet(walletRequest);
+                sportWalletService.confirmBet(walletRequest);
                 vo.setBalance(walletRequest.getBalanceAfter());
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
 

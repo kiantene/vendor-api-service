@@ -75,6 +75,7 @@ public class GameUrlService implements GameUrl {
             params.addProperty("lang", gameSession.getVendorLanguageCode());
             params.addProperty("gType", gType);
             params.addProperty("mType", mType);
+            params.addProperty("isRedirectAllowed", false);
 
             encrypted = VendorService.encrypt(params.toString(), aesKey, aesIv);
 
