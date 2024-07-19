@@ -23,7 +23,7 @@ import java.util.Optional;
 @NoArgsConstructor
 public class SettledBet extends BetInformation {
 
-    public SettledBet(BetInformation betInformation){
+    public SettledBet(BetInformation betInformation) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(betInformation, this);
@@ -35,6 +35,7 @@ public class SettledBet extends BetInformation {
         this.setVendorPlayerId(vendorPlayerId);
         this.setId(this.generateId());
         this.setInternalTransactionId(internalTransactionId);
+        this.setBetId(internalTransactionId);
         this.setStatus(BetStatus.SETTLED.code);
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
