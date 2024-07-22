@@ -130,7 +130,7 @@ public class SportUnsettleBetProcessor {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBet.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
-            kafkaService.produceBetHistory(betHistory, null, fromVendorRate);
+            kafkaService.produceBetHistory(betHistory, walletRequest.getVendorPlayerUsername(), fromVendorRate);
 
             kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
 

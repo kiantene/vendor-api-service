@@ -213,7 +213,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBet.toBetHistory(betStatus, resultType);
-            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
             kafkaService.produceWarehouseBetHistory
                     (betHistory, agentPlayer.getUsername(), sportUnsettledBet.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
@@ -343,7 +343,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
         // Insert record bet_history (MariaDB)
         BetHistory betHistory = sportUnsettledBet.toBetHistory(betStatus, BetResultType.BET.code);
-        kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
         kafkaService.produceWarehouseBetHistory
@@ -446,7 +446,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBet.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
-            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
             kafkaService.produceWarehouseBetHistory
@@ -563,7 +563,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             betHistory.setWinAmount(diffWinAmount);
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
-            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
             kafkaService.produceWarehouseBetHistory
@@ -621,7 +621,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
-            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistory(betHistory, vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
 
             kafkaService.produceWarehouseBetHistory
                     (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());

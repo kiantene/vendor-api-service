@@ -112,7 +112,7 @@ public class SportResettleBetProcessor {
         betHistory.setWinAmount(diffWinAmount);
         betHistory.setWinLoss(diffWinAmount);
         betHistory.setEffectiveTurnover(BigDecimal.ZERO);
-        kafkaService.produceBetHistory(betHistory, null, fromVendorRate);
+        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
         kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
     }
 

@@ -117,7 +117,7 @@ public class SportSettleBetProcessor {
 
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBet.toBetHistory(betStatus, resultType);
-            kafkaService.produceBetHistory(betHistory, null, fromVendorRate);
+            kafkaService.produceBetHistory(betHistory, walletRequest.getVendorPlayerUsername(), fromVendorRate);
 
             kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
 
