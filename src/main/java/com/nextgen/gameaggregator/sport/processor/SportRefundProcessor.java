@@ -169,7 +169,7 @@ public class SportRefundProcessor {
     private void sendToKafka(SportUnsettledBet unsettledBet, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal fromVendorRate) {
         BetHistory betHistory = unsettledBet.toBetHistory(BetStatus.REFUNDED.code, BetResultType.BET.code);
 
-        kafkaService.produceBetHistory(betHistory, null, fromVendorRate);
+        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
         kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
     }
 

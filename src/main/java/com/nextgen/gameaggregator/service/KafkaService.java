@@ -42,7 +42,7 @@ public class KafkaService {
         this.vendorPlayerService = vendorPlayerService;
     }
 
-    public void produceBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
+    public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
         try {
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
@@ -50,7 +50,12 @@ public class KafkaService {
             if (betHistory.getGameSessionToken() == null) {
                 betHistory.setGameSessionToken("");
             }
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, betHistory);
+
+            if (vendorPlayerUsername == null) {
+                vendorPlayerUsername = "";
+            }
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, vendorPlayerUsername, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
@@ -115,7 +120,7 @@ public class KafkaService {
 
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
 
-            if(warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)){
+            if (warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)) {
                 stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_DELAY_SETTLEMENT, mapper.writeValueAsString(warehouseBetHistory));
             }
 

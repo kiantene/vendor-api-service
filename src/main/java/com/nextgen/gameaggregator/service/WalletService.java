@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -325,7 +326,7 @@ public class WalletService {
             loggingService.logStart();
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
+                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 kafkaService.produceWarehouseBetHistory
                         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             } else {
@@ -446,6 +447,16 @@ public class WalletService {
 
     }
 
+    private List<UnsettledBet> filterFailedUnsettledBet(List<UnsettledBet> unsettledBetList) {
+        if (unsettledBetList == null || unsettledBetList.isEmpty()) {
+            return unsettledBetList;
+        }
+
+        return unsettledBetList.stream()
+                .filter(unsettledBet -> unsettledBet.getOperatorStatus().equals(operatorStatusSuccess))
+                .collect(Collectors.toList());
+    }
+
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         log.debug("[" + traceId + "] notifyEndRoundAsync -> start thread (roundId: " + settledBet.getRoundId() + ")");
         THREAD_POOL.submit(() -> {
@@ -461,6 +472,8 @@ public class WalletService {
                 } else {
                     newUnsettledBetList = unsettledBetList;
                 }
+
+                newUnsettledBetList = this.filterFailedUnsettledBet(newUnsettledBetList);
 
                 // multiple bets within same round
                 for (UnsettledBet betRecord : newUnsettledBetList) {
@@ -819,7 +832,7 @@ public class WalletService {
 
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
-            kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             kafkaService.produceWarehouseBetHistory
                     (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);

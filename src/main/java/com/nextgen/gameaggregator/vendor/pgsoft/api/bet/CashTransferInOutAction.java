@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
@@ -46,6 +47,8 @@ public class CashTransferInOutAction {
 
     @Autowired
     private LoggingService loggingService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -54,13 +57,24 @@ public class CashTransferInOutAction {
         String traceId = httpRequestLog.getId();
         CashTransferInOutVo responseVo = new CashTransferInOutVo();
         String vendorCurrencyCode = "";
+        CashTransferInOutDto dto = new CashTransferInOutDto();
+        boolean isRequestExists = false;
 
         try {
-            CashTransferInOutDto dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
             vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(dto, dto.getPlayerName()) == null) {
+                requestIdempotentLogService.create(dto, dto.getPlayerName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+            //requestIdempotentLogService.create(dto, dto.getPlayerName());
 
             // 2. Verify session token
             loggingService.logStart();
@@ -188,6 +202,11 @@ public class CashTransferInOutAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getPlayerName());
+            }
+
             httpService.end(httpRequestLog, parentResponseVo);
         }
 

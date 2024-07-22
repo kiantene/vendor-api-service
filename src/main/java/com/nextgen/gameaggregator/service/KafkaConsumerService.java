@@ -90,7 +90,7 @@ public class KafkaConsumerService {
             BetHistory betHistory = new BetHistory(settledBet);
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
                 // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
                 kafkaService.produceWarehouseBetHistory
                         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
@@ -162,7 +162,7 @@ public class KafkaConsumerService {
             BetHistory betHistory = new BetHistory(settledBet);
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
                 // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
                 kafkaService.produceWarehouseBetHistory
                         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());

@@ -192,6 +192,8 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         cacheNamesConfigurationMap.put("GameCategories", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("RequestIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         //endregion
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
