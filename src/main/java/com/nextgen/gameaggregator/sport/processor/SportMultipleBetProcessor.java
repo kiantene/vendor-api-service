@@ -53,7 +53,7 @@ public class SportMultipleBetProcessor {
         walletRequest.setResultType(ResultType.BET.code);
 
         // validate walletRequest
-        ValidationUtils.doSportProcessorValidation(new MultipleBetWalletRequest(walletRequest));
+        ValidationUtils.doValidation(new MultipleBetWalletRequest(walletRequest), InvalidRequestException::new);
 
         Integer vendorId = walletRequest.getVendorId();
         Integer currencyId = walletRequest.getCurrencyId();

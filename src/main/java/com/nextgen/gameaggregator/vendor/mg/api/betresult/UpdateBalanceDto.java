@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
-import com.nextgen.gameaggregator.vendor.mg.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -52,7 +51,7 @@ public class UpdateBalanceDto implements BetResultData {
 
     private DeviceType deviceType;
 
-    private PlatformType platformType;
+    private String platformType;
 
     @NotNull
     private Boolean completed;

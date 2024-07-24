@@ -49,7 +49,7 @@ public class SportSingleBetProcessor {
         walletRequest.setResultType(ResultType.BET.code);
 
         // validate walletRequest
-        ValidationUtils.doSportProcessorValidation(new BetWalletRequest(walletRequest));
+        ValidationUtils.doValidation(new BetWalletRequest(walletRequest), InvalidRequestException::new);
 
         Integer vendorId = walletRequest.getVendorId();
         Integer currencyId = walletRequest.getCurrencyId();

@@ -56,7 +56,7 @@ public class RefundService {
             CouchbaseDataIntegrityException,
             BetResultIdempotentViolationException,
             TransactionStillProcessingException,
-            VendorCurrencyNotSupportException {
+            VendorCurrencyNotSupportException, InvalidFormatException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         RefundDto refundDto = new ModelMapper().map(callbackDto, RefundDto.class);

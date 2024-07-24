@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.util;
 
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
 import jakarta.validation.ConstraintViolation;
@@ -13,6 +12,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Slf4j
@@ -79,21 +79,13 @@ public class ValidationUtils {
         }
     }
 
-    public static <T> void doSportProcessorValidation(T object) throws InvalidRequestException {
+    public static <T, X extends Exception> void doValidation(T object, Function<String, X> lambdaFunction) throws X {
         try {
             ValidationUtils.validateRequest(object);
         } catch (InvalidRequestException invalidRequestException) {
-            throw new InvalidRequestException(invalidRequestException.getAllValidationErrorMessages());
+            String errorMessage = invalidRequestException.getAllValidationErrorMessages();
+            throw lambdaFunction.apply(errorMessage);
         }
     }
-
-    public static <T> void doOperatorDtoValidation(T object) throws InvalidOperatorResponseException {
-        try {
-            ValidationUtils.validateRequest(object);
-        } catch (InvalidRequestException invalidRequestException) {
-            throw new InvalidOperatorResponseException(invalidRequestException.getAllValidationErrorMessages());
-        }
-    }
-
 
 }

@@ -77,6 +77,17 @@ public class SettledBetService {
         return settledBet;
     }
 
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
+    @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
+    public SettledBet getByVendorPlayerIdAndExternalTransactionIdWithRetry(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+        SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        if (settledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find vendor player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
+        }
+
+        return settledBet;
+    }
+
     @Cacheable(value = "SettledBet", key = "{#vendorBetId, #roundId, #vendorId, #vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
 

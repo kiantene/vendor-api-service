@@ -36,7 +36,7 @@ public class RefundService {
             BetResultIdempotentViolationException,
             VendorCurrencyNotSupportException,
             InvalidRequestException,
-            NoAvailableLineException {
+            NoAvailableLineException, InvalidFormatException {
 
         //Regenerate new trace ID, Set Request Body
         HttpRequestLog httpRequestLog = httpService.start(request);

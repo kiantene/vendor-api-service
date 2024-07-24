@@ -52,7 +52,7 @@ public class SportResettleBetProcessor {
         walletRequest.setBetStart(System.currentTimeMillis());
 
         // validate walletRequest
-        ValidationUtils.doSportProcessorValidation(new ResettleWalletRequest(walletRequest));
+        ValidationUtils.doValidation(new ResettleWalletRequest(walletRequest), InvalidRequestException::new);
 
         String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
         String externalTransactionId = walletRequest.getExternalTransactionId();

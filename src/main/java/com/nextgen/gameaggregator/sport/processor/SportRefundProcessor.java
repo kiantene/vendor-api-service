@@ -68,7 +68,7 @@ public class SportRefundProcessor {
         walletRequest.setBetStart(System.currentTimeMillis());
 
         // validate walletRequest
-        ValidationUtils.doSportProcessorValidation(new RefundWalletRequest(walletRequest));
+        ValidationUtils.doValidation(new RefundWalletRequest(walletRequest), InvalidRequestException::new);
 
         String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
         walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);

@@ -61,7 +61,7 @@ public class SportUpdateBetProcessor {
         walletRequest.setBetStart(System.currentTimeMillis());
 
         // validate walletRequest
-        ValidationUtils.doSportProcessorValidation(new UpdateBetWalletRequest(walletRequest));
+        ValidationUtils.doValidation(new UpdateBetWalletRequest(walletRequest), InvalidRequestException::new);
 
         String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
         BigDecimal balance = BigDecimal.ZERO;
