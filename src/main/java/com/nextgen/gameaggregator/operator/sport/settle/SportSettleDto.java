@@ -64,7 +64,7 @@ public class SportSettleDto {
         this.currency = walletRequest.getCurrencyCode();
         this.timestamp = walletRequest.getVendorBetTime();
 
-        BigDecimal betAmt = walletRequest.getBetAmount();
+        BigDecimal betAmt = Objects.requireNonNullElse(walletRequest.getNewBetAmount(), walletRequest.getBetAmount());
         BigDecimal winAmt = walletRequest.getWinAmount();
         BigDecimal effectiveTurnoverAmt = walletRequest.getEffectiveTurnover();
         BigDecimal winLossAmt = walletRequest.getWinLoss();

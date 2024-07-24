@@ -256,12 +256,12 @@ public class CancelWagerAction {
             BetAdjustmentIdempotentViolationException,
             RecordNotFoundException,
             BetRefundIdempotentViolationException,
-            BetResultIdempotentViolationException {
+            BetResultIdempotentViolationException, InvalidFormatException {
 
         BigDecimal balance = null;
 
         try {
-            balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
 

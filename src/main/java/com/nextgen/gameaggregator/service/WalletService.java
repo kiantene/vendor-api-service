@@ -397,8 +397,13 @@ public class WalletService {
 
         try {
             loggingService.logStart();
-            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionIdWithRetry(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+
+            if (settledBet == null) {
+                throw new BetNotFoundException();
+            }
+
             Integer operatorStatus = settledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
 
@@ -727,7 +732,7 @@ public class WalletService {
     public WalletRequest processRollback(RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
             throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException,
-            TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException {
+            TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
 
         this.processRollback(httpRequestLog.getId(), rollbackData, gameSession, vendorService, httpRequestLog);
 
@@ -748,7 +753,7 @@ public class WalletService {
     public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
             throws RecordNotFoundException, InvalidAgentApiCredentialException,
             InvalidOperatorResponseException, BetRefundIdempotentViolationException, BetNotFoundException,
-            BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
+            BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException, InvalidFormatException {
 
         httpRequestLog.setRequestType(WalletRollbackAction.class.getSimpleName());
         httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
@@ -766,6 +771,7 @@ public class WalletService {
         SettledBet settledBet = null;
         UnsettledBet unsettledBet = null;
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
+        BigDecimal fromVendorRate = BigDecimal.ONE;
 
         WalletRequest walletRequest = httpRequestLog.getWalletRequest();
 
@@ -809,6 +815,7 @@ public class WalletService {
             String internalTransactionId = settledBet.getInternalTransactionId();
 
             VendorCurrency vendorCurrency = vendorCurrencyConversionService.getCurrencyConversionRate(gameSession, traceId);
+            fromVendorRate = vendorCurrency.getFromVendorRate();
 
             loggingService.logStart();
             WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog);
@@ -873,6 +880,15 @@ public class WalletService {
             httpRequestLog.setBetEnd(System.currentTimeMillis());
             throw new VendorCurrencyNotSupportException();
 
+        } catch (InvalidFormatException e) {
+            settledBet.setOperatorStatus(ResponseCodes.Status.SC_INVALID_REQUEST.code);
+            settledBetService.save(settledBet, "");
+
+            BetHistory betHistory = new BetHistory(settledBet);
+            kafkaService.produceOperatorRequestDlq(betHistory, fromVendorRate, gameSession.getVendorPlayerUsername());
+
+            httpRequestLog.setBetEnd(System.currentTimeMillis());
+            throw new InvalidFormatException(e.getAllValidationErrorMessages());
         }
         //need to catch all other exception?
     }

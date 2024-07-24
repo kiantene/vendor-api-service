@@ -33,7 +33,7 @@ public class SportsBaseAction {
 
         walletRequest.setRequestType(this.requestType);
         // Validate Operator Dto
-        ValidationUtils.doOperatorDtoValidation(dto);
+        ValidationUtils.doValidation(dto, InvalidOperatorResponseException::new);
         final String apiUrl = walletRequest.getOperatorEndpoint();
         final String signature = this.generateSignature(dto, walletRequest.getApiSecret());
         AtomicBoolean isTimeout = new AtomicBoolean(false);

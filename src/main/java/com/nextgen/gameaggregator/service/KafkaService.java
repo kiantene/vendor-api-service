@@ -64,6 +64,18 @@ public class KafkaService {
         }
     }
 
+    public void produceOperatorRequestDlq(BetHistory betHistory, BigDecimal conversionRate, String vendorPlayerUsername) {
+        try {
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.OPERATOR_REQUEST_DLQ, vendorPlayerUsername, betHistory);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
     public void produceBetResultDlq(BetResultData betResultData, GameSession gameSession, HttpRequestLog httpRequestLog) {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
