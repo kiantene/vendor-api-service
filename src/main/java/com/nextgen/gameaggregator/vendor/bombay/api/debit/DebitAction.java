@@ -77,7 +77,7 @@ public class DebitAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().intValue());
+            responseVo.setBalance(betEvent.getLastBalance().toBigIntegerExact());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(AuthenticationException e){

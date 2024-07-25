@@ -64,7 +64,6 @@ public class EndroundAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-
             // get x-signature value for validation
             Map<String,String> header = vendorService.headersToHashMap(request);
 
@@ -79,14 +78,18 @@ public class EndroundAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(endroundDto, gameSession, header.get("x-signature"), body);
 
+            Thread.sleep(150);
+
             userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + endroundDto.getRound());
-            userLock.lock(1L, TimeUnit.SECONDS);
 
-            // this end-point just handle transaction with end status, so set it as result end
-            ResultType resultType = ResultType.END;
+            // if it is not lock meant is lose
+            if(!userLock.isLocked()){
+                // this end-point just handle transaction with end status, so set it as result end
+                ResultType resultType = ResultType.END;
 
-            // no need to return wallet balance
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
+                // no need to return wallet balance
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
+            }
 
             responseVo.setStatus(ResponseCodes.RS_OK);
         } catch(InvalidRequestException e){
@@ -127,8 +130,9 @@ public class EndroundAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
-            if (userLock != null) {
-                userLock.forceUnlock();
+            // Release the lock if we acquired it and still hold it
+            if (userLock != null && userLock.isHeldByCurrentThread()) {
+                userLock.unlock();
             }
 
             responseVo.setRequest_uuid(endroundDto.getRequest_uuid());

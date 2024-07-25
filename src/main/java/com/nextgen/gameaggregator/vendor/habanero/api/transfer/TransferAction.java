@@ -172,7 +172,7 @@ public class TransferAction {
 
     }
 
-    private GameSession getGameSession(TransferDto transferDto) throws AuthenticationException {
+    private GameSession getGameSession(TransferDto transferDto) throws AuthenticationException, GameNotSupportedException {
         GameSession gameSession = new GameSession();
 
         if (transferDto.getFundTransferRequestDto().getIsRetry()) {
@@ -185,6 +185,7 @@ public class TransferAction {
             //When gamestatemode = 3 get GameSession by player name and vendor game id, this end request might send out after few days of bet
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
         }
+        gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(transferDto.getBaseGame().getKeyName(), gameSession);
 
         return gameSession;
     }

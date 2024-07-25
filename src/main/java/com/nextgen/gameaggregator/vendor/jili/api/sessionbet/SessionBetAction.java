@@ -62,6 +62,7 @@ public class SessionBetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(sessionBetDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetDto.getGame()), gameSession);
 
             this.doVerification(sessionBetDto, gameSession);
 
@@ -160,7 +161,7 @@ public class SessionBetAction {
             CurrencyNotSupportedException,
             InvalidPlayerException {
 
-        if(sessionBetDto.getType().equals(Formats.SESSION_BET_TYPE_BET)) {
+        if (sessionBetDto.getType().equals(Formats.SESSION_BET_TYPE_BET)) {
             // validate vendor username, agent vendor line, player status, and game status
             validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
         }

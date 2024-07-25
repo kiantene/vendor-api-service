@@ -57,6 +57,7 @@ public class QueryAction {
 
             //Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(queryDto.getQueryRequestDto().getAccountId(), queryDto.getBaseGame().getKeyName());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(queryDto.getBaseGame().getKeyName(), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(queryDto, gameSession);
