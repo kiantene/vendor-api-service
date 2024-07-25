@@ -80,7 +80,7 @@ public class BalanceAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(balance.intValue());
+            responseVo.setBalance(balance.toBigIntegerExact());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(GameNotSupportedException e){

@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.service.BetNotFoundLogService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.endround.CreditDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl.*;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -71,9 +70,15 @@ public class VendorService extends BaseVendorService {
         return gameTableDto;
     }
 
-    public ConfigGameDto setConfigGameDto(GameTableDto gameTableDto) {
+    public ConfigGameDto setConfigGameDto(GameTableDto gameTableDto, String categoryCode) {
         ConfigGameDto configGameDto = new ConfigGameDto();
-        configGameDto.setTable(gameTableDto);
+        if (categoryCode!=null && !categoryCode.isBlank()) {
+            // into game category lobby
+            configGameDto.setCategory(categoryCode);
+        } else {
+            // into direct game
+            configGameDto.setTable(gameTableDto);
+        }
         return configGameDto;
     }
 
@@ -122,7 +127,7 @@ public class VendorService extends BaseVendorService {
             gameSession = gameSessionService.verifyToken(token);
         }
 
-        if(Objects.isNull(gameSession.getVendorToken())){
+        if (Objects.isNull(gameSession.getVendorToken())) {
             gameSession.setVendorToken(gameSession.getToken());
             gameSessionService.updateSession(gameSession);
         }

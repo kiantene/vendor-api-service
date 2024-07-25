@@ -53,6 +53,7 @@ public class CancelSessionBetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(cancelSessionBetDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelSessionBetDto.getGame()), gameSession);
 
             // 3. Verify request parameters
             this.doVerification(cancelSessionBetDto, gameSession);

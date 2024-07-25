@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,8 @@ public class AuthAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.AUTHENTICATE)
     public AuthVo balance(HttpServletRequest request) {
@@ -57,6 +60,7 @@ public class AuthAction {
 
             //Get GameSession by token
             GameSession gameSession = gameSessionService.verifyToken(authDto.getPlayerDetailRequest().getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(authDto.getBaseGame().getKeyName(), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(authDto, gameSession);
@@ -79,7 +83,7 @@ public class AuthAction {
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
-                InvalidOperatorResponseException generalException) {
+                 InvalidOperatorResponseException generalException) {
             responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
             httpService.logError(httpRequestLog, generalException);
 

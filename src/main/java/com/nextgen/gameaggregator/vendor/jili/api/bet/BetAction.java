@@ -57,6 +57,7 @@ public class BetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getGame()), gameSession);
             vendorPlayerUsername = gameSession.getVendorPlayerUsername();
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
             token = gameSession.getToken();

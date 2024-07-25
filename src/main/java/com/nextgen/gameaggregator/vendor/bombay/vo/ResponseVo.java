@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.vendor.bombay.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
+import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import lombok.Data;
+
+import java.math.BigInteger;
 
 @Data
 public class ResponseVo implements HttpResponse {
@@ -18,12 +21,12 @@ public class ResponseVo implements HttpResponse {
     private String currency;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Integer balance;
+    private BigInteger balance;
 
     @Override
     public boolean hasError() {
 
-        if(!this.getStatus().equals("RS_OK")){
+        if(!this.getStatus().equals(ResponseCodes.RS_OK)){
             return true;
         }
 

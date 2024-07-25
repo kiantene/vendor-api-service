@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
@@ -58,6 +59,11 @@ public class GameUrlService implements GameUrl {
         String authToken = credentials.get(Credentials.AUTH_TOKEN);
         String countryCode = credentials.get(Credentials.COUNTRY_CODE);
 
+        // If have data then open with category lobby
+        // ame_shows, baccarat_sicbo, poker, top_games, roulette, blackjack, reward_games
+        String categoryCodeList = credentials.get(Credentials.CATEGORY_CODE);
+        String categoryCode = this.checkGameCodeIsOpenInCategoryLobby(categoryCodeList, gameSession.getVendorGameCode());
+
         // Check Credentials Null
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
         Optional.ofNullable(casinoKey).orElseThrow(InvalidVendorLineException::new);
@@ -69,7 +75,7 @@ public class GameUrlService implements GameUrl {
         PlayerDto playerDto = vendorService.setPlayerDto(gameSession, playerSessionDto, countryCode);
         ConfigChannelDto configChannelDto = vendorService.setConfigChannelDto(gameSession);
         GameTableDto gameTableDto = vendorService.setGameTableDto(gameSession);
-        ConfigGameDto configGameDto = vendorService.setConfigGameDto(gameTableDto);
+        ConfigGameDto configGameDto = vendorService.setConfigGameDto(gameTableDto, categoryCode);
         ConfigUrlsDto configUrlsDto = vendorService.setConfigUrlsDto(gameSession);
         ConfigDto configDto = vendorService.setConfigDto(configGameDto, configChannelDto, configUrlsDto);
 
@@ -126,5 +132,17 @@ public class GameUrlService implements GameUrl {
             throw new InvalidVendorResponseException(exceptionMsg);
         }
         return responseVo;
+    }
+
+    private String checkGameCodeIsOpenInCategoryLobby(String categoryCodeList, String gameCode) {
+        if (categoryCodeList!=null && !categoryCodeList.isBlank()){
+            String[] elements = StringUtils.tokenizeToStringArray(categoryCodeList.trim(), ",");
+            for (String element : elements) {
+                if (element.equals(gameCode)) {
+                    return gameCode;
+                }
+            }
+        }
+        return null;
     }
 }

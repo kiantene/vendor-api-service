@@ -78,7 +78,7 @@ public class RollbakcAction {
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
-            responseVo.setBalance(balance.intValue());
+            responseVo.setBalance(balance.toBigIntegerExact());
         } catch(BetNotFoundException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
