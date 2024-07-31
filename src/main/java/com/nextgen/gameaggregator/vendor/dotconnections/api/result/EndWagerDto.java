@@ -20,7 +20,7 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 16, fraction = 2)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal amount;
 
     @NotBlank

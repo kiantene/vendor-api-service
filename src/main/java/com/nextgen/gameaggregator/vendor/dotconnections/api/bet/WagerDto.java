@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WagerDto extends CommonDto implements BetResultData {
 
     @NotBlank
@@ -24,12 +26,12 @@ public class WagerDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 16, fraction = 2)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal amount;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 16, fraction = 6)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal jackpotContribution;
 
     @NotNull

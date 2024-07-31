@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.freespin;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -12,12 +13,13 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class FreeSpinResultDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 16, fraction = 2)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal amount;
 
     @NotNull
