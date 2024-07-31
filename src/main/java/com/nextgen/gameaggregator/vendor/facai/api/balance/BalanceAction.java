@@ -16,7 +16,7 @@ import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,16 +31,24 @@ import java.math.RoundingMode;
 @Slf4j
 public class BalanceAction {
 
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final VendorService vendorService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final GameSessionService gameSessionService;
+
+    public BalanceAction(HttpService httpService,
+                         VendorService vendorService,
+                         VendorLineService vendorLineService,
+                         WalletService walletService,
+                         GameSessionService gameSessionService) {
+
+        this.httpService = httpService;
+        this.vendorService = vendorService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.gameSessionService = gameSessionService;
+    }
 
     @PostMapping(path = EndPoints.BALANCE)
     public CommonVo balance(HttpServletRequest request) {
@@ -88,7 +96,6 @@ public class BalanceAction {
 
         } catch (
                 InvalidDecryptionException |
-                InvalidEncryptionException |
                 CredentialNotFoundException |
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
@@ -101,14 +108,6 @@ public class BalanceAction {
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
             httpService.logError(httpRequestLog, currencyNotSupportedException);
-
-        } catch (InvalidPlayerException invalidPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
-            httpService.logError(httpRequestLog, invalidPlayerException);
-
-        } catch (DisabledGameException disabledGameException) {
-            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
-            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -131,17 +130,17 @@ public class BalanceAction {
 
     }
 
-    private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doDecryptValidation(BalanceDto dto) throws InvalidRequestException, InvalidPlayerException, CurrencyNotSupportedException {
+    private void doDecryptValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidEncryptionException {
+    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws InvalidRequestException, CurrencyNotSupportedException, CredentialNotFoundException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
@@ -149,13 +148,11 @@ public class BalanceAction {
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
-        String md5Param = vendorService.md5(jsonParam);
+        String md5Param = DigestUtils.md5Hex(jsonParam);
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
-        ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
-
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        ValidationUtils.isEquals(agentCode, commonDto.getAgentCode(), InvalidRequestException::new);
     }
-
 }

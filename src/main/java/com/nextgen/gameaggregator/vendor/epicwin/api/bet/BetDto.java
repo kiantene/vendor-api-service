@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.epicwin.constant.Formats;
+import com.nextgen.gameaggregator.vendor.epicwin.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.epicwin.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -15,96 +15,50 @@ import java.time.ZoneId;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetResultData {
+public class BetDto extends CommonDto implements BetResultData {
     @NotBlank
-    @Size(min = 1, max = 20)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("OperatorId")
-    private String operatorId;
-
-    @NotBlank
-    @Size(min = 1, max = 50)
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")
-    @JsonProperty("RequestDateTime")
-    private String requestDateTime;
-
-    @NotBlank
-    @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("Signature")
-    private String signature;
-
-    @NotBlank
-    @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("PlayerId")
-    private String playerId;
-
-    @NotBlank
-    @Size(min = 1, max = 5)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("Currency")
-    private String currency;
-
-    @NotNull
+    @Size(max = 255)
     @JsonProperty("RoundId")
-    private Long roundId;
-
-    @NotNull
-    @JsonProperty("BetId")
-    private Long betId;
+    private String roundId;
 
     @NotBlank
-    @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @JsonProperty("BetId")
+    private String betId;
+
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("GameCode")
     private String gameCode;
 
-    @NotBlank
-    @Size(min = 1, max = 50)
-    @JsonProperty("GameType")
-    private String gameType;
-
     @NotNull
-    @Digits(integer = 12, fraction = 4)
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("BetAmount")
     private BigDecimal betAmount;
-
-    @JsonProperty("ExchangeRate")
-    private BigDecimal exchangeRate;
 
     @NotBlank
     @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")
     @JsonProperty("TranDateTime")
-    private String tranDateTime;
+    private String tranDateTime; //placed bet time
 
     @NotBlank
-    @Size(min = 1, max = 500)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 500)
     @JsonProperty("AuthToken")
-    private String authToken;
-
-    @JsonProperty("ProviderTimeZone")
-    private String providerTimeZone;
-
-    @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{2}:\\d{2}")
-    @JsonProperty("ProviderTranDt")
-    private String providerTranDt;
+    private String authToken; //authenticate and validate a player's game session
 
     @Override
     public String getExternalTransactionId() {
-        return String.valueOf(this.betId);
+        return this.betId;
     }
 
     @Override
     public String getVendorBetId() {
-        return String.valueOf(this.betId);
+        return this.betId;
     }
 
     @Override
     public String getRoundId() {
-        return String.valueOf(this.roundId);
+        return this.roundId;
     }
 
     @Override
@@ -134,7 +88,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.convertDateTimeStringToTimestamp(this.getTranDateTime(), Formats.DATE_FORMAT, ZoneId.of(Formats.TIME_ZONE));
+        return VendorService.convertDateTimeStringToTimestamp(this.tranDateTime, Formats.DATE_FORMAT, ZoneId.of(Formats.TIME_ZONE));
     }
 
     @Override

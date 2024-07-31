@@ -135,8 +135,4 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    @Override
-    public boolean shouldRejectCancelRequest() {
-        return false;
-    }
 }

@@ -5,40 +5,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetResultData {
-
-    @Autowired
-    private HttpService httpService;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String appid;
-
-    @NotNull
-    private Long time;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String token;
-
-    @NotBlank
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$")
-    private String message;
+public class BetDto extends CommonDto implements BetResultData {
 
     @NotNull
     private MessageDto messageDto;
-
 
     public void convertStringToJsonObject(String message) throws JsonProcessingException {
         MessageDto subDto = HttpService.convertJsonToDto(message, MessageDto.class);
@@ -58,43 +36,46 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        String roundid = this.getMessageDto().getBetInfo().getRoundId();
-
-        if (roundid.equals("") || roundid == null) {
-            roundid = this.getMessageDto().getBetInfo().getBetId();
+        if (!this.messageDto.getBetInfo().getParentBetId().isEmpty()
+                && this.messageDto.getBetInfo().getBetAmount().equals(BigDecimal.ZERO)
+                && this.messageDto.getBetInfo().getJackpot() == 0) {
+            return this.messageDto.getBetInfo().getParentBetId();
         }
-
-        return roundid;
+        return this.messageDto.getBetInfo().getBetId();
     }
 
     @Override
     public String getGameId() {
-        return this.getMessageDto().getGameId();
+        return this.messageDto.getGameId();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(this.messageDto.getBetInfo().getBetAmount());
+        return this.messageDto.getBetInfo().getBetAmount();
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(this.messageDto.getBetInfo().getWinAmount());
+        if (this.messageDto.getBetInfo().getJackpot() == 1) {
+            return BigDecimal.ZERO;
+        }
+        return this.messageDto.getBetInfo().getWinAmount();
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.messageDto.getBetInfo().getWinAmount().
+                subtract(this.messageDto.getBetInfo().getBetAmount());
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return new BigDecimal(this.messageDto.getBetInfo().getBetAmount());
+        return this.messageDto.getBetInfo().getBetAmount();
     }
 
     @Override
     public Long getVendorBetTime() {
-        return this.time * 1000;
+        return this.getTime() * 1000;
     }
 
     @Override
@@ -104,20 +85,23 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return this.time * 1000;
+        return System.currentTimeMillis();
     }
 
     @Override
     public BigDecimal getJackpotAmount() {
-
-
-        return null;
+        BigDecimal amount = BigDecimal.ZERO;
+        if (this.messageDto.getBetInfo().getJackpot() == 1) {
+            amount = messageDto.getBetInfo().getWinAmount();
+        }
+        return amount;
     }
 
     @Override
     public Integer getIsFreespin() {
         int status = 0;
-        if (this.messageDto.getBetInfo().getBetAmount() == 0) {
+        if (this.messageDto.getBetInfo().getBetAmount().equals(BigDecimal.ZERO)
+                && this.messageDto.getBetInfo().getJackpot() == 0) {
             status = 1;
         }
         return status;
@@ -125,6 +109,10 @@ public class BetDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.messageDto.getBetInfo().getIsSettled() == 1) {
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
+
     }
 }

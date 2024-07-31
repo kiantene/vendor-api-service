@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -73,19 +74,19 @@ public class RollbackAction {
 
             // set vo
             vo.setResponseDateTime(dto.getRequestDateTime());
-            vo.setOldBalance(walletRequest.getBalanceBefore());
-            vo.setNewBalance(walletRequest.getBalanceAfter());
+            vo.setOldBalance(walletRequest.getBalanceBefore().setScale(4, RoundingMode.DOWN));
+            vo.setNewBalance(walletRequest.getBalanceAfter().setScale(4, RoundingMode.DOWN));
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
@@ -96,7 +97,7 @@ public class RollbackAction {
 
         } catch (GameNotSupportedException | InvalidRequestException e) {
             if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.OPERATOR_ID_ERROR.Status))) {
-                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR);
+                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR); //check db credential (operatorId) with request body value of operatorId that sent from vendor
 
             } else if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.INTERNAL_SERVER_ERROR.Status))) {
                 vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
@@ -110,14 +111,14 @@ public class RollbackAction {
         } catch (BetResultIdempotentViolationException |
                  BetRefundIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_TRANSACTION);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException e) {
             vo.setResponseCodes(ResponseCodes.BET_TRANSACTION_NOT_FOUND);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);

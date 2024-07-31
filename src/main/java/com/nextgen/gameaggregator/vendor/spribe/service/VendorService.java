@@ -4,12 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.spribe.api.result.SettleDto;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -21,15 +18,6 @@ import java.util.Map;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
-    private final HttpService httpService;
-
-    private final WalletService walletService;
-
-    @Autowired
-    public VendorService(HttpService httpService, WalletService walletService) {
-        this.httpService = httpService;
-        this.walletService = walletService;
-    }
 
     @Override
     public boolean shouldRejectCancelRequest() {
@@ -41,7 +29,7 @@ public class VendorService extends BaseVendorService {
         for (Map.Entry<String, List<String>> entry : params.entrySet()) {
             String key = entry.getKey();
             for (String value : entry.getValue()) {
-                if (queryString.length() > 0) {
+                if (!queryString.isEmpty()) {
                     queryString.append("&");
                 }
                 queryString.append(URLEncoder.encode(key, StandardCharsets.UTF_8));

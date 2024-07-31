@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping(path = "transaction/")
 @Slf4j
 public class TransactionsListAction {
+    public static final String REQUEST_TYPE = "TransactionList";
     private final HttpService httpService;
     private final ValidationService validationService;
     private final TransactionListService transactionListService;
@@ -42,7 +43,7 @@ public class TransactionsListAction {
     @PostMapping(path = "list")
     public OperatorResponseVo<TransactionsListData> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        httpRequestLog.setRequestType("TransactionList");
+        httpRequestLog.setRequestType(REQUEST_TYPE);
         httpRequestLog.setResponseLogged(false);
         OperatorResponseVo<TransactionsListData> responseVo = new OperatorResponseVo<>();
         try {

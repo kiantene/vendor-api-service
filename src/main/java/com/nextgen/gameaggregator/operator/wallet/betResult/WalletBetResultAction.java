@@ -137,10 +137,10 @@ public class WalletBetResultAction {
 
             long endTime = System.currentTimeMillis();
             if (httpRequestLog != null) {
+                httpRequestLog.setOperatorEnd(endTime);
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
                 }
-                httpRequestLog.setOperatorEnd(endTime);
             }
 
             if (isTimeout.get()) {

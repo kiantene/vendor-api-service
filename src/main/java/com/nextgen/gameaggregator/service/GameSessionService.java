@@ -31,7 +31,6 @@ public class GameSessionService {
     private final VendorGameService vendorGameService;
     private final VendorCurrencyService vendorCurrencyService;
     private final CurrencyService currencyService;
-    private final VendorGameCodeService vendorGameCodeService;
 
     @Autowired
     public GameSessionService(RawGameSessionRepository rawGameSessionRepository,
@@ -40,8 +39,7 @@ public class GameSessionService {
                               AgentPlayerService agentPlayerService,
                               VendorGameService vendorGameService,
                               VendorCurrencyService vendorCurrencyService,
-                              CurrencyService currencyService,
-                              VendorGameCodeService vendorGameCodeService) {
+                              CurrencyService currencyService) {
 
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.cacheManager = cacheManager;
@@ -50,7 +48,6 @@ public class GameSessionService {
         this.vendorGameService = vendorGameService;
         this.vendorCurrencyService = vendorCurrencyService;
         this.currencyService = currencyService;
-        this.vendorGameCodeService = vendorGameCodeService;
     }
 
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")

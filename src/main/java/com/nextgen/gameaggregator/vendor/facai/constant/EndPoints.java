@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.facai.constant;
 
 public class EndPoints {
 
+    public static final Integer TIMEOUT = 8000;
+
     public static final String PATH = "api/v1/facai";
 
     public static final String BALANCE = "/balance";
@@ -14,4 +16,5 @@ public class EndPoints {
     public static final String GAME_URL = "/Login";
 
     public static final String BET_DETAIL_URL = "/GetPlayerReport";
+
 }

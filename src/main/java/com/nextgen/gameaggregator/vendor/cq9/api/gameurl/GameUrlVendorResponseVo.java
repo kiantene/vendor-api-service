@@ -15,10 +15,10 @@ public class GameUrlVendorResponseVo implements com.nextgen.gameaggregator.opera
 
     @Override
     public String getGameUrl() {
-        String leaveUrl = Optional.ofNullable(this.getLeaveUrl())
+        String leaveUrlValue = Optional.ofNullable(this.getLeaveUrl())
                 .filter(url -> !url.isEmpty())
                 .orElse(null);
 
-        return this.data.getUrl() + (leaveUrl == null ? "" : "&leaveUrl=" + leaveUrl);
+        return this.data.getUrl() + (leaveUrl == null ? "" : "&leaveUrl=" + leaveUrlValue);
     }
 }

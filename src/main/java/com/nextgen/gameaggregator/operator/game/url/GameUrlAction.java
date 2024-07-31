@@ -21,6 +21,7 @@ import java.util.Map;
 @RequestMapping(path = "game/")
 @Slf4j
 public class GameUrlAction {
+    public static final String REQUEST_TYPE = "GameUrl";
     private final HttpService httpService;
     private final ValidationService validationService;
     private final GameUrlService gameUrlService;
@@ -65,7 +66,7 @@ public class GameUrlAction {
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        httpRequestLog.setRequestType("GameUrl");
+        httpRequestLog.setRequestType(REQUEST_TYPE);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
 
         try {
@@ -123,6 +124,7 @@ public class GameUrlAction {
             VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
             Integer vendorId = vendorGame.getVendorId();
             Vendor vendor = vendorService.getById(vendorId);
+            httpRequestLog.setVendorId(vendorId);
             GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId(), null);
             loggingService.logProcessTime("gameUrl ｜ vendorGameService.checkGameSupported", traceId);
 
@@ -185,22 +187,19 @@ public class GameUrlAction {
             // setGameSessionInfo
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
-            httpRequestLog.setVendorId(gameSession.getVendorId());
             httpRequestLog.setGameToken(gameSession.getToken());
 
             // 16. Request game url from vendor
-            loggingService.logStart();
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
-            loggingService.logProcessTime("gameUrl ｜ gameUrlService.getGameUrl (operator generate url)", traceId);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine, httpRequestLog);
             warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currency);
             responseVo.setData(gameUrlData);
+
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());
             httpService.logError(httpRequestLog, illegalArgumentException);
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
-            jsonProcessingException.printStackTrace();
             httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
@@ -245,17 +244,9 @@ public class GameUrlAction {
             httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_DISABLED);
 
-        } catch (GamePlatformNotSupportException gamePlatformNotSupportException) {
-            httpService.logError(httpRequestLog, gamePlatformNotSupportException);
-            responseVo.setStatus(ResponseCodes.Status.SC_GAME_PLATFORM_NOT_SUPPORTED);
-
         } catch (GameCurrencyNotSupportException gameCurrencyNotSupportException) {
             httpService.logError(httpRequestLog, gameCurrencyNotSupportException);
             responseVo.setStatus(ResponseCodes.Status.SC_GAME_CURRENCY_NOT_SUPPORTED);
-
-        } catch (GameLanguageNotSupportException gameLanguageNotSupportException) {
-            httpService.logError(httpRequestLog, gameLanguageNotSupportException);
-            responseVo.setStatus(ResponseCodes.Status.SC_GAME_LANGUAGE_NOT_SUPPORTED);
 
         } catch (InvalidVendorLineException vendorLineNotFoundException) {
             httpService.logError(httpRequestLog, vendorLineNotFoundException);
@@ -288,7 +279,6 @@ public class GameUrlAction {
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);

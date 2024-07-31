@@ -4,16 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RollBackDto implements RollbackData {
+public class RollBackDto extends CommonDto implements RollbackData {
 
-    private String appid;
-    private Long time;
-    private String token;
-    private String message;
+    @NotNull
     private MessageDto messageDto;
 
     public void convertStringToJsonObject(String message) throws JsonProcessingException {
@@ -24,11 +23,11 @@ public class RollBackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return messageDto.getBetId();
+        return this.messageDto.getBetId();
     }
 
     @Override
     public Long getVendorSettledTime() {
-        return this.time * 1000;
+        return this.getTime() * 1000;
     }
 }

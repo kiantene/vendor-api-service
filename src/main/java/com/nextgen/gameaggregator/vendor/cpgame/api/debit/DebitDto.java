@@ -5,33 +5,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DebitDto implements BetResultData {
-    @Autowired
-    private HttpService httpService;
-
-    @NotNull
-    private Long time;
-
-    @NotBlank
-    private String appid;
-
-    @NotBlank
-    private String message;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String token;
+public class DebitDto extends CommonDto implements BetResultData {
 
     @NotNull
     private MessageDto messageDto;
@@ -54,30 +36,22 @@ public class DebitDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        String roundid = this.getMessageDto().getBetInfo().getRoundId();
-
-        if (roundid.equals("") || roundid == null) {
-            roundid = this.getMessageDto().getBetInfo().getBetId();
-        }
-
-        return roundid;
+        return this.messageDto.getBetInfo().getBetId();
     }
 
     @Override
     public String getGameId() {
-        return this.getMessageDto().getGameId();
+        return this.messageDto.getGameId();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(this.messageDto.getBetInfo().getBetAmount());
+        return this.messageDto.getBetInfo().getBetAmount();
     }
 
     @Override
     public BigDecimal getWinAmount() {
-
         return null;
-
     }
 
     @Override
@@ -87,22 +61,22 @@ public class DebitDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return new BigDecimal(this.messageDto.getBetInfo().getBetAmount());
+        return this.messageDto.getBetInfo().getBetAmount();
     }
 
     @Override
     public Long getVendorBetTime() {
-        return this.time * 1000;
+        return this.getTime() * 1000;
     }
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.time * 1000;
+        return null;
     }
 
     @Override
@@ -113,7 +87,7 @@ public class DebitDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         int status = 0;
-        if (this.messageDto.getBetInfo().getBetAmount() == 0) {
+        if (this.messageDto.getBetInfo().getBetAmount().equals(BigDecimal.ZERO)) {
             status = 1;
         }
         return status;
@@ -121,6 +95,6 @@ public class DebitDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

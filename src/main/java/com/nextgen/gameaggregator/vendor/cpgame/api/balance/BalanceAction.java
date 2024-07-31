@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
@@ -63,7 +62,7 @@ public class BalanceAction {
         ResponseVo vo = new ResponseVo();
 
         DataVo dataVo = new DataVo();
-        BalanceDto balanceDto = new BalanceDto();
+        BalanceDto balanceDto = null;
 
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8);
@@ -76,8 +75,8 @@ public class BalanceAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
-            Long vendorPlayerId = balanceDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            Integer vendorPlayerId = balanceDto.getMessageDto().getSubUid();
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -88,7 +87,7 @@ public class BalanceAction {
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            dataVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            dataVo.setBalance(balance);
             dataVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);
@@ -96,30 +95,24 @@ public class BalanceAction {
 
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
-            if (!balanceDto.getMessageDto().getGameKey().equals("hog")) {
-                vo.setCodeMsg(ResponseCodes.GAME_KEY_ERROR);
-            } else {
-                vo.setCodeMsg(ResponseCodes.INVALID_REQUEST);
-            }
+            vo.setCodeMsg(ResponseCodes.INVALID_REQUEST);
+
         } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.SIGNATURE_ERROR);
+
         } catch (CredentialNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.APP_ID_ERROR);
+
         } catch (DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.GAME_ID_ERROR);
+
         } catch (AuthenticationException | InvalidPlayerException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.PLAYER_NOT_EXIST);
-        } catch (InvalidAgentApiCredentialException |
-                 VendorCurrencyNotSupportException |
-                 DisabledAgentPlayerException |
-                 InvalidOperatorResponseException |
-                 DisabledVendorLineException e) {
-            httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
@@ -133,7 +126,6 @@ public class BalanceAction {
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-        ValidationUtils.isEquals(dto.getMessageDto().getGameKey(), "hog");
         ValidationUtils.validateRequest(dto.getMessageDto());
     }
 

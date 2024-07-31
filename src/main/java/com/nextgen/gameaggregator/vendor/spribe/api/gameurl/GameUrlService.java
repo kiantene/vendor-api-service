@@ -1,46 +1,44 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.gameurl;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.UUID;
-
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
-
-import lombok.extern.slf4j.Slf4j;
+import java.net.URI;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
-public class GameUrlService implements GameUrl {
+public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
-    @Autowired
-    private VendorLineService vendorLineService;
+    // the following autowired is required due to reflection logic
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private VendorService vendorService;
 
+    private static final String OPERATOR = "operator";
+
+    public GameUrlService() {
+        super(GameUrlVo.class);
+    }
+
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
-            Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+                                                         Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
-        // Get operator and token by vendor line
-        String operator = "";
-        try {
-            operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
-        } catch (CredentialNotFoundException e) {
-            log.error("Credential not found : " + e.getMessage());
-        }
+        String operator = credentials.getOrDefault(OPERATOR, "");
 
         // Regenerate token (launch token only can be use once time)
         String newToken = UUID.randomUUID().toString();
@@ -51,14 +49,17 @@ public class GameUrlService implements GameUrl {
         formData.add("token", newToken);
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
-        formData.add("operator", operator);
+        formData.add(OPERATOR, operator);
 
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
-            GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog)
+            throws InvalidVendorLineException {
+
+        httpRequestLog.setUrl(SELF_GENERATED_GAME_URL);
+
         // Retrieve the game domain from the credentials map.
         String gameUrl = credentials.getOrDefault(Credentials.GAME_URL, "");
         if (gameUrl.isBlank()) {
@@ -71,6 +72,10 @@ public class GameUrlService implements GameUrl {
         // Create a new GameUrlVo object and set the game URL as its value.
         GameUrlVo responseVo = new GameUrlVo();
         responseVo.setGameUrl(uri.toString());
+
+        httpRequestLog.setOperatorHttpStatusCode(200);
+        httpRequestLog.setBetEnd(System.currentTimeMillis());
+
         return responseVo;
     }
 }

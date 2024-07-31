@@ -40,7 +40,7 @@ public class S3Service {
         return s3Client;
     }
 
-    public String GenerateHtmlToS3(GameSession gameSession, String rawHtml) throws RuntimeException {
+    public String generateHtmlToS3(GameSession gameSession, String rawHtml) throws RuntimeException {
 
         try {
             // Create an S3 client
