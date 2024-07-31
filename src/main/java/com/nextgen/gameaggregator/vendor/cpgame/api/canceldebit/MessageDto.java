@@ -2,27 +2,20 @@ package com.nextgen.gameaggregator.vendor.cpgame.api.canceldebit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonMessageDto;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MessageDto {
+public class MessageDto extends CommonMessageDto {
+
 
     @NotBlank
-    @Pattern(regexp = "^hog$") // must be "hog"
-    @JsonProperty("game_key")
-    private String gameKey;
-
-    @NotNull
-    @JsonProperty("sub_uid")
-    private Integer subUid;
-
-    @NotBlank
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$")
     @JsonProperty("bet_id")
+    @Size(max = 255)
     private String betId;
+
 
 }

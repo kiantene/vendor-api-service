@@ -51,14 +51,6 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String md5(String input) throws InvalidEncryptionException {
-        try {
-            return DigestUtils.md5Hex(input);
-        } catch (Exception exception) {
-            throw new InvalidEncryptionException();
-        }
-    }
-
     public boolean isValidDateString(String timestamp, String pattern) {
         SimpleDateFormat dateFormat = new SimpleDateFormat(pattern);
         try {

@@ -5,33 +5,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CreditDto implements BetResultData {
-    @Autowired
-    private HttpService httpService;
-
-    @NotNull
-    private Long time;
-
-    @NotBlank
-    private String appid;
-
-    @NotBlank
-    private String message;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String token;
+public class CreditDto extends CommonDto implements BetResultData {
 
     @NotNull
     private MessageDto messageDto;
@@ -54,18 +36,12 @@ public class CreditDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        String roundid = this.getMessageDto().getBetInfo().getRoundId();
-
-        if (roundid.equals("") || roundid == null) {
-            roundid = this.getMessageDto().getBetInfo().getBetId();
-        }
-
-        return roundid;
+        return this.messageDto.getBetInfo().getBetId();
     }
 
     @Override
     public String getGameId() {
-        return this.getMessageDto().getGameId();
+        return this.messageDto.getGameId();
     }
 
     @Override
@@ -75,7 +51,7 @@ public class CreditDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(this.messageDto.getBetInfo().getWinAmount());
+        return this.messageDto.getBetInfo().getWinAmount();
     }
 
     @Override
@@ -90,7 +66,7 @@ public class CreditDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return this.time * 1000;
+        return null;
     }
 
     @Override
@@ -100,7 +76,7 @@ public class CreditDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return this.time * 1000;
+        return System.currentTimeMillis();
     }
 
     @Override

@@ -3,12 +3,17 @@ package com.nextgen.gameaggregator.entity.ga;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.game.url.GameUrlAction;
+import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailAction;
+import com.nextgen.gameaggregator.operator.transactions.list.TransactionsListAction;
 import jakarta.persistence.Id;
 import lombok.Data;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -54,6 +59,9 @@ public class HttpRequestLog {
     private boolean responseLogged;
 
     @JsonIgnore
+    private Set<String> operatorRequestTypes;
+
+    @JsonIgnore
     private WalletRequest walletRequest;
 
     public HttpRequestLog() {
@@ -61,6 +69,11 @@ public class HttpRequestLog {
         this.startTime = System.currentTimeMillis();
         walletRequest = new WalletRequest(this.id);
         this.responseLogged = true;
+
+        this.operatorRequestTypes = new HashSet<>();
+        this.operatorRequestTypes.add(GameUrlAction.REQUEST_TYPE);
+        this.operatorRequestTypes.add(TransactionsListAction.REQUEST_TYPE);
+        this.operatorRequestTypes.add(TransactionDetailAction.REQUEST_TYPE);
     }
 
     public HttpRequestLog(HttpRequestLog httpRequestLog) {
@@ -89,6 +102,18 @@ public class HttpRequestLog {
         if (betEnd != null && this.betStart != null) {
             long operatorTime = Optional.ofNullable(this.operatorTimeTaken).orElse(0L);
             this.betTimeTaken = betEnd - this.betStart - operatorTime;
+        }
+    }
+
+    public boolean isOperatorEndpoint() {
+        return this.operatorRequestTypes.contains(this.requestType);
+    }
+
+    public void setRequestType(String requestType) {
+        this.requestType = requestType;
+
+        if (this.isOperatorEndpoint()) {
+            this.operatorData = this.requestBody;
         }
     }
 }

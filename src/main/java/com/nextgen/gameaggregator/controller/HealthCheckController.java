@@ -1,12 +1,6 @@
 package com.nextgen.gameaggregator.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.couchbase.core.CouchbaseTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,134 +8,89 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = "health/")
 @Slf4j
 public class HealthCheckController {
-    @Value("${mavenTimestamp}")
-    private String timestamp;
 
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
+	@Value("${spring.application.name}")
+	private String appName;
 
-    @Value("${spring.datasource.maria-default.jdbc-url}")
-    private String jdbcUrl;
+	@Value("${version}")
+	private String appVersion;
 
-    @Value("${spring.datasource.maria-default.username}")
-    private String dbUsername;
+	private final RedisTemplate<String, Object> redisTemplate;
+	private final CouchbaseTemplate couchbaseTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
-    @Value("${spring.data.redis.database}")
-    private String redisDB;
+	public HealthCheckController(RedisTemplate<String, Object> redisTemplate,
+			CouchbaseTemplate couchbaseTemplate,
+			JdbcTemplate jdbcTemplate) {
+		this.redisTemplate = redisTemplate;
+		this.couchbaseTemplate = couchbaseTemplate;
+		this.jdbcTemplate = jdbcTemplate;
+	}
 
-    @Value("${spring.data.redis.host}")
-    private String redisHost;
+	@GetMapping(path = "status", produces = "application/json")
+	public Map<String, String> status() {
+		Map<String, String> info = new HashMap<>();
+		info.put("name", appName);
+		info.put("version", appVersion);
+		return info;
+	}
 
-    @Value("${testing.stub}")
-    private String stub;
+	@GetMapping(path = "info", produces = "application/json")
+	public Map<String, Object> healthInfo() {
+		Map<String, Object> info = new HashMap<>();
+		info.put("redisLatency", formatLatency(measureRedisLatency()));
+		info.put("couchbaseLatency", formatLatency(measureCouchbaseLatency()));
+		info.put("databaseLatency", formatLatency(measureDatabaseLatency()));
+		return info;
+	}
 
-    @Value("${spring.couchbase.connectionString}")
-    private String cbConnection;
+	private long measureRedisLatency() {
+		try {
+			long start = System.nanoTime();
+			redisTemplate.getConnectionFactory().getConnection().ping();
+			return System.nanoTime() - start;
+		} catch (Exception e) {
+			log.error("Failed to measure Redis latency", e);
+			return -1; // Return -1 to indicate failure
+		}
+	}
 
-    @Value("${spring.couchbase.userName}")
-    private String cbUserName;
+	private long measureCouchbaseLatency() {
+		try {
+			long start = System.nanoTime();
+			couchbaseTemplate.getCouchbaseClientFactory().getCluster().diagnostics();
+			return System.nanoTime() - start;
+		} catch (Exception e) {
+			log.error("Failed to measure Couchbase latency", e);
+			return -1; // Return -1 to indicate failure
+		}
+	}
 
-    @Value("${spring.couchbase.password}")
-    private String cbPassword;
+	private long measureDatabaseLatency() {
+		try {
+			long start = System.nanoTime();
+			jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+			return System.nanoTime() - start;
+		} catch (Exception e) {
+			log.error("Failed to measure database latency", e);
+			return -1; // Return -1 to indicate failure
+		}
+	}
 
-    @Value("${spring.couchbase.bucketName}")
-    private String cbBucketName;
-
-    @Value("${spring.couchbase.scopeName}")
-    private String cbScopeName;
-
-    @Value("${spring.data.redis.mode}")
-    private RedisMode redisMode;
-
-    @Value("${spring.data.redis.nodehosts}")
-    private List<String> nodeHosts;
-
-    @GetMapping(path = "status")
-    public String status() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
-        ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, formatter);
-        zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
-        String timezoneTimestamp = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd K:mm:ssa z"));
-
-        return "OK" + " | VENDOR | " + profilesActive + " | " + timezoneTimestamp;
-    }
-
-    @GetMapping(path = "info")
-    public String info() {
-        String output;
-        log.info("Health Check OK");
-
-        output = "Profile:<br>" + profilesActive + "<br><br>" +
-                "DB Info:<br>URL: " + jdbcUrl + "<br>Username: " + dbUsername + "<br><br>" +
-                "Redis Info:<br>DB: " + redisDB + "<br>Host: " + redisHost + "<br>Redis NodeHost: " + nodeHosts.toString() + "<br>Mode: " + redisMode + "<br><br>" +
-                "Testing Stub:<br>" + stub;
-
-        return output;
-    }
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private CouchbaseTemplate couchbaseTemplate;
-
-    @GetMapping(path = "redis")
-    public String testRedisLatency() {
-        long startTime = System.nanoTime();
-
-        redisTemplate.opsForValue().get("test");
-
-        long endTime = System.nanoTime();
-        long latency = endTime - startTime;
-        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "<br>Redis Mode:<br>" + redisMode + "<br>Redis Host:<br>" + redisHost
-                + "<br>Redis NodeHost:<br>" + nodeHosts.toString() + "<br><br>" + "Redis latency: " + latency
-                + " nanoseconds / "
-                + milliseconds + " milliseconds";
-
-        return output;
-    }
-
-    @GetMapping(path = "db")
-    public String testDbLatency() {
-        long startTime = System.nanoTime();
-
-        jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-
-        long endTime = System.nanoTime();
-        long latency = endTime - startTime;
-        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " nanoseconds / "
-                + milliseconds + " milliseconds";
-
-        return output;
-    }
-
-    @GetMapping(path = "couchbase")
-    public String testCouchbaseLatency() {
-        long startTime = System.nanoTime();
-
-        couchbaseTemplate.getCollection("result_bet");
-
-        long endTime = System.nanoTime();
-        long latency = endTime - startTime;
-
-        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "Couchbase latencyxxx: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
-
-        return output;
-    }
-
-    public enum RedisMode {
-        CLUSTER,
-        STANDALONE
-    }
+	private String formatLatency(long latency) {
+		if (latency < 0) {
+			return "unavailable";
+		} else if (latency < 1_000_000) { // less than 1 ms
+			return latency + " ns";
+		} else {
+			return (latency / 1_000_000) + " ms";
+		}
+	}
 }

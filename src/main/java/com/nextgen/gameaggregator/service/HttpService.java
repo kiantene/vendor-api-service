@@ -8,6 +8,9 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
+import com.nextgen.gameaggregator.operator.game.url.GameUrlAction;
+import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailAction;
+import com.nextgen.gameaggregator.operator.transactions.list.TransactionsListAction;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -237,8 +240,13 @@ public class HttpService {
                 try {
                     String jsonResponseVo = new Gson().toJson(responseVo);
                     if (requestLog.isResponseLogged()) {
-                        requestLog.setResponseBody(jsonResponseVo);
+                        if (requestLog.isOperatorEndpoint()) {
+                            requestLog.setOperatorResponse(jsonResponseVo);
+                        } else {
+                            requestLog.setResponseBody(jsonResponseVo);
+                        }
                     }
+
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
                     kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));

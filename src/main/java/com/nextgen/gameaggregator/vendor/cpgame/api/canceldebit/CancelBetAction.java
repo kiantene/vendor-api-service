@@ -20,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URLDecoder;
-import java.time.Instant;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -32,22 +30,19 @@ public class CancelBetAction {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorPlayerService vendorPlayerService;
 
     @Autowired
     public CancelBetAction(HttpService httpService, VendorLineService vendorLineService,
                            GameSessionService gameSessionService, WalletService walletService,
-                           ValidationService validationService, VendorService vendorService,
-                           VendorPlayerService vendorPlayerService) {
+                           VendorService vendorService, VendorPlayerService vendorPlayerService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
-        this.validationService = validationService;
         this.vendorService = vendorService;
     }
 
@@ -62,11 +57,11 @@ public class CancelBetAction {
 
         DataVo dataVo = new DataVo();
 
-
+        CancelBetDto cancelbetDto = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
-            CancelBetDto cancelbetDto = HttpService.convertQueryStringToDto(body, CancelBetDto.class);
+            cancelbetDto = HttpService.convertQueryStringToDto(body, CancelBetDto.class);
 
             cancelbetDto.convertStringToJsonObject(cancelbetDto.getMessage());
 
@@ -87,40 +82,44 @@ public class CancelBetAction {
 
             // define time for response data to vendor
             long currentTimeMillis = System.currentTimeMillis();
-            Instant instant = Instant.ofEpochMilli(currentTimeMillis);
 
-            dataVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            dataVo.setUpdated_ms(instant.getEpochSecond());
+            dataVo.setBalance(balance);
+            dataVo.setUpdatedMs(currentTimeMillis);
             dataVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             vo.setData(dataVo);
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INVALID_REQUEST);
+
         } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.SIGNATURE_ERROR);
+
         } catch (CredentialNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.APP_ID_ERROR);
-        } catch (DisabledGameException e) {
+
+        } catch (AuthenticationException | InvalidPlayerException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.GAME_ID_ERROR);
+            vo.setCodeMsg(ResponseCodes.PLAYER_NOT_EXIST);
+
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
-        } catch (InvalidAgentApiCredentialException |
-                 InvalidPlayerException |
-                 VendorCurrencyNotSupportException |
-                 DisabledAgentPlayerException |
-                 AuthenticationException |
-                 InvalidOperatorResponseException |
-                 DisabledVendorLineException e) {
+
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
+            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+
+        } catch (BetNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.BET_NOT_FOUND);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
+
         } finally {
             httpService.end(httpRequestLog, vo);
         }
@@ -136,11 +135,7 @@ public class CancelBetAction {
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession, String oriRequest) throws
-            DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException, InvalidPlayerException, CredentialNotFoundException,
-            AuthenticationException, InvalidSignatureException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+            CredentialNotFoundException, InvalidSignatureException {
 
         String appId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.app_id);
         ValidationUtils.isEquals(appId, dto.getAppid(), CredentialNotFoundException::new);

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
@@ -19,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -60,37 +62,41 @@ public class GameUrlService {
     }
 
     public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
-                                  VendorLine vendorLine)
+                                  VendorLine vendorLine, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException {
 
         GameUrlData gameUrlData = new GameUrlData();
         gameUrlData.setToken(gameSession.getToken());
 
         try {
-            String vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
+            String vendorClassName = vendorService.getById(vendorLine.getVendorId()).getClassName();
 
             String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
             GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(gameUrl);
             MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), gameSession, credentials);
-            GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 
-            Optional.ofNullable(gameUrlVo).orElseThrow(InvalidVendorResponseException::new);
+            httpRequestLog.setOperatorData(httpRequestLog.getRequestBody());
+            httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
+            long startTime = System.currentTimeMillis();
+            httpRequestLog.setBetStart(startTime);
+            GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
+
+            if (gameUrlVo == null) throw new InvalidVendorResponseException();
+
             //token will be replaced if vendor's token is needed to verify for action files.
             gameUrlData.setToken(gameSession.getToken());
             gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
 
             //TODO throw vendor maintenance exception
 
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
-                 InstantiationException | IllegalAccessException | InvalidVendorLineException |
-                 InvalidVendorResponseException | InvalidFormatException | InvalidVendorException
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException | InvalidVendorLineException | InvalidVendorResponseException |
+                 InvalidFormatException | InvalidVendorException | TimeoutException
                 gameClassException) {
-            //gameClassException.printStackTrace();
 
-            log.error("GAME CLASS ERROR :");
-            gameClassException.printStackTrace();
-            throw new InvalidVendorResponseException();
+            throw new InvalidVendorResponseException(gameClassException.getMessage());
+
         }
 
         return gameUrlData;
@@ -106,7 +112,7 @@ public class GameUrlService {
 
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform,
                                                    Currency currency)
-            throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
+            throws GameNotSupportedException, GameCurrencyNotSupportException {
 
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(vendorGame.getVendorGameCode(),
                 platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendorId());
@@ -123,16 +129,6 @@ public class GameUrlService {
         }
 
         return vendorGameCode;
-    }
-
-    public VendorGameCode getFirstVendorGameCode(VendorGame vendorGame) throws GameNotSupportedException {
-
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.findTop1ByVendorGameIdAndStatus(vendorGame.getId(), Status.ACTIVE.code);
-        //not vendor game id and language matched
-        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
-
-        return vendorGameCode;
-
     }
 
     public String getVendorPlatformCode(String className, Integer platformId) throws VendorPlatformNotSupportedException {

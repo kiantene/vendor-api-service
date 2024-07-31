@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -56,7 +57,6 @@ public class SettleAction {
         SettleVo vo = new SettleVo();
         String traceId = httpRequestLog.getId();
         SettleDto dto = new SettleDto();
-        BigDecimal oldBalance = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -71,26 +71,23 @@ public class SettleAction {
 
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
             ResultType resultType = vendorService.calculateResultType(dto.getBetStatus(), dto.getWinAmount(), dto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             vo.setResponseDateTime(dto.getRequestDateTime());
-            vo.setOldBalance(oldBalance);
-            vo.setNewBalance(balance);
+            vo.setOldBalance((balance.subtract(dto.getWinAmount())).setScale(4, RoundingMode.DOWN));
+            vo.setNewBalance(balance.setScale(4, RoundingMode.DOWN));
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
@@ -101,7 +98,7 @@ public class SettleAction {
 
         } catch (GameNotSupportedException | InvalidRequestException e) {
             if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.OPERATOR_ID_ERROR.Status))) {
-                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR);
+                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR); //check db credential (operatorId) with request body value of operatorId that sent from vendor
 
             } else if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.INTERNAL_SERVER_ERROR.Status))) {
                 vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
@@ -114,21 +111,21 @@ public class SettleAction {
 
         } catch (InsufficientBalanceException e) {
             vo.setResponseCodes(ResponseCodes.INSUFFICIENT_BALANCE);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_TRANSACTION);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException e) {
             vo.setResponseCodes(ResponseCodes.BET_TRANSACTION_NOT_FOUND);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
