@@ -8,9 +8,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlAction;
-import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailAction;
-import com.nextgen.gameaggregator.operator.transactions.list.TransactionsListAction;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +34,9 @@ public class HttpService {
 
     private static final Integer THREAD_SIZE = 32;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
-
+    private final KafkaService kafkaService;
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
-
-    private final KafkaService kafkaService;
 
     @Autowired
     public HttpService(KafkaService kafkaService) {
@@ -211,7 +206,7 @@ public class HttpService {
 
         return httpRequestLog;
     }
-    
+
     public HttpRequestLog startRetryRequestToOperator(RawBetResultRetryLog rawBetResultRetryLogItem) {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
@@ -219,6 +214,23 @@ public class HttpService {
         try {
             httpRequestLog.setUrl("Retry Request - " + rawBetResultRetryLogItem.getAction());
             httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public HttpRequestLog startEndRoundConsumerLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("processEndRoundLog Success");
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());
 

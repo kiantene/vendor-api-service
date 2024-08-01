@@ -3,8 +3,6 @@ package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -23,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
@@ -72,14 +69,8 @@ public class SessionBetAction {
                     sessionBetVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
-                    // Check if bet already settled
-                    this.verifySettledBet(gameSession, sessionBetDto);
-
                     // Get result type
                     ResultType resultType = this.getResultType(sessionBetDto);
-
-                    // Verify unsettle bet
-                    this.verifyUnsettleBet(sessionBetDto, gameSession);
 
                     // Process bet
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, resultType, vendorService, httpRequestLog);
@@ -177,21 +168,5 @@ public class SessionBetAction {
         ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
 
         return resultType;
-    }
-
-    private void verifyUnsettleBet(SessionBetDto dto, GameSession gameSession) throws BetNotFoundException {
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-
-        if (unsettledBetList.isEmpty()) {
-            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-        }
-    }
-
-    private void verifySettledBet(GameSession gameSession, SessionBetDto dto) throws BetResultIdempotentViolationException {
-        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), String.valueOf(dto.getSessionId()));
-
-        if (settledBetList.size() > 0) {
-            throw new BetResultIdempotentViolationException();
-        }
     }
 }

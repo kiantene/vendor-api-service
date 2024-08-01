@@ -53,83 +53,14 @@ public class KafkaConsumerService {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
-    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcess(String message) {
-
-        //prepare endRoundProcess Log
-        Exception exception = null;
-        String newTraceId = UUID.randomUUID().toString();
-        ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
-        processEndRoundLog.setStartTime(System.currentTimeMillis());
-
-        //prepare endRound and settleBet info
-        EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
-        endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-        SettledBet settledBet = new SettledBet(endRoundSettledBet);
-        settledBet.setResultType(endRoundSettledBet.getGaResultType());
-        processEndRoundLog.setTraceId(newTraceId);
-        processEndRoundLog.setRoundId(settledBet.getRoundId());
-        processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
-        processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
-
-        try {
-            //get is bet = sidebet
-            vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
-
-            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
-
-            //get vendorCurrencyRate for the vendor
-            GameSession gameSession = new GameSession(endRoundSettledBet);
-            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
-
-            //update settledBet info
-            settledBetService.save(settledBet, settledBet.getRawData());
-
-            //prepare insert new betHistory data
-            BetHistory betHistory = new BetHistory(settledBet);
-            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
-                // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
-                kafkaService.produceWarehouseBetHistory
-                        (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
-            } else {
-                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
-            }
-
-            //prepare delete unsettledBet
-            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
-            unsettledBetService.delete(unsettledBet);
-
-            //prepare and send endRound to operator
-            this.notifyEndRoundProcess(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), processEndRoundLog, endRoundSettledBet, settledBet);
-
-        } catch (GameNotSupportedException e) {
-            exception = e;
-
-        } catch (VendorCurrencyNotSupportException e) {
-            exception = e;
-
-        } catch (Exception e) {
-            exception = e;
-
-        } finally {
-            if (exception != null) {
-                //prepare and save processEndRoundLog if exception not null;
-                processEndRoundLog.setEndTime(System.currentTimeMillis());
-                RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
-            }
-        }
-    }
-
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException {
 
         //prepare endRoundProcess Log
         Exception exception = null;
         String newTraceId = UUID.randomUUID().toString();
+        HttpRequestLog httpRequestLog = httpService.startEndRoundConsumerLog();
+
         ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
         processEndRoundLog.setStartTime(System.currentTimeMillis());
         processEndRoundLog.setTraceId(newTraceId);
@@ -140,14 +71,16 @@ public class KafkaConsumerService {
         SettledBet settledBet = new SettledBet(endRoundSettledBet);
         settledBet.setResultType(endRoundSettledBet.getGaResultType());
 
-        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
-        VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
-
         processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
         processEndRoundLog.setRoundId(settledBet.getRoundId());
         processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
 
         try {
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
+
             //get is bet = sidebet
             vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
 
@@ -176,7 +109,7 @@ public class KafkaConsumerService {
             unsettledBetService.delete(unsettledBet);
 
             //prepare and send endRound to operator
-            this.notifyEndRoundProcess(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), processEndRoundLog, endRoundSettledBet, settledBet);
+            this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBet, settledBet, httpRequestLog);
 
         } catch (GameNotSupportedException e) {
             exception = e;
@@ -196,29 +129,38 @@ public class KafkaConsumerService {
         }
     }
 
-    private void notifyEndRoundProcess(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, ProcessEndRoundLog processEndRoundLog, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet) {
+    private void notifyEndRoundProcess(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, BetInformation betInformation, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet, HttpRequestLog httpRequestLog) {
         THREAD_POOL.submit(() -> {
             Exception exception = null;
+            GeneralVo vo = new GeneralVo();
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
 
             try {
-                processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                processEndRoundLog.setTraceId(traceId);
-                processEndRoundLog.setRoundId(settledBet.getRoundId());
-                processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
-                processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
-                walletBetResultAction.callProcessEndRound(traceId, agentId, gameSession, betInformation, ResultType.END, fromVendorConversionRate, toVendorConversionRate);
+                httpRequestLog.setId(traceId);
+                httpRequestLog.setRoundId(settledBet.getRoundId());
+                httpRequestLog.setRequestBody(endRoundSettledBet.getRawData());
+                httpRequestLog.setAgentId(settledBet.getAgentId());
+                httpRequestLog.setVendorBetId(settledBet.getVendorBetId());
+                httpRequestLog.setVendorUsername(vendorPlayer.getUsername());
+                httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
+                httpRequestLog.setVendorId(settledBet.getVendorId());
+                httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
+                httpRequestLog.setGameToken(settledBet.getGameSessionToken());
+                walletBetResultAction.callProcessEndRound(traceId, agentPlayer.getAgentId(), gameSession, betInformation, ResultType.END, fromVendorConversionRate, toVendorConversionRate, httpRequestLog);
+                vo.setResponseCode(ResponseCode.SUCCESS);
 
             } catch (InvalidAgentApiCredentialException e) {
+                httpService.logError(httpRequestLog, e);
                 exception = e;
 
             } catch (Exception e) {
+                httpService.logError(httpRequestLog, e);
                 exception = e;
 
             } finally {
-                //prepare and save processEndRoundLog
-                processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
-                processEndRoundLog.setEndTime(System.currentTimeMillis());
-                RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
+                httpRequestLog.setBetEnd(System.currentTimeMillis());
+                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
+                httpService.end(httpRequestLog, vo);
 
             }
         });
