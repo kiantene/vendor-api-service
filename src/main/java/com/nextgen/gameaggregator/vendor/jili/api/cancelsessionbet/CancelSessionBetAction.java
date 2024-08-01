@@ -153,7 +153,7 @@ public class CancelSessionBetAction {
             InvalidPlayerException {
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+//        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelSessionBetDto.getGame()), GameNotSupportedException::new);
