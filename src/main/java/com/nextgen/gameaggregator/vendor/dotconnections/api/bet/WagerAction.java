@@ -102,10 +102,13 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (GameNotSupportedException | InvalidPlayerException invalidPlayerException) {
-            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
-            httpService.logError(httpRequestLog, invalidPlayerException);
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
+            httpService.logError(httpRequestLog, invalidPlayerException);
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, disabledGameException);
