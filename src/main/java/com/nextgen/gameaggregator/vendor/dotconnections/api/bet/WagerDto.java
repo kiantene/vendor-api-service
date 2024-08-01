@@ -31,9 +31,9 @@ public class WagerDto extends CommonDto implements BetResultData {
     @Digits(integer = 20, fraction = 8)
     public BigDecimal jackpotContribution;
 
-    @NotNull
+    @NotBlank
     @Size(max = 255)
-    public Integer gameId;
+    public String gameId;
 
     @NotBlank
     @Size(max = 255)
@@ -110,7 +110,7 @@ public class WagerDto extends CommonDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameId.toString();
+        return this.gameId;
     }
 
     @Override
