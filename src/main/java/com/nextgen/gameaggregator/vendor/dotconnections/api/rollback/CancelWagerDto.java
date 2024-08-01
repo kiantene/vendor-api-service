@@ -20,18 +20,17 @@ import java.math.BigDecimal;
 public class CancelWagerDto extends CommonDto implements RollbackData, AdjustmentData {
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String roundId;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String wagerId;
 
     @NotBlank
-    @Size(max = 20)
-    @Pattern(regexp = "^[a-z]+$")
+    @Size(max = 255)
     public String provider;
 
     @NotNull
@@ -39,8 +38,8 @@ public class CancelWagerDto extends CommonDto implements RollbackData, Adjustmen
     // 1=cancelWager, 2=cancelEndWager
     public Integer wagerType;
 
-    @NotNull
-    @Pattern(regexp = "^true$|^false$")
+//    @NotNull
+//    @Pattern(regexp = "^true$|^false$")
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 

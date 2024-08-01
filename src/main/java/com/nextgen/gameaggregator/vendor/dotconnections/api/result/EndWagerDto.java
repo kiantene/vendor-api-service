@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.*;
@@ -19,23 +20,21 @@ import java.math.BigDecimal;
 public class EndWagerDto extends CommonDto implements BetResultData {
 
     @NotNull
-    @PositiveOrZero
-    @Digits(integer = 20, fraction = 8)
+    @Digits(integer = 20, fraction = 8, message = ResponseCodes.INVALID_AMOUNT)
     public BigDecimal amount;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String roundId;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$")
     public String wagerId;
 
     @NotBlank
-    @Size(max = 20)
-    @Pattern(regexp = "^[a-z]+$")
+    @Size(max = 255)
     public String provider;
 
     @Nullable

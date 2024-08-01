@@ -89,7 +89,7 @@ public class BalanceAction {
             httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {

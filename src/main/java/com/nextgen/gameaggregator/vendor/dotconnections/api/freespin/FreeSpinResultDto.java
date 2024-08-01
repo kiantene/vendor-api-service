@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -18,35 +19,33 @@ import java.math.BigDecimal;
 public class FreeSpinResultDto extends CommonDto implements BetResultData {
 
     @NotNull
-    @PositiveOrZero
-    @Digits(integer = 20, fraction = 8)
+    @Digits(integer = 20, fraction = 8, message = ResponseCodes.INVALID_AMOUNT)
     public BigDecimal amount;
 
     @NotNull
-    @Digits(integer = Integer.MAX_VALUE, fraction = 0)
+    @Size(max = 255)
     public Integer gameId;
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 255)
     public String gameName;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String roundId;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String wagerId;
 
     @NotBlank
-    @Size(max = 20)
-    @Pattern(regexp = "^[a-z]+$")
+    @Size(max = 255)
     public String provider;
 
-    @NotNull
-    @Pattern(regexp = "^true$|^false$")
+//    @NotNull
+//    @Pattern(regexp = "^true$|^false$")
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 

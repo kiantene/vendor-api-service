@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -14,22 +15,20 @@ import java.time.Instant;
 public class CommonDto {
 
     @NotBlank
-    @Size(max = 7)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max = 255)
     public String brandId;
 
     @NotBlank
-    @Size(max = 32)
-    @Pattern(regexp = "^[A-Z0-9]*$")
+    @Size(max = 1000)
     public String sign;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(min = 3, max = 20)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.INVALID_BRAND_UID)
+    @Size(max = 50)
     public String brandUid;
 
     @NotBlank
-    @Size(min = 3, max = 4)
+    @Size(max = 5)
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 
