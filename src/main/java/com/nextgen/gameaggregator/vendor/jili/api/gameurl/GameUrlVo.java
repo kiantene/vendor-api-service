@@ -1,17 +1,22 @@
 package com.nextgen.gameaggregator.vendor.jili.api.gameurl;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
-    private Integer ErrorCode;
-    private String Message;
+
+    @JsonProperty("ErrorCode")
+    private Integer errorCode;
+    @JsonProperty("Message")
+    private String message;
     @NotBlank(message = "url can not be blank")
-    private String Data;
+    @JsonProperty("Data")
+    private String data;
 
     @Override
     public String getGameUrl() {
-        return this.Data;
+        return this.data;
     }
 }

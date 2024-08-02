@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -55,7 +56,6 @@ public class BonusAction {
         BonusVo vo = new BonusVo();
         String traceId = httpRequestLog.getId();
         BonusDto dto = new BonusDto();
-        BigDecimal oldBalance = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -70,25 +70,22 @@ public class BonusAction {
 
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
             vo.setResponseDateTime(dto.getRequestDateTime());
-            vo.setOldBalance(oldBalance);
-            vo.setNewBalance(balance);
+            vo.setOldBalance((balance.subtract(dto.getWinAmount())).setScale(4, RoundingMode.DOWN));
+            vo.setNewBalance(balance.setScale(4, RoundingMode.DOWN));
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
@@ -99,7 +96,7 @@ public class BonusAction {
 
         } catch (InvalidRequestException e) {
             if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.OPERATOR_ID_ERROR.Status))) {
-                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR);
+                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR); //check db credential (operatorId) with request body value of operatorId that sent from vendor
 
             } else {
                 vo.setResponseCodes(ResponseCodes.INCOMING_REQUEST_INFO_INCOMPLETE);
@@ -109,7 +106,7 @@ public class BonusAction {
 
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_TRANSACTION);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setOldBalance(BigDecimal.ZERO);
             vo.setNewBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);

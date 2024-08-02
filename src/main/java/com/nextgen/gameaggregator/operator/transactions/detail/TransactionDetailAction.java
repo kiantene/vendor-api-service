@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,29 +19,33 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "transaction/")
 @Slf4j
 public class TransactionDetailAction {
+    public static final String REQUEST_TYPE = "TransactionDetails";
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final LanguageService languageService;
+    private final BetHistoryService betHistoryService;
+    private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
 
-    @Autowired
-    private HttpService httpService;
+    public TransactionDetailAction(HttpService httpService,
+                                   ValidationService validationService,
+                                   LanguageService languageService,
+                                   BetHistoryService betHistoryService,
+                                   VendorLineService vendorLineService,
+                                   VendorService vendorService) {
 
-    @Autowired
-    private ValidationService validationService;
-
-    @Autowired
-    private LanguageService languageService;
-
-    @Autowired
-    private BetHistoryService betHistoryService;
-
-    @Autowired
-    private VendorLineService vendorLineService;
-
-    @Autowired
-    private VendorService vendorService;
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.languageService = languageService;
+        this.betHistoryService = betHistoryService;
+        this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = "detail")
     public OperatorResponseVo<TransactionDetailData> detail(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        httpRequestLog.setRequestType("TransactionDetails");
+        httpRequestLog.setRequestType(REQUEST_TYPE);
         OperatorResponseVo<TransactionDetailData> responseVo = new OperatorResponseVo<>();
         try {
 
@@ -139,7 +142,6 @@ public class TransactionDetailAction {
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);

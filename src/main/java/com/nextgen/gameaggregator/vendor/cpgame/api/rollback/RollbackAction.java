@@ -20,10 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -33,7 +31,6 @@ public class RollbackAction {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorPlayerService vendorPlayerService;
 
@@ -41,13 +38,11 @@ public class RollbackAction {
     @Autowired
     public RollbackAction(HttpService httpService, VendorLineService vendorLineService,
                           GameSessionService gameSessionService, WalletService walletService,
-                          ValidationService validationService, VendorService vendorService,
-                          VendorPlayerService vendorPlayerService) {
+                          VendorService vendorService, VendorPlayerService vendorPlayerService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.validationService = validationService;
         this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
     }
@@ -62,10 +57,10 @@ public class RollbackAction {
         ResponseVo vo = new ResponseVo();
 
         DataVo dataVo = new DataVo();
-
+        RollBackDto rollBackDto = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8);
-            RollBackDto rollBackDto = HttpService.convertQueryStringToDto(body, RollBackDto.class);
+            rollBackDto = HttpService.convertQueryStringToDto(body, RollBackDto.class);
 
             rollBackDto.convertStringToJsonObject(rollBackDto.getMessage());
 
@@ -86,10 +81,9 @@ public class RollbackAction {
 
             // define time for response data to vendor
             long currentTimeMillis = System.currentTimeMillis();
-            Instant instant = Instant.ofEpochMilli(currentTimeMillis);
 
-            dataVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            dataVo.setUpdated_ms(instant.getEpochSecond());
+            dataVo.setBalance(balance);
+            dataVo.setUpdatedMs(currentTimeMillis);
             dataVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             vo.setData(dataVo);
@@ -97,28 +91,35 @@ public class RollbackAction {
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INVALID_REQUEST);
+
         } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.SIGNATURE_ERROR);
+
         } catch (CredentialNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.APP_ID_ERROR);
-        } catch (DisabledGameException e) {
+
+        } catch (AuthenticationException | InvalidPlayerException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.GAME_ID_ERROR);
+            vo.setCodeMsg(ResponseCodes.PLAYER_NOT_EXIST);
+
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
-        } catch (InvalidAgentApiCredentialException |
-                 VendorCurrencyNotSupportException |
-                 DisabledAgentPlayerException |
-                 InvalidOperatorResponseException |
-                 DisabledVendorLineException e) {
+
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
+            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+
+        } catch (BetNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.BET_NOT_FOUND);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
+
         } finally {
             httpService.end(httpRequestLog, vo);
         }
@@ -128,17 +129,12 @@ public class RollbackAction {
     private void doValidation(RollBackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
         ValidationUtils.validateRequest(dto.getMessageDto());
 
     }
 
     private void doVerification(RollBackDto dto, GameSession gameSession, String oriRequest) throws
-            DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException, InvalidPlayerException, CredentialNotFoundException,
-            AuthenticationException, InvalidSignatureException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+            CredentialNotFoundException, InvalidSignatureException {
 
         String appId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.app_id);
         ValidationUtils.isEquals(appId, dto.getAppid(), CredentialNotFoundException::new);

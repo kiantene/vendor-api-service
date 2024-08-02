@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -70,7 +71,7 @@ public class BetDetailService implements BetDetailUrl {
         //MD5 encrypt
         String md5Param = "";
         try {
-            md5Param = vendorService.md5(jsonParamString);
+            md5Param = DigestUtils.md5Hex(jsonParamString);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("MD5 Encrypt Failed");
         }

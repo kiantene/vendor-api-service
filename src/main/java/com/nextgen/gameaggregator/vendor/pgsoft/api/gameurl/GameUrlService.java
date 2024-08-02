@@ -1,17 +1,15 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl;
 
-import com.nextgen.gameaggregator.service.S3Service;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.S3Service;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -33,16 +31,20 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class GameUrlService implements GameUrl {
+public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
     @Autowired
-    RequestService requestService;
+    private S3Service s3Service;
 
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
+    public GameUrlService() {
+        super(GameUrlVo.class);
 
-    @Autowired
-    S3Service s3Service;
+//        this.s3Service = new S3Service();
+        this.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        this.setCredentialApiUrl(Credentials.GAME_URL_DOMAIN);
+        this.setGameUrl("");
+        this.setAutoMapResponse(false);
+    }
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
@@ -50,18 +52,27 @@ public class GameUrlService implements GameUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
-        boolean checkExists = this.checkIsGameOpenInNewFormat(credentials.get(Credentials.GAME_VERSION), gameCode);
+//        boolean checkExists = this.checkIsGameOpenInNewFormat(credentials.get(Credentials.GAME_VERSION), gameCode);
 
-        if (checkExists) {
-            formData = this.newDataFormat(gameCode, gameSession, credentials);
+//        if (checkExists) {
+        formData = this.newDataFormat(gameCode, gameSession, credentials);
 
-        } else {
-            formData = this.oldDataFormat(gameCode, gameSession);
-
-        }
+//        } else {
+//            formData = this.oldDataFormat(gameCode, gameSession);
+//
+//        }
 
         return formData;
 
+    }
+
+    @Override
+    public GameUrlVo responseMapper(String responseBody, GameSession gameSession) {
+        GameUrlVo gameUrlVo = new GameUrlVo();
+        String vendorGameUrl = s3Service.generateHtmlToS3(gameSession, responseBody);
+        gameUrlVo.setGameUrl(vendorGameUrl);
+
+        return gameUrlVo;
     }
 
     private boolean checkIsGameOpenInNewFormat(String gameVersionOrGameList, String gameCode) {
@@ -96,7 +107,7 @@ public class GameUrlService implements GameUrl {
         return formData;
 
     }
-    
+
     private MultiValueMap<String, String> newDataFormat(String gameCode, GameSession gameSession, Map<String, String> credentials) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String path = "/" + gameCode + "/index.html";
@@ -113,24 +124,24 @@ public class GameUrlService implements GameUrl {
 
     }
 
-    @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
-            throws InvalidVendorLineException, InvalidVendorResponseException {
-
-        GameUrlVo responseVo = new GameUrlVo();
-
-        boolean checkExists = this.checkIsGameOpenInNewFormat(credentials.get(Credentials.GAME_VERSION), gameSession.getVendorGameCode());
-
-        if (checkExists) {
-            responseVo = this.newCallFormat(formData, credentials, gameSession);
-
-        } else {
-            responseVo = this.oldCallFormat(formData, credentials, gameSession);
-
-        }
-
-        return responseVo;
-    }
+//    @Override
+//    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+//            throws InvalidVendorLineException, InvalidVendorResponseException {
+//
+//        GameUrlVo responseVo = new GameUrlVo();
+//
+//        boolean checkExists = this.checkIsGameOpenInNewFormat(credentials.get(Credentials.GAME_VERSION), gameSession.getVendorGameCode());
+//
+//        if (checkExists) {
+//            responseVo = this.newCallFormat(formData, credentials, gameSession);
+//
+//        } else {
+//            responseVo = this.oldCallFormat(formData, credentials, gameSession);
+//
+//        }
+//
+//        return responseVo;
+//    }
 
     private GameUrlVo oldCallFormat(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) {
         GameUrlVo responseVo = new GameUrlVo();
@@ -182,16 +193,11 @@ public class GameUrlService implements GameUrl {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(TIMEOUT))
                     .block();
 
             Long endTime = System.currentTimeMillis();
-            requestLogVo = requestService.createRequestLogVo(
-                    apiUrl, apiUrl, rawText, apiResponse, headerMap, startTime, endTime,
-                    this.getClass().getPackage().getName(), profilesActive);
-
-            requestService.validateVendorHttpStatusResponse(apiResponse);
-            String vendorGameUrl = s3Service.GenerateHtmlToS3(gameSession, apiResponse.getBody());
+            String vendorGameUrl = s3Service.generateHtmlToS3(gameSession, apiResponse.getBody());
             responseVo.setGameUrl(vendorGameUrl);
 
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -200,12 +206,12 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
             return responseVo;
 
-        } catch (InvalidResponseException | HttpResponseStatusCodeException e){
+        } catch (InvalidResponseException | HttpResponseStatusCodeException e) {
             RequestService.failResponseLog(requestLogVo, e, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new InvalidVendorLineException(e.getMessage());
 
         }

@@ -2,29 +2,20 @@ package com.nextgen.gameaggregator.vendor.cpgame.api.credit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonBetInfoDto;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetInfoDto {
-
-    @NotBlank
-    @JsonProperty("bet_id")
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$")
-    private String betId;
+public class BetInfoDto extends CommonBetInfoDto {
 
     @NotNull
     @JsonProperty("win_amount")
-    private Double winAmount;
+    @Digits(integer = 20, fraction = 8)
+    private BigDecimal winAmount;
 
-    @NotBlank
-    @JsonProperty("round_id")
-    private String roundId;
-
-    @NotBlank
-    @JsonProperty("settle_type")
-    private String settleType;
 }

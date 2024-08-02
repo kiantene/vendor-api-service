@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -70,18 +71,18 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Set response data
-            vo.setBalance(balance);
+            vo.setBalance(balance.setScale(4, RoundingMode.DOWN));
             vo.setResponseDateTime(dto.getRequestDateTime());
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
-            vo.setResponseDateTime(dto.getRequestDateTime());
+            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
             vo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 
@@ -91,7 +92,7 @@ public class BalanceAction {
 
         } catch (InvalidRequestException e) {
             if (e.getMessage() != null && e.getMessage().equals(String.valueOf(ResponseCodes.OPERATOR_ID_ERROR.Status))) {
-                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR);
+                vo.setResponseCodes(ResponseCodes.OPERATOR_ID_ERROR); //check db credential (operatorId) with request body value of operatorId that sent from vendor
             } else {
                 vo.setResponseCodes(ResponseCodes.INCOMING_REQUEST_INFO_INCOMPLETE);
             }

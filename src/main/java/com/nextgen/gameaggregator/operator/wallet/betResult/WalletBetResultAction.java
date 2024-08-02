@@ -137,10 +137,10 @@ public class WalletBetResultAction {
 
             long endTime = System.currentTimeMillis();
             if (httpRequestLog != null) {
+                httpRequestLog.setOperatorEnd(endTime);
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
                 }
-                httpRequestLog.setOperatorEnd(endTime);
             }
 
             if (isTimeout.get()) {
@@ -205,7 +205,7 @@ public class WalletBetResultAction {
         return responseVo;
     }
 
-    public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, HttpRequestLog httpRequestLog)
             throws InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -214,6 +214,8 @@ public class WalletBetResultAction {
         }
 
         WalletBalanceVo responseVo;
+        Long startTime = System.currentTimeMillis();
+        Long endTime = 0L;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
@@ -222,12 +224,8 @@ public class WalletBetResultAction {
         currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-
-        long startTime = System.currentTimeMillis();
         String jsonApiResponse = new Gson().toJson(dto);
 
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-        httpRequestLog.setAgentId(agentId);
         httpRequestLog.setOperatorStart(startTime);
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
@@ -246,23 +244,23 @@ public class WalletBetResultAction {
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                     .block();
 
-            long endTime = System.currentTimeMillis();
+            endTime = System.currentTimeMillis();
             if (apiResponse != null) {
                 httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
 
             }
-            httpRequestLog.setOperatorEnd(endTime);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            httpRequestLog.setOperatorResponse(apiResponse.getBody());
+            httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+            
             if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
             } else {
-                httpRequestLog.setOperatorResponse(apiResponse.getBody());
-                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
                 Optional.ofNullable(responseVo.getData()).ifPresent(data -> httpRequestLog.setOperatorTimestamp(data.getTimestamp()));
             }
 
@@ -275,6 +273,9 @@ public class WalletBetResultAction {
             responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
             betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
 
+        } finally {
+            endTime = (endTime.equals(0L) ? System.currentTimeMillis() : endTime);
+            httpRequestLog.setOperatorEnd(endTime);
         }
 
         return responseVo;

@@ -34,11 +34,9 @@ public class HttpService {
 
     private static final Integer THREAD_SIZE = 32;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
-
+    private final KafkaService kafkaService;
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
-
-    private final KafkaService kafkaService;
 
     @Autowired
     public HttpService(KafkaService kafkaService) {
@@ -208,7 +206,7 @@ public class HttpService {
 
         return httpRequestLog;
     }
-    
+
     public HttpRequestLog startRetryRequestToOperator(RawBetResultRetryLog rawBetResultRetryLogItem) {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
@@ -216,6 +214,23 @@ public class HttpService {
         try {
             httpRequestLog.setUrl("Retry Request - " + rawBetResultRetryLogItem.getAction());
             httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public HttpRequestLog startEndRoundConsumerLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("processEndRoundLog Success");
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());
 
@@ -237,8 +252,13 @@ public class HttpService {
                 try {
                     String jsonResponseVo = new Gson().toJson(responseVo);
                     if (requestLog.isResponseLogged()) {
-                        requestLog.setResponseBody(jsonResponseVo);
+                        if (requestLog.isOperatorEndpoint()) {
+                            requestLog.setOperatorResponse(jsonResponseVo);
+                        } else {
+                            requestLog.setResponseBody(jsonResponseVo);
+                        }
                     }
+
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
                     kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));

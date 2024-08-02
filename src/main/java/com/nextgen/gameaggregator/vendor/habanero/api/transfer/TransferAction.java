@@ -245,19 +245,20 @@ public class TransferAction {
             DisabledGameException,
             DisabledVendorLineException {
 
-        FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
-        switch (fundInfoDto.getGameStateMode()) {
-            case GameStateMode.STARTROUND -> {
-                //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
-                responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-            }
-            case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
-                //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
-                responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-            }
-            // If the header does not match any of the expected values, return an error response
-            default -> {
-                throw new InvalidRequestException();
+        for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
+            switch (fundInfoDto.getGameStateMode()) {
+                case GameStateMode.STARTROUND -> {
+                    //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
+                    responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
+                    //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
+                    responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                // If the header does not match any of the expected values, return an error response
+                default -> {
+                    throw new InvalidRequestException();
+                }
             }
         }
 

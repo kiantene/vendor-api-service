@@ -22,11 +22,11 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        if(!this.code.equals(0)){
-            return true;
-        }else{
-            return false;
+        if (this.getCode() != null) {
+            if (!this.code.equals(0)) {
+                return true;
+            }
         }
-
+        return false;
     }
 }
