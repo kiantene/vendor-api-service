@@ -22,7 +22,8 @@ public class CommonDto {
     @Size(max = 1000)
     public String sign;
 
-    @NotBlank(message = ResponseCodes.REQUEST_PARAM_ERROR)
+    @NotBlank
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.INVALID_BRAND_UID)
     @Size(max = 50)
     public String brandUid;
