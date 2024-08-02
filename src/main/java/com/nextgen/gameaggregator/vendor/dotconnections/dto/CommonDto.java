@@ -22,7 +22,7 @@ public class CommonDto {
     @Size(max = 1000)
     public String sign;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.REQUEST_PARAM_ERROR)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.INVALID_BRAND_UID)
     @Size(max = 50)
     public String brandUid;
