@@ -23,8 +23,6 @@ public class CommonDto {
     public String sign;
 
     @NotBlank
-    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.INVALID_BRAND_UID)
     @Size(max = 50)
     public String brandUid;
 
