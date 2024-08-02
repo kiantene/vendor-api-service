@@ -26,6 +26,7 @@ public class KafkaService {
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
+    private final CachingService cachingService;
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
@@ -33,13 +34,16 @@ public class KafkaService {
                         CurrencyConversionService currencyConversionService,
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
-                        VendorPlayerService vendorPlayerService) {
+                        VendorPlayerService vendorPlayerService,
+                        CachingService cachingService) {
+
         this.stringKafkaTemplate = stringKafkaTemplate;
         this.jsonSchemaKafkaTemplate = jsonSchemaKafkaTemplate;
         this.currencyConversionService = currencyConversionService;
         this.warehouseBetHistoryService = warehouseBetHistoryService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
+        this.cachingService = cachingService;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -104,7 +108,7 @@ public class KafkaService {
     public void produceWarehouseBetHistory(BetHistory betHistory, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
         try {
             //will do currency conversion before send to kafka
-            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+            //currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
             WarehouseFutureEntity warehouseFutureEntity =
                     warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
                             betHistory.getVendorGameId(), betHistory.getVendorId(),
@@ -130,6 +134,7 @@ public class KafkaService {
             // Using Jackson or any other JSON library to convert UserData object to JSON string
             ObjectMapper mapper = new ObjectMapper();
 
+            cachingService.storeFirstProcessBetDateForCurrencyConversionIssue(1, System.currentTimeMillis());
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
 
             if (warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)) {

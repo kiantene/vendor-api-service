@@ -30,13 +30,16 @@ public class CachingService {
     }
 
     @CacheEvict(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public void deleteUnsettledBetCaching(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) {}
+    public void deleteUnsettledBetCaching(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) {
+    }
 
     @CacheEvict(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public void deleteResultBetCaching(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) {}
+    public void deleteResultBetCaching(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) {
+    }
 
     @CacheEvict(value = "UnsettledBetWithGameId", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public void deleteUnsettledBetByGameIdCaching(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {}
+    public void deleteUnsettledBetByGameIdCaching(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
+    }
 
     @CachePut(value = "SettledBet", key = "{#rawSettledBet.vendorBetId, #rawSettledBet.roundId, #rawSettledBet.vendorGameId, #rawSettledBet.vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet updateSettledBetCaching(SettledBet settledBet) {
@@ -89,6 +92,11 @@ public class CachingService {
         playerBalance.setCurrencyCode(gameSession.getCurrencyCode());
         playerBalance.setCreateTime(Instant.now().toEpochMilli());
         return playerBalance;
+    }
+
+    @Cacheable(value = "ClickhouseFirstDataOfCurrencyConversionChanges", key = "{#first}", cacheManager = "cacheManager")
+    public Long storeFirstProcessBetDateForCurrencyConversionIssue(Integer first, Long timestamp) {
+        return timestamp;
     }
 
 }
