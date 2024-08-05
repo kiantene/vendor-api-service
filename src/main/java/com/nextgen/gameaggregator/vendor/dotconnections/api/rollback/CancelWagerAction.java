@@ -106,7 +106,7 @@ public class CancelWagerAction {
             httpService.logError(httpRequestLog, currencyNotSupportedException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
@@ -248,6 +248,9 @@ public class CancelWagerAction {
 
         // Verify signature
         VendorService.isSameSignature(dto.getSign(), toVerifySign);
+
+        // Verify if is valid player
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getBrandUid(), InvalidPlayerException::new);
 
         // Verify provider
         if (!dto.getProvider().equals(providerCode)) {
