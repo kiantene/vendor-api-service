@@ -101,12 +101,16 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
+        } catch(AuthenticationException authenticationException){
+            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
+            httpService.logError(httpRequestLog, authenticationException);
+
         } catch (CurrencyNotSupportedException | VendorCurrencyNotSupportException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
             httpService.logError(httpRequestLog, currencyNotSupportedException);
 
-        } catch (AuthenticationException | InvalidPlayerException invalidPlayerException) {
-            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
