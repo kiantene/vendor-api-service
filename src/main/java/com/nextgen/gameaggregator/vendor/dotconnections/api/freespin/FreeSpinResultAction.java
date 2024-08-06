@@ -84,7 +84,7 @@ public class FreeSpinResultAction {
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
-        } catch (AuthenticationException | InvalidSignatureException signErrorException) {
+        } catch (InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
@@ -92,7 +92,7 @@ public class FreeSpinResultAction {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
             httpService.logError(httpRequestLog, currencyNotSupportedException);
 
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (AuthenticationException | InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
