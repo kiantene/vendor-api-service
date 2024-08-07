@@ -58,6 +58,11 @@ public class EndWagerDto extends CommonDto implements BetResultData {
     }
 
     @Override
+    public String getRoundId() {
+        return this.roundId;
+    }
+
+    @Override
     public String getGameId() {
         return null;
     }

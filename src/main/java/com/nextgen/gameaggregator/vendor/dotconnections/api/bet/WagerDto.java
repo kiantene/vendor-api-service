@@ -74,6 +74,11 @@ public class WagerDto extends CommonDto implements BetResultData {
     }
 
     @Override
+    public String getRoundId() {
+        return this.roundId;
+    }
+
+    @Override
     public BigDecimal getBetAmount() {
         return this.amount;
     }
