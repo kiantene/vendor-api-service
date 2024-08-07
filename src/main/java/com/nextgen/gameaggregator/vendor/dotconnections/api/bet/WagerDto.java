@@ -80,12 +80,12 @@ public class WagerDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.amount.negate();
+        return null;
     }
 
     @Override
@@ -115,7 +115,7 @@ public class WagerDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
