@@ -1,10 +1,5 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.balance;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -12,6 +7,10 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class BalanceService {
@@ -28,6 +27,8 @@ public class BalanceService {
     private VendorGameService vendorGameService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private VendorService vendorService;
 
     public ResponseVo getBalance(CommonDto dto, String traceId, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();

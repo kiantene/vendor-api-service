@@ -143,7 +143,8 @@ public class DebitAction {
 
             // 2. Verify session token
             String vendorGameCode = vendorService.mergeGameCode(debitTransactionsDto.getGpcode(), debitTransactionsDto.getGamecode());
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitTransactionsDto.getUserid(), vendorGameCode);
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitTransactionsDto.getUserid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
 
             // 3. Verify Credential and Currency
             this.doVerification(debitTransactionsDto, gameSession, clientId, clientSecret);

@@ -406,35 +406,35 @@ public class WalletService {
 
             Integer operatorStatus = settledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
-
             Integer resettleNum = Optional.ofNullable(settledBet.getResettleNum()).orElse(0);
 
-            // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
-                throw new TransactionStillProcessingException();
-
-            } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                resettleNum = resettleNum + 1;
-                if (vendorService.shouldRejectCancelRequest()) {
-                    throw new BetResultIdempotentViolationException(settledBet);
-
-                } else {
-                    if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                        throw new BetResultIdempotentViolationException(settledBet);
-
-                    }
-                }
-
-            } else {
-                // operatorStatus.equals(internalServerError)
-
-            }
-
-            // if status is settled, reset internalTransactionId and send cancel request to operator
             if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                if (operatorStatus.equals(operatorStatusSuccess)) {
+                    // if SC_OK
+                    if (vendorService.shouldRejectCancelRequest()) {
+                        throw new BetResultIdempotentViolationException(settledBet);
+                    }
+                    // continue processRollback request if should not rejected
+                    resettleNum += 1;
+                } else if (operatorStatus.equals(operatorStatusProcessing)) {
+                    // if SC_TRANSACTION_STILL_PROCESSING
+                    throw new TransactionStillProcessingException();
+                }
+                // else then other operator error, continue processRollback request
                 settledBet.setInternalTransactionId(traceId);
+            } else {
+                // if SC_OK
+                if (operatorStatus.equals(operatorStatusSuccess)) {
+                    throw new BetResultIdempotentViolationException(settledBet);
+                }
+                // it would be cancel / refund
+                if (betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
+                    // if less than 5 seconds
+                    throw new TransactionStillProcessingException();
+                }
+                // continue processRollback request.
+                resettleNum = settledBet.getResettleNum();
             }
-            // else the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
 
             if (vendorSettledTime != null) {
                 // will be priority of using rollbackData vendorSettleTime if available.

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.util;
 
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -11,6 +12,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -45,7 +47,7 @@ public class ValidationUtils {
                     if (v.getMessage().equals(v.getMessageTemplate())) {
                         validation.put(fieldName, v.getMessage());
                     } else {
-                        validation.put(fieldName, fieldName + " : " + v.getMessage());
+                        validation.put(fieldName, null);
                     }
                 }
             });
@@ -86,6 +88,12 @@ public class ValidationUtils {
             String errorMessage = invalidRequestException.getAllValidationErrorMessages();
             throw lambdaFunction.apply(errorMessage);
         }
+    }
+
+    public static String validateCredential(String value) throws InvalidVendorLineException {
+        return Optional.ofNullable(value)
+                .filter(val -> !val.isEmpty()) // Check if the string is non-null and non-empty
+                .orElseThrow(InvalidVendorLineException::new); // Set the value using the setter if it is non-null and non-empty
     }
 
 }

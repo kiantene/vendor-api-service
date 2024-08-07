@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.epicwin.api.gameurl;
+package com.nextgen.gameaggregator.vendor.live22.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;

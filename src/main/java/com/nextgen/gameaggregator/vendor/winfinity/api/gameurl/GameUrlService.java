@@ -1,15 +1,5 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.gameurl;
 
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
@@ -22,6 +12,18 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.winfinity.service.VendorService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Map;
+import java.util.Optional;
 
 public class GameUrlService implements GameUrl {
 
@@ -76,13 +78,20 @@ public class GameUrlService implements GameUrl {
         headers.set("Authorization", "Bearer " + token);
         headers.set("Content-Type", "application/json");
 
-        // Set request body
+        // Set request body without tableId
         String requestBody = "{\"user\":{\"partnerSiteId\":\"" + credentials.get(Credentials.CLIENT_ID)
-                + "\",\"userId\":\""
-                + gameSession.getVendorPlayerUsername() + "\",\"language\":\"" + gameSession.getVendorLanguageCode()
-                + "\",\"timeZoneOffset\":\"00:00:00\"},\"tableId\":\"" + gameSession.getVendorGameCode()
-                + "\",\"currency\":\"" + gameSession.getVendorCurrencyCode() + "\",\"country\":\"DE\",\"device\":\""
-                + gameSession.getVendorPlatformCode() + "\",\"ipAddress\":\"" + gameSession.getIpAddress() + "\"}";
+                + "\",\"userId\":\"" + gameSession.getVendorPlayerUsername() + "\",\"language\":\"" + gameSession.getVendorLanguageCode()
+                + "\",\"timeZoneOffset\":\"00:00:00\"}";
+
+        // Add tableId if the game code is not "LOBBY"
+        if (!"LOBBY".equalsIgnoreCase(gameSession.getVendorGameCode())) {
+            requestBody += ",\"tableId\":\"" + gameSession.getVendorGameCode() + "\"";
+        }
+
+        // Append the rest of the JSON structure
+        requestBody += ",\"currency\":\"" + gameSession.getVendorCurrencyCode()
+                + "\",\"country\":\"DE\",\"device\":\"" + gameSession.getVendorPlatformCode()
+                + "\",\"ipAddress\":\"" + gameSession.getIpAddress() + "\"}";
 
         // Create HTTP entity with headers and body
         HttpEntity<String> httpEntity = new HttpEntity<>(requestBody, headers);

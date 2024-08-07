@@ -1,17 +1,19 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.tips;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class TipsService {
@@ -21,6 +23,8 @@ public class TipsService {
     private WalletService walletService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private VendorService vendorService;
 
     public ResponseVo tips(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
@@ -34,6 +38,7 @@ public class TipsService {
 
             // Get GameSession by vendor player username
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession);

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -8,11 +9,11 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
+import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,8 @@ public class TransactionService {
     private HttpService httpService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
 
@@ -47,12 +50,11 @@ public class TransactionService {
         ErrorVo errorVo = new ErrorVo();
 
         TransactionDto transactionDto = new TransactionDto();
-
         BigDecimal balance = null;
-
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
-
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
+        String vendorPlayerUsername = "";
 
         try {
             // Retrieve request body in original string format
@@ -60,9 +62,18 @@ public class TransactionService {
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+            vendorPlayerUsername = gameSession.getVendorPlayerUsername();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(transactionDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(transactionDto, vendorPlayerUsername) == null) {
+                requestIdempotentLogService.create(transactionDto, vendorPlayerUsername);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
@@ -80,16 +91,16 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch (BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-        }catch(InvalidOperatorResponseException e){
+        } catch (InvalidOperatorResponseException e) {
 
             // check the status is insufficient code or not
-            if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
+            if (e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
                 balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
@@ -97,12 +108,12 @@ public class TransactionService {
                 // Retrieve current wallet balance
                 balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
                 vo.setError(errorVo);
-            }else{
+            } else {
                 errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
                 vo.setError(errorVo);
             }
-            
-        }catch (DisabledVendorLineException |
+
+        } catch (DisabledVendorLineException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  CurrencyNotSupportedException |
@@ -117,12 +128,15 @@ public class TransactionService {
                  CredentialNotFoundException e) {
             errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(errorVo);
-        }catch(Exception exception){
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(errorVo);
-        }
-        finally {
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(transactionDto, vendorPlayerUsername);
+            }
+
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
             vo.setBalance(balanceVo);

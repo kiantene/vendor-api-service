@@ -1,20 +1,21 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.endround;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.service.VendorService;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class EndroundService {
@@ -40,6 +41,7 @@ public class EndroundService {
 
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession);
