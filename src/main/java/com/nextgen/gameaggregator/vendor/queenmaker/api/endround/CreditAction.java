@@ -138,7 +138,8 @@ public class CreditAction {
 
             // 2. Verify session token
             String vendorGameCode = vendorService.mergeGameCode(creditTransactionsDto.getGpcode(), creditTransactionsDto.getGamecode());
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditTransactionsDto.getUserid(), vendorGameCode);
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditTransactionsDto.getUserid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
 
             // 3. Verify Credential and Currency
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);

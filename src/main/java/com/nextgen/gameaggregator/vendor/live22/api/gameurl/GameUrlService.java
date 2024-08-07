@@ -1,13 +1,13 @@
-package com.nextgen.gameaggregator.vendor.epicwin.api.gameurl;
+package com.nextgen.gameaggregator.vendor.live22.api.gameurl;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.epicwin.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.epicwin.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.epicwin.constant.Formats;
-import com.nextgen.gameaggregator.vendor.epicwin.service.VendorService;
+import com.nextgen.gameaggregator.vendor.live22.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.live22.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.live22.constant.Formats;
+import com.nextgen.gameaggregator.vendor.live22.service.VendorService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -39,7 +39,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         String functionName = "GameLogin";
         String playerId = gameSession.getVendorPlayerUsername();
 
-        String operatorId = ValidationUtils.validateCredential(credentials.get(Credentials.OPERATOR_ID));
+        String operatorId = ValidationUtils.validateCredential(credentials.get(Credentials.USERNAME));
         String secretKey = ValidationUtils.validateCredential(credentials.get(Credentials.SECRET_KEY));
 
         //generate encryptString

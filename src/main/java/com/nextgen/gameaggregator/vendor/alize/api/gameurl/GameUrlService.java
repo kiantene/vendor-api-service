@@ -1,19 +1,5 @@
 package com.nextgen.gameaggregator.vendor.alize.api.gameurl;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -28,9 +14,23 @@ import com.nextgen.gameaggregator.vendor.alize.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alize.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alize.constant.GameId;
 import com.nextgen.gameaggregator.vendor.alize.service.VendorService;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -47,7 +47,7 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
-        Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+                                                         Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
         // Get operator and gameUrl by vendor line
         String operator = "";
@@ -76,7 +76,7 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
-            GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+                          GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
 
         // Retrieve the API URL and key from the credentials map
         String apiUrl = credentials.get(Credentials.API_URL);
@@ -104,7 +104,7 @@ public class GameUrlService implements GameUrl {
                 .uri(Endpoints.GAME_URL)
                 .headers(header -> header.addAll(headerMap))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromFormData(formData))
+                .bodyValue(new Gson().toJson(formData.toSingleValueMap()))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)

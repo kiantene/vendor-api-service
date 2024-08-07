@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,15 +46,20 @@ public class GameUrlService implements GameUrl {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
+        String vendorGameCode = gameSession.getVendorGameCode();
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
-        String gpcode = parts[0];
-        String gcode = parts[1];
+        String[] parts = VendorService.splitGameCode(vendorGameCode, 2);
+        String gpCode = parts[0];
+        String gCode = parts[1];
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("gpcode", gpcode);
-        formData.add("gcode", gcode);
+        // if not direct lobby then set param
+        if(!gCode.equalsIgnoreCase("Lobby")) {
+            formData.add("gpcode", gpCode);
+            formData.add("gcode", gCode);
+        }
+        
         formData.add("token", null); // this token will set after callAuthorize() vendor will return a token
         formData.add("lang", gameSession.getVendorLanguageCode());
 
@@ -73,8 +79,22 @@ public class GameUrlService implements GameUrl {
         // Build Game Url
         formData.set("token", authorizeDto.getAuthtoken());
 
+        // set game path for direct lobby (default direct game)
+        String gCode = VendorService.splitGameCode(gameSession.getVendorGameCode(), 2)[1];
+        String gamePath = EndPoints.GAME_URL;
+        if(gCode.equalsIgnoreCase("Lobby")) {
+            if(gameSession.getVendorPlatformCode().equals(Platforms.WEB.toString())){
+                // set lobby path for desktop mode
+                gamePath = credentials.get(Credentials.LOBBY_PATH_DESKTOP);
+            }else{
+                // set lobby path for mobile mode
+                gamePath = credentials.get(Credentials.LOBBY_PATH_MOBILE);
+            }
+            Optional.ofNullable(gamePath).orElseThrow(InvalidVendorLineException::new);
+        }
+
         String gameUrl = UriComponentsBuilder.fromUriString(gameApiUrl)
-                .path(EndPoints.GAME_URL)
+                .path(gamePath)
                 .queryParams(formData)
                 .build()
                 .encode()

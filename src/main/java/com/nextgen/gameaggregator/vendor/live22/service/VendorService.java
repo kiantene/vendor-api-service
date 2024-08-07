@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.epicwin.service;
+package com.nextgen.gameaggregator.vendor.live22.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonParseException;
@@ -8,8 +8,9 @@ import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.vendor.epicwin.api.endround.SettleDto;
+import com.nextgen.gameaggregator.vendor.live22.api.endround.SettleDto;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 
+@EqualsAndHashCode(callSuper = true)
 @Service
 @Slf4j
 @Data
@@ -60,7 +62,7 @@ public class VendorService extends BaseVendorService {
     }
 
     public static String generateMD5Hash(String input) {
-        String md5Hash = null;
+        String md5Hash;
 
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -88,7 +90,7 @@ public class VendorService extends BaseVendorService {
         boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
         boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
 
-        ResultType resultType = null;
+        ResultType resultType;
 
         if (isBet) {
             resultType = ResultType.BET_LOSE;
@@ -121,7 +123,6 @@ public class VendorService extends BaseVendorService {
 
 
         } catch (JsonParseException | JsonProcessingException e) {
-            log.error("Error parsing JSON: " + e.getMessage());
         }
 
         return settledBet;

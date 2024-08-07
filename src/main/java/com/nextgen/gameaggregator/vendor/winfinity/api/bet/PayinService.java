@@ -1,11 +1,5 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.bet;
 
-import java.math.BigDecimal;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -16,6 +10,11 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 public class PayinService {
@@ -30,6 +29,8 @@ public class PayinService {
     private HttpService httpService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private VendorService vendorService;
 
     public ResponseVo payin(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
@@ -43,6 +44,7 @@ public class PayinService {
 
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);

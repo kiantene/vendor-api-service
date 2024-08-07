@@ -57,6 +57,7 @@ public class SettledBet extends BetInformation {
         if (unsettledBet.getIsFreespin() == null) this.setIsFreespin(0);
 
         this.setInternalTransactionId(traceId);
+        this.setBetId(unsettledBet.getBetId());
         this.setWinLoss(vendorService.calculateWinLoss(this));
         this.setEffectiveTurnover(vendorService.calculateEffectiveTurnover(this));
         this.setStatus(BetStatus.SETTLED.code);

@@ -132,10 +132,9 @@ public class UnsettledBetService {
         } else {
             Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
             Integer operatorStatus = unsettledBet.getOperatorStatus();
-            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
 
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
+            if (operatorStatus.equals(operatorStatusProcessing)) {
                 throw new TransactionStillProcessingException();
             }
 
