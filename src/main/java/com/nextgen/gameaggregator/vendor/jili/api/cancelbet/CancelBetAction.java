@@ -91,7 +91,7 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+            cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {

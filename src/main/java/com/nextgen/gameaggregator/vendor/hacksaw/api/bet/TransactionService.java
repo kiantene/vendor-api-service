@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.hacksaw.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -20,30 +21,54 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class TransactionService {
+
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
+    public TransactionService(GameSessionService gameSessionService,
+                              VendorLineService vendorLineService,
+                              WalletService walletService,
+                              HttpService httpService,
+                              VendorService vendorService,
+                              ValidationService validationService,
+                              RequestIdempotentLogService requestIdempotentLogService) {
+
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.vendorService = vendorService;
+        this.validationService = validationService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+    }
 
     public ResponseVo transaction(HttpRequestLog httpRequestLog, String traceId) {
         ResponseVo vo = new ResponseVo();
+        boolean isRequestExists = false;
+        TransactionDto transactionDto = new TransactionDto();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-            TransactionDto transactionDto = HttpService.convertJsonToDto(body, TransactionDto.class);
+            transactionDto = HttpService.convertJsonToDto(body, TransactionDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(transactionDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(transactionDto, transactionDto.getExternalPlayerId()) == null) {
+                requestIdempotentLogService.create(transactionDto, transactionDto.getExternalPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(transactionDto.getExternalSessionId());
@@ -91,6 +116,11 @@ public class TransactionService {
         } catch (Exception e) {
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
+            
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(transactionDto, transactionDto.getExternalPlayerId());
+            }
         }
 
         return vo;

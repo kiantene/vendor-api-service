@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.hacksaw.service;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -62,16 +61,6 @@ public class VendorService extends BaseVendorService {
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
         if (!vendorGameCode.getBetGameCode().equals(gameId)) {
             throw new GameNotSupportedException();
-        }
-    }
-
-    public void verifyExistDebitTransaction(Integer vendorId, Long vendorPLayerId, String externalTransactionId) throws BetNotFoundException {
-        try {
-            // If bet is already settled, continue run
-            settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPLayerId, externalTransactionId);
-        } catch (BetNotFoundException e) {
-            // not found settled bet will check unsettled bet
-            unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
         }
     }
 }
