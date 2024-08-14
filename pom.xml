@@ -12,7 +12,7 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.87</version>
+    <version>1.1.89</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 

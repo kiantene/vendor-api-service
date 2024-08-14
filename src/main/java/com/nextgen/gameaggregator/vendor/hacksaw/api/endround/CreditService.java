@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.hacksaw.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -15,40 +16,65 @@ import com.nextgen.gameaggregator.vendor.hacksaw.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksaw.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksaw.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
 public class CreditService {
+
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
+    public CreditService(GameSessionService gameSessionService,
+                         VendorLineService vendorLineService,
+                         WalletService walletService,
+                         HttpService httpService,
+                         VendorService vendorService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
+
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+    }
 
     public ResponseVo credit(HttpRequestLog httpRequestLog, String traceId) {
         ResponseVo vo = new ResponseVo();
 
         BigDecimal balance = null;
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
+        CreditDto creditDto = new CreditDto();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-            CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
+            creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(creditDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(creditDto, creditDto.getExternalPlayerId()) == null) {
+                requestIdempotentLogService.create(creditDto, creditDto.getExternalPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(creditDto.getExternalSessionId());
@@ -67,12 +93,7 @@ public class CreditService {
             vo.setResponseCodes(ResponseCodes.INVALID_USER_OR_TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (DisabledAgentPlayerException e) {
-            vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
-                 GameNotSupportedException e) {
+        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
@@ -85,25 +106,28 @@ public class CreditService {
             httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
-            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+            balance = getCurrentBalance(gameSession, httpRequestLog);
             vo.setAccountBalance(balance.longValue());
             vo.setResponseCodes(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
-        } catch (BetNotFoundException | DisabledVendorLineException | DisabledGameException |
-                 InvalidOperatorResponseException | InvalidAgentApiCredentialException |
+        } catch (BetNotFoundException | InvalidOperatorResponseException | InvalidAgentApiCredentialException |
                  TransactionStillProcessingException e) {
+            if (e instanceof BetNotFoundException) {
+                balance = getCurrentBalance(gameSession, httpRequestLog);
+                vo.setAccountBalance(balance.longValue());
+            }
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
 
-            if (e instanceof BetNotFoundException) {
-                balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                vo.setAccountBalance(balance.longValue());
-            }
-            
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
+            
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(creditDto, creditDto.getExternalPlayerId());
+            }
         }
 
         return vo;
@@ -118,7 +142,9 @@ public class CreditService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException, BetNotFoundException {
+    private void doVerification(CreditDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException,
+            CurrencyNotSupportedException {
 
         //Verify received secret is same with credential
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
@@ -127,25 +153,26 @@ public class CreditService {
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
-        // Verify valid game id
-        vendorService.verifyVendorGameCode(gameSession, dto.getGameId().toString());
-
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalPlayerId(), InvalidPlayerException::new);
-
-        // Validate Debit Transaction is exist
-        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), dto.getBetTransactionId().toString());
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+    private BigDecimal getCurrentBalance(GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
+        HttpRequestLog newHttpRequestLog = new HttpRequestLog();
 
         try {
-            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            ModelMapper modelMapper = new ModelMapper();
+            modelMapper.getConfiguration().setSkipNullEnabled(true);
+            modelMapper.map(httpRequestLog, newHttpRequestLog);
+            newHttpRequestLog.setId(UUID.randomUUID().toString());
+            balance = walletService.getBalance(newHttpRequestLog.getId(), gameSession, newHttpRequestLog);
 
-        } catch (Exception exception) {
-
+        } catch (Exception ignored) {
+            // do nothing's
+        } finally {
+            httpService.end(newHttpRequestLog, new ResponseVo());
         }
 
         return balance;
