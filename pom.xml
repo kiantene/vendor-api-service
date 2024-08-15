@@ -17,13 +17,14 @@
     <description>game aggregator vendor api service</description>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.outputTimestamp>2022-11-08T16:29:35Z</project.build.outputTimestamp>
         <spring.profiles.active>${env.SPRING_PROFILES_ACTIVE:dev}</spring.profiles.active>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
         <java.version>18</java.version>
         <spring-doc.version>1.6.9</spring-doc.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sas-core.version>3.0.8</sas-core.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jersey.version>2.34</jersey.version>
