@@ -1,23 +1,24 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.Currency;
-import com.nextgen.gameaggregator.entity.ga.GameCategory;
-import com.nextgen.gameaggregator.entity.ga.Vendor;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
+import com.nextgen.gameaggregator.entity.warehouse.BetDetailUrlInfo;
 import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidCurrencyException;
-import com.nextgen.gameaggregator.exception.InvalidGameCategoryException;
-import com.nextgen.gameaggregator.exception.InvalidVendorException;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.transactions.list.TransactionsListDto;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorCurrencyRepository;
+import com.nextgen.sas.core.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -28,15 +29,162 @@ public class WarehouseBetHistoryService {
     private final VendorService vendorService;
     private final GameCategoryService gameCategoryService;
     private final CurrencyService currencyService;
-
     private final Integer[] excludeGameCategoryIds = {6}; // skip sport category
+    private final NamedParameterJdbcTemplate clickHouseJdbcTemplate;
+    private final VendorCurrencyRepository vendorCurrencyRepository;
     @Autowired
     public WarehouseBetHistoryService (VendorGameService vendorGameService, VendorService vendorService,
-                                       GameCategoryService gameCategoryService, CurrencyService currencyService){
+                                       GameCategoryService gameCategoryService, CurrencyService currencyService,
+                                       NamedParameterJdbcTemplate clickHouseJdbcTemplate,
+                                       VendorCurrencyRepository vendorCurrencyRepository){
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
         this.gameCategoryService = gameCategoryService;
         this.currencyService = currencyService;
+        this.clickHouseJdbcTemplate = clickHouseJdbcTemplate;
+        this.vendorCurrencyRepository = vendorCurrencyRepository;
+
+    }
+
+    public List<Object> findByAgentIdAndSettledTimeBetween(Integer agentId, TransactionsListDto dto) throws SQLException {
+
+        //note: Convert all the time to UTC for partition because partition in the DB is UTC
+        String dateFormat = "yyyyMMdd";
+        String startDateStr = DateUtil.convertMiliToDateString(dto.getFromTime(), "UTC", dateFormat);
+        String endDateStr = DateUtil.convertMiliToDateString(dto.getToTime(), "UTC", dateFormat);
+
+        //TODO remember change to vendor_settle_time
+        String sqlStmt =
+                "SELECT " +
+                        "id, round_id, external_transaction_id, agent_player_username, currency_code, game_code, vendor_code, " +
+                        "game_category_code, bet_amount, win_amount, win_loss, effective_turnover, jackpot_amount, status, vendor_bet_time, " +
+                        "vendor_settle_time,  IF(is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin, vendor_bet_id " +
+                        "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
+                        " AND agent_id = :agentId AND vendor_settle_time BETWEEN :startTime AND :endTime " +
+                        " ORDER BY vendor_bet_time DESC LIMIT :limit OFFSET :offset";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("agentId", agentId);
+        params.put("startDateStr", startDateStr);
+        params.put("endDateStr", endDateStr);
+        params.put("startTime", dto.getFromTime());
+        params.put("endTime", dto.getToTime());
+        params.put("offset", ((dto.getPageNo() - 1) * dto.getPageSize()));
+        params.put("limit", dto.getPageSize());
+
+        List<Object> transactions = new ArrayList<>();
+
+        clickHouseJdbcTemplate.query(sqlStmt, params, rs -> {
+
+            while (rs.next()) {
+                ArrayList<Object> bet = new ArrayList<>();
+                bet.add(rs.getString("id"));
+                bet.add(rs.getString("round_id"));
+                bet.add(rs.getString("external_transaction_id"));
+                bet.add(rs.getString("agent_player_username"));
+                bet.add(rs.getString("currency_code"));
+                bet.add(rs.getString("game_code"));
+                bet.add(rs.getString("vendor_code"));
+                bet.add(rs.getString("game_category_code"));
+                bet.add(rs.getBigDecimal("bet_amount"));
+                bet.add(rs.getBigDecimal("win_amount"));
+                bet.add(rs.getBigDecimal("win_loss"));
+                bet.add(rs.getBigDecimal("effective_turnover"));
+                bet.add(rs.getBigDecimal("jackpot_amount"));
+                bet.add(rs.getInt("status"));
+                bet.add(rs.getLong("vendor_bet_time"));
+                bet.add(rs.getLong("vendor_settle_time"));
+                bet.add(rs.getString("isFreeSpin"));
+                bet.add(rs.getString("vendor_bet_id"));
+                transactions.add(bet);
+            }
+            return transactions; // adapt as necessary
+
+        });
+
+        return transactions;
+    }
+
+    public Long findByAgentIdAndCreateTimeBetweenCount(Integer agentId, TransactionsListDto dto) throws SQLException {
+        //note: Convert all the time to UTC for partition because partition in the DB is UTC
+        String dateFormat = "yyyyMMdd";
+        String startDateStr = DateUtil.convertMiliToDateString(dto.getFromTime(), "UTC", dateFormat);
+        String endDateStr = DateUtil.convertMiliToDateString(dto.getToTime(), "UTC", dateFormat);
+
+        //TODO remember change to vendor_settle_time
+        String sqlStmt =
+                "SELECT COUNT(1)" +
+                        "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
+                        " AND agent_id = :agentId AND vendor_settle_time BETWEEN :startTime AND :endTime ";
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("agentId", agentId);
+        params.put("startDateStr", startDateStr);
+        params.put("endDateStr", endDateStr);
+        params.put("startTime", dto.getFromTime());
+        params.put("endTime", dto.getToTime());
+        return clickHouseJdbcTemplate.queryForObject(sqlStmt, params, Long.class);
+    }
+
+    public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String betId) throws BetNotFoundException {
+        String sqlStmt =
+                "SELECT " +
+                        "id , round_id, external_transaction_id, " +
+                        "agent_player_username, currency_id,  currency_code, " +
+                        "vendor_player_username, game_code, vendor_id,  vendor_code, " +
+                        "game_category_code, bet_amount, win_amount, " +
+                        "win_loss, effective_turnover, jackpot_amount, " +
+                        "status, vendor_bet_time, " +
+                        "vendor_settle_time, vendor_line_id, " +
+                        "IF(is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin, " +
+                        "game_session_token " +
+                        "FROM bet_history WHERE " +
+                        "agent_id = :agentId AND id= :betId " +
+                        "ORDER BY vendor_settle_time ASC " +
+                        "LIMIT 1 ";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("agentId", agentId);
+        params.put("betId", betId);
+
+
+        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+
+        clickHouseJdbcTemplate.query(sqlStmt, params, rs -> {
+            while (rs.next()) {
+                betDetailUrlInfo.setBetId(rs.getString("id"));
+                betDetailUrlInfo.setExternalTransactionId(rs.getString("external_transaction_id"));
+                betDetailUrlInfo.setExternalRoundId(rs.getString("round_id"));
+                betDetailUrlInfo.setUsername(rs.getString("agent_player_username"));
+                betDetailUrlInfo.setCurrencyId(rs.getInt("currency_id"));
+                betDetailUrlInfo.setCurrencyCode(rs.getString("currency_code"));
+                betDetailUrlInfo.setGameCode(rs.getString("game_code"));
+                betDetailUrlInfo.setVendorId(rs.getInt("vendor_id"));
+                betDetailUrlInfo.setVendorCode(rs.getString("vendor_code"));
+                betDetailUrlInfo.setGameCategoryCode(rs.getString("game_category_code"));
+                betDetailUrlInfo.setBetAmount(rs.getBigDecimal("bet_amount"));
+                betDetailUrlInfo.setWinAmount(rs.getBigDecimal("win_amount"));
+                betDetailUrlInfo.setWinLoss(rs.getBigDecimal("win_loss"));
+                betDetailUrlInfo.setEffectiveTurnover(rs.getBigDecimal("effective_turnover"));
+                betDetailUrlInfo.setJackpotAmount(rs.getBigDecimal("jackpot_amount"));
+                betDetailUrlInfo.setStatus(rs.getInt("status"));
+                betDetailUrlInfo.setVendorBetTime(rs.getLong("vendor_bet_time"));
+                betDetailUrlInfo.setVendorSettleTime(rs.getLong("vendor_settle_time"));
+                betDetailUrlInfo.setVendorLineId(rs.getInt("vendor_line_id"));
+                betDetailUrlInfo.setIsFreeSpin(rs.getString("isFreeSpin"));
+                betDetailUrlInfo.setVendorUsername(rs.getString("vendor_player_username"));
+                betDetailUrlInfo.setGameSessionToken(rs.getString("game_session_token"));
+
+                VendorCurrency vendorCurrency =
+                        vendorCurrencyRepository.findByVendorIdAndCurrencyId
+                                (rs.getInt("vendor_id"), rs.getInt("currency_id"));
+                betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+
+            }
+            return betDetailUrlInfo; // adapt as necessary
+
+        });
+        return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
 
     }
 

@@ -2,18 +2,20 @@ package com.nextgen.gameaggregator.operator.transactions.list;
 
 import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
 import com.nextgen.gameaggregator.exception.InvalidFromTimeException;
-import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
+import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
 import com.nextgen.gameaggregator.util.MysqlUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -23,14 +25,18 @@ import java.util.*;
 @Slf4j
 public class TransactionListService {
 
-    @Autowired
-    private BetHistoryRepository betHistoryRepository;
+    @Value("${spring.datasource.clickhouse-default.enable:false}")
+    private Boolean enableClickHouse;
+
     @Autowired
     private MysqlUtils mysqlUtils;
 
     //@PersistenceContext
     @PersistenceContext(unitName = "mysqlPersistenceUnitGaReader")
     private EntityManager entityManager;
+
+    @Autowired
+    private WarehouseBetHistoryService warehouseBetHistoryService;
 
     public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm) {
         // Create a list from elements of HashMap
@@ -53,14 +59,27 @@ public class TransactionListService {
         return temp;
     }
 
-    public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId) {
-        //TODO (by Alex), to discuss and change fetch by updated time
-
+    public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId) throws SQLException {
+        TransactionsListData transactionsListData = new TransactionsListData();
         List<Sort.Order> orders = this.generateOrder();
-        TransactionsListData transactionsListData = this.findByAgentIdAndCreateTimeBetween(agentId, dto);
-        transactionsListData.setHeaders(this.getHeaders());
+        if(!enableClickHouse){
+            transactionsListData= this.findByAgentIdAndCreateTimeBetween(agentId, dto);
+        }else{
+            Long betCount =  warehouseBetHistoryService.findByAgentIdAndCreateTimeBetweenCount(agentId, dto);
+            if(betCount>0){
+                List<Object> transactions =  warehouseBetHistoryService.findByAgentIdAndSettledTimeBetween(agentId, dto);
+                transactionsListData.setTransactions(transactions);
+                transactionsListData.setCurrentPage(dto.getPageNo());
+                transactionsListData.setTotalItems(betCount);
+                float totalPageCount = (float) (betCount /dto.getPageSize());
+                transactionsListData.setTotalPages(Math.round(totalPageCount));
+            }
 
+        }
+
+        transactionsListData.setHeaders(this.getHeaders());
         return transactionsListData;
+
 
     }
 
