@@ -12,15 +12,12 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.transactions.detail.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -28,25 +25,29 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.Map;
 
+
 @Service
 @Slf4j
 public class BetHistoryService {
-    @Autowired
-    private AutowireCapableBeanFactory autowireCapableBeanFactory;
+    @Value("${spring.datasource.clickhouse-default.enable:false}")
+    private Boolean enableClickHouse;
+    private final AutowireCapableBeanFactory autowireCapableBeanFactory;
+    private final BetHistoryRepository betHistoryRepository;
+    private final GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig;
+    private final VendorLineService vendorLineService;
+    private final WarehouseBetHistoryService warehouseBetHistoryService;
+    private final  VendorService vendorService;
 
-    @Autowired
-    private BetHistoryRepository betHistoryRepository;
-
-    @Autowired
-    private RawUnsettledBetRepository rawUnsettledBetRepository;
-
-    @Autowired
-    private GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig;
-
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorService vendorService;
+    public BetHistoryService(AutowireCapableBeanFactory autowireCapableBeanFactor,  BetHistoryRepository betHistoryRepository,
+                             GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig, VendorLineService vendorLineService,
+                             WarehouseBetHistoryService warehouseBetHistoryService, VendorService vendorService){
+        this.autowireCapableBeanFactory = autowireCapableBeanFactor;
+        this.betHistoryRepository = betHistoryRepository;
+        this.gaServiceWriterDataSourceConfig = gaServiceWriterDataSourceConfig;
+        this.vendorLineService = vendorLineService;
+        this.warehouseBetHistoryService = warehouseBetHistoryService;
+        this.vendorService = vendorService;
+    }
 
     public Long getVendorSettleTime(BetResultData betResultData, UnsettledBet unsettledBet) {
         long settledTime = System.currentTimeMillis();
@@ -86,46 +87,10 @@ public class BetHistoryService {
                     ", round_id:" + entity.getRoundId() +
                     ", vendor_line_id:" + entity.getVendorLineId());
         }
-        //JPA INSERT
-        //betHistoryRepository.save(entity);
-
-        //JDBC INSERT
-//        this.jdbcCreate(entity);
-
-        //COUCHBASE INSERT
-//        this.couchbaseCreate(entity);
 
         return entity;
     }
 
-    @Transactional
-    public BetHistory jdbcCreate(BetHistory entity) {
-
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(gaServiceWriterDataSourceConfig.mariaDataSource());
-
-        // Set default values
-        entity.setWinAmount(BigDecimal.ZERO);
-        entity.setWinLoss(BigDecimal.ZERO);
-        //entity.setVendorWinLoss(BigDecimal.ZERO);
-        entity.setEffectiveTurnover(BigDecimal.ZERO);
-        entity.setResultType(ResultType.LOSE.code);
-        entity.setStatus(BetStatus.UNSETTLED.code);
-
-        jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
-                        "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
-                        "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
-                        "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
-                        "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
-                        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
-                entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
-                entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
-                entity.getGameSessionToken(), entity.getGameCategoryId(),
-                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
-                entity.getEffectiveTurnover(), entity.getResultType(), entity.getStatus(),
-                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getResultTime());
-
-        return entity;
-    }
 
     /**
      * Retrieve a bet transaction record based on vendor's round Id
@@ -147,13 +112,22 @@ public class BetHistoryService {
     }
 
     public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String betId) throws BetNotFoundException {
-        IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
+
+        IBetDetailUrlInfo iBetDetailUrlInfo = null;
+        if (!enableClickHouse) {
+            iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
+        } else {
+
+            iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+        }
 
         if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
             throw new BetNotFoundException();
         }
+
         return iBetDetailUrlInfo;
     }
+
 
     public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
                                               VendorLine vendorLine, VendorLanguageCode vendorLanguageCode) throws
@@ -173,7 +147,9 @@ public class BetHistoryService {
             MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
 
             BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
-            transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
+            if(betDetailUrlVo!= null){
+                transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
+            }
 
             return transactionDetailData;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
