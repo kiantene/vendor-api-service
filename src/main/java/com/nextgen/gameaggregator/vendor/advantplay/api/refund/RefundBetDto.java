@@ -33,4 +33,9 @@ public class RefundBetDto extends BetSettleRefundDto implements RollbackData {
         return null;
     }
 
+    @Override
+    public String getRoundId() {
+        return null;
+    }
+
 }

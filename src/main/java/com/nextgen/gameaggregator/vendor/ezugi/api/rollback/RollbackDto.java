@@ -7,8 +7,6 @@ import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.math.BigInteger;
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackDto extends CommonDto implements RollbackData {
@@ -21,8 +19,7 @@ public class RollbackDto extends CommonDto implements RollbackData {
     @Size(min = 1, max = 50)
     private String transactionId;
     @NotNull
-    @Digits(integer = 18, fraction = 0)
-    private BigInteger roundId;
+    private String roundId;
     @NotNull
     @Digits(integer = 4, fraction = 0)
     private Integer gameId;
@@ -46,4 +43,5 @@ public class RollbackDto extends CommonDto implements RollbackData {
     public Long getVendorSettledTime() {
         return this.getTimestamp();
     }
+
 }

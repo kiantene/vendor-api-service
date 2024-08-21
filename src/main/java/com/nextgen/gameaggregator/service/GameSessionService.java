@@ -239,6 +239,7 @@ public class GameSessionService {
         gameSession.setVendorPlayerUsername(vendorPlayerUsername);
         gameSession.setVendorLineId(vendorPlayer.getVendorLineId());
         gameSession.setStatus(Status.ACTIVE.code);
+        gameSession.setCurrencyId(vendorPlayer.getCurrencyId());
 
         return gameSession;
     }
@@ -266,6 +267,27 @@ public class GameSessionService {
 
         Integer currencyId = vendorCurrency.getCurrencyId();
         String currencyCode = vendorCurrency.getVendorCurrencyCode();
+        try {
+            Currency currency = currencyService.get(currencyId);
+            currencyCode = currency.getCode();
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            // do nothing to suppress the error
+        }
+        gameSession.setCurrencyCode(currencyCode);
+    }
+
+    public void updateByVendorCurrencyId(GameSession gameSession) throws VendorCurrencyNotSupportException {
+        Integer vendorId = gameSession.getVendorId();
+        Integer currencyId = gameSession.getCurrencyId();
+
+        if (vendorId == null) return;
+
+        VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
+        String currencyCode = vendorCurrency.getVendorCurrencyCode();
+
+        gameSession.setCurrencyId(vendorCurrency.getCurrencyId());
+        gameSession.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+
         try {
             Currency currency = currencyService.get(currencyId);
             currencyCode = currency.getCode();

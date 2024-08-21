@@ -30,4 +30,9 @@ public class RollBackDto extends CommonDto implements RollbackData {
     public Long getVendorSettledTime() {
         return this.getTime() * 1000;
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

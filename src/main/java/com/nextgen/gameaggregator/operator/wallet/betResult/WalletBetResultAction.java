@@ -82,6 +82,7 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
         this.betWinVendorList.add(32);
+        this.betWinVendorList.add(55);
     }
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
@@ -188,16 +189,29 @@ public class WalletBetResultAction {
 
         } finally {
             if (isError) {
-                if ((this.vendorList.contains(gameSession.getVendorId()) && this.forceSuccessResultTypeList.contains(resultType.code))
-                        || (this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
+                boolean shouldForceSuccess = false;
+
+                if (this.forceSuccessResultTypeList.contains(resultType.code)) {
+                    // WIN, LOSE, END resultType will be force success.
+                    shouldForceSuccess = true;
+
+                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
+                    // BET_WIN resultType will be force success, but only apply to certain vendors
+                    shouldForceSuccess = true;
+
+                } else {
+                    // normal BET_WIN and BET_LOSE should not be force success
+                    throw new InvalidOperatorResponseException(operatorStatus.code);
+                }
+
+                if (shouldForceSuccess) {
                     responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+
                     if (httpRequestLog != null) {
                         betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
                     }
-
-                } else {
-                    throw new InvalidOperatorResponseException(operatorStatus.code);
                 }
+
             } else {
                 //this is not error.
             }
@@ -257,7 +271,7 @@ public class WalletBetResultAction {
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
             httpRequestLog.setOperatorResponse(apiResponse.getBody());
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
-            
+
             if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
             } else {
@@ -326,7 +340,7 @@ public class WalletBetResultAction {
         walletBetResultDto.setIsFreespin(betInformation.getIsFreespin());
         walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
         walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetResultDto.setToken(gameSession.getToken());
+        walletBetResultDto.setToken((betInformation.getGameSessionToken() != null) ? betInformation.getGameSessionToken() : gameSession.getToken());
         walletBetResultDto.setGameCode(gameSession.getGameCode());
         walletBetResultDto.setBetTime(betInformation.getVendorBetTime());
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());

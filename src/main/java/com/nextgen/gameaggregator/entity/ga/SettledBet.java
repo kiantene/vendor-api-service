@@ -64,6 +64,7 @@ public class SettledBet extends BetInformation {
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
         this.setVendorSettleTime(Optional.ofNullable(unsettledBet.getVendorSettleTime()).orElse(System.currentTimeMillis()));
+        this.setGameSessionToken(unsettledBet.getGameSessionToken());
     }
 
     public SettledBet(EndRoundSettledBet endRoundSettledBet) {

@@ -26,4 +26,9 @@ public class RefundDto implements RollbackData {
     public Long getVendorSettledTime() {
         return null;
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

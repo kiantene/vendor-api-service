@@ -62,7 +62,7 @@ public class SportBetAction {
         SportBetDto dto = new SportBetDto(walletRequest, fromVendorRate);
 
         try {
-            String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+            String signature = authenticationService.generateSignatureWithJson(new ObjectMapper().writeValueAsString(dto), agentApiCredential.getApiSecret());
 
             walletRequest.setOperatorData(new ObjectMapper().writeValueAsString(dto));
             walletRequest.setOperatorEndpoint(apiUrl + EndPoints.SPORT_BET);

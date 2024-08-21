@@ -87,4 +87,9 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
     public Long getVendorSettledTime() {
         return null;
     }
+
+    @Override
+    public String getRoundId() {
+        return this.roundId.toString();
+    }
 }

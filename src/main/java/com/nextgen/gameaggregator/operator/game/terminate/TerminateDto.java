@@ -15,9 +15,9 @@ public class TerminateDto {
     @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
-    @NotBlank(message = "min 3 and max 20 alphanumeric")
-    @Size(min = 3, max = 20 , message = "min 3 and max 20 alphanumeric")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "min 3 and max 20 alphanumeric only") // Only alphanumeric allowed
+    @NotBlank(message = "min 3 and max 40 alphanumeric")
+    @Size(min = 3, max = 40, message = "min 3 and max 40 alphanumeric or dash only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "min 3 and max 40 alphanumeric or dash only")
     private String username;
 
 

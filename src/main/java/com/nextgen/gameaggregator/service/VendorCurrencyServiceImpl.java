@@ -19,7 +19,7 @@ public class VendorCurrencyServiceImpl implements VendorCurrencyService {
     public VendorCurrency findByVendorIdAndCurrencyId(Integer vendorId, Integer currencyId) throws VendorCurrencyNotSupportException {
         VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendorId, currencyId);
 
-        if (vendorCurrency == null || vendorCurrency.getStatus() == 0) {
+        if (vendorCurrency == null) {
             throw new VendorCurrencyNotSupportException();
         }
 

@@ -14,7 +14,7 @@ public class RollbackDto implements RollbackData {
     @NotBlank
     @Size(max = 50)
     private String playerId;
-    
+
     @PositiveOrZero
     private BigDecimal amount;
 
@@ -36,6 +36,11 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
+        return null;
+    }
+
+    @Override
+    public String getRoundId() {
         return null;
     }
 }

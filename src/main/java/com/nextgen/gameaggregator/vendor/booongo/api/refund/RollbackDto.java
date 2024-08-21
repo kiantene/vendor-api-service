@@ -62,6 +62,11 @@ public class RollbackDto implements RollbackData {
         return getTimeStamp(this.getC_at());
     }
 
+    @Override
+    public String getRoundId() {
+        return null;
+    }
+
     public Long getTimeStamp(String datetime) {
         Instant instant = Instant.parse(datetime);
         return instant.toEpochMilli();

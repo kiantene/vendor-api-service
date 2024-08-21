@@ -103,4 +103,9 @@ public class RefundDto implements RollbackData {
     public Long getVendorSettledTime() {
         return VendorService.dateTimeConvert(this.getDtEvent());
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

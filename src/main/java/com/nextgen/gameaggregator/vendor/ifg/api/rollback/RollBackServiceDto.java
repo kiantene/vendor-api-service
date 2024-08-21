@@ -38,4 +38,9 @@ public class RollBackServiceDto implements RollbackData {
     public Long getVendorSettledTime() {
         return VendorService.getTimeStamp(this.getTime());
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

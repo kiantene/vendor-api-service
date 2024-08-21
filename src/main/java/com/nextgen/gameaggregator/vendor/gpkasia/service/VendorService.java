@@ -22,11 +22,11 @@ public class VendorService extends BaseVendorService {
     private final VendorGameCodeService vendorGameCodeService;
 
     @Autowired
-    public VendorService(VendorGameCodeService vendorGameCodeService){
+    public VendorService(VendorGameCodeService vendorGameCodeService) {
         this.vendorGameCodeService = vendorGameCodeService;
     }
 
-    public static long getCurrentTime(){
+    public static long getCurrentTime() {
         return Instant.now().getEpochSecond();
     }
 
@@ -45,8 +45,24 @@ public class VendorService extends BaseVendorService {
         return hashMap;
     }
 
-    public static long getMilSec(){
+    public static long getMilSec() {
         return System.currentTimeMillis();
+    }
+
+    public static String trimGameCode(String gameCode) {
+
+        String trimmedGameCode = null;
+
+        // check if game code contain _stg (ignore case-sensitive)
+        if (gameCode.toLowerCase().contains("_stg")) {
+            // Trim value by removing _stg (ignore case-sensitive)
+            trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
+        } else {
+            // let trimmedCode same as gameCode
+            trimmedGameCode = gameCode;
+        }
+
+        return trimmedGameCode;
     }
 
     public void verifyVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
@@ -60,24 +76,18 @@ public class VendorService extends BaseVendorService {
         return vendorGameCodeService.getByBetGameCode(gameId, gameSession.getLanguageId(), gameSession.getPlatformId(), gameSession.getVendorId());
     }
 
-    public static String trimGameCode(String gameCode){
-
-        String trimmedGameCode = null;
-
-        // check if game code contain _stg (ignore case-sensitive)
-        if(gameCode.toLowerCase().contains("_stg")){
-            // Trim value by removing _stg (ignore case-sensitive)
-            trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
-        }else{
-            // let trimmedCode same as gameCode
-            trimmedGameCode = gameCode;
-        }
-
-        return trimmedGameCode;
-    }
-
     @Override
     public boolean shouldRejectCancelRequest() {
         return false;
+    }
+
+    @Override
+    public boolean shouldDoRollbackByRound(GameSession gameSession) {
+        // Handle for GPK BGAMING game, will be alwaus rollback by round
+        if (gameSession.getGameCode().startsWith("GPKBG")) {
+            return true;
+        }
+        return false;
+
     }
 }
