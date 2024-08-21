@@ -32,7 +32,7 @@ public class CancelBetDto implements RollbackData {
     @Size(min = 1, max = 30)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
-    
+
     @NotBlank
     @Size(max = 3)
     private String currency;
@@ -60,6 +60,11 @@ public class CancelBetDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
+        return null;
+    }
+
+    @Override
+    public String getRoundId() {
         return null;
     }
 }

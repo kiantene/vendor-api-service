@@ -44,4 +44,9 @@ public class RollbackDto implements RollbackData {
     public Long getVendorSettledTime() {
         return System.currentTimeMillis();
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.repository.ga.writer.BetRefundLogRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetRefundLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -59,6 +60,11 @@ public class BetRefundLogService {
         }
     }
 
+    @Cacheable(value = "rawBetRefundLogs", key = "{#vendorPlayerId, #roundId}", cacheManager = "cacheManager", unless = "#result == null")
+    public RawBetRefundLog checkExistsByRoundId(Long vendorPlayerId, String roundId) {
+        return rawBetRefundLogRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
+    }
+
     public RawBetRefundLog checkExists(String vendorPlayerId, String vendorGameId, String externalTransactionId) {
         String id = this.generateId(vendorPlayerId, vendorGameId, externalTransactionId);
 
@@ -85,6 +91,7 @@ public class BetRefundLogService {
         entity.setVendorLineId(gameSession.getVendorLineId());
         entity.setCurrencyId(gameSession.getCurrencyId());
         entity.setCreateTime(System.currentTimeMillis());
+        entity.setBalance(balance);
 
         return entity;
     }

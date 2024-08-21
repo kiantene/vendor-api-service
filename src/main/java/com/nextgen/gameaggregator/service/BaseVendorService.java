@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.BetPreprocess;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidGameCategoryException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +70,11 @@ public abstract class BaseVendorService {
     public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
 
         return settledBet;
+    }
+
+    public boolean shouldDoRollbackByRound(GameSession gameSession) {
+        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return false;
     }
 
     public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {

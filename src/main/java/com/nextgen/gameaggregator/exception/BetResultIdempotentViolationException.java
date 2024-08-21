@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.exception;
 
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetRefundLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 
 import java.math.BigDecimal;
@@ -40,6 +41,14 @@ public class BetResultIdempotentViolationException extends Exception {
         this.vendorSettleTime = System.currentTimeMillis();
         this.balance = rawBetResultLog.getBalance();
         this.transactionId = rawBetResultLog.getResultLogId();
+    }
+
+    public BetResultIdempotentViolationException(RawBetRefundLog rawBetRefundLog) {
+        super();
+
+        this.vendorSettleTime = System.currentTimeMillis();
+        this.balance = rawBetRefundLog.getBalance();
+        this.transactionId = rawBetRefundLog.getBetRefundLogId();
     }
 
     public BetResultIdempotentViolationException(RawBetIdempotentLog rawBetIdempotentLog) {

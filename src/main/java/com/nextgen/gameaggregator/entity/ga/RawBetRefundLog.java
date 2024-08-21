@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@Collection("bet_refund_log")
+@Collection("bet_refund_logs")
 @Data
 public class RawBetRefundLog {
     @Id
@@ -27,4 +27,5 @@ public class RawBetRefundLog {
     private Integer operatorStatus;
     private Integer currencyId;
     private Long createTime;
+    private BigDecimal balance;
 }

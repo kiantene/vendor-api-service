@@ -55,4 +55,9 @@ public class CancelSessionBetDto implements RollbackData {
         return null;
     }
 
+    @Override
+    public String getRoundId() {
+        return null;
+    }
+
 }

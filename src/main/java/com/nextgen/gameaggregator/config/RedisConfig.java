@@ -175,6 +175,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("playerBalance", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(10)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("rawBetRefundLogs", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
 
         // EvoPlay Increase Balance EndPoints use
         cacheNamesConfigurationMap.put("EvoPlayBalance", RedisCacheConfiguration.defaultCacheConfig()

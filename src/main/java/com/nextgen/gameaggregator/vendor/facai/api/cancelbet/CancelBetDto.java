@@ -42,4 +42,9 @@ public class CancelBetDto implements RollbackData {
     public Long getVendorSettledTime() {
         return null;
     }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
 }

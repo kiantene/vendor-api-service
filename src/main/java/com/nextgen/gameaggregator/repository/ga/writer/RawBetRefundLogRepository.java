@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("raw")
-@Collection("bet_refund_log")
+@Collection("bet_refund_logs")
 public interface RawBetRefundLogRepository extends CouchbaseRepository<RawBetRefundLog, String> {
+
+    RawBetRefundLog findByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId);
 }

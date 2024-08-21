@@ -17,9 +17,9 @@ public class GameUrlDto {
     private String traceId;
 
 
-    @NotBlank(message = "min 3 and max 30 alphanumeric")
-    @Size(min = 3, max = 30, message = "min 3 and max 30 alphanumeric or dash only")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "min 3 and max 30 alphanumeric or dash only")
+    @NotBlank(message = "min 3 and max 40 alphanumeric")
+    @Size(min = 3, max = 40, message = "min 3 and max 40 alphanumeric or dash only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "min 3 and max 40 alphanumeric or dash only")
     // Only alphanumeric allowed
     private String username;
 

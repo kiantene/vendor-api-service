@@ -66,9 +66,9 @@ public class RollBackDto extends ActionDto implements RollbackData {
         String exTransId = this.dealid;
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
             // dealid equals to null mean did not get any win amount in buy bonus game
-            if(this.dealid == null){
+            if (this.dealid == null) {
                 exTransId = this.roundid;
             }
         }
@@ -79,5 +79,10 @@ public class RollBackDto extends ActionDto implements RollbackData {
     @Override
     public Long getVendorSettledTime() {
         return Long.parseLong(this.timestamp) * 1000;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.roundid;
     }
 }

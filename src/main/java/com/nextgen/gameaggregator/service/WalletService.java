@@ -285,11 +285,13 @@ public class WalletService {
                         walletBetResultData.setWinLoss(settledBet.getWinLoss());
                         walletBetResultData.setEffectiveTurnover(settledBet.getEffectiveTurnover());
                         walletBetResultData.setVendorId(gameSession.getVendorId());
+                        walletBetResultData.setGameSessionToken(unsettledBet.getGameSessionToken());
 
                         //when update caching settle bet, it should be using walletBetResultData, instead of settledBet data, because settledBet data is get from unsettledBet
                         updateCachingSettledBet = new SettledBet(walletBetResultData);
                         //ga-2684, handle for hacksaw
                         updateCachingSettledBet.setBetAmount(settledBet.getBetAmount());
+                        settledBet.setGameSessionToken(unsettledBet.getGameSessionToken());
 
                     }
                 }
@@ -390,12 +392,17 @@ public class WalletService {
         return balanceVo;
     }
 
-    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService)
+    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService, GameSession gameSession, String roundId)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         SettledBet settledBet = null;
 
         try {
+
+            if (vendorService.shouldDoRollbackByRound(gameSession)) {
+                checkExistsByRoundFromBetRefundLog(vendorPlayerId, roundId);
+            }
+
             loggingService.logStart();
             settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionIdWithRetry(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
@@ -450,6 +457,14 @@ public class WalletService {
 
         return settledBet;
 
+    }
+
+    private void checkExistsByRoundFromBetRefundLog(Long vendorPlayerId, String roundId) throws BetResultIdempotentViolationException {
+        RawBetRefundLog rawBetRefundLog = betRefundLogService.checkExistsByRoundId(vendorPlayerId, roundId);
+
+        if (rawBetRefundLog != null) {
+            throw new BetResultIdempotentViolationException(rawBetRefundLog);
+        }
     }
 
     private List<UnsettledBet> filterFailedUnsettledBet(List<UnsettledBet> unsettledBetList) {
@@ -772,11 +787,12 @@ public class WalletService {
         UnsettledBet unsettledBet = null;
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
         BigDecimal fromVendorRate = BigDecimal.ONE;
+        String roundId = rollbackData.getRoundId();
 
         WalletRequest walletRequest = httpRequestLog.getWalletRequest();
 
         try {
-            settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
+            settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService, gameSession, roundId);
 
             if (settledBet == null) {
                 try {
@@ -809,7 +825,7 @@ public class WalletService {
 
             vendorSettledTime = settledBet.getVendorSettleTime();
             String betId = settledBet.getBetId();
-            String roundId = settledBet.getRoundId();
+            roundId = settledBet.getRoundId();
             Integer agentId = gameSession.getAgentId();
             String vendorBetId = settledBet.getVendorBetId();
             String internalTransactionId = settledBet.getInternalTransactionId();
@@ -849,20 +865,17 @@ public class WalletService {
             loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
 
             if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
-                //only refund request need to insert into betRefundLog and delete unsettledBet
-                RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
-                loggingService.logStart();
-                betRefundLogService.create(rawBetRefundLog);
-                loggingService.logProcessTime("processRollback ｜ betRefundLogService.create", traceId);
-
-                BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
-
                 loggingService.logStart();
                 if (unsettledBet != null) {
                     unsettledBetService.delete(unsettledBet);
                 }
                 loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
             }
+
+            RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
+            loggingService.logStart();
+            betRefundLogService.create(rawBetRefundLog);
+            loggingService.logProcessTime("processRollback ｜ betRefundLogService.create", traceId);
 
             httpRequestLog.setBetEnd(System.currentTimeMillis());
             return balance;

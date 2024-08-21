@@ -3,7 +3,10 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
@@ -33,7 +36,7 @@ public class RollBackService {
                            VendorLineService vendorLineService,
                            WalletService walletService,
                            HttpService httpService,
-                           VendorService vendorService){
+                           VendorService vendorService) {
         this.gameSessionService = gameSessionService;
 
         this.vendorLineService = vendorLineService;
@@ -47,11 +50,11 @@ public class RollBackService {
         CommonVo vo = new CommonVo();
         RollBackDataVo dataVo = new RollBackDataVo();
 
-        BigDecimal balance = null;
+        BigDecimal balance = BigDecimal.ZERO;
 
         GameSession gameSession = null;
 
-        try{
+        try {
             // Retrieve request body in original string format
             rollBackDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), RollBackDto.class);
 
@@ -75,14 +78,11 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-        }catch(BetNotFoundException |
-               BetRefundIdempotentViolationException |
-               BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             // vendor site already thread this transaction as cancel no matter we return error or success
             httpService.logError(httpRequestLog, e);
 
-            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-
+            balance = e.getBalance();
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -91,14 +91,26 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-        } catch(AuthenticationException |
-                InvalidRequestException |
-                InvalidPlayerException |
-                CredentialNotFoundException e){
+
+        } catch (BetNotFoundException | BetRefundIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+            dataVo.setMoney(rollBackDto.getMoney());
+            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
+            dataVo.setDealid(rollBackDto.getDealid());
+
+            vo.setData(dataVo);
+
+        } catch (AuthenticationException |
+                 InvalidRequestException |
+                 InvalidPlayerException |
+                 CredentialNotFoundException e) {
             // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
-        } catch(Exception e){
+        } catch (Exception e) {
             // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
@@ -112,12 +124,12 @@ public class RollBackService {
         ValidationUtils.validateRequest(dto);
 
         // 7mojo
-        if(dto.getPlatform().equals(equals(PlatformType.SEVENMOJO)) || dto.getPlatform().equals(equals(PlatformType.SEVENMOJOLATAM))){
+        if (dto.getPlatform().equals(equals(PlatformType.SEVENMOJO)) || dto.getPlatform().equals(equals(PlatformType.SEVENMOJOLATAM))) {
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
         }
 
         // booming
-        if(dto.getPlatform().equals(equals(PlatformType.BOOMING)) || dto.getPlatform().equals(equals(PlatformType.BOOMINGLATAM))){
+        if (dto.getPlatform().equals(equals(PlatformType.BOOMING)) || dto.getPlatform().equals(equals(PlatformType.BOOMINGLATAM))) {
             Optional.ofNullable(dto.getRoot_dealid()).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(dto.getRoot_roundid()).orElseThrow(InvalidRequestException::new);
         }
@@ -132,7 +144,7 @@ public class RollBackService {
         ValidationUtils.isEquals(token, dto.getApiToken(), InvalidRequestException::new);
 
         // check platform id
-        if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){
+        if (!PlatformType.PlatformTypeList.contains(dto.getPlatform())) {
             throw new InvalidRequestException();
         }
     }

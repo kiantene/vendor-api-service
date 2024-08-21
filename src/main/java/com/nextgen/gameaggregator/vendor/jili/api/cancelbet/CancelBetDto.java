@@ -58,6 +58,11 @@ public class CancelBetDto implements RollbackData {
         return null;
     }
 
+    @Override
+    public String getRoundId() {
+        return null;
+    }
+
     /*
     private Long getTimestamp() {
         long timestamp = this.getWagersTime().longValueExact();
