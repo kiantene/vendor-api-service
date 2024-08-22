@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WagerDto extends CommonDto implements BetResultData {
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.PLAYER_NOT_EXIST)
     @Size(max = 255)
     public String token;
 

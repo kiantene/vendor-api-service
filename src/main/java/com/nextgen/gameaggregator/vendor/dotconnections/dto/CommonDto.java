@@ -24,6 +24,7 @@ public class CommonDto {
 
     @NotBlank
     @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_BRAND_UID) // not allow chinese word
     public String brandUid;
 
     @NotBlank

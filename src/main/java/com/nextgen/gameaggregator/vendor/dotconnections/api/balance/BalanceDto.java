@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Size;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BalanceDto extends CommonDto {
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.PLAYER_NOT_EXIST)
     @Size(max = 255)
     public String token;
 
