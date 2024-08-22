@@ -22,9 +22,9 @@ public class CommonDto {
     @Size(max = 1000)
     public String sign;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.REQUEST_PARAM_ERROR)
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_BRAND_UID) // not allow chinese word
+    @Pattern(regexp = "^[a-zA-Z0-9 ]*$", message = ResponseCodes.INVALID_BRAND_UID)
     public String brandUid;
 
     @NotBlank
