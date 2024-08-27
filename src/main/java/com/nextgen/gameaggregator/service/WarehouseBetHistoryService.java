@@ -61,7 +61,7 @@ public class WarehouseBetHistoryService {
                         "vendor_settle_time,  IF(is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin, vendor_bet_id " +
                         "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
                         " AND agent_id = :agentId AND vendor_settle_time BETWEEN :startTime AND :endTime " +
-                        " ORDER BY vendor_bet_time DESC LIMIT :limit OFFSET :offset";
+                        " ORDER BY id, vendor_bet_time ASC LIMIT :limit OFFSET :offset";
 
         Map<String, Object> params = new HashMap<>();
         params.put("agentId", agentId);
@@ -140,7 +140,7 @@ public class WarehouseBetHistoryService {
                         "game_session_token " +
                         "FROM bet_history WHERE " +
                         "agent_id = :agentId AND id= :betId " +
-                        "ORDER BY vendor_settle_time ASC " +
+                        "ORDER BY id, vendor_bet_time ASC " +
                         "LIMIT 1 ";
 
         Map<String, Object> params = new HashMap<>();
