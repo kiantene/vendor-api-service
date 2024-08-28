@@ -13,8 +13,10 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -75,14 +77,37 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String rootDealid;
 
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String betid;
+
+    // method for 7mojo while handle settled request
+    public void setBetId(String query) {
+        try {
+            // Decode the URL-encoded query string
+            String decodedQuery = URLDecoder.decode(query, "UTF-8");
+
+            // Define the pattern to match the betid value
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("betid=\\[\"([^\"]+)\"\\]");
+            Matcher matcher = pattern.matcher(decodedQuery);
+
+            if (matcher.find()) {
+                this.betid = matcher.group(1);
+            } else {
+                this.betid = null;
+            }
+        } catch (Exception e) {
+            this.betid = null;
+        }
+    }
+
     @Override
     public String getExternalTransactionId() {
         String exTransId = this.dealid;
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
             // dealid equals to null mean did not get any win amount in buy bonus game
-            if(this.dealid == null){
+            if (this.dealid == null) {
                 exTransId = this.bRoundid;
             }
         }
@@ -95,10 +120,17 @@ public class BetDto extends ActionDto implements BetResultData {
         String vendorBetId = this.dealid;
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
             // dealid equals to null mean did not get any win amount in buy bonus game
-            if(this.dealid == null){
+            if (this.dealid == null) {
                 vendorBetId = this.bRoundid;
+            }
+        }
+
+        //7mojo (when handle normal bet with settled request)
+        if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
+            if (this.getIstips().equals(BetType.NOTTIPS) && this.finished.equals(BetType.FINISHED) && this.code.equals(BetType.POINTOUT)) {
+                vendorBetId = this.betid;
             }
         }
 
@@ -110,11 +142,11 @@ public class BetDto extends ActionDto implements BetResultData {
         String roundId = this.bRoundid;
 
         //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)) {
             //not same mean it is the middle part or end of the bonus game transaction
-            if(!(this.dealid.equals(this.rootDealid) && !(this.bRoundid.equals(this.rootRoundid)))){
+            if (!(this.dealid.equals(this.rootDealid) && !(this.bRoundid.equals(this.rootRoundid)))) {
                 roundId = this.rootDealid;
-            }else{
+            } else {
                 roundId = this.dealid;
             }
         }
@@ -134,11 +166,11 @@ public class BetDto extends ActionDto implements BetResultData {
         List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
         // not booming or spinomenal platform
-        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
-            if(this.code.equals(BetType.POINTIN)){
+        if (!boomingANDSpinomenalPlatform.contains(this.platform)) {
+            if (this.code.equals(BetType.POINTIN)) {
                 betAmount = this.money;
             }
-        }else{
+        } else {
             // booming & spinomenal platform
             betAmount = this.betinfo;
         }
@@ -153,11 +185,11 @@ public class BetDto extends ActionDto implements BetResultData {
         List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
         // not booming or spinomenal platform
-        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
+        if (!boomingANDSpinomenalPlatform.contains(this.platform)) {
             if (this.code.equals(BetType.POINTOUT)) {
                 winAmount = this.money;
             }
-        }else{
+        } else {
             // booming & spinomenal platform
             winAmount = this.code.equals(BetType.POINTIN) ? this.betinfo.subtract(this.money) : this.betinfo.add(this.getMoney());
         }
@@ -177,11 +209,11 @@ public class BetDto extends ActionDto implements BetResultData {
         List<String> boomingANDSpinomenalPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM, PlatformType.SPINOMENAL, PlatformType.SPINOMENALLATAM);
 
         // not booming platform
-        if(!boomingANDSpinomenalPlatform.contains(this.platform)){
-            if(this.code.equals(BetType.POINTIN)){
+        if (!boomingANDSpinomenalPlatform.contains(this.platform)) {
+            if (this.code.equals(BetType.POINTIN)) {
                 turnover = this.money;
             }
-        }else{
+        } else {
             //booming & spinomenal
             turnover = this.betinfo;
         }
@@ -194,36 +226,36 @@ public class BetDto extends ActionDto implements BetResultData {
         Long betTime = null;
 
         //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals(BetType.TIPS)){
+        if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
+            if (this.istips.equals(BetType.TIPS)) {
                 // tips
                 betTime = Long.parseLong(this.timestamp) * 1000;
-            }else{
+            } else {
                 // place bet
-                if(this.finished.equals(BetType.UNFINISHED)){
+                if (this.finished.equals(BetType.UNFINISHED)) {
                     betTime = Long.parseLong(this.timestamp) * 1000;
                 }
             }
         }
 
         //turbo game
-        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("place") && this.finished == null && this.code.equals(BetType.POINTIN)){
+        if (this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)) {
+            if (this.dealid.contains("place") && this.finished == null && this.code.equals(BetType.POINTIN)) {
                 // place bet
                 betTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            if((this.finished.equals(BetType.UNFINISHED) && this.code.equals(BetType.POINTIN)) || (this.finished.equals(BetType.FINISHED) && this.code.equals(BetType.POINTIN))){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
+            if ((this.finished.equals(BetType.UNFINISHED) && this.code.equals(BetType.POINTIN)) || (this.finished.equals(BetType.FINISHED) && this.code.equals(BetType.POINTIN))) {
                 // place bet or straightly lose
                 betTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
         //booming & spinomenal
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
+        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
             betTime = Long.parseLong(this.timestamp) * 1000;
         }
 
@@ -240,34 +272,34 @@ public class BetDto extends ActionDto implements BetResultData {
         Long settledTime = null;
 
         //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals(BetType.TIPS)){
+        if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
+            if (this.istips.equals(BetType.TIPS)) {
                 // tips
                 settledTime = Long.parseLong(this.timestamp) * 1000;
-            }else{
+            } else {
                 // settled
-                if(this.finished.equals(BetType.FINISHED)){
+                if (this.finished.equals(BetType.FINISHED)) {
                     settledTime = Long.parseLong(this.timestamp) * 1000;
                 }
             }
         }
 
         //turbo game
-        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("settle") && this.finished.equals(BetType.FINISHED)){
+        if (this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)) {
+            if (this.dealid.contains("settle") && this.finished.equals(BetType.FINISHED)) {
                 settledTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            if(this.finished.equals(BetType.FINISHED)){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
+            if (this.finished.equals(BetType.FINISHED)) {
                 settledTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
         //booming & spinomenal
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
+        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
             settledTime = Long.parseLong(this.timestamp) * 1000;
         }
 
@@ -284,8 +316,8 @@ public class BetDto extends ActionDto implements BetResultData {
         Integer status = 0;
 
         //booming & spinomenal
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
-            if(this.betinfo.compareTo(BigDecimal.ZERO) == 0){
+        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
+            if (this.betinfo.compareTo(BigDecimal.ZERO) == 0) {
                 status = 1;
             }
         }
@@ -298,16 +330,16 @@ public class BetDto extends ActionDto implements BetResultData {
         BetStatus status = null;
 
         //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals(BetType.TIPS)){
+        if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
+            if (this.istips.equals(BetType.TIPS)) {
                 // tips
                 status = BetStatus.SETTLED;
-            }else{
+            } else {
                 //normal bet
-                if(this.finished.equals(BetType.UNFINISHED)){
+                if (this.finished.equals(BetType.UNFINISHED)) {
                     // unsettled
                     status = BetStatus.UNSETTLED;
-                }else{
+                } else {
                     // settled
                     status = BetStatus.SETTLED;
                 }
@@ -315,25 +347,25 @@ public class BetDto extends ActionDto implements BetResultData {
         }
 
         //turbo game
-        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("place") && this.finished == null){
+        if (this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)) {
+            if (this.dealid.contains("place") && this.finished == null) {
                 status = BetStatus.UNSETTLED;
-            }else{
-                status =  BetStatus.SETTLED;
+            } else {
+                status = BetStatus.SETTLED;
             }
         }
 
         //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            if(this.finished.equals(BetType.UNFINISHED)){
+        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
+            if (this.finished.equals(BetType.UNFINISHED)) {
                 status = BetStatus.UNSETTLED;
-            }else{
+            } else {
                 status = BetStatus.SETTLED;
             }
         }
 
         //booming & spinomenal
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)){
+        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
             status = BetStatus.SETTLED;
         }
 

@@ -19,6 +19,13 @@ public class VendorGameCodeService {
         this.vendorGameCodeRepository = vendorGameCodeRepository;
     }
 
+    @Cacheable(value = "VendorGameCode", key = "{#vendorGameId}", cacheManager = "cacheManager")
+    public VendorGameCode getByTop1VendorGameId(Integer vendorGameId) throws GameNotSupportedException {
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findTop1ByVendorGameIdAndStatus(vendorGameId, Status.ACTIVE.code);
+
+        return Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
+    }
+
     public VendorGameCode getByVendorGameIdAndPlatformIdAndLanguageId(Integer vendorGameId, Integer platformId, Integer languageId) throws GameNotSupportedException {
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(vendorGameId, platformId, languageId, Status.ACTIVE.code);
 

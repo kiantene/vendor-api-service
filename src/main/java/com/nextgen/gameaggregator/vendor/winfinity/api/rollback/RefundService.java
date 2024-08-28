@@ -38,12 +38,22 @@ public class RefundService {
             this.doValidation(dto);
 
             // Get GameSession with token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
+            GameSession gameSession;
+
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getMsid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUid());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getTbid());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCur());
+                gameSession.setToken(dto.getMsid());
+                gameSession.setVendorToken(dto.getMsid());
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession);
-            
+
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             vo.setDataVo(traceId, balance);
@@ -105,7 +115,7 @@ public class RefundService {
     }
 
     private void doVerification(GameSession gameSession) throws AuthenticationException {
-        
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+        //if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -36,6 +39,8 @@ public class BetService {
     private final ValidationService validationService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+    private final RedissonService redissonService;
 
     @Autowired
     public BetService(GameSessionService gameSessionService,
@@ -43,7 +48,7 @@ public class BetService {
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      VendorService vendorService) {
+                      VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService, RedissonService redissonService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -51,6 +56,8 @@ public class BetService {
         this.validationService = validationService;
         this.httpService = httpService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+        this.redissonService = redissonService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -70,17 +77,37 @@ public class BetService {
 
         GameSession gameSession = new GameSession();
 
+        boolean isRequestExists = false;
+
+        RLock userLock = null;
+
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
 
+            // set betid to refer previous bet id when handle settled request for 7mojo
+            if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
+                if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED) && betDto.getIstips().equals(BetType.NOTTIPS)) {
+                    betDto.setBetId(httpRequestLog.getRequestBody());
+                }
+            }
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getUser()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getUser());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             gameCode = betDto.getGameinfo();
 
             // Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
+            // verify bet game code of 7mojo
             if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
                 // check credential env is available or not
                 String runEnv = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.env);
@@ -120,7 +147,6 @@ public class BetService {
                         //settled
 
                         resultType = getResultType(betDto);
-
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }
@@ -148,19 +174,47 @@ public class BetService {
                     // if end-round
 
                     if (betDto.getCode().equals(BetType.POINTIN)) {
-                        // if place bet status mean lose
+                        // slot game place bet and lose
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     } else {
-                        // settled with win amount status(will happen zero amount when buy bonus game)
+//                        Thread.sleep(150); // sleep 150ms avoid win endpoint haven't lock
+
+                        userLock = redissonService.getRedissonClient().getLock("RedissonLock:GPK-BGMING:" + betDto.getRoundId());
+
+                        // get the lock time
+                        long remainTime = userLock.remainTimeToLive();
+
+                        // if remainTime is -1 meant forever lock, -2 meant the lock is expired or not exist
+                        while (remainTime != -2) {
+                            remainTime = userLock.remainTimeToLive();
+
+                            // if remainTime is forever lock then break the loop
+                            if (remainTime == -1) {
+                                break;
+                            }
+                        }
+
+                        // settle bet
                         resultType = getResultType(betDto);
 
-                        // settle transaction
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 } else {
                     // not yet end(unsettled)
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                    balance = betEvent.getLastBalance();
+                    if (betDto.getCode().equals(BetType.POINTIN)) {
+                        // place bet
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+
+                        balance = betEvent.getLastBalance();
+                    } else {
+                        userLock = redissonService.getRedissonClient().getLock("RedissonLock:GPK-BGMING:" + betDto.getRoundId());
+                        userLock.lock(5, TimeUnit.SECONDS);
+
+                        // mini game un-finished win request
+                        resultType = getResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
                 }
             }
 
@@ -226,6 +280,15 @@ public class BetService {
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
+        } finally {
+            // Release the lock if we acquired it and still hold it
+            if (userLock != null && userLock.isHeldByCurrentThread()) {
+                userLock.unlock();
+            }
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getUser());
+            }
         }
 
         return vo;
@@ -245,6 +308,11 @@ public class BetService {
             }
 
             Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
+
+            // make sure it is settled request
+            if (dto.getIstips().equals(BetType.NOTTIPS) && dto.getFinished().equals(BetType.FINISHED) && dto.getCode().equals(BetType.POINTOUT)) {
+                Optional.ofNullable(dto.getBetid()).orElseThrow(InvalidRequestException::new);
+            }
         }
 
         // if turbo game platform will check finished param when end-round
@@ -322,9 +390,13 @@ public class BetService {
 
         //bgaming
         if (dto.getPlatform().equals(PlatformType.BGAMINGASIA) || dto.getPlatform().equals(PlatformType.BGAMINGLATAM)) {
-            // bgaming may happen lose in buy bonus game
-            if (dto.getMoney().compareTo(BigDecimal.ZERO) == 0 && dto.getDealid() == null) {
-                resultType = ResultType.END;
+            // does not handle mini game un-finished settled request coz it is win status
+            // does not handle slot game normal lose coz it is one time settlement
+
+            if (dto.getFinished().equals(BetType.FINISHED)) {
+                if (dto.getMoney().compareTo(BigDecimal.ZERO) == 0 && dto.getDealid() == null) {
+                    resultType = ResultType.END;
+                }
             }
         }
 

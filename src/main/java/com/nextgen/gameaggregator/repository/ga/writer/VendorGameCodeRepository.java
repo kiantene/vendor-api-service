@@ -19,9 +19,9 @@ public interface VendorGameCodeRepository extends JpaRepository<VendorGameCode, 
 
     List<VendorGameCode> findByVendorGameId(Integer vendorGameId);
 
-    List<VendorGameCode> findByVendorGameIdAndLanguageId(Integer vendorGameId,  Integer languageId);
+    List<VendorGameCode> findByVendorGameIdAndLanguageId(Integer vendorGameId, Integer languageId);
 
-    VendorGameCode findTop1ByVendorGameIdAndStatus(Integer vendorGameId,Integer status);
+    VendorGameCode findTop1ByVendorGameIdAndStatus(Integer vendorGameId, Integer status);
 
     VendorGameCode findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(String gameCode, Integer languageId, Integer platformId, Integer vendorId);
 }

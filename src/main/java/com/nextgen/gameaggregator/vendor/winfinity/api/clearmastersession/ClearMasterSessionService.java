@@ -1,20 +1,22 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.clearmastersession;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class ClearMasterSessionService {
@@ -52,8 +54,7 @@ public class ClearMasterSessionService {
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
-            vo.setErrorVo(ErrorCodes.WRONG_SESSION);
+            vo.setDataVo(traceId, BigDecimal.ZERO);
 
         } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
@@ -73,7 +74,7 @@ public class ClearMasterSessionService {
     }
 
     private void doVerification(GameSession gameSession) throws AuthenticationException {
-        
+
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

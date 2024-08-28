@@ -195,7 +195,7 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("GameCategories", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("RequestIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ClickhouseFirstDataOfCurrencyConversionChanges", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(30)).serializeValuesWith(pair));
         //endregion

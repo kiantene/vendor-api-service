@@ -167,7 +167,7 @@ public class KafkaService {
             stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
         } catch (Exception e) {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
-            log.error(e.getMessage());
+            log.error("FunctionName: produceEndRoundSettleBet | {} | {} | {}", "TraceId: " + endRoundSettledBet.getId(), "RoundId: " + endRoundSettledBet.getRoundId(), "Error: " + e);
         }
     }
 

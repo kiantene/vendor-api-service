@@ -71,8 +71,9 @@ public class TransactionListService {
                 transactionsListData.setTransactions(transactions);
                 transactionsListData.setCurrentPage(dto.getPageNo());
                 transactionsListData.setTotalItems(betCount);
-                float totalPageCount = (float) (betCount /dto.getPageSize());
-                transactionsListData.setTotalPages(Math.round(totalPageCount));
+                float totalPageCount = (float) betCount /dto.getPageSize();
+                int pageTotal = (int) Math.ceil(totalPageCount); // Use Math.ceil to round up
+                transactionsListData.setTotalPages(pageTotal);
             }
 
         }

@@ -244,6 +244,32 @@ public class GameSessionService {
         return gameSession;
     }
 
+    public GameSession generateNewSessionTokenByVendorPlayerId(Long vendorPlayerId) throws InvalidPlayerException {
+        VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+        Long agentPlayerId = vendorPlayer.getAgentPlayerId();
+
+        AgentPlayer agentPlayer;
+
+        try {
+            agentPlayer = agentPlayerService.get(agentPlayerId);
+        } catch (RecordNotFoundException recordNotFoundException) {
+            throw new InvalidPlayerException("agentPlayerId " + agentPlayerId + " cannot be found");
+        }
+
+        GameSession gameSession = new GameSession();
+        gameSession.setAgentId(agentPlayer.getAgentId());
+        gameSession.setAgentPlayerId(agentPlayerId);
+        gameSession.setAgentPlayerUsername(agentPlayer.getUsername());
+        gameSession.setVendorId(vendorPlayer.getVendorId());
+        gameSession.setVendorPlayerId(vendorPlayer.getId());
+        gameSession.setVendorPlayerUsername(vendorPlayer.getUsername());
+        gameSession.setVendorLineId(vendorPlayer.getVendorLineId());
+        gameSession.setStatus(Status.ACTIVE.code);
+        gameSession.setCurrencyId(vendorPlayer.getCurrencyId());
+
+        return gameSession;
+    }
+
     public void updateByVendorGameCode(GameSession gameSession, String vendorGameCode) throws GameNotSupportedException {
         Integer vendorId = gameSession.getVendorId();
 

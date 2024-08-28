@@ -23,7 +23,8 @@ pipeline {
                         }
                     }
 
-                    String configName = "${BRANCH_NAME}_config"
+                    String branchName = BRANCH_NAME.tokenize('/')[0]
+                    String configName = "${branchName}_config"
 
                     configFileProvider([configFile(fileId: configName, variable: 'CONFIG_FILE')]) {
                         def props = readProperties file: CONFIG_FILE
@@ -31,6 +32,37 @@ pipeline {
                         props.each { key, value ->
                             env."${key}" = value.trim()
                         }
+                    }
+                }
+            }
+        }
+
+        stage('Versioning') {
+            when {
+                environment name: 'TRIGGER_VERSIONING', value: 'true'
+            }
+
+            steps {
+                script {
+                    withCredentials([gitUsernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", gitToolName: 'Default')]) {
+                        String branchName = BRANCH_NAME.tokenize('/')[0]
+                        String versionTag
+                        String releaseFile = 'release.txt'
+
+                        if (branchName == 'release' && sh(returnStatus: true, script: "test ! -f ${releaseFile}") == 0) {
+                            versionTag = getVersionTagbyBranch(BRANCH_NAME)
+                            sh "mvn versions:set -DnewVersion=$versionTag"
+
+                            sh """
+                                git add .
+                                git commit -m "Update version to ${versionTag}"
+                                git push origin HEAD:refs/heads/${BRANCH_NAME}
+                                echo '${versionTag}' > ${releaseFile}
+                            """
+                        }
+
+                        versionTag = getVersionTagbyPom(branchName)
+                        sh "mvn versions:set -DnewVersion=$versionTag"
                     }
                 }
             }
@@ -45,28 +77,13 @@ pipeline {
                 script {
                     withCredentials([gitUsernamePassword(credentialsId: "${GIT_CREDENTIALS_ID}", gitToolName: 'Default')]) {
                         String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
-                        String branchName = BRANCH_NAME
-                        String versionTag = getVersionTag(branchName)
+                        String branchName = BRANCH_NAME.tokenize('/')[0]
+                        String versionTag = getVersionTagbyPom(branchName)
 
-                        sh "mvn versions:set -DnewVersion=$versionTag"
-
-                        if (TRIGGER_PUSH_TAGGING == 'true') {
-                            sh "git tag -a ${versionTag} -m '${commitMessage}'"
-                            sh "git push origin ${versionTag}"
-                        }
-
-                        if (branchName == 'preprod') {
-                            def userInput = input message: 'new version?', ok: 'Proceed', parameters: [choice(name: 'Confirm', choices: 'yes\nno', description: 'Confirm new version update?')]
-
-                            if (userInput == 'yes') {
-                                versionTag = getVersionTag(branchName, true)
-                                sh "mvn versions:set -DnewVersion=$versionTag"
-
-                                sh 'git add .'
-                                sh "git commit -m 'Update version to $versionTag'"
-                                sh 'git push origin HEAD:preprod'
-                            }
-                        }
+                        sh """
+                            git tag -a ${versionTag} -m "${commitMessage}"
+                            git push origin ${versionTag}
+                        """
                     }
                 }
             }
@@ -91,24 +108,6 @@ pipeline {
             }
         }
 
-        stage('Generate Profile Env') {
-            when {
-                environment name: 'TRIGGER_GENERATE_ENV', value: 'true'
-            }
-
-            steps {
-                script {
-                    String configName = "${BRANCH_NAME}_env"
-
-                    configFileProvider([configFile(fileId: configName, variable: 'CONFIG_FILE')]) {
-                        def props = readFile file: CONFIG_FILE
-
-                        writeFile file: "src/main/resources/application-${PROFILE_NAME}.properties", text: props.toString()
-                    }
-                }
-            }
-        }
-
         stage('Build Project') {
             steps {
                 script {
@@ -116,14 +115,6 @@ pipeline {
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                     }
 
-                    def appProps = readFile 'src/main/resources/application.properties'
-                    def newAppProps = appProps.replaceAll(/(?m)^spring.profiles.active\s*=.*/, "spring.profiles.active=${PROFILE_NAME}")
-
-                    if (!newAppProps.contains('spring.profiles.active')) {
-                        newAppProps += "\nspring.profiles.active=${PROFILE_NAME}\n"
-                    }
-
-                    writeFile file: 'src/main/resources/application.properties', text: newAppProps
                     withMaven(maven: 'Maven3.8.8') {
                         sh 'mvn clean package spring-boot:repackage -U -Dmaven.test.skip=true'
                     }
@@ -150,11 +141,11 @@ pipeline {
             }
 
             steps {
-                withAWS(region: "${AWS_ECR_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
-                    script {
-                        String branchName = BRANCH_NAME
+                script {
+                    withAWS(region: "${AWS_ECR_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
+                        String branchName = BRANCH_NAME.tokenize('/')[0]
                         String branchTag = BRANCH_TAG
-                        String dockerTag = getDockerTag(branchName)
+                        String dockerTag = getVersionTagbyPom(branchName)
 
                         sh("#!/bin/sh -e\n${ecrLogin()}")
                         docker.image("${AWS_ECR_URL}:${branchTag}").push("${branchTag}")
@@ -164,54 +155,52 @@ pipeline {
             }
         }
 
-        stage('Transfer and Load Image') {
+        stage('Deploy to EC2') {
             when {
-                environment name: 'TRIGGER_DOCKER_TRANSFER', value: 'true'
+                environment name: 'TRIGGER_DEPLOY_EC2', value: 'true'
             }
             steps {
-                script {
-                    sshagent(credentials: ["${SERVER_SSH_CREDENTIALS_ID}"]) {
+                withAWS(region: "${AWS_ECR_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
+                    script {
+                        String login = ecrLogin()
                         String branchTag = BRANCH_TAG
-                        sh "docker save -o ${PORTAINER_SERVICE_NAME}.tar ${AWS_ECR_URL}:${branchTag}"
-                        sh "scp -o StrictHostKeyChecking=no ${PORTAINER_SERVICE_NAME}.tar ${SERVER_SSH}:/tmp/"
+                        String branchName = BRANCH_NAME.tokenize('/')[0]
+                        String envAddOptions
 
-                        sh "ssh -t -o StrictHostKeyChecking=no ${SERVER_SSH} 'docker load -i /tmp/${PORTAINER_SERVICE_NAME}.tar'"
-                        sh "ssh -t -o StrictHostKeyChecking=no ${SERVER_SSH} 'docker service update --force --image ${AWS_ECR_URL}:${branchTag} --update-order start-first --update-delay 30s ${PORTAINER_SERVICE_NAME}'"
+                        configFileProvider([configFile(fileId: "${branchName}_env", variable: 'propertiesFilePath')]) {
+                            envAddOptions = generateDockerEnvAddOptions(propertiesFilePath)
+                        }
+
+                        sshagent(credentials: ["${SERVER_SSH_CREDENTIALS_ID}"]) {
+                            sh "#!/bin/sh -e\nssh -t -o StrictHostKeyChecking=no ${SERVER_SSH} '${login}'"
+                            sh "ssh -t -o StrictHostKeyChecking=no ${SERVER_SSH} \"docker pull ${AWS_ECR_URL}:${branchTag} && docker service update --force ${envAddOptions} --image ${AWS_ECR_URL}:${branchTag} --update-order start-first --update-delay 30s ${PORTAINER_SERVICE_NAME}\""
+                        }
                     }
                 }
             }
         }
 
-        // stage('Deploy in ECS') {
-        //     when {
-        //         environment name: 'TRIGGER_DEPLOY_ECS', value: 'true'
-        //     }
-        //     steps {
-        //         withAWS(region: "${AWS_ECS_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
-        //             script {
-        //                 sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --force-new-deployment")
-        //                 sh("aws ecs wait services-stable --cluster ${AWS_ECS_CLUSTER} --services ${AWS_ECS_SERVICE}")
-        //             }
-        //         }
-        //     }
-        // }
-
-        stage('Deploy in ECS') {
+        stage('Deploy to ECS') {
             when {
                 environment name: 'TRIGGER_DEPLOY_ECS', value: 'true'
             }
             steps {
-                withAWS(region: "${AWS_ECS_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
-                    script {
-                        String branchName = BRANCH_NAME
-                        String branchTag = BRANCH_TAG
+                script {
+                    withAWS(region: "${AWS_ECS_REGION}", credentials: "${AWS_CREDENTIALS_ID}") {
+                        script {
+                            String branchName = BRANCH_NAME.tokenize('/')[0]
+                            String branchTag = BRANCH_TAG
 
-                        configFileProvider([configFile(fileId: "${branchName}_td", variable: 'taskDefinitionPath')]) {
-                            updateContainerDefinitionJsonWithImageVersion(branchTag, taskDefinitionPath)
-                            sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
-                            String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
-                            sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
-                            sh("aws ecs wait services-stable --cluster ${AWS_ECS_CLUSTER} --services ${AWS_ECS_SERVICE}")
+                            configFileProvider([configFile(fileId: "${branchName}_td", variable: 'taskDefinitionPath')]) {
+                                configFileProvider([configFile(fileId: "${branchName}_env", variable: 'propertiesFilePath')]) {
+                                    updateContainerDefinitionJsonWithImageVersion(branchTag, taskDefinitionPath)
+                                    updateContainerDefinitionJsonWithEnvVars(propertiesFilePath, taskDefinitionPath)
+                                    sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
+                                    String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
+                                    sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                                    sh("aws ecs wait services-stable --cluster ${AWS_ECS_CLUSTER} --services ${AWS_ECS_SERVICE}")
+                                }
+                            }
                         }
                     }
                 }
@@ -225,44 +214,71 @@ pipeline {
                 if (TRIGGER_DISCORD == 'true') {
                     discordSend description: "${currentBuild.currentResult}: ${JOB_NAME} #${currentBuild.number}", title: "Pipeline ${currentBuild.fullProjectName} ${currentBuild.currentResult}", webhookURL: DISCORD_WEBHOOK_URL, link: currentBuild.absoluteUrl, result: currentBuild.currentResult, showChangeset: true
                 }
-
-                cleanWs(skipWhenFailed: true)
             }
         }
     }
 }
 
-String getDockerTag(String branchName) {
-    String today = new Date().format('yyyyMMdd')
+String getVersionTagbyPom(String branchName) {
+    String baseVersion
+    String mavenVersion = readMavenPom().version.trim()
+    String normalizedBranch = branchName
+    def matcher = mavenVersion =~ /(\d+\.\d+\.\d+(?:-(?:hotfix|adhoc))?)/
 
-    return "${branchName}-${today}-${BUILD_NUMBER}"
-}
-
-String getVersionTag(String branchName, boolean newVersion = false) {
-    String versionTag = '0.0.1'
-
-    configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
-        String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
-        versionTag = "$VERSION_NUMBER.${BUILD_NUMBER}-${branchName}"
-        switch (branchName) {
-            case 'main':
-                versionTag = "$VERSION_NUMBER"
-                break
-            case 'preprod':
-                if (newVersion) {
-                    versionTag = "$VERSION_NUMBER"
-                } else {
-                    versionTag = "$VERSION_NUMBER.${BUILD_NUMBER}-rc"
-                }
-                break
-        }
+    if (matcher.find()) {
+        baseVersion = matcher.group(1)
     }
 
-    return versionTag
+    if (branchName == 'release') {
+        normalizedBranch = 'rc'
+    }
+
+    return (branchName == 'main') ? "${baseVersion}" : "${baseVersion}-${normalizedBranch}.${BUILD_NUMBER}"
+}
+
+String getVersionTagbyBranch(String branchName) {
+    String baseVersion
+
+    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+)/
+
+    if (matcher.find()) {
+        baseVersion = matcher.group(1)
+    }
+
+    return "${baseVersion}"
 }
 
 void updateContainerDefinitionJsonWithImageVersion(String branchTag, String taskDefinitionPath) {
     List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
     containerDefinitionJson[0]['image'] = "${AWS_ECR_URL}:${branchTag}".inspect()
     writeJSON file: taskDefinitionPath, json: containerDefinitionJson
+}
+
+void updateContainerDefinitionJsonWithEnvVars(String propertiesFilePath, String taskDefinitionPath) {
+    def props = readProperties file: propertiesFilePath
+    def envVars = props.collect { key, value ->
+        def envVarName = key.toUpperCase().replace('.', '_')
+        [name: envVarName, value: value]
+    }
+
+    List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
+    containerDefinitionJson[0]['environment'] = envVars
+    writeJSON file: taskDefinitionPath, json: containerDefinitionJson
+}
+
+String generateDockerEnvAddOptions(String propertiesFilePath) {
+    def props = readProperties file: propertiesFilePath
+    def escapeShellArg = { value ->
+        return value.replace("'", "\\'")
+                    .replace('"', '\\"')
+                    // .replace('&', '\\&')
+    }
+
+    def envOptions = props.collect { key, value ->
+        def envVarName = key.toUpperCase().replace('.', '_')
+        def escapedValue = escapeShellArg(value)
+        return "--env-add '${envVarName}=${escapedValue}'"
+    }.join(' ')
+
+    return envOptions
 }
