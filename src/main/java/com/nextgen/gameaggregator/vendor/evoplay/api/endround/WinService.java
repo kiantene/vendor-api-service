@@ -90,9 +90,9 @@ public class WinService {
             CurrencyNotSupportedException,
             GameNotSupportedException {
 
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getData().getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getData().getDetailsDto().getGame().getGame_id(), GameNotSupportedException::new);

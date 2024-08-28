@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
@@ -44,11 +45,12 @@ public class CashTransferInOutAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
-
     @Autowired
     private LoggingService loggingService;
     @Autowired
     private RequestIdempotentLogService requestIdempotentLogService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -77,9 +79,22 @@ public class CashTransferInOutAction {
             //requestIdempotentLogService.create(dto, dto.getPlayerName());
 
             // 2. Verify session token
-            loggingService.logStart();
-            GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
-            loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ gameSessionService.verifyToken(" + dto.getOperatorPlayerSession() + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
+            GameSession gameSession;
+            String newToken = (dto.getOperatorPlayerSession() != null) ? dto.getOperatorPlayerSession() : traceId;
+
+            try {
+                gameSession = gameSessionService.verifyToken(newToken);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerName());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrencyCode());
+
+                Integer defaultPlatformId = (dto.getPlatform() == Platforms.WEB) ? 2 : 1;
+                gameSession.setLanguageId(vendorGameCodeService.getByTop1VendorGameId(gameSession.getVendorGameId()).getLanguageId());
+                gameSession.setToken(newToken);
+                gameSession.setVendorToken(newToken);
+                gameSession.setPlatformId(defaultPlatformId);
+            }
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);

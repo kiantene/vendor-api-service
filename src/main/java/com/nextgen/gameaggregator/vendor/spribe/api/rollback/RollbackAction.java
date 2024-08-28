@@ -76,8 +76,19 @@ public class RollbackAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
+            GameSession gameSession;
+            String newToken = (dto.getSession_token() != null) ? dto.getSession_token() : traceId;
+
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(newToken);
+                gameSession.setVendorToken(newToken);
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -88,12 +99,12 @@ public class RollbackAction {
             providerTxId = dto.getProvider_tx_id();
 
             // 5. Check whether if the request is a place bet not result
-            SettledBet rawSettledBet = this.checkSettledBetRequest(dto, gameSession);
-            BigDecimal winAmount = rawSettledBet.getWinAmount();
-            Integer freeSpin = rawSettledBet.getIsFreespin();
+//            SettledBet rawSettledBet = this.checkSettledBetRequest(dto, gameSession);
+//            BigDecimal winAmount = rawSettledBet.getWinAmount();
+//            Integer freeSpin = rawSettledBet.getIsFreespin();
 
             // 6. Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
-            this.checkValidRollback(winAmount, freeSpin);
+//            this.checkValidRollback(winAmount, freeSpin);
 
             // 7. Send rollback request to Operator
             WalletRequest walletRequest = walletService.processRollback(dto, gameSession, vendorService, httpRequestLog);
@@ -171,7 +182,7 @@ public class RollbackAction {
             DisabledGameException, GameNotSupportedException {
 
         // Check game session status (0 = inactive)
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+        //if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
@@ -180,13 +191,13 @@ public class RollbackAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
 
         // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        //vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        //agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 
     private SettledBet checkSettledBetRequest(RollbackDto dto, GameSession gameSession) throws BetNotFoundException {

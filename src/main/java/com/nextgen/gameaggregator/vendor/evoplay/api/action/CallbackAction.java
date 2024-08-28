@@ -1,16 +1,16 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.action;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.api.authenticate.InitService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceIncreaseService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinDto;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.Credentials;
@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
+import com.nextgen.gameaggregator.vendor.evoplay.dto.DetailsDto;
 import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
@@ -55,6 +56,8 @@ public class CallbackAction {
     private WalletService walletService;
     @Autowired
     private BalanceIncreaseService balanceIncreaseService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     // Handle incoming API requests
     @PostMapping
@@ -82,7 +85,27 @@ public class CallbackAction {
 
             } else {
                 // get gameSession
-                gameSession = gameSessionService.verifyToken(callbackDto.getToken());
+                try {
+                    gameSession = gameSessionService.verifyToken(callbackDto.getToken());
+                } catch (AuthenticationException e) {
+                    if (callbackDto.getName().equalsIgnoreCase("win") || callbackDto.getName().equalsIgnoreCase("refund")) {
+                        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(callbackDto.getData().getRound_id());
+                        if (unsettledBet != null) {
+                            callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
+                            WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);
+                            gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
+                            gameSessionService.updateByVendorGameCode(gameSession, winDto.getData().getDetailsDto().getGame().getGame_id());
+                            gameSessionService.updateByVendorCurrencyCode(gameSession, callbackDto.getData().getCurrency());
+                            gameSession.setToken(callbackDto.getToken());
+                            gameSession.setVendorToken(callbackDto.getToken());
+                        } else {
+                            throw new BetNotFoundException();
+                        }
+
+                    } else {
+                        throw new AuthenticationException();
+                    }
+                }
 
                 // use raw body Map data verify signature
                 verifySignature(gameSession, rawData, callbackDto);

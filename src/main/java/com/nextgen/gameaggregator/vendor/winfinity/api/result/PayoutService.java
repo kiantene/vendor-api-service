@@ -40,9 +40,19 @@ public class PayoutService {
             this.doValidation(dto);
 
             // Get GameSession with token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
+            GameSession gameSession;
 
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getMsid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUid());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getTbid());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCur());
+                gameSession.setToken(dto.getMsid());
+                gameSession.setVendorToken(dto.getMsid());
+            }
+            
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession);
 
@@ -52,7 +62,8 @@ public class PayoutService {
 
             vo.setDataVo(traceId, balance);
 
-        } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
+        } catch (JsonProcessingException | TransactionStillProcessingException |
+                 InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
 
@@ -68,7 +79,8 @@ public class PayoutService {
             httpService.logError(httpRequestLog, betNotFoundException);
             vo.setErrorVo(ErrorCodes.PAYIN_TRANS_NOT_FOUND);
 
-        } catch (MergedBetDataIntegrityException | InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
+        } catch (MergedBetDataIntegrityException | InvalidOperatorResponseException |
+                 InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
 
@@ -94,7 +106,7 @@ public class PayoutService {
     }
 
     private void doVerification(GameSession gameSession) throws AuthenticationException {
-        
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+        //if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

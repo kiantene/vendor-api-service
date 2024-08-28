@@ -6,10 +6,9 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
-
-import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
@@ -18,8 +17,6 @@ import java.math.BigDecimal;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CashTransferInOutDto implements BetResultData {
 
-    @Size(min = 1, max = 100)
-    @NotBlank
     //* Below are not mandatory
     private String operatorPlayerSession;
 

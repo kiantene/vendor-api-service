@@ -304,6 +304,7 @@ public class WalletService {
 
         // send bet data to Operator
         try {
+            this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
             balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
 
@@ -390,6 +391,21 @@ public class WalletService {
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
 
         return balanceVo;
+    }
+
+    private void processDefaultDataForSettledBet(BetInformation betInformation, SettledBet settledBet) {
+
+        Long vendorBetTime = (settledBet.getVendorBetTime() == null) ? System.currentTimeMillis() : settledBet.getVendorBetTime();
+        Long vendorSettleTime = (settledBet.getVendorSettleTime() == null) ? System.currentTimeMillis() : settledBet.getVendorSettleTime();
+        Long resultTime = vendorSettleTime;
+
+        settledBet.setVendorBetTime(vendorBetTime);
+        settledBet.setVendorSettleTime(vendorSettleTime);
+        settledBet.setResultTime(resultTime);
+
+        betInformation.setVendorBetTime(vendorBetTime);
+        betInformation.setVendorSettleTime(vendorSettleTime);
+        betInformation.setResultTime(resultTime);
     }
 
     private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService, GameSession gameSession, String roundId)
