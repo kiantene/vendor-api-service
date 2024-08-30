@@ -111,7 +111,7 @@ public class WarehouseBetHistoryService {
         String startDateStr = DateUtil.convertMiliToDateString(dto.getFromTime(), "UTC", dateFormat);
         String endDateStr = DateUtil.convertMiliToDateString(dto.getToTime(), "UTC", dateFormat);
 
-        //TODO remember change to vendor_settle_time
+
         String sqlStmt =
                 "SELECT COUNT(1)" +
                         "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
@@ -123,7 +123,16 @@ public class WarehouseBetHistoryService {
         params.put("endDateStr", endDateStr);
         params.put("startTime", dto.getFromTime());
         params.put("endTime", dto.getToTime());
-        return clickHouseJdbcTemplate.queryForObject(sqlStmt, params, Long.class);
+
+        long startTime = System.currentTimeMillis();
+        Long totalRecord = clickHouseJdbcTemplate.queryForObject(sqlStmt, params, Long.class);
+        long duration = System.currentTimeMillis() - startTime;
+
+        if (totalRecord != null && (totalRecord % 2000 == 0)) {
+            log.info("CHECK CLICKHOUSE QUERY - SQL: {} - Params: {} - Total Records: {} - Duration: {} ms",
+                    sqlStmt, params, totalRecord, duration);
+        }
+        return totalRecord;
     }
 
     public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String betId) throws BetNotFoundException {
