@@ -164,7 +164,9 @@ public class KafkaService {
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
+            log.info("FunctionName: produceEndRoundSettleBet Before | {} | {}", "TraceId: " + endRoundSettledBet.getId(), "RoundId: " + endRoundSettledBet.getRoundId());
             stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
+            log.info("FunctionName: produceEndRoundSettleBet After | {} | {}", "TraceId: " + endRoundSettledBet.getId(), "RoundId: " + endRoundSettledBet.getRoundId());
         } catch (Exception e) {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
             log.error("FunctionName: produceEndRoundSettleBet | {} | {} | {}", "TraceId: " + endRoundSettledBet.getId(), "RoundId: " + endRoundSettledBet.getRoundId(), "Error: " + e);
