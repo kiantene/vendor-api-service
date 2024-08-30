@@ -44,8 +44,10 @@ public class TransactionsListAction {
     public OperatorResponseVo<TransactionsListData> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         httpRequestLog.setRequestType(REQUEST_TYPE);
-        httpRequestLog.setResponseLogged(false);
+      //  httpRequestLog.setResponseLogged(false);
         OperatorResponseVo<TransactionsListData> responseVo = new OperatorResponseVo<>();
+
+        OperatorResponseVo<TransactionsListData> responseVoLogging = new OperatorResponseVo<>();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -78,6 +80,13 @@ public class TransactionsListAction {
             TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getAgent().getId());
             responseVo.setData(transactionsListData);
 
+
+            TransactionsListData transactionsListDataLog = new TransactionsListData();
+            responseVoLogging.setTraceId(dto.getTraceId());
+            transactionsListDataLog.setTotalItems(transactionsListData.getTotalItems());
+            transactionsListDataLog.setCurrentPage(transactionsListData.getCurrentPage());
+            transactionsListDataLog.setTotalPages(transactionsListData.getTotalPages());
+            responseVoLogging.setData(transactionsListDataLog);
 
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
@@ -115,7 +124,10 @@ public class TransactionsListAction {
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
-            httpService.end(httpRequestLog, responseVo);
+
+            responseVoLogging.setMessage(responseVo.getStatus().description);
+
+            httpService.end(httpRequestLog, responseVoLogging);
         }
 
         return responseVo;

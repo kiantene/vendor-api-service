@@ -239,7 +239,7 @@ String getVersionTagbyPom(String branchName) {
 String getVersionTagbyBranch(String branchName) {
     String baseVersion
 
-    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+)/
+    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+(-hotfix|-adhoc)?)/
 
     if (matcher.find()) {
         baseVersion = matcher.group(1)
