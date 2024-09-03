@@ -387,7 +387,11 @@ public class WalletService {
         }
 
         loggingService.logStart();
-        this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
+        if (!vendorService.shouldSettleByBet()) {
+            //settle by round
+            this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
+        }
+        //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
 
         return balanceVo;
