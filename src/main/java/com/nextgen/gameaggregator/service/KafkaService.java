@@ -166,7 +166,7 @@ public class KafkaService {
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
-            CompletableFuture<SendResult<String, Object>> future = jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
             future.thenAccept(result -> log.info("Message sent successfully: {}", result.getProducerRecord().value()))
                     .exceptionally(throwable -> {
                         // Handle failure
