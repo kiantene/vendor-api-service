@@ -81,12 +81,15 @@ public class SettleBetTransactionDto implements SportBetResultData {
     public BetStatus getBetStatus() {
 
         BetStatus betStatus = BetStatus.SETTLED;
-        if (status != null && status.equals("refund")) {
-            betStatus = BetStatus.REFUNDED;
+        if (status != null) {
+            if (status.equalsIgnoreCase("refund")
+                    || status.equalsIgnoreCase("void")
+                    || status.equalsIgnoreCase("reject")) {
+                betStatus = BetStatus.REFUNDED;
+            }
         }
 
         return betStatus;
-
     }
 
     @Override

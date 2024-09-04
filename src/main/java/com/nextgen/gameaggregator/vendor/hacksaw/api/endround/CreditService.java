@@ -77,7 +77,16 @@ public class CreditService {
             }
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(creditDto.getExternalSessionId());
+            try {
+                gameSession = gameSessionService.verifyToken(creditDto.getExternalSessionId());
+            } catch (AuthenticationException authenticationException) {
+                String vendorGameCode = "hsg_hsg_" + creditDto.getGameId();
+                gameSession = gameSessionService.generateNewSessionToken(creditDto.getExternalPlayerId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+                gameSessionService.updateByVendorCurrencyCode(gameSession, creditDto.getCurrency());
+                gameSession.setToken(creditDto.getExternalSessionId());
+                gameSession.setVendorToken(creditDto.getExternalSessionId());
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession);
@@ -89,7 +98,7 @@ public class CreditService {
             vo.setAccountBalance(balance.longValue());
             vo.setExternalTransactionId(creditDto.getExternalTransactionId());
 
-        } catch (AuthenticationException | InvalidPlayerException e) {
+        } catch (InvalidPlayerException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_USER_OR_TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
 
@@ -123,7 +132,7 @@ public class CreditService {
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
-            
+
         } finally {
             if (!isRequestExists) {
                 requestIdempotentLogService.delete(creditDto, creditDto.getExternalPlayerId());

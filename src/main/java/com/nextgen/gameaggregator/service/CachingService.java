@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,7 +20,14 @@ public class CachingService {
         return betHistory;
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+//    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+//    @CachePut(value = "UnsettledBetByETID", key = "{#unsettledBet.vendorPlayerId, #unsettledBet.externalTransactionId}", cacheManager = "cacheManager", unless = "#result == null")
+
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetByETID", key = "{#unsettledBet.vendorPlayerId, #unsettledBet.externalTransactionId}", cacheManager = "cacheManager")
+    })
     public UnsettledBet updateUnsettledBetCaching(UnsettledBet unsettledBet) {
         return unsettledBet;
     }

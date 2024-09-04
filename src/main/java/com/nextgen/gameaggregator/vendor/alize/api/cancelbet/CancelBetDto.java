@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.alize.api.cancelbet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
@@ -9,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelBetDto implements RollbackData {
     @NotBlank
     @Size(max = 36)
