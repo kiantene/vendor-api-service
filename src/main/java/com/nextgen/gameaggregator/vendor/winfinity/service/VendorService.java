@@ -37,6 +37,7 @@ public class VendorService extends BaseVendorService {
     public String getToken(Integer vendorLineId) {
 
         String accessToken = "";
+        String responseBody = "";
 
         try {
             String clientId = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CLIENT_ID);
@@ -55,7 +56,7 @@ public class VendorService extends BaseVendorService {
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Make the POST request and get the response
-            String responseBody = WebClient.create()
+            responseBody = WebClient.create()
                     .post()
                     .uri(tokenUrl)
                     .headers(httpHeaders -> httpHeaders.addAll(headers))
@@ -69,10 +70,10 @@ public class VendorService extends BaseVendorService {
             accessToken = responseJson.getString("access_token");
 
         } catch (CredentialNotFoundException e) {
-            log.error("Credential not found : " + e.getMessage());
+            log.error("Credential not found : " + e);
 
         } catch (Exception e) {
-            log.error("Other exception : ", e.getMessage());
+            log.error("Other exception : Response body = "+ responseBody +" / "+ e);
         }
 
         return accessToken;
