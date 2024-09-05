@@ -1,13 +1,12 @@
 package com.nextgen.gameaggregator.vendor.winfinity.dto;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -36,7 +35,6 @@ public class CommonDto {
     @Size(max = 4)
     private String cur;
 
-    @Size(max = 10)
     private String gtp;
 
     @Size(max = 32)

@@ -117,7 +117,7 @@ public class UnsettledBetService {
     public void deleteWithoutClearingCache(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
-        } catch (DataRetrievalFailureException e) {
+        } catch (Exception e) {
             // if cannot find document id will cause this exception
         }
     }
@@ -130,14 +130,14 @@ public class UnsettledBetService {
         if (unsettledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("Cannot find Vendor Player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
         } else {
-            Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
             Integer operatorStatus = unsettledBet.getOperatorStatus();
 
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
+            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
                 throw new TransactionStillProcessingException();
+            } else if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new BetNotFoundException();
             }
-
             // for OperatorStatus = (ERROR | SUCCESS), retry is required
         }
 

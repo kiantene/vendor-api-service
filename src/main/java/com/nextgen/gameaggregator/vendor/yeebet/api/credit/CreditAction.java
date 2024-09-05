@@ -31,6 +31,8 @@ import java.math.RoundingMode;
 @Slf4j
 public class CreditAction {
     @Autowired
+    VendorService vendorService;
+    @Autowired
     private HttpService httpService;
     @Autowired
     private VendorLineService vendorLineService;
@@ -42,8 +44,6 @@ public class CreditAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
 
     @PostMapping(path = EndPoints.DEPOSIT)
     public ResponseEntity<ResponseVo> credit(HttpServletRequest request) {
@@ -76,6 +76,13 @@ public class CreditAction {
 
             // Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
+
+            // check db game code is stg or not
+            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+                creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
+            }
+
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(),gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto,gameSession,body);
@@ -170,8 +177,7 @@ public class CreditAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
 
         // Verify vendor gameCode
-        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
-        ValidationUtils.isEquals(game_code, dto.getBetsDto().getGameid(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getBetsDto().getGameid(), GameNotSupportedException::new);
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getBetsDto().getCurrency(), CurrencyNotSupportedException::new);

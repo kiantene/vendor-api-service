@@ -1,63 +1,69 @@
-package com.nextgen.gameaggregator.vendor.winfinity.api.endround;
+package com.nextgen.gameaggregator.vendor.cg.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndroundDto implements BetResultData {
+public class EndRoundDto implements BetResultData {
     @NotBlank
-    @Size(max = 24)
-    private String tbid;
-
+    @Size(max = 255)
+    public String channelId;
     @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    private String uid;
-
-    private String gtp;
-
+    public String accountId;
     @NotBlank
-    @Size(max = 32)
-    private String sid;
-
-    @Size(max = 32)
-    private String msid;
-
+    @Size(max = 255)
+    public String gameType;
     @NotBlank
-    @Size(max = 32)
-    private String gid;
-
-    private Long timestamp;
+    @Size(max = 255)
+    public String roundId;
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
+    public BigDecimal amount;
+    @NotBlank
+    @Size(max = 5)
+    public String currency;
+    @NotBlank
+    @Size(max = 255)
+    public String mtcode;
+    @NotBlank
+    public String eventTime;
+    public String cancel;
+    public Integer bs;
+    public BigDecimal difference;
+    public Integer vaildBet;
+    public BigDecimal vaildBetAmount;
+    public String ipaddress;
+    public String device;
 
     @Override
     public String getExternalTransactionId() {
-        return gid;
+        return this.mtcode;
     }
 
     @Override
     public String getVendorBetId() {
-        return gid;
+        return this.roundId;
     }
 
     @Override
     public String getRoundId() {
-        return gid;
+        return this.roundId;
     }
 
     @Override
     public String getGameId() {
-        return tbid;
+        return this.gameType;
     }
 
     @Override
@@ -67,7 +73,7 @@ public class EndroundDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.ZERO;
+        return this.amount;
     }
 
     @Override
@@ -82,22 +88,22 @@ public class EndroundDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return getTimestamp();
     }
 
     @Override
     public Long getResultTime() {
-        return null;
+        return getTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return (timestamp != null) ? timestamp / 1000L : System.currentTimeMillis();
+        return getTimestamp();
     }
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
@@ -108,5 +114,10 @@ public class EndroundDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    public Long getTimestamp() {
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.toEpochMilli();
     }
 }

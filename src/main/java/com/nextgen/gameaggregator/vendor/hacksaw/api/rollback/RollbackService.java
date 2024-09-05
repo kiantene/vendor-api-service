@@ -47,7 +47,18 @@ public class RollbackService {
             this.doValidation(rollbackDto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getExternalSessionId());
+            GameSession gameSession;
+
+            try {
+                gameSession = gameSessionService.verifyToken(rollbackDto.getExternalSessionId());
+            } catch (AuthenticationException authenticationException) {
+                String vendorGameCode = "hsg_hsg_" + rollbackDto.getGameId();
+                gameSession = gameSessionService.generateNewSessionToken(rollbackDto.getExternalPlayerId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+                gameSessionService.updateByVendorCurrencyCode(gameSession, rollbackDto.getCurrency());
+                gameSession.setToken(rollbackDto.getExternalSessionId());
+                gameSession.setVendorToken(rollbackDto.getExternalSessionId());
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession);
@@ -115,7 +126,7 @@ public class RollbackService {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify valid game id
-        vendorService.verifyVendorGameCode(gameSession, dto.getGameId().toString());
+        //vendorService.verifyVendorGameCode(gameSession, dto.getGameId().toString());
 
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalPlayerId(), InvalidPlayerException::new);
