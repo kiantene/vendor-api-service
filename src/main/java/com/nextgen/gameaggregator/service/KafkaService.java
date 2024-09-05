@@ -28,6 +28,8 @@ public class KafkaService {
     private final VendorPlayerService vendorPlayerService;
     private final CachingService cachingService;
 
+    private final S3BetService s3BetService;
+
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
                         KafkaTemplate<String, Object> jsonSchemaKafkaTemplate,
@@ -35,7 +37,9 @@ public class KafkaService {
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
-                        CachingService cachingService) {
+                        CachingService cachingService,
+                        S3BetService s3BetService
+    ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
         this.jsonSchemaKafkaTemplate = jsonSchemaKafkaTemplate;
@@ -44,6 +48,7 @@ public class KafkaService {
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.cachingService = cachingService;
+        this.s3BetService = s3BetService;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -136,6 +141,8 @@ public class KafkaService {
 
             cachingService.storeFirstProcessBetDateForCurrencyConversionIssue(1, System.currentTimeMillis());
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
+
+            s3BetService.uploadBetHistoryJsonFileAsync(warehouseBetHistory);
 
             if (warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)) {
                 stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_DELAY_SETTLEMENT, mapper.writeValueAsString(warehouseBetHistory));
