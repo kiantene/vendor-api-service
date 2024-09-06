@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -144,14 +145,21 @@ public class TransferService {
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
 
         } catch (BetResultIdempotentViolationException e) {
-            transferVo.setBalance(e.getBalance());
-            transferVo.setMsg(ResponseCode.SUCCESS.description);
-            transferVo.setResponseCode(ResponseCode.SUCCESS);
-            transferVo.setTransferId(transferId);
-            transferVo.setMerchantCode(merchantCode);
-            transferVo.setMerchantTxId(merchantTxId);
-            transferVo.setAcctId(acctId);
-            transferVo.setSerialNo(traceId);
+            if (isCancel && e.getStatus().equals(BetStatus.SETTLED.code)) {
+                //if the bet is settled but receiving refund request, should return error
+                httpService.logError(httpRequestLog, e);
+                transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
+            } else {
+                transferVo.setBalance(e.getBalance());
+                transferVo.setMsg(ResponseCode.SUCCESS.description);
+                transferVo.setResponseCode(ResponseCode.SUCCESS);
+                transferVo.setTransferId(transferId);
+                transferVo.setMerchantCode(merchantCode);
+                transferVo.setMerchantTxId(merchantTxId);
+                transferVo.setAcctId(acctId);
+                transferVo.setSerialNo(traceId);
+            }
+            
         } catch (Exception exception) {
             transferVo.setResponseCode(isCancel ? ResponseCode.INVALID_REQUEST : ResponseCode.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
