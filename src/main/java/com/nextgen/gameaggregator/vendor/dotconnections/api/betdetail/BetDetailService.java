@@ -61,7 +61,7 @@ public class BetDetailService implements BetDetailUrl {
 
         String provider = formData.getFirst("provider");
 
-        if (provider.equals("relax")) {
+        if (provider.equals("relax") || provider.equals("tk")) {
             UrlVo urlVo = new UrlVo();
             urlVo.setRecord("");
             urlVo.setRecordType("URL");

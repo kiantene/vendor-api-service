@@ -41,9 +41,9 @@ public class WalletBetResultAction {
     private final AuthenticationService authenticationService;
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
-    private final Set<Integer> vendorList;
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
+    private final Set<Integer> betLoseVendorList;
 
     @Value("${testing.stub:false}")
     private boolean useStub;
@@ -60,22 +60,9 @@ public class WalletBetResultAction {
         this.authenticationService = authenticationService;
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
-        this.vendorList = new HashSet<>();
         this.forceSuccessResultTypeList = new HashSet<>();
         this.betWinVendorList = new HashSet<>();
-
-        this.vendorList.add(1); // PP
-        this.vendorList.add(3); // CQ9
-        this.vendorList.add(6); // SPINIX
-        this.vendorList.add(7); // SPADEGAMING
-        this.vendorList.add(12); // EVO NETENT
-        this.vendorList.add(13); // EVO LIVE
-        this.vendorList.add(17); // MG
-        this.vendorList.add(19); // HABANERO
-        this.vendorList.add(26); // EVO BTG
-        this.vendorList.add(27); // EVO NLC
-        this.vendorList.add(28); // EVO RT
-        this.vendorList.add(36); // TADA
+        this.betLoseVendorList = new HashSet<>();
 
         this.forceSuccessResultTypeList.add(ResultType.WIN.code);
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
@@ -83,6 +70,9 @@ public class WalletBetResultAction {
 
         this.betWinVendorList.add(32);
         this.betWinVendorList.add(55);
+        this.betWinVendorList.add(7);
+
+        this.betLoseVendorList.add(7);
     }
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
@@ -196,6 +186,10 @@ public class WalletBetResultAction {
                     shouldForceSuccess = true;
 
                 } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
+                    // BET_WIN resultType will be force success, but only apply to certain vendors
+                    shouldForceSuccess = true;
+
+                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))) {
                     // BET_WIN resultType will be force success, but only apply to certain vendors
                     shouldForceSuccess = true;
 

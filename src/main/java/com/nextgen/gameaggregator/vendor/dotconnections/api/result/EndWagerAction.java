@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -86,9 +87,13 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
-        } catch (AuthenticationException | InvalidVendorLineException | InvalidSignatureException signErrorException) {
+        } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
+
+        } catch(AuthenticationException authenticationException){
+            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
@@ -124,7 +129,21 @@ public class EndWagerAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                responseVo.setCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.REQUEST_PARAM_ERROR)
+                );
+
+            } else {
+                responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+
+            }
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidProviderException invalidProviderException) {
@@ -191,6 +210,9 @@ public class EndWagerAction {
 
         // Verify signature
         VendorService.isSameSignature(dto.getSign(), toVerifySign);
+
+        // Verify if is valid player
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getBrandUid(), InvalidPlayerException::new);
 
         // Verify provider
         if (!dto.getProvider().equals(providerCode)) {
