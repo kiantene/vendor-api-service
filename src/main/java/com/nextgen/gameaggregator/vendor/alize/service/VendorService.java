@@ -1,16 +1,13 @@
 package com.nextgen.gameaggregator.vendor.alize.service;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import com.nextgen.gameaggregator.service.BaseVendorService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.springframework.stereotype.Service;
-
-import com.nextgen.gameaggregator.service.BaseVendorService;
-
-import lombok.extern.slf4j.Slf4j;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @Service
 @Slf4j
@@ -44,5 +41,10 @@ public class VendorService extends BaseVendorService {
     @Override
     public boolean shouldRejectCancelRequest() {
         return false;
+    }
+
+    @Override
+    public boolean shouldSettleByBet() {
+        return true;
     }
 }
