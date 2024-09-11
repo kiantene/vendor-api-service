@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.service;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,14 +45,19 @@ public class VendorService extends BaseVendorService {
         return str.replaceAll("-", "");
     }
 
-    public static String revertToUUID(String uuidString) {
-        StringBuilder sb = new StringBuilder(uuidString);
-        sb.insert(8, "-");
-        sb.insert(13, "-");
-        sb.insert(18, "-");
-        sb.insert(23, "-");
+    public static String revertToUUID(String uuidString) throws AuthenticationException {
 
-        return sb.toString();
+        try{
+            StringBuilder sb = new StringBuilder(uuidString);
+            sb.insert(8, "-");
+            sb.insert(13, "-");
+            sb.insert(18, "-");
+            sb.insert(23, "-");
+
+            return sb.toString();
+        } catch (Exception e) {
+            throw new AuthenticationException();
+        }
     }
 
     public ResponseVo getCurrentBalanceResponseVo(HttpRequestLog httpRequestLog, String traceId, GameSession gameSession) {

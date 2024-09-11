@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -15,54 +16,50 @@ import java.math.BigDecimal;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WagerDto extends CommonDto implements BetResultData {
 
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.PLAYER_NOT_EXIST)
-    @Size(min = 32, max = 32, message = ResponseCodes.PLAYER_NOT_EXIST)
+    @NotBlank(message = ResponseCodes.PLAYER_NOT_EXIST)
+    @Size(max = 255)
     public String token;
 
     @NotNull
-    @PositiveOrZero
-    @Digits(integer = 16, fraction = 2)
+    @Digits(integer = 20, fraction = 8, message = ResponseCodes.INVALID_AMOUNT)
     public BigDecimal amount;
 
     @NotNull
-    @PositiveOrZero
-    @Digits(integer = 16, fraction = 6)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal jackpotContribution;
 
-    @NotNull
-    @PositiveOrZero
-    @Digits(integer = Integer.MAX_VALUE, fraction = 0)
-    public Integer gameId;
+    @NotBlank
+    @Size(max = 255)
+    public String gameId;
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 255)
     public String gameName;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String roundId;
 
     @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String wagerId;
 
     @NotBlank
-    @Size(max = 20)
-    @Pattern(regexp = "^[a-z]+$")
+    @Size(max = 255)
     public String provider;
 
-    @NotNull
-    @Range(min = 1, max = 2)
+//    @NotNull
+//    @Range(min = 1, max = 2)
     // 1=Normal; 2=Tip
     public Integer betType;
 
-    @NotNull
-    @Pattern(regexp = "^true$|^false$")
+//    @NotNull
+//    @Pattern(regexp = "^true$|^false$")
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 
@@ -113,7 +110,7 @@ public class WagerDto extends CommonDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameId.toString();
+        return this.gameId;
     }
 
     @Override
