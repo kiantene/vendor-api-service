@@ -20,6 +20,10 @@ public class S3BetService {
 
     @Value("${aws.s3.bet-bucket}")
     private String bucketName;
+
+    @Value("${aws.s3.bet-bucket.enable:false}")
+    private Boolean enableBetBucket;
+
     @Autowired
     public S3BetService(S3Client s3Client) {
         this.s3Client = s3Client;
@@ -29,9 +33,13 @@ public class S3BetService {
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 
     public void uploadBetHistoryJsonFileAsync(com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory) {
-        THREAD_POOL.submit(() -> {
-            uploadBetHistoryJsonFile(warehouseBetHistory);  // Call the actual upload method
-        });
+
+        if (enableBetBucket) {
+            THREAD_POOL.submit(() -> {
+                uploadBetHistoryJsonFile(warehouseBetHistory);  // Call the actual upload method
+            });
+        }
+
     }
 
     public void uploadBetHistoryJsonFile(com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory) {
@@ -54,7 +62,7 @@ public class S3BetService {
             System.err.println("upload file bet history");
         } catch (Exception e) {
             // Log or handle the exception appropriately
-            log.error(e.getMessage() + " -> Error uploading bet history file to S3: =" + warehouseBetHistory.getId() );
+            log.error(e.getMessage() + " -> Error uploading bet history file to S3: =" + warehouseBetHistory.getId());
             e.printStackTrace();
         }
     }
