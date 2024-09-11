@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -47,20 +46,6 @@ public class KafkaService {
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.cachingService = cachingService;
-    }
-
-    private static CompletableFuture<SendResult<String, String>> createDummyFuture() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // Delay for 10 seconds
-                TimeUnit.SECONDS.sleep(10);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            // Throw a custom error after delay
-            throw new RuntimeException("Dummy error after 10 seconds delay");
-        });
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -181,8 +166,7 @@ public class KafkaService {
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
-//            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
-            CompletableFuture<SendResult<String, String>> future = KafkaService.createDummyFuture();
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
             future.exceptionally(throwable -> {
                 // Handle failure
                 log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
