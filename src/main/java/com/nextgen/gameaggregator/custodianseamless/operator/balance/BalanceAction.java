@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.LoggingService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +46,8 @@ public class BalanceAction {
     private TransferService transferService;
     @Autowired
     private BalanceRequest  balanceRequest;
+    @Autowired
+    private LoggingService loggingService;
 
     @PostMapping(path = WalletServiceEndpoints.OPERATOR_BALANCE)
     public OperatorResponseVo<BalanceData> balance(HttpServletRequest request) {
@@ -60,35 +63,55 @@ public class BalanceAction {
             responseVo.setTraceId(traceId);
 
             // 1. Validate all fields in the request object
+            loggingService.logStart();
             ValidationUtils.validateRequest(dto);
+            loggingService.logProcessTime("balance ｜ ValidationUtils.validateRequest", traceId);
 
             // 2. Check if api key is valid
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
+            loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            loggingService.logProcessTime("balance ｜ validationService.validateApiKey", traceId);
 
             // 3. validate duplicate traceId request
+            loggingService.logStart();
             transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+            loggingService.logProcessTime("balance ｜ transferService.checkTraceIdExists", traceId);
 
             // 4. Validate the signature
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
+            loggingService.logStart();
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
+            loggingService.logProcessTime("balance ｜ validationService.validateSignature", traceId);
 
             // 5. Check Agent Status
+            loggingService.logStart();
             validationService.validateAgentStatus(apiCredential.getAgent());
+            loggingService.logProcessTime("balance ｜ validationService.validateAgentStatus", traceId);
 
             // 6. check Agent Wallet type and seamless type
+            loggingService.logStart();
             validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
+            loggingService.logProcessTime("balance ｜ validationService.validateIsCustodianSeamlessAgentWalletType", traceId);
 
             // 7.1 Check if Currency exist
+            loggingService.logStart();
             Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
+            loggingService.logProcessTime("balance ｜ gameUrlService.checkCurrency", traceId);
             // 7.2 Check if Agent Currency supported
+            loggingService.logStart();
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
+            loggingService.logProcessTime("balance ｜ gameUrlService.checkAgentCurrencySupported", traceId);
 
             // 8. Check if agent player account exists and is disabled
+            loggingService.logStart();
             AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
+            loggingService.logProcessTime("balance ｜ transferService.checkAgentPlayer", traceId);
 
+            loggingService.logStart();
             BalanceData balanceData = balanceRequest.call(traceId, agentPlayer, currency, transferWalletRequestLog);
+            loggingService.logProcessTime("balance ｜ balanceRequest.call", traceId);
 
             responseVo.setData(balanceData);
 
