@@ -31,7 +31,10 @@ public class LoggingService {
         logInfo.put("StartTime: ", this.startTime);
         logInfo.put("EndTime: ", endTime);
         logInfo.put("TotalProcessMs: ", endTime - this.startTime);
-        log.info(gson.toJson(logInfo));
+        if((endTime - this.startTime) >1000){
+            log.info(gson.toJson(logInfo));
+        }
+
     }
 
     public void logProcessTimeTempLog(String functionName, String vendorPlayerUsername, String roundId) {
