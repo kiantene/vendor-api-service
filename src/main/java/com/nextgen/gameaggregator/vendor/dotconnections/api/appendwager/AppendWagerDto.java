@@ -1,30 +1,25 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.appendwager;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Digits;
-
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class AppendWagerDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 16, fraction = 2)
+    @Digits(integer = 20, fraction = 8)
     public BigDecimal amount;
 
     @NotNull

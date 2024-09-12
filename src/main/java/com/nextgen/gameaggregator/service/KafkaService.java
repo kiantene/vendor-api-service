@@ -12,9 +12,11 @@ import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -171,10 +173,20 @@ public class KafkaService {
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
+            future.exceptionally(throwable -> {
+                // Handle failure
+                log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
+                        "TraceId: " + endRoundSettledBet.getId(),
+                        "RoundId: " + endRoundSettledBet.getRoundId(),
+                        "Error: " + throwable.toString());
+                return null; // Return a default value if needed
+            });
         } catch (Exception e) {
-            //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
-            log.error("FunctionName: produceEndRoundSettleBet | {} | {} | {}", "TraceId: " + endRoundSettledBet.getId(), "RoundId: " + endRoundSettledBet.getRoundId(), "Error: " + e);
+            log.error("FunctionName: produceEndRoundSettleBet (Exception) | {} | {} | {}",
+                    "TraceId: " + endRoundSettledBet.getId(),
+                    "RoundId: " + endRoundSettledBet.getRoundId(),
+                    "Error: " + e);
         }
     }
 

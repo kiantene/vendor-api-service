@@ -102,10 +102,13 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (GameNotSupportedException | InvalidPlayerException invalidPlayerException) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            httpService.logError(httpRequestLog, gameNotSupportedException);
+
+        } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
             httpService.logError(httpRequestLog, invalidPlayerException);
-
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, disabledGameException);
@@ -217,6 +220,9 @@ public class WagerAction {
         if (!dto.getProvider().equals(providerCode)) {
             throw new InvalidProviderException();
         }
+
+        // Verify if is valid player
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getBrandUid(), InvalidPlayerException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getBrandUid());
