@@ -117,8 +117,8 @@ public class BetHistoryService {
         if (!enableClickHouse) {
             iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
         } else {
-
-            iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+            //iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+            iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetailFromS3(betId);
         }
 
         if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id

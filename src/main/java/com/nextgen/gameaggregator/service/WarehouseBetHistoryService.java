@@ -32,17 +32,21 @@ public class WarehouseBetHistoryService {
     private final Integer[] excludeGameCategoryIds = {6}; // skip sport category
     private final NamedParameterJdbcTemplate clickHouseJdbcTemplate;
     private final VendorCurrencyRepository vendorCurrencyRepository;
+
+    private final S3BetService s3BetService;
     @Autowired
     public WarehouseBetHistoryService (VendorGameService vendorGameService, VendorService vendorService,
                                        GameCategoryService gameCategoryService, CurrencyService currencyService,
                                        NamedParameterJdbcTemplate clickHouseJdbcTemplate,
-                                       VendorCurrencyRepository vendorCurrencyRepository){
+                                       VendorCurrencyRepository vendorCurrencyRepository,
+                                       S3BetService s3BetService){
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
         this.gameCategoryService = gameCategoryService;
         this.currencyService = currencyService;
         this.clickHouseJdbcTemplate = clickHouseJdbcTemplate;
         this.vendorCurrencyRepository = vendorCurrencyRepository;
+        this.s3BetService = s3BetService;
 
     }
 
@@ -193,6 +197,44 @@ public class WarehouseBetHistoryService {
             return betDetailUrlInfo; // adapt as necessary
 
         });
+        return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
+
+    }
+
+
+    public IBetDetailUrlInfo getBetHistoryDetailFromS3(String betId) throws BetNotFoundException {
+
+        com.nextgen.gameaggregator.entity.warehouse.BetHistory  warehouseBetHistory = s3BetService.readBetHistoryFromS3File(betId);
+
+        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+        betDetailUrlInfo.setBetId(warehouseBetHistory.getId());
+        betDetailUrlInfo.setExternalTransactionId(warehouseBetHistory.getExternalTransactionId());
+        betDetailUrlInfo.setExternalRoundId(warehouseBetHistory.getRoundId());
+        betDetailUrlInfo.setUsername(warehouseBetHistory.getAgentPlayerUsername());
+        betDetailUrlInfo.setCurrencyId(warehouseBetHistory.getCurrencyId());
+        betDetailUrlInfo.setCurrencyCode(warehouseBetHistory.getCurrencyCode());
+        betDetailUrlInfo.setGameCode(warehouseBetHistory.getGameCode());
+        betDetailUrlInfo.setVendorId(warehouseBetHistory.getVendorId());
+        betDetailUrlInfo.setVendorCode(warehouseBetHistory.getVendorCode());
+        betDetailUrlInfo.setGameCategoryCode(warehouseBetHistory.getGameCategoryCode());
+        betDetailUrlInfo.setBetAmount(warehouseBetHistory.getBetAmount());
+        betDetailUrlInfo.setWinAmount(warehouseBetHistory.getWinAmount());
+        betDetailUrlInfo.setWinLoss(warehouseBetHistory.getWinLoss());
+        betDetailUrlInfo.setEffectiveTurnover(warehouseBetHistory.getEffectiveTurnover());
+        betDetailUrlInfo.setJackpotAmount(warehouseBetHistory.getJackpotAmount());
+        betDetailUrlInfo.setStatus(warehouseBetHistory.getStatus());
+        betDetailUrlInfo.setVendorBetTime(warehouseBetHistory.getVendorBetTime());
+        betDetailUrlInfo.setVendorSettleTime(warehouseBetHistory.getVendorSettleTime());
+        betDetailUrlInfo.setVendorLineId(warehouseBetHistory.getVendorLineId());
+        betDetailUrlInfo.setIsFreeSpin(warehouseBetHistory.getIsFreespin() == 0 ? "FALSE" : "TRUE");
+        betDetailUrlInfo.setVendorUsername(warehouseBetHistory.getVendorPlayerUsername());
+        betDetailUrlInfo.setGameSessionToken(warehouseBetHistory.getGameSessionToken());
+
+        VendorCurrency vendorCurrency =
+                vendorCurrencyRepository.findByVendorIdAndCurrencyId
+                        (warehouseBetHistory.getVendorId(), warehouseBetHistory.getCurrencyId());
+        betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+
         return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
 
     }

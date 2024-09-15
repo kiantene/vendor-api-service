@@ -264,6 +264,7 @@ public class HttpService {
                     kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
 
                 } catch (Exception exception) {
+                    System.err.println(exception.getMessage());
                     log.error(exception.getMessage());
                     exception.printStackTrace();
                 }

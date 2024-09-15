@@ -27,7 +27,7 @@ public class TransactionDetailData {
         this.betDetail.setWinLoss(iBetDetailUrlInfo.getWinLoss());
         this.betDetail.setEffectiveTurnover(iBetDetailUrlInfo.getEffectiveTurnover());
         this.betDetail.setJackpotAmount(iBetDetailUrlInfo.getJackpotAmount());
-        this.betDetail.setRefundAmount(iBetDetailUrlInfo.getRefundAmount());
+        this.betDetail.setRefundAmount(BigDecimal.ZERO);
         this.betDetail.setStatus(iBetDetailUrlInfo.getStatus());
         this.betDetail.setVendorBetTime(iBetDetailUrlInfo.getVendorBetTime());
         this.betDetail.setVendorSettleTime(iBetDetailUrlInfo.getVendorSettleTime());

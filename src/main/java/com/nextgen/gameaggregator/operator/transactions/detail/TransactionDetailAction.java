@@ -140,6 +140,7 @@ public class TransactionDetailAction {
             httpService.logError(httpRequestLog, vendorLanguageNotSupportedException);
 
         } catch (Exception exception) {
+            System.err.println(exception.getMessage());
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
 
