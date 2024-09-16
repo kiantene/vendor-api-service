@@ -203,38 +203,43 @@ public class WarehouseBetHistoryService {
 
 
     public IBetDetailUrlInfo getBetHistoryDetailFromS3(String betId) throws BetNotFoundException {
-
-        com.nextgen.gameaggregator.entity.warehouse.BetHistory  warehouseBetHistory = s3BetService.readBetHistoryFromS3File(betId);
-
         BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
-        betDetailUrlInfo.setBetId(warehouseBetHistory.getId());
-        betDetailUrlInfo.setExternalTransactionId(warehouseBetHistory.getExternalTransactionId());
-        betDetailUrlInfo.setExternalRoundId(warehouseBetHistory.getRoundId());
-        betDetailUrlInfo.setUsername(warehouseBetHistory.getAgentPlayerUsername());
-        betDetailUrlInfo.setCurrencyId(warehouseBetHistory.getCurrencyId());
-        betDetailUrlInfo.setCurrencyCode(warehouseBetHistory.getCurrencyCode());
-        betDetailUrlInfo.setGameCode(warehouseBetHistory.getGameCode());
-        betDetailUrlInfo.setVendorId(warehouseBetHistory.getVendorId());
-        betDetailUrlInfo.setVendorCode(warehouseBetHistory.getVendorCode());
-        betDetailUrlInfo.setGameCategoryCode(warehouseBetHistory.getGameCategoryCode());
-        betDetailUrlInfo.setBetAmount(warehouseBetHistory.getBetAmount());
-        betDetailUrlInfo.setWinAmount(warehouseBetHistory.getWinAmount());
-        betDetailUrlInfo.setWinLoss(warehouseBetHistory.getWinLoss());
-        betDetailUrlInfo.setEffectiveTurnover(warehouseBetHistory.getEffectiveTurnover());
-        betDetailUrlInfo.setJackpotAmount(warehouseBetHistory.getJackpotAmount());
-        betDetailUrlInfo.setStatus(warehouseBetHistory.getStatus());
-        betDetailUrlInfo.setVendorBetTime(warehouseBetHistory.getVendorBetTime());
-        betDetailUrlInfo.setVendorSettleTime(warehouseBetHistory.getVendorSettleTime());
-        betDetailUrlInfo.setVendorLineId(warehouseBetHistory.getVendorLineId());
-        betDetailUrlInfo.setIsFreeSpin(warehouseBetHistory.getIsFreespin() == 0 ? "FALSE" : "TRUE");
-        betDetailUrlInfo.setVendorUsername(warehouseBetHistory.getVendorPlayerUsername());
-        betDetailUrlInfo.setGameSessionToken(warehouseBetHistory.getGameSessionToken());
 
-        VendorCurrency vendorCurrency =
-                vendorCurrencyRepository.findByVendorIdAndCurrencyId
-                        (warehouseBetHistory.getVendorId(), warehouseBetHistory.getCurrencyId());
-        betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+        try {
+            com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory = s3BetService.readBetHistoryFromS3File(betId);
 
+
+            betDetailUrlInfo.setBetId(warehouseBetHistory.getId());
+            betDetailUrlInfo.setExternalTransactionId(warehouseBetHistory.getExternalTransactionId());
+            betDetailUrlInfo.setExternalRoundId(warehouseBetHistory.getRoundId());
+            betDetailUrlInfo.setUsername(warehouseBetHistory.getAgentPlayerUsername());
+            betDetailUrlInfo.setCurrencyId(warehouseBetHistory.getCurrencyId());
+            betDetailUrlInfo.setCurrencyCode(warehouseBetHistory.getCurrencyCode());
+            betDetailUrlInfo.setGameCode(warehouseBetHistory.getGameCode());
+            betDetailUrlInfo.setVendorId(warehouseBetHistory.getVendorId());
+            betDetailUrlInfo.setVendorCode(warehouseBetHistory.getVendorCode());
+            betDetailUrlInfo.setGameCategoryCode(warehouseBetHistory.getGameCategoryCode());
+            betDetailUrlInfo.setBetAmount(warehouseBetHistory.getBetAmount());
+            betDetailUrlInfo.setWinAmount(warehouseBetHistory.getWinAmount());
+            betDetailUrlInfo.setWinLoss(warehouseBetHistory.getWinLoss());
+            betDetailUrlInfo.setEffectiveTurnover(warehouseBetHistory.getEffectiveTurnover());
+            betDetailUrlInfo.setJackpotAmount(warehouseBetHistory.getJackpotAmount());
+            betDetailUrlInfo.setStatus(warehouseBetHistory.getStatus());
+            betDetailUrlInfo.setVendorBetTime(warehouseBetHistory.getVendorBetTime());
+            betDetailUrlInfo.setVendorSettleTime(warehouseBetHistory.getVendorSettleTime());
+            betDetailUrlInfo.setVendorLineId(warehouseBetHistory.getVendorLineId());
+            betDetailUrlInfo.setIsFreeSpin(warehouseBetHistory.getIsFreespin() == 0 ? "FALSE" : "TRUE");
+            betDetailUrlInfo.setVendorUsername(warehouseBetHistory.getVendorPlayerUsername());
+            betDetailUrlInfo.setGameSessionToken(warehouseBetHistory.getGameSessionToken());
+
+            VendorCurrency vendorCurrency =
+                    vendorCurrencyRepository.findByVendorIdAndCurrencyId
+                            (warehouseBetHistory.getVendorId(), warehouseBetHistory.getCurrencyId());
+            betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+        }catch ( Exception exception){
+            exception.printStackTrace();
+            log.error("Error reading S3 file :" + exception.getStackTrace().toString());
+        }
         return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
 
     }
