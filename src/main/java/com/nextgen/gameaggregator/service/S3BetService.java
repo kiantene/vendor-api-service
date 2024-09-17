@@ -33,8 +33,8 @@ public class S3BetService {
     @Value("${aws.s3.bet-bucket}")
     private String bucketName;
 
-    @Value("${aws.s3.bet-bucket.enable:false}")
-    private Boolean enableBetBucket;
+    @Value("${aws.s3.bet-bucket.write:false}")
+    private Boolean enableBetBucketWrite;
 
     @Autowired
     public S3BetService(S3Client s3Client) {
@@ -46,7 +46,7 @@ public class S3BetService {
 
     public void uploadBetHistoryJsonFileAsync(com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory) {
 
-        if (enableBetBucket) {
+        if (enableBetBucketWrite) {
             THREAD_POOL.submit(() -> {
                 uploadBetHistoryJsonFile(warehouseBetHistory);  // Call the actual upload method
             });
