@@ -28,7 +28,6 @@ public class KafkaService {
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
-    private final CachingService cachingService;
 
     private final S3BetService s3BetService;
 
@@ -49,7 +48,6 @@ public class KafkaService {
         this.warehouseBetHistoryService = warehouseBetHistoryService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
-        this.cachingService = cachingService;
         this.s3BetService = s3BetService;
     }
 
@@ -141,7 +139,6 @@ public class KafkaService {
             // Using Jackson or any other JSON library to convert UserData object to JSON string
             ObjectMapper mapper = new ObjectMapper();
 
-            cachingService.storeFirstProcessBetDateForCurrencyConversionIssue(1, System.currentTimeMillis());
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
 
             s3BetService.uploadBetHistoryJsonFileAsync(warehouseBetHistory);
