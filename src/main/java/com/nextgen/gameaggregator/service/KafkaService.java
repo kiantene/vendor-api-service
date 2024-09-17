@@ -123,7 +123,7 @@ public class KafkaService {
 
 
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
-                AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
                 agentPlayerUsername = agentPlayer.getUsername();
                 log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
