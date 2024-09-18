@@ -389,7 +389,9 @@ public class WalletService {
         loggingService.logStart();
         if (!vendorService.shouldSettleByBet()) {
             //settle by round
+            loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
             this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
+            loggingService.logDataFlowByVendor("After notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
@@ -499,26 +501,36 @@ public class WalletService {
 
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         log.debug("[" + traceId + "] notifyEndRoundAsync -> start thread (roundId: " + settledBet.getRoundId() + ")");
+        String settledBetRoundId = settledBet.getRoundId();
+        Integer settledBetVendorId = settledBet.getVendorId();
+
+        loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 1", settledBetVendorId, settledBetRoundId, unsettledBetList);
         THREAD_POOL.submit(() -> {
             try {
                 List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
                 log.debug("[" + traceId + "] notifyEndRoundAsync -> check unsettledBetList: " + unsettledBetList);
                 if (CollectionUtils.isEmpty(newUnsettledBetList)) {
                     log.debug("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
+                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 2", settledBetVendorId, settledBetRoundId, unsettledBetList);
                     String roundId = settledBet.getRoundId();
                     Integer vendorGameId = gameSession.getVendorGameId();
                     Long vendorPlayerId = gameSession.getVendorPlayerId();
                     newUnsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 3", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
+
                 } else {
                     newUnsettledBetList = unsettledBetList;
+                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 4", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
                 }
 
                 newUnsettledBetList = this.filterFailedUnsettledBet(newUnsettledBetList);
+                loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 5", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
 
                 // multiple bets within same round
                 for (UnsettledBet betRecord : newUnsettledBetList) {
                     if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
                         log.debug("[" + traceId + "] notifyEndRoundAsync -> settle bet: " + betRecord.getBetId());
+                        loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 6", settledBetVendorId, settledBetRoundId, betRecord);
                         final String newTraceId = UUID.randomUUID().toString();
 
                         //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
@@ -527,13 +539,16 @@ public class WalletService {
                         }
 
                         SettledBet newSettledBet = new SettledBet(betRecord, vendorService, newTraceId);
+                        loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 7", settledBetVendorId, settledBetRoundId, newSettledBet);
 
                         //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
                         EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
                                 gameSession.getCurrencyCode(), gameSession.getGameCode());
                         endRoundSettledBet.setInternalTransactionId(newTraceId);
 
+                        loggingService.logDataFlowByVendor("Before produceEndRoundSettleBet", settledBetVendorId, settledBetRoundId, endRoundSettledBet);
                         kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
+                        loggingService.logDataFlowByVendor("After produceEndRoundSettleBet", settledBetVendorId, settledBetRoundId, endRoundSettledBet);
                     }
                 }
             } catch (Exception exception) {

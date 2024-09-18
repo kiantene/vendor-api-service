@@ -4,7 +4,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetAdjustmentLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletAdjustmentService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -23,16 +26,24 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class AdjustmentAction {
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
+    private final WalletAdjustmentService walletAdjustmentService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private WalletAdjustmentService walletAdjustmentService;
+    public AdjustmentAction(HttpService httpService,
+                            GameSessionService gameSessionService,
+                            VendorLineService vendorLineService,
+                            VendorService vendorService,
+                            WalletAdjustmentService walletAdjustmentService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
+        this.walletAdjustmentService = walletAdjustmentService;
+    }
 
     @PostMapping(path = Endpoints.ADJUSTMENT)
     public ResponseVo adjustment(HttpServletRequest request) {
@@ -52,8 +63,16 @@ public class AdjustmentAction {
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
-            gameSession = gameSessionService.verifyToken(dto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
