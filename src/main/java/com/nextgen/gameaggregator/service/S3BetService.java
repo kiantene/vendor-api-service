@@ -79,7 +79,7 @@ public class S3BetService {
     }
 
     // Method to read JSON from S3 and convert it to a BetHistory object
-    public com.nextgen.gameaggregator.entity.warehouse.BetHistory readBetHistoryFromS3File(String betId) {
+    public com.nextgen.gameaggregator.entity.warehouse.BetHistory readBetHistoryFromS3File(String betId) throws Exception {
 
         String fileName = betId + ".json";
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -101,9 +101,9 @@ public class S3BetService {
 
 
         } catch (NoSuchKeyException e) {
-            throw new RuntimeException("File not found in S3 with betId :"+betId, e);
+            throw new Exception("File not found in S3 with betId :"+betId);
         } catch (JsonMappingException | JsonProcessingException e) {
-            throw new RuntimeException("Error deserializing JSON from S3 file with betId :"+betId, e);
+            throw new Exception("Error deserializing JSON from S3 file with betId :"+betId, e);
         } catch (Exception e) {
             throw new RuntimeException("Error reading S3 file with betId :"+betId, e);
         }
