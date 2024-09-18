@@ -20,12 +20,13 @@ public class GetSingleTransactionDto {
     @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String referenceId;
 
-    @NotBlank(message = "min 3 and max 20 alphanumeric")
-    @Size(min = 3, max = 20 , message = "min 3 and max 20 alphanumeric")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "min 3 and max 20 alphanumeric only") // Only alphanumeric allowed
+    @NotBlank(message = "min 3 and max 40 alphanumeric")
+    @Size(min = 3, max = 40, message = "min 3 and max 40 alphanumeric")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX, message = "min 3 and max 40 alphanumeric only")
+    // allow UUID format & "-" & "_"
     private String username;
 
-    @NotBlank( message = "min 3 and max 10  characters")
+    @NotBlank(message = "min 3 and max 10  characters")
     @Size(min = 3, max = 10, message = "min 3 and max 10  characters")
     private String currency;
 }

@@ -28,16 +28,24 @@ import java.math.BigDecimal;
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class ResultAction {
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorService vendorService;
+    public ResultAction(HttpService httpService,
+                        GameSessionService gameSessionService,
+                        WalletService walletService,
+                        VendorLineService vendorLineService,
+                        VendorService vendorService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = Endpoints.RESULT)
     public ResponseVo betResult(HttpServletRequest request) {
@@ -54,8 +62,16 @@ public class ResultAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            gameSession = gameSessionService.verifyToken(dto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBonus(BigDecimal.ZERO);

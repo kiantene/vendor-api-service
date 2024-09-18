@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -17,28 +18,36 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class AuthenticateAction {
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    public AuthenticateAction(HttpService httpService,
+                              GameSessionService gameSessionService,
+                              WalletService walletService,
+                              VendorLineService vendorLineService,
+                              AgentPlayerService agentPlayerService,
+                              VendorGameService vendorGameService,
+                              VendorService vendorService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {

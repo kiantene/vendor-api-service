@@ -6,7 +6,11 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.constant.*;
+import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
+import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
@@ -28,16 +32,27 @@ import java.util.Optional;
 @RequestMapping(path = EndPoints.PATH, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 @Slf4j
 public class BetAction {
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
+    public BetAction(GameSessionService gameSessionService,
+                     HttpService httpService,
+                     ValidationService validationService,
+                     VendorLineService vendorLineService,
+                     WalletService walletService,
+                     VendorService vendorService) {
+        this.gameSessionService = gameSessionService;
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.BET)
     public ResponseVo<CommonVo> bet(HttpServletRequest request) {
@@ -62,6 +77,8 @@ public class BetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameId(), gameSession);
+
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
