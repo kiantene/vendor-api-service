@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +15,11 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -92,47 +92,13 @@ public class S3BetService {
 
             // Read the file content as a string
             String jsonContent = reader.lines().collect(Collectors.joining());
+            jsonContent = convertCamelCaseToSnakeCaseWithUnderscore(jsonContent);
+
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> jsonMap = objectMapper.readValue(jsonContent, new TypeReference<Map<String, Object>>() {});
 
-            // Manually map the JSON content to BetHistory object
-            com.nextgen.gameaggregator.entity.warehouse.BetHistory betHistory = new com.nextgen.gameaggregator.entity.warehouse.BetHistory();
+            // Convert the JSON string into BetHistory object using Jackson
+            return objectMapper.readValue(jsonContent, com.nextgen.gameaggregator.entity.warehouse.BetHistory.class);
 
-            betHistory.setId((String) jsonMap.get("id"));
-            betHistory.setExternalTransactionId((String) jsonMap.get("externalTransactionId"));
-            betHistory.setVendorBetId((String) jsonMap.get("vendorBetId"));
-            betHistory.setRoundId((String) jsonMap.get("roundId"));
-            betHistory.setVendorGameId((Integer) jsonMap.get("vendorGameId"));
-            betHistory.setGameCode((String) jsonMap.get("gameCode"));
-            betHistory.setVendorPlayerId(((Number) jsonMap.get("vendorPlayerId")).longValue());
-            betHistory.setVendorPlayerUsername((String) jsonMap.get("vendorPlayerUsername"));
-            betHistory.setVendorId((Integer) jsonMap.get("vendorId"));
-            betHistory.setVendorCode((String) jsonMap.get("vendorCode"));
-            betHistory.setVendorLineId((Integer) jsonMap.get("vendorLineId"));
-            betHistory.setAgentPlayerId(((Number) jsonMap.get("agentPlayerId")).longValue());
-            betHistory.setAgentPlayerUsername((String) jsonMap.get("agentPlayerUsername"));
-            betHistory.setAgentId((Integer) jsonMap.get("agentId"));
-            betHistory.setOperatorStatus((Integer) jsonMap.get("operatorStatus"));
-            betHistory.setGameCategoryId((Integer) jsonMap.get("gameCategoryId"));
-            betHistory.setGameCategoryCode((String) jsonMap.get("gameCategoryCode"));
-            betHistory.setCurrencyId((Integer) jsonMap.get("currencyId"));
-            betHistory.setCurrencyCode((String) jsonMap.get("currencyCode"));
-            betHistory.setBetAmount(new BigDecimal(jsonMap.get("betAmount").toString()));
-            betHistory.setWinAmount(new BigDecimal(jsonMap.get("winAmount").toString()));
-            betHistory.setWinLoss(new BigDecimal(jsonMap.get("winLoss").toString()));
-            betHistory.setEffectiveTurnover(new BigDecimal(jsonMap.get("effectiveTurnover").toString()));
-            betHistory.setJackpotAmount(new BigDecimal(jsonMap.get("jackpotAmount").toString()));
-            betHistory.setResultType((Integer) jsonMap.get("resultType"));
-            betHistory.setBetType((Integer) jsonMap.get("betType"));
-            betHistory.setIsFreespin((Integer) jsonMap.get("isFreespin"));
-            betHistory.setResettleNum((Integer) jsonMap.get("resettleNum"));
-            betHistory.setStatus((Integer) jsonMap.get("status"));
-            betHistory.setGameSessionToken((String) jsonMap.get("gameSessionToken"));
-            betHistory.setVendorBetTime(((Number) jsonMap.get("vendorBetTime")).longValue());
-            betHistory.setVendorSettleTime(((Number) jsonMap.get("vendorSettleTime")).longValue());
-            betHistory.setResultTime(((Number) jsonMap.get("resultTime")).longValue());
-
-            return betHistory;
 
         } catch (NoSuchKeyException e) {
             throw new RuntimeException("File not found in S3 with betId :"+betId, e);
@@ -141,5 +107,39 @@ public class S3BetService {
         } catch (Exception e) {
             throw new RuntimeException("Error reading S3 file with betId :"+betId, e);
         }
+    }
+
+    public static String convertCamelCaseToSnakeCaseWithUnderscore(String jsonContent) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Convert JSON string to a Map
+        Map<String, Object> jsonMap = objectMapper.readValue(jsonContent, new TypeReference<Map<String, Object>>() {});
+
+        // Create a new map to hold the modified keys
+        Map<String, Object> convertedMap = new HashMap<>();
+
+        // Iterate over the original map and modify the keys
+        for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
+            String newKey = convertCamelCaseToSnakeCase(entry.getKey());
+            convertedMap.put(newKey, entry.getValue());
+        }
+
+        // Convert the updated map back to a JSON string
+        return objectMapper.writeValueAsString(convertedMap);
+    }
+
+    // Helper function to convert camelCase to snake_case without adding an underscore at the beginning
+    private static String convertCamelCaseToSnakeCase(String key) {
+        StringBuilder result = new StringBuilder();
+
+        for (char ch : key.toCharArray()) {
+            if (Character.isUpperCase(ch)) {
+                result.append("_").append(Character.toLowerCase(ch));
+            } else {
+                result.append(ch);
+            }
+        }
+
+        return result.toString();
     }
 }
