@@ -78,7 +78,7 @@ public class KafkaConsumerService {
         try {
             httpRequestLog.setBetStart(System.currentTimeMillis());
 
-            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
+            AgentPlayer agentPlayer = agentPlayerService.get(endRoundSettledBet.getAgentPlayerId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
 
             //get is bet = sidebet

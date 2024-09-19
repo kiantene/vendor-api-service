@@ -31,6 +31,9 @@ import java.util.Map;
 public class BetHistoryService {
     @Value("${spring.datasource.clickhouse-default.enable:false}")
     private Boolean enableClickHouse;
+
+    @Value("${aws.s3.bet-bucket.read:false}")
+    private Boolean enableBetBucketRead;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final BetHistoryRepository betHistoryRepository;
     private final GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig;
@@ -117,8 +120,14 @@ public class BetHistoryService {
         if (!enableClickHouse) {
             iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
         } else {
-
-            iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+            if(enableBetBucketRead){
+                iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetailFromS3(betId);
+                if(iBetDetailUrlInfo == null){
+                    iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+                }
+            }else{
+                iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
+            }
         }
 
         if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
