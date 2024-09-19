@@ -29,7 +29,8 @@ public class KafkaService {
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
-    private final CachingService cachingService;
+
+    private final S3BetService s3BetService;
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
@@ -38,7 +39,9 @@ public class KafkaService {
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
-                        CachingService cachingService) {
+                        CachingService cachingService,
+                        S3BetService s3BetService
+    ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
         this.jsonSchemaKafkaTemplate = jsonSchemaKafkaTemplate;
@@ -46,7 +49,7 @@ public class KafkaService {
         this.warehouseBetHistoryService = warehouseBetHistoryService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
-        this.cachingService = cachingService;
+        this.s3BetService = s3BetService;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -119,7 +122,7 @@ public class KafkaService {
 
 
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
-                AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
                 agentPlayerUsername = agentPlayer.getUsername();
                 log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
@@ -137,8 +140,9 @@ public class KafkaService {
             // Using Jackson or any other JSON library to convert UserData object to JSON string
             ObjectMapper mapper = new ObjectMapper();
 
-            cachingService.storeFirstProcessBetDateForCurrencyConversionIssue(1, System.currentTimeMillis());
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
+
+            s3BetService.uploadBetHistoryJsonFileAsync(warehouseBetHistory);
 
             if (warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)) {
                 stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_DELAY_SETTLEMENT, mapper.writeValueAsString(warehouseBetHistory));

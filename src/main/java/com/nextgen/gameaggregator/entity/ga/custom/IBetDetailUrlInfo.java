@@ -38,7 +38,7 @@ public interface IBetDetailUrlInfo {
 
     BigDecimal getJackpotAmount();
 
-    BigDecimal getRefundAmount();
+    //BigDecimal getRefundAmount();
 
     Integer getStatus();
 

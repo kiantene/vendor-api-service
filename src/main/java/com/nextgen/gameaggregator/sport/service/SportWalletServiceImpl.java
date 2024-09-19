@@ -198,7 +198,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBet.getVendorId(), sportUnsettledBet.getCurrencyId());
-            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBet.getAgentPlayerId(), null);
+            AgentPlayer agentPlayer = agentPlayerService.get(sportUnsettledBet.getAgentPlayerId());
 
             WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBet, httpRequestLog, vendorCurrency, agentPlayer);
             betEvent = new BetEvent(sportUnsettledBet, balanceVo.getData().getBalance());
@@ -321,7 +321,7 @@ public class SportWalletServiceImpl implements SportWalletService {
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBet.getVendorId(), sportUnsettledBet.getCurrencyId());
-        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBet.getAgentPlayerId(), null);
+        AgentPlayer agentPlayer = agentPlayerService.get(sportUnsettledBet.getAgentPlayerId());
         try {
             WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBet, httpRequestLog, vendorCurrency, agentPlayer);
             sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
@@ -428,7 +428,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             });
 
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBet.getVendorId(), sportUnsettledBet.getCurrencyId());
-            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBet.getAgentPlayerId(), null);
+            AgentPlayer agentPlayer = agentPlayerService.get(sportUnsettledBet.getAgentPlayerId());
 
             WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBet, httpRequestLog, vendorCurrency, agentPlayer);
             sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
@@ -540,7 +540,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
-            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportSettledBet.getAgentPlayerId(), null);
+            AgentPlayer agentPlayer = agentPlayerService.get(sportSettledBet.getAgentPlayerId());
 
             WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog, vendorCurrency, agentPlayer);
             BigDecimal diffWinAmount = sportResettleData.getNewWinAmount().subtract(sportSettledBet.getWinAmount());
@@ -594,7 +594,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
         // get VendorPlayer
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportAdjustmentData.getVendorUsername());
-        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(vendorPlayer.getAgentPlayerId(), null);
+        AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
 
         // check idempotent
         sportBetAdjustmentLogService.idempotentCheck(traceId, vendorPlayer.getId().toString(), sportAdjustmentData.getExternalTransactionId());
