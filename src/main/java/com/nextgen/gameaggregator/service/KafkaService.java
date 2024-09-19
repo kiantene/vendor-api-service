@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -171,13 +172,19 @@ public class KafkaService {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
-            future.exceptionally(throwable -> {
-                // Handle failure
-                log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
-                        "TraceId: " + endRoundSettledBet.getId(),
-                        "RoundId: " + endRoundSettledBet.getRoundId(),
-                        "Error: " + throwable.toString());
-                return null; // Return a default value if needed
+            future.orTimeout(30, TimeUnit.SECONDS).exceptionally(throwable -> {
+                if (throwable instanceof java.util.concurrent.TimeoutException) {
+                    // Handle timeout scenario
+                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) Timeout: No response after 30 seconds");
+                    return null; // Return a default value
+                } else {
+                    // Handle failure
+                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
+                            "TraceId: " + endRoundSettledBet.getId(),
+                            "RoundId: " + endRoundSettledBet.getRoundId(),
+                            "Error: " + throwable.toString());
+                    return null; // Return a default value if needed
+                }
             });
         } catch (Exception e) {
             log.error("FunctionName: produceEndRoundSettleBet (Exception) | {} | {} | {}",

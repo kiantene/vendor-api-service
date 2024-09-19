@@ -19,6 +19,7 @@ import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AuthenticationService;
+import com.nextgen.gameaggregator.service.LoggingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +57,9 @@ public class BalanceRequest {
     @Autowired
     TransferService transferService;
 
+    @Autowired
+    private LoggingService loggingService;
+
     public BalanceData call(String traceId, AgentPlayer agentPlayer, Currency currency, TransferWalletRequestLog transferWalletRequestLog) throws
             WalletServiceAccessKeyNotFoundException,
             InvalidWalletServiceResponseException, WalletServiceTimeoutException {
@@ -63,8 +67,9 @@ public class BalanceRequest {
         BalanceVo responseVo;
 
         BalanceData balanceData = new BalanceData(agentPlayer, currency);
-
+        loggingService.logStart();
         AccessKey accessKey = transferService.getWalletServiceAccessKey();
+        loggingService.logProcessTime("balance ｜ transferService.getWalletServiceAccessKey", traceId);
         String apiUrl = walletServiceUrl;
 
         WalletServiceBalanceDto dto = new WalletServiceBalanceDto(traceId, agentPlayer, currency);
