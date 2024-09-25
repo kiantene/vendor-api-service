@@ -96,6 +96,9 @@ public class CashTransferInOutAction {
                 gameSession.setPlatformId(defaultPlatformId);
             }
 
+            //check realTransferAmount after gameSession is checked / generated
+            vendorService.checkRealTransferAmount(gameSession, dto);
+
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
@@ -242,7 +245,7 @@ public class CashTransferInOutAction {
 
     private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
-            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, InterruptedException {
+            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerName());
@@ -277,5 +280,6 @@ public class CashTransferInOutAction {
         String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
+
     }
 }

@@ -334,7 +334,7 @@ public class WalletService {
                         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, fromVendorConversionRate);
+                kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             }
 
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
@@ -500,7 +500,6 @@ public class WalletService {
     }
 
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
-        log.debug("[" + traceId + "] notifyEndRoundAsync -> start thread (roundId: " + settledBet.getRoundId() + ")");
         String settledBetRoundId = settledBet.getRoundId();
         Integer settledBetVendorId = settledBet.getVendorId();
 
@@ -508,14 +507,12 @@ public class WalletService {
         THREAD_POOL.submit(() -> {
             try {
                 List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
-                log.debug("[" + traceId + "] notifyEndRoundAsync -> check unsettledBetList: " + unsettledBetList);
                 if (CollectionUtils.isEmpty(newUnsettledBetList)) {
-                    log.debug("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
                     loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 2", settledBetVendorId, settledBetRoundId, unsettledBetList);
                     String roundId = settledBet.getRoundId();
                     Integer vendorGameId = gameSession.getVendorGameId();
                     Long vendorPlayerId = gameSession.getVendorPlayerId();
-                    newUnsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                    newUnsettledBetList = unsettledBetService.getByRoundIdRetry(roundId, vendorGameId, vendorPlayerId);
                     loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 3", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
 
                 } else {
@@ -529,7 +526,6 @@ public class WalletService {
                 // multiple bets within same round
                 for (UnsettledBet betRecord : newUnsettledBetList) {
                     if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
-                        log.debug("[" + traceId + "] notifyEndRoundAsync -> settle bet: " + betRecord.getBetId());
                         loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 6", settledBetVendorId, settledBetRoundId, betRecord);
                         final String newTraceId = UUID.randomUUID().toString();
 
@@ -552,7 +548,7 @@ public class WalletService {
                     }
                 }
             } catch (Exception exception) {
-                log.error("[" + traceId + "] notifyEndRoundAsync -> " + exception.getMessage());
+                log.error("[{}] notifyEndRoundAsync -> {}", traceId, exception.getMessage());
             }
         });
     }

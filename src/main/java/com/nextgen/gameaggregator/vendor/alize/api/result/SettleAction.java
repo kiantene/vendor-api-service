@@ -52,7 +52,16 @@ public class SettleAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getToken()); //token check
+            } catch (AuthenticationException authenticationException) { //if expired
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUsername()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -70,10 +79,6 @@ public class SettleAction {
 
         } catch (JsonProcessingException jsonProcessingException) {
             httpService.logError(httpRequestLog, jsonProcessingException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetNotFoundException betNotFoundException) {
@@ -147,8 +152,7 @@ public class SettleAction {
     private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession)
             throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
-
-        validationService.validateEligibleBet(gameSession, dto.getUsername());
+        
         // Verify operator ID
         ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
