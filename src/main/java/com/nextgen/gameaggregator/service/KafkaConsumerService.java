@@ -101,7 +101,7 @@ public class KafkaConsumerService {
                         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
             }
 
             //prepare delete unsettledBet

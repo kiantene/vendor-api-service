@@ -154,13 +154,36 @@ public class KafkaService {
         }
     }
 
-    public void producePreprocessingBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
+    public void producePreprocessingBetHistory(BetHistory betHistory, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
+
         try {
-            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
+            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V2);
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING, betHistory);
+            WarehouseFutureEntity warehouseFutureEntity =
+                    warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
+                            betHistory.getVendorGameId(), betHistory.getVendorId(),
+                            betHistory.getGameCategoryId(), betHistory.getCurrencyId());
+
+
+            if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
+                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
+                agentPlayerUsername = agentPlayer.getUsername();
+                log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+            }
+
+            if (vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()) {
+                VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+                vendorPlayerUsername = vendorPlayer.getUsername();
+                log.error("WarehouseBetHistory-vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+            }
+
+            com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory
+                    = new com.nextgen.gameaggregator.entity.warehouse.BetHistory
+                    (betHistory, agentPlayerUsername, vendorPlayerUsername, warehouseFutureEntity);
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V2, warehouseBetHistory);
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
@@ -172,19 +195,19 @@ public class KafkaService {
         try {
             //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
-            future.orTimeout(30, TimeUnit.SECONDS).exceptionally(throwable -> {
+            future.orTimeout(5, TimeUnit.SECONDS).exceptionally(throwable -> {
+                // Return a default value if needed
                 if (throwable instanceof java.util.concurrent.TimeoutException) {
                     // Handle timeout scenario
-                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) Timeout: No response after 30 seconds");
-                    return null; // Return a default value
+                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) Timeout: No response after 5 seconds");
                 } else {
                     // Handle failure
                     log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
                             "TraceId: " + endRoundSettledBet.getId(),
                             "RoundId: " + endRoundSettledBet.getRoundId(),
                             "Error: " + throwable.toString());
-                    return null; // Return a default value if needed
                 }
+                return null; // Return a default value
             });
         } catch (Exception e) {
             log.error("FunctionName: produceEndRoundSettleBet (Exception) | {} | {} | {}",
