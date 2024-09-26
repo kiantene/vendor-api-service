@@ -97,7 +97,7 @@ public class CashTransferInOutAction {
             }
 
             //check realTransferAmount after gameSession is checked / generated
-            vendorService.checkRealTransferAmount(gameSession, dto);
+//            vendorService.checkRealTransferAmount(gameSession, dto);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
