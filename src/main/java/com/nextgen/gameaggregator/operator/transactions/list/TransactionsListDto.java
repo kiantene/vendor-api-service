@@ -30,8 +30,8 @@ public class TransactionsListDto {
     @Range(min= 1, max= Integer.MAX_VALUE, message = "numeric number only")
     private Integer pageNo;
 
-    @NotNull(message = "min 2000 and max 5000 numeric number only")
-    @Positive(message = "min 2000 and max 5000 numeric number only")
-    @Range(min= 1, max= 5000, message = "min 2000 and max 5000 numeric number only")
+    @NotNull(message = "min 2000 and max 10000 numeric number only")
+    @Positive(message = "min 2000 and max 10000 numeric number only")
+    @Range(min= 1, max= 10000, message = "min 2000 and max 10000 numeric number only")
     private Integer pageSize = 2000;
 }
