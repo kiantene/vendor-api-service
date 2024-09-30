@@ -237,8 +237,7 @@ public class WarehouseBetHistoryService {
                             (warehouseBetHistory.getVendorId(), warehouseBetHistory.getCurrencyId());
             betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
         }catch ( Exception exception){
-           // exception.printStackTrace();
-            log.error("Error reading S3 file :" + exception.getStackTrace().toString());
+            log.error("Error reading S3 file :" + exception.getMessage());
         }
         return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
 
