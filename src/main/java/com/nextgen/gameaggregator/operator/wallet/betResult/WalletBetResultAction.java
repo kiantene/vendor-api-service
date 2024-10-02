@@ -15,7 +15,6 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,9 +43,6 @@ public class WalletBetResultAction {
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
     private final Set<Integer> betLoseVendorList;
-
-    @Value("${testing.stub:false}")
-    private boolean useStub;
 
     @Autowired
     public WalletBetResultAction(RequestService requestService,
@@ -78,11 +74,6 @@ public class WalletBetResultAction {
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
-        // Call stub function instead if config file set to use stub
-        if (useStub) {
-            return requestService.responseOperatorSub();
-        }
-
         WalletBalanceVo responseVo = new WalletBalanceVo();
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
@@ -107,6 +98,11 @@ public class WalletBetResultAction {
         }
 
         boolean isError = false;
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
@@ -216,11 +212,6 @@ public class WalletBetResultAction {
     public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, HttpRequestLog httpRequestLog)
             throws InvalidAgentApiCredentialException {
 
-        // Call stub function instead if config file set to use stub
-        if (useStub) {
-            return requestService.responseOperatorSub();
-        }
-
         WalletBalanceVo responseVo;
         Long startTime = System.currentTimeMillis();
         Long endTime = 0L;
@@ -237,6 +228,11 @@ public class WalletBetResultAction {
         httpRequestLog.setOperatorStart(startTime);
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)

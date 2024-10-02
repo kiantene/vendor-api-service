@@ -70,6 +70,11 @@ public class WalletAdjustmentAction {
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_ADJUSTMENT);
 
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
+
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
                 .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())

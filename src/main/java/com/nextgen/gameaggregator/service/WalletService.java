@@ -512,7 +512,7 @@ public class WalletService {
                     String roundId = settledBet.getRoundId();
                     Integer vendorGameId = gameSession.getVendorGameId();
                     Long vendorPlayerId = gameSession.getVendorPlayerId();
-                    newUnsettledBetList = unsettledBetService.getByRoundIdRetry(roundId, vendorGameId, vendorPlayerId);
+                    newUnsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
                     loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 3", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
 
                 } else {

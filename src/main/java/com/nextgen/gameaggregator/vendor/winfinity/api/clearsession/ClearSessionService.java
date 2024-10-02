@@ -1,20 +1,22 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.clearsession;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class ClearSessionService {
@@ -27,6 +29,8 @@ public class ClearSessionService {
 
     public ResponseVo clearSession(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
+        GameSession gameSession;
+        BigDecimal balance;
 
         try {
             // Convert original request body into dto
@@ -36,10 +40,9 @@ public class ClearSessionService {
             this.doValidation(dto);
 
             // Get GameSession with token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
-
+            gameSession = gameSessionService.verifyToken(dto.getMsid()); //throw authenticationException
             if (gameSession.getStatus() != 0) {
-                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+                balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
                 vo.setDataVo(traceId, balance);
 
                 // Clear GameSession
@@ -54,8 +57,8 @@ public class ClearSessionService {
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
-            vo.setErrorVo(ErrorCodes.WRONG_SESSION);
+            // If cause authentication error will return success
+            vo.setDataVo(traceId, BigDecimal.ZERO);
 
         } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
@@ -73,4 +76,5 @@ public class ClearSessionService {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
+
 }

@@ -32,9 +32,6 @@ import java.util.Optional;
 @Slf4j
 public class WalletBalanceAction {
 
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
-
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -50,11 +47,6 @@ public class WalletBalanceAction {
     private CurrencyConversionService currencyConversionService;
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
-
-        // Call stub function instead if config file set to use stub
-        if (useStub) {
-            return requestService.responseOperatorSub();
-        }
 
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
@@ -80,6 +72,11 @@ public class WalletBalanceAction {
             httpRequestLog.setOperatorData(jsonApiResponse);
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BALANCE);
 
+        }
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
