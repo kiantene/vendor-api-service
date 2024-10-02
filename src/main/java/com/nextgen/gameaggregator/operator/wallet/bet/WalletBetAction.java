@@ -38,8 +38,6 @@ public class WalletBetAction {
     AuthenticationService authenticationService;
     @Autowired
     VendorService vendorService;
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
     @Autowired
@@ -47,11 +45,6 @@ public class WalletBetAction {
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
             throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
-
-        // Call stub function instead if config file set to use stub
-        if (useStub) {
-            return requestService.responseOperatorSub();
-        }
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
@@ -84,6 +77,11 @@ public class WalletBetAction {
         }
 
         ResponseEntity<String> apiResponse = null;
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
 
         try {
             apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)

@@ -16,6 +16,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -33,96 +34,11 @@ import java.util.function.Consumer;
 @Slf4j
 public class RequestService {
 
-    //region operator use only
-    public WalletBalanceVo responseOperatorSub() {
-        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-        responseData.setBalance(BigDecimal.ONE);
-        WalletBalanceVo balanceVo = new WalletBalanceVo();
-        balanceVo.setData(responseData);
-        return balanceVo;
-    }
+    @Value("${testing.stub:false}")
+    private Boolean useStub;
 
-    public void validateResponseMatchRequest(WalletBalanceVo walletBalanceVo, String userName, String currency, String traceId) throws ResponseNotMatchRequestException {
-        Map<String, String> validation = new HashMap<>();
-
-        if (walletBalanceVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-            if (!walletBalanceVo.getData().getUsername().equals(userName)) {
-                validation.put("username", "username not match");
-            }
-
-            if (!walletBalanceVo.getData().getCurrency().equals(currency)) {
-                validation.put("currency", "currency not match");
-            }
-
-            if (!walletBalanceVo.getTraceId().equals(traceId)) {
-                validation.put("trace Id", "trace Id not match");
-            }
-        }
-
-        if (!validation.isEmpty()) { // Missing/Invalid request parameters
-            throw new ResponseNotMatchRequestException(validation.toString());
-        }
-    }
-
-    public void operatorStatusException(ResponseCodes.Status operatorStatus) throws InvalidOperatorResponseException {
-
-        if(!operatorStatus.equals(ResponseCodes.Status.SC_OK)){
-            throw new InvalidOperatorResponseException(operatorStatus.code);
-        }
-//        switch (operatorStatus) {
-//            case SC_INVALID_SIGNATURE -> {
-//                throw new InvalidSignatureException();
-//            }
-//            case SC_INVALID_REQUEST -> {
-//                throw new InvalidRequestException();
-//            }
-//            case SC_DUPLICATE_REQUEST -> {
-//                throw new DuplicateRequestException();
-//            }
-//            case SC_USER_NOT_EXISTS -> {
-//                throw new InvalidPlayerException();
-//            }
-//            case SC_WRONG_CURRENCY -> {
-//                throw new InvalidCurrencyException();
-//            }
-//            case SC_INVALID_TOKEN -> {
-//                throw new InvalidTokenException();
-//            }
-//            case SC_USER_DISABLED -> {
-//                throw new DisabledAgentPlayerException();
-//            }
-//            case SC_UNDER_MAINTENANCE -> {
-//                throw new SystemMaintenanceException();
-//            }
-//            case SC_UNKNOWN_ERROR -> {
-//                throw new InvalidOperatorResponseException();
-//            }
-//            case SC_INSUFFICIENT_FUNDS -> {
-//                throw new InsufficientBalanceException();
-//            }
-//            case SC_INVALID_GAME -> {
-//                throw new GameNotSupportedException();
-//            }
-//            case SC_TRANSACTION_DUPLICATED -> {
-//                throw new DuplicateTransactionException();
-//            }
-//            case SC_TRANSACTION_NOT_EXISTS -> {
-//                throw new BetNotFoundException();
-//            }
-//        }
-    }
-    //endregion
-
-    public Consumer<HttpHeaders> setHeaders(MultiValueMap<String, String> headersAsMap){
-        LinkedMultiValueMap<String, String> mvmap = new LinkedMultiValueMap<>(headersAsMap);
-        return it -> it.addAll(mvmap);
-    }
-
-    public void validateVendorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
-        if (responseEntity.getStatusCode().isError()) {
-            throw new HttpResponseStatusCodeException("HTTP status Code Error");
-        }
-    }
+    @Value("${testing.stub-prefix:stub}")
+    private String usernamePrefix;
 
     public static <T> void validateResponse(T requestObject) throws InvalidResponseException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
@@ -226,12 +142,107 @@ public class RequestService {
         logInfo.put("OperatorProcessEndTime: ", processEndRoundLog.getOperatorProcessEndTime());
         logInfo.put("OperatorProcessTimeTaken: ", processEndRoundLog.getOperatorProcessEndTime() - processEndRoundLog.getOperatorProcessStartTime());
         logInfo.put("OperatorStatus: ", endRoundSettledBet.getOperatorStatus());
-        logInfo.put("ErrorMessage: ", (exception == null)?"SUCCESS":HttpService.getStackTrace(exception));
+        logInfo.put("ErrorMessage: ", (exception == null) ? "SUCCESS" : HttpService.getStackTrace(exception));
         log.info(gson.toJson(logInfo));
+    }
+    //endregion
+
+    //region operator use only
+    public WalletBalanceVo responseOperatorSub() {
+        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+        responseData.setBalance(BigDecimal.ONE);
+        WalletBalanceVo balanceVo = new WalletBalanceVo();
+        balanceVo.setData(responseData);
+        return balanceVo;
+    }
+
+    public Boolean shouldSkipStubCall(String username) {
+        return useStub && username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
+    }
+
+    public void validateResponseMatchRequest(WalletBalanceVo walletBalanceVo, String userName, String currency, String traceId) throws ResponseNotMatchRequestException {
+        Map<String, String> validation = new HashMap<>();
+
+        if (walletBalanceVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            if (!walletBalanceVo.getData().getUsername().equals(userName)) {
+                validation.put("username", "username not match");
+            }
+
+            if (!walletBalanceVo.getData().getCurrency().equals(currency)) {
+                validation.put("currency", "currency not match");
+            }
+
+            if (!walletBalanceVo.getTraceId().equals(traceId)) {
+                validation.put("trace Id", "trace Id not match");
+            }
+        }
+
+        if (!validation.isEmpty()) { // Missing/Invalid request parameters
+            throw new ResponseNotMatchRequestException(validation.toString());
+        }
+    }
+
+    public void operatorStatusException(ResponseCodes.Status operatorStatus) throws InvalidOperatorResponseException {
+
+        if (!operatorStatus.equals(ResponseCodes.Status.SC_OK)) {
+            throw new InvalidOperatorResponseException(operatorStatus.code);
+        }
+//        switch (operatorStatus) {
+//            case SC_INVALID_SIGNATURE -> {
+//                throw new InvalidSignatureException();
+//            }
+//            case SC_INVALID_REQUEST -> {
+//                throw new InvalidRequestException();
+//            }
+//            case SC_DUPLICATE_REQUEST -> {
+//                throw new DuplicateRequestException();
+//            }
+//            case SC_USER_NOT_EXISTS -> {
+//                throw new InvalidPlayerException();
+//            }
+//            case SC_WRONG_CURRENCY -> {
+//                throw new InvalidCurrencyException();
+//            }
+//            case SC_INVALID_TOKEN -> {
+//                throw new InvalidTokenException();
+//            }
+//            case SC_USER_DISABLED -> {
+//                throw new DisabledAgentPlayerException();
+//            }
+//            case SC_UNDER_MAINTENANCE -> {
+//                throw new SystemMaintenanceException();
+//            }
+//            case SC_UNKNOWN_ERROR -> {
+//                throw new InvalidOperatorResponseException();
+//            }
+//            case SC_INSUFFICIENT_FUNDS -> {
+//                throw new InsufficientBalanceException();
+//            }
+//            case SC_INVALID_GAME -> {
+//                throw new GameNotSupportedException();
+//            }
+//            case SC_TRANSACTION_DUPLICATED -> {
+//                throw new DuplicateTransactionException();
+//            }
+//            case SC_TRANSACTION_NOT_EXISTS -> {
+//                throw new BetNotFoundException();
+//            }
+//        }
+    }
+
+    public Consumer<HttpHeaders> setHeaders(MultiValueMap<String, String> headersAsMap) {
+        LinkedMultiValueMap<String, String> mvmap = new LinkedMultiValueMap<>(headersAsMap);
+        return it -> it.addAll(mvmap);
+    }
+
+    public void validateVendorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
+        if (responseEntity.getStatusCode().isError()) {
+            throw new HttpResponseStatusCodeException("HTTP status Code Error");
+        }
     }
 
     public RequestLogVo createRequestLogVo(String endpoint, String callbackUrl, Object requestObject,
-                                           ResponseEntity responseEntity, MultiValueMap<String, String>  requestHeaders,
+                                           ResponseEntity responseEntity, MultiValueMap<String, String> requestHeaders,
                                            Long startTime, Long endTime,
                                            String packageName, String profilesActive) {
         RequestLogVo requestLogVo = new RequestLogVo();
@@ -247,8 +258,8 @@ public class RequestService {
         return requestLogVo;
     }
 
-    public Boolean isTestEnvironment(String profilesActive){
-        String[] environments = {"dev","qa","stg"};
+    public Boolean isTestEnvironment(String profilesActive) {
+        String[] environments = {"dev", "qa", "stg"};
         return Arrays.asList(environments).contains(profilesActive);
     }
 }

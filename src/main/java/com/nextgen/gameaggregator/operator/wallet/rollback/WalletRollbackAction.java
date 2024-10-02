@@ -40,8 +40,6 @@ public class WalletRollbackAction {
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -60,11 +58,6 @@ public class WalletRollbackAction {
     public WalletBalanceVo
     call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidFormatException {
-
-        // Call stub function instead if config file set to use stub
-        if (useStub) {
-            return requestService.responseOperatorSub();
-        }
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         AtomicBoolean isTimeout = new AtomicBoolean(false);
@@ -96,6 +89,11 @@ public class WalletRollbackAction {
         RequestLogVo requestLogVo = null;
         boolean isError = false;
         ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
