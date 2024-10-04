@@ -57,7 +57,6 @@ public class WarehouseBetHistoryService {
         String startDateStr = DateUtil.convertMiliToDateString(dto.getFromTime(), "UTC", dateFormat);
         String endDateStr = DateUtil.convertMiliToDateString(dto.getToTime(), "UTC", dateFormat);
 
-        //TODO remember change to vendor_settle_time
         String sqlStmt =
                 "SELECT " +
                         "id, round_id, external_transaction_id, agent_player_username, currency_code, game_code, vendor_code, " +
@@ -65,7 +64,7 @@ public class WarehouseBetHistoryService {
                         "vendor_settle_time,  IF(is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin, vendor_bet_id " +
                         "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
                         " AND agent_id = :agentId AND vendor_settle_time BETWEEN :startTime AND :endTime " +
-                        " ORDER BY id, vendor_bet_time ASC LIMIT :limit OFFSET :offset";
+                        " ORDER BY vendor_settle_time, id, resettle_num ASC LIMIT :limit OFFSET :offset";
 
         Map<String, Object> params = new HashMap<>();
         params.put("agentId", agentId);

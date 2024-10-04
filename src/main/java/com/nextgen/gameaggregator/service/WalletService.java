@@ -16,51 +16,70 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
 public class WalletService {
-    private static final Integer THREAD_SIZE = 64;
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
-    private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+    private final BetResultLogService betResultLogService;
+    private final BetRefundLogService betRefundLogService;
+    private final WalletBalanceAction walletBalanceAction;
+    private final WalletBetAction walletBetAction;
+    private final WalletBetResultAction walletBetResultAction;
+    private final WalletRollbackAction walletRollbackAction;
+    private final UnsettledBetService unsettledBetService;
+    private final SettledBetService settledBetService;
+    private final KafkaService kafkaService;
+    private final CachingService cachingService;
+    private final LoggingService loggingService;
+    private final BetNotFoundLogService betNotFoundLogService;
+    private final VendorService vendorCurrencyConversionService;
+    private final BetIdempotentLogService betIdempotentLogService;
+    private final ThreadPoolTaskScheduler taskScheduler;
+
     @Autowired
-    private BetResultLogService betResultLogService;
-    @Autowired
-    private BetRefundLogService betRefundLogService;
-    @Autowired
-    private WalletBalanceAction walletBalanceAction;
-    @Autowired
-    private WalletBetAction walletBetAction;
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
-    @Autowired
-    private WalletRollbackAction walletRollbackAction;
-    @Autowired
-    private UnsettledBetService unsettledBetService;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private KafkaService kafkaService;
-    @Autowired
-    private CachingService cachingService;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private BetNotFoundLogService betNotFoundLogService;
-    @Autowired
-    private VendorService vendorCurrencyConversionService;
-    @Autowired
-    private BetIdempotentLogService betIdempotentLogService;
+    public WalletService(BetResultLogService betResultLogService,
+                         BetRefundLogService betRefundLogService,
+                         WalletBalanceAction walletBalanceAction,
+                         WalletBetAction walletBetAction,
+                         WalletBetResultAction walletBetResultAction,
+                         WalletRollbackAction walletRollbackAction,
+                         UnsettledBetService unsettledBetService,
+                         SettledBetService settledBetService,
+                         KafkaService kafkaService,
+                         CachingService cachingService,
+                         LoggingService loggingService,
+                         BetNotFoundLogService betNotFoundLogService,
+                         VendorService vendorCurrencyConversionService,
+                         BetIdempotentLogService betIdempotentLogService,
+                         ThreadPoolTaskScheduler taskScheduler) {
+
+        this.betResultLogService = betResultLogService;
+        this.betRefundLogService = betRefundLogService;
+        this.walletBalanceAction = walletBalanceAction;
+        this.walletBetAction = walletBetAction;
+        this.walletBetResultAction = walletBetResultAction;
+        this.walletRollbackAction = walletRollbackAction;
+        this.unsettledBetService = unsettledBetService;
+        this.settledBetService = settledBetService;
+        this.kafkaService = kafkaService;
+        this.cachingService = cachingService;
+        this.loggingService = loggingService;
+        this.betNotFoundLogService = betNotFoundLogService;
+        this.vendorCurrencyConversionService = vendorCurrencyConversionService;
+        this.betIdempotentLogService = betIdempotentLogService;
+        this.taskScheduler = taskScheduler;
+    }
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
         if (httpRequestLog != null) {
@@ -389,9 +408,9 @@ public class WalletService {
         loggingService.logStart();
         if (!vendorService.shouldSettleByBet()) {
             //settle by round
-            loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
-            this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
-            loggingService.logDataFlowByVendor("After notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
+            loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+            this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
+            loggingService.logDataFlowByVendor("After notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
@@ -496,35 +515,28 @@ public class WalletService {
 
         return unsettledBetList.stream()
                 .filter(unsettledBet -> unsettledBet.getOperatorStatus().equals(operatorStatusSuccess))
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
+    private void notifyEndRoundAsync(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         String settledBetRoundId = settledBet.getRoundId();
         Integer settledBetVendorId = settledBet.getVendorId();
 
-        loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 1", settledBetVendorId, settledBetRoundId, unsettledBetList);
-        THREAD_POOL.submit(() -> {
+        loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 1", settledBetVendorId, settledBetRoundId, settledBet);
+        taskScheduler.schedule(() -> {
             try {
-                List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
-                if (CollectionUtils.isEmpty(newUnsettledBetList)) {
-                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 2", settledBetVendorId, settledBetRoundId, unsettledBetList);
-                    String roundId = settledBet.getRoundId();
-                    Integer vendorGameId = gameSession.getVendorGameId();
-                    Long vendorPlayerId = gameSession.getVendorPlayerId();
-                    newUnsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
-                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 3", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
+                loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 2", settledBetVendorId, settledBetRoundId, settledBet);
+                String roundId = settledBet.getRoundId();
+                Integer vendorGameId = gameSession.getVendorGameId();
+                Long vendorPlayerId = gameSession.getVendorPlayerId();
+                List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 3", settledBetVendorId, settledBetRoundId, unsettledBetList);
 
-                } else {
-                    newUnsettledBetList = unsettledBetList;
-                    loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 4", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
-                }
-
-                newUnsettledBetList = this.filterFailedUnsettledBet(newUnsettledBetList);
-                loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 5", settledBetVendorId, settledBetRoundId, newUnsettledBetList);
+                unsettledBetList = this.filterFailedUnsettledBet(unsettledBetList);
+                loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 5", settledBetVendorId, settledBetRoundId, unsettledBetList);
 
                 // multiple bets within same round
-                for (UnsettledBet betRecord : newUnsettledBetList) {
+                for (UnsettledBet betRecord : unsettledBetList) {
                     if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
                         loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 6", settledBetVendorId, settledBetRoundId, betRecord);
                         final String newTraceId = UUID.randomUUID().toString();
@@ -550,7 +562,7 @@ public class WalletService {
             } catch (Exception exception) {
                 log.error("[{}] notifyEndRoundAsync -> {}", traceId, exception.getMessage());
             }
-        });
+        }, Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
     }
 
     private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)

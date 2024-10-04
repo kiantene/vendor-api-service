@@ -1,21 +1,17 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.adjustment;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AdjustmentDto implements AdjustmentData {
 
-    // Hash code of the request
-    @NotBlank
-    @Size(max = 100)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
-    private String hash;
 
     // Identifier of the user within the Casino Operator’s system.
     @NotBlank
@@ -55,16 +51,16 @@ public class AdjustmentDto implements AdjustmentData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String providerId;
 
-    // Effective Turnover of the bet. Minimum is 0.00.
-    @Range(min = 0)
-    @NotNull
-    private BigDecimal validBetAmount;
-
     // Date and time when the transaction is processed on the Pragmatic Play side
     // (Unix epoch time in milliseconds, for example : 1470926696715)
     @Positive
     @NotNull
     private Long timestamp;
+
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    private String hash;
 
     @Override
     public String getVendorBetId() {
