@@ -24,9 +24,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -40,12 +42,10 @@ public class DebitAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    VendorService vendorService;
-    @Autowired
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private ValidationService validationService;
-    
+
     @PostMapping(path = EndPoints.DEDUCT)
     public ResponseVo debit(HttpServletRequest request) {
 
@@ -61,7 +61,7 @@ public class DebitAction {
 
         BigDecimal balance = BigDecimal.ZERO;
 
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
@@ -77,17 +77,17 @@ public class DebitAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitDto.getUsername());
 
             // check db game code is stg or not
-            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
                 debitDto.getBetsDto().setGameid(debitDto.getBetsDto().getGameid() + "_stg");
             }
 
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getBetsDto().getGameid(),gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getBetsDto().getGameid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(debitDto,gameSession,body);
+            this.doVerification(debitDto, gameSession, body);
 
             // 1 - means normal place bet
-            if(debitDto.getType().equals(RequestType.BET_REQUEST)){
+            if (debitDto.getType().equals(RequestType.BET_REQUEST)) {
                 // Process Bet
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
@@ -100,27 +100,27 @@ public class DebitAction {
             }
 
             // 7 - cancel settled transaction (return error msg to reject the cancel request)
-            if(debitDto.getType().equals(RequestType.CANCEL_REQUEST)){
+            if (debitDto.getType().equals(RequestType.CANCEL_REQUEST)) {
                 // set vo
-                responseVo.setDesc(ResponseCodes.REJECT_CANCEL_MSG);
+                responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
                 responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
             }
 
-        } catch(InvalidAgentApiCredentialException |
-               InvalidPlayerException |
-               VendorCurrencyNotSupportException |
-               AuthenticationException |
-               DisabledAgentPlayerException |
-               DisabledGameException |
-               InvalidOperatorResponseException |
-               DisabledVendorLineException e){
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 VendorCurrencyNotSupportException |
+                 AuthenticationException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException e) {
             httpService.logError(httpRequestLog, e);
 
             // set vo
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
-        } catch(TransactionStillProcessingException |
-                BetResultIdempotentViolationException e){
+        } catch (TransactionStillProcessingException |
+                 BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
 
             // Retrieve the latest wallet balance from Operator
@@ -138,20 +138,20 @@ public class DebitAction {
             // set vo
             responseVo.setDesc(ResponseCodes.INSUFFICIENT_MSG);
             responseVo.setResult(ResponseCodes.INSUFFICIENT_ERROR_CODE);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
 
             // set vo
             responseVo.setDesc(ResponseCodes.PARAMETER_ERROR_MSG);
             responseVo.setResult(ResponseCodes.PARAMETER_ERROR_CODE);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
 
             // set vo
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
 
-        }finally{
+        } finally {
             httpService.end(httpRequestLog, responseVo);
         }
 
@@ -166,9 +166,9 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto.getBetsDto());
     }
 
-    private void doVerification(DebitDto dto,GameSession gameSession,String queryString) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String queryString) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession,dto.getUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUsername());
 
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
@@ -194,7 +194,7 @@ public class DebitAction {
         MultiValueMap<String, String> sortedMultiValueMap = vendorService.convertToSortedMultiValueMap(trimmedString);
 
         // generate sign value
-        String verify_sign = vendorService.generateSign(sortedMultiValueMap,secret_key);
+        String verify_sign = vendorService.generateSign(sortedMultiValueMap, secret_key);
 
         ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
     }

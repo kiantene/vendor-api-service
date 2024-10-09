@@ -200,6 +200,70 @@ public class WarehouseBetHistoryService {
 
     }
 
+    public IBetDetailUrlInfo getBetHistoryDetailV2(Integer agentId, String betId, long fromTime, long toTime) throws BetNotFoundException {
+        String sqlStmt =
+                "SELECT " +
+                        "id , round_id, external_transaction_id, " +
+                        "agent_player_username, currency_id,  currency_code, " +
+                        "vendor_player_username, game_code, vendor_id,  vendor_code, " +
+                        "game_category_code, bet_amount, win_amount, " +
+                        "win_loss, effective_turnover, jackpot_amount, " +
+                        "status, vendor_bet_time, " +
+                        "vendor_settle_time, vendor_line_id, " +
+                        "IF(is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin, " +
+                        "game_session_token " +
+                        "FROM bet_history WHERE " +
+                        "agent_id = :agentId AND id= :betId " +
+                        "AND vendor_settle_time BETWEEN :startTime AND :endTime "+
+                        "ORDER BY vendor_settle_time ASC " +
+                        "LIMIT 1 ";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("agentId", agentId);
+        params.put("betId", betId);
+        params.put("startTime", fromTime);
+        params.put("endTime", toTime);
+
+        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+
+        clickHouseJdbcTemplate.query(sqlStmt, params, rs -> {
+            while (rs.next()) {
+                betDetailUrlInfo.setBetId(rs.getString("id"));
+                betDetailUrlInfo.setExternalTransactionId(rs.getString("external_transaction_id"));
+                betDetailUrlInfo.setExternalRoundId(rs.getString("round_id"));
+                betDetailUrlInfo.setUsername(rs.getString("agent_player_username"));
+                betDetailUrlInfo.setCurrencyId(rs.getInt("currency_id"));
+                betDetailUrlInfo.setCurrencyCode(rs.getString("currency_code"));
+                betDetailUrlInfo.setGameCode(rs.getString("game_code"));
+                betDetailUrlInfo.setVendorId(rs.getInt("vendor_id"));
+                betDetailUrlInfo.setVendorCode(rs.getString("vendor_code"));
+                betDetailUrlInfo.setGameCategoryCode(rs.getString("game_category_code"));
+                betDetailUrlInfo.setBetAmount(rs.getBigDecimal("bet_amount"));
+                betDetailUrlInfo.setWinAmount(rs.getBigDecimal("win_amount"));
+                betDetailUrlInfo.setWinLoss(rs.getBigDecimal("win_loss"));
+                betDetailUrlInfo.setEffectiveTurnover(rs.getBigDecimal("effective_turnover"));
+                betDetailUrlInfo.setJackpotAmount(rs.getBigDecimal("jackpot_amount"));
+                betDetailUrlInfo.setStatus(rs.getInt("status"));
+                betDetailUrlInfo.setVendorBetTime(rs.getLong("vendor_bet_time"));
+                betDetailUrlInfo.setVendorSettleTime(rs.getLong("vendor_settle_time"));
+                betDetailUrlInfo.setVendorLineId(rs.getInt("vendor_line_id"));
+                betDetailUrlInfo.setIsFreeSpin(rs.getString("isFreeSpin"));
+                betDetailUrlInfo.setVendorUsername(rs.getString("vendor_player_username"));
+                betDetailUrlInfo.setGameSessionToken(rs.getString("game_session_token"));
+
+                VendorCurrency vendorCurrency =
+                        vendorCurrencyRepository.findByVendorIdAndCurrencyId
+                                (rs.getInt("vendor_id"), rs.getInt("currency_id"));
+                betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+
+            }
+            return betDetailUrlInfo; // adapt as necessary
+
+        });
+        return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
+
+    }
+
 
     public IBetDetailUrlInfo getBetHistoryDetailFromS3(String betId) throws BetNotFoundException {
         BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();

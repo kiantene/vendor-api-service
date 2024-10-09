@@ -46,11 +46,11 @@ public class S3BetService {
 
     public void uploadBetHistoryJsonFileAsync(com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory) {
 
-        if (enableBetBucketWrite) {
-            THREAD_POOL.submit(() -> {
-                uploadBetHistoryJsonFile(warehouseBetHistory);  // Call the actual upload method
-            });
-        }
+//        if (enableBetBucketWrite) {
+//            THREAD_POOL.submit(() -> {
+//                uploadBetHistoryJsonFile(warehouseBetHistory);  // Call the actual upload method
+//            });
+//        }
 
     }
 

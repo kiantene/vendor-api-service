@@ -49,7 +49,12 @@ public class ResponseCodes {
 
         SC_WALLET_NOT_SUPPORTED(38, "Wallet Type is not supported."),
         SC_INVALID_GAME_TOPIC(39, "Invalid game topic subscribed; Supported: 1.) hot 2.) top."),
+        SC_TRACE_ID_MISMATCHED(40, "Trace Id mismatched"),
+        SC_USERNAME_MISMATCHED(41, "Request username is different from Response username"),
+        SC_INVALID_DATE_7_RANGE(42, "Date range should be within seven days."),
+
         ;
+
 
         public final Integer code;
         public final String description;
