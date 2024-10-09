@@ -1,0 +1,173 @@
+package com.nextgen.gameaggregator.operator.transactions.v2.detail;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
+import com.nextgen.gameaggregator.operator.transactions.list.TransactionListService;
+import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(path = "v2/transaction/")
+@Slf4j
+public class TransactionDetailAction {
+    public static final String REQUEST_TYPE = "TransactionDetails";
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final LanguageService languageService;
+    private final BetHistoryService betHistoryService;
+    private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
+
+    private final TransactionListService transactionListService;
+
+    public TransactionDetailAction(HttpService httpService,
+                                   ValidationService validationService,
+                                   LanguageService languageService,
+                                   BetHistoryService betHistoryService,
+                                   VendorLineService vendorLineService,
+                                   VendorService vendorService,
+                                   TransactionListService transactionListService) {
+
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.languageService = languageService;
+        this.betHistoryService = betHistoryService;
+        this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
+        this.transactionListService = transactionListService;
+    }
+
+    @PostMapping(path = "detail")
+    public OperatorResponseVo<TransactionDetailData> detail(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestType(REQUEST_TYPE);
+        OperatorResponseVo<TransactionDetailData> responseVo = new OperatorResponseVo<>();
+        TransactionDetailData transactionDetailData = new TransactionDetailData();
+        try {
+
+            // Retrieve request body in original string format and convert into dto
+            String body = httpRequestLog.getRequestBody();
+            TransactionDetailDto dto = HttpService.convertJsonToDto(body, TransactionDetailDto.class);
+
+            responseVo.setTraceId(dto.getTraceId());
+            httpRequestLog.setId(dto.getTraceId());
+
+            // 1. Validate all fields in the request object
+            ValidationUtils.validateRequest(dto);
+
+            // 2. Check if api key is valid
+            String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
+            AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Integer agentId = apiCredential.getAgent().getId();
+            httpRequestLog.setAgentId(agentId);
+
+            // 3. Validate the signature
+            String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
+            validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
+
+            // 4. Validate from time not before last 60 days
+            transactionListService.isStartTimeValid(dto.getFromTime(), 60);
+            // 5. Validate date range not more than one day
+            transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime(), 7L);
+
+            // 6 check if platform supported
+            Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
+
+            // 7. check bet history detail
+            IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetailV2(agentId, dto.getBetId(), dto.getFromTime(), dto.getToTime());
+
+            // 8. check vendor line
+            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());
+            Integer vendorId = vendorLine.getVendorId();
+            httpRequestLog.setVendorId(vendorId);
+
+            // 9. check if vendor language supported
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorId, language);
+
+
+            transactionDetailData.setBetDetail(iBetDetailUrlInfo);
+
+
+            if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase("SPORT")) {
+                transactionDetailData = betHistoryService.getSportBetDetail(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            } else {
+                transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            }
+
+        } catch (IllegalArgumentException illegalArgumentException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+            httpService.logError(httpRequestLog, illegalArgumentException);
+
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
+            httpService.logError(httpRequestLog, jsonProcessingException);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+            responseVo.setValidation(invalidRequestException.getValidation());
+            httpService.logError(httpRequestLog, invalidRequestException);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+            httpService.logError(httpRequestLog, authenticationException);
+
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+            httpService.logError(httpRequestLog, invalidSignatureException);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS);
+            httpService.logError(httpRequestLog, betNotFoundException);
+
+        } catch (InvalidVendorResponseException invalidVendorResponseException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
+            httpService.logError(httpRequestLog, invalidVendorResponseException);
+
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
+
+        } catch (InvalidLanguageException invalidLanguageException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
+            httpService.logError(httpRequestLog, invalidLanguageException);
+
+        } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
+            httpService.logError(httpRequestLog, vendorLanguageNotSupportedException);
+
+        } catch (InvalidFromTimeException invalidFromTimeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_FROM_TIME);
+            httpService.logError(httpRequestLog, invalidFromTimeException);
+
+        } catch (InvalidDateRangeException invalidDateRangeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_DATE_7_RANGE);
+            httpService.logError(httpRequestLog, invalidDateRangeException);
+
+        } catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
+            responseVo.setData(transactionDetailData);
+            responseVo.setMessage(responseVo.getStatus().description);
+            httpService.end(httpRequestLog, responseVo);
+        }
+
+        return responseVo;
+    }
+}

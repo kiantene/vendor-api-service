@@ -44,7 +44,7 @@ public class TransactionsListAction {
     public OperatorResponseVo<TransactionsListData> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         httpRequestLog.setRequestType(REQUEST_TYPE);
-      //  httpRequestLog.setResponseLogged(false);
+        //  httpRequestLog.setResponseLogged(false);
         OperatorResponseVo<TransactionsListData> responseVo = new OperatorResponseVo<>();
 
         OperatorResponseVo<TransactionsListData> responseVoLogging = new OperatorResponseVo<>();
@@ -69,9 +69,9 @@ public class TransactionsListAction {
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             // 4. Validate from time not before last 60 days
-            transactionListService.isStartTimeValid(dto.getFromTime());
+            transactionListService.isStartTimeValid(dto.getFromTime(), 60);
             // 5. Validate date range not more than one day
-            transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime());
+            transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime(), 1L);
 
             if(dto.getPageSize()<2000){
                 dto.setPageSize(2000);

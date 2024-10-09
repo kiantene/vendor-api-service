@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction {
     @Autowired
@@ -67,7 +67,7 @@ public class CreditAction {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-            creditDto = httpService.convertQueryStringToDtoUrlDecode(body,CreditDto.class);
+            creditDto = httpService.convertQueryStringToDtoUrlDecode(body, CreditDto.class);
 
             creditDto.convertBetToDto();
 
@@ -78,18 +78,18 @@ public class CreditAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
 
             // check db game code is stg or not
-            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
                 creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
             }
 
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(),gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(creditDto,gameSession,body);
+            this.doVerification(creditDto, gameSession, body);
 
             // 9 - request to update those unsettled transaction to settled status
-            if(creditDto.getType().equals(RequestType.SETTLE_REQUEST)){
-                ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(),creditDto.getWinAmount(),creditDto.getJackpotAmount(),false);
+            if (creditDto.getType().equals(RequestType.SETTLE_REQUEST)) {
+                ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
 
                 balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
@@ -99,17 +99,17 @@ public class CreditAction {
                 responseVo.setSerialnumber(creditDto.getSerialnumber());
                 responseVo.setOrderno(traceId);
                 responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
-            }
 
-            // 7 - cancel settled transaction (return error msg to reject the cancel request)
-            if(creditDto.getType().equals(RequestType.CANCEL_REQUEST)){
+            } else {
+                // reject invalid transaction (return error msg to reject the action invalid request)
                 // set vo
-                responseVo.setDesc(ResponseCodes.REJECT_CANCEL_MSG);
+                responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
                 responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
+
             }
 
-        } catch(TransactionStillProcessingException |
-                BetResultIdempotentViolationException e){
+        } catch (TransactionStillProcessingException |
+                 BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
 
             // Retrieve the latest wallet balance from Operator
@@ -122,17 +122,17 @@ public class CreditAction {
             responseVo.setOrderno(traceId);
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
-        } catch(VendorCurrencyNotSupportException |
-                AuthenticationException |
-                InsufficientBalanceException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
-                DisabledGameException |
-                BetNotFoundException e){
+        } catch (VendorCurrencyNotSupportException |
+                 AuthenticationException |
+                 InsufficientBalanceException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 MergedBetDataIntegrityException |
+                 DisabledGameException |
+                 BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
 
             httpStatus = HttpStatus.SC_FORBIDDEN; //403 status
@@ -140,7 +140,7 @@ public class CreditAction {
             // set vo
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
 
             httpStatus = HttpStatus.SC_FORBIDDEN; //403 status
@@ -148,7 +148,7 @@ public class CreditAction {
             // set vo
             responseVo.setDesc(ResponseCodes.PARAMETER_ERROR_MSG);
             responseVo.setResult(ResponseCodes.PARAMETER_ERROR_CODE);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
 
             httpStatus = HttpStatus.SC_FORBIDDEN; //403 status
@@ -156,7 +156,7 @@ public class CreditAction {
             // set vo
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
-        }finally{
+        } finally {
             httpService.end(httpRequestLog, responseVo);
         }
 
@@ -197,7 +197,7 @@ public class CreditAction {
         MultiValueMap<String, String> sortedMultiValueMap = vendorService.convertToSortedMultiValueMap(trimmedString);
 
         // generate sign value
-        String verify_sign = vendorService.generateSign(sortedMultiValueMap,secret_key);
+        String verify_sign = vendorService.generateSign(sortedMultiValueMap, secret_key);
 
         ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
     }

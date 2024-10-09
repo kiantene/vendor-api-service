@@ -39,11 +39,11 @@ public class BetHistoryService {
     private final GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig;
     private final VendorLineService vendorLineService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
-    private final  VendorService vendorService;
+    private final VendorService vendorService;
 
-    public BetHistoryService(AutowireCapableBeanFactory autowireCapableBeanFactor,  BetHistoryRepository betHistoryRepository,
+    public BetHistoryService(AutowireCapableBeanFactory autowireCapableBeanFactor, BetHistoryRepository betHistoryRepository,
                              GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig, VendorLineService vendorLineService,
-                             WarehouseBetHistoryService warehouseBetHistoryService, VendorService vendorService){
+                             WarehouseBetHistoryService warehouseBetHistoryService, VendorService vendorService) {
         this.autowireCapableBeanFactory = autowireCapableBeanFactor;
         this.betHistoryRepository = betHistoryRepository;
         this.gaServiceWriterDataSourceConfig = gaServiceWriterDataSourceConfig;
@@ -117,18 +117,20 @@ public class BetHistoryService {
     public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String betId) throws BetNotFoundException {
 
         IBetDetailUrlInfo iBetDetailUrlInfo = null;
-        if (!enableClickHouse) {
-            iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
-        } else {
-            if(enableBetBucketRead){
-                iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetailFromS3(betId);
-                if(iBetDetailUrlInfo == null){
-                    iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
-                }
-            }else{
-                iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetail(agentId, betId);
-            }
+        iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
+
+        if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
+            throw new BetNotFoundException();
         }
+
+        return iBetDetailUrlInfo;
+    }
+
+    public IBetDetailUrlInfo getBetHistoryDetailV2(Integer agentId, String betId, long fromTime, long toTime) throws BetNotFoundException {
+
+        IBetDetailUrlInfo iBetDetailUrlInfo = null;
+
+        iBetDetailUrlInfo = warehouseBetHistoryService.getBetHistoryDetailV2(agentId, betId, fromTime, toTime);
 
         if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
             throw new BetNotFoundException();
@@ -156,7 +158,7 @@ public class BetHistoryService {
             MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
 
             BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
-            if(betDetailUrlVo!= null){
+            if (betDetailUrlVo != null) {
                 transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
             }
 

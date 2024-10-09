@@ -129,7 +129,7 @@ public class TransactionListService {
 
         return sortByValue(hm);
     }
- 
+
     @Transactional(transactionManager = "transactionManagerGaServiceReaderDb", isolation = Isolation.READ_UNCOMMITTED)
     //allow dirty read to prevent table locking
     public TransactionsListData findByAgentIdAndCreateTimeBetween(Integer agentId, TransactionsListDto dto) {
@@ -178,9 +178,9 @@ public class TransactionListService {
         return transData;
     }
 
-    public void isStartTimeValid(long startTimeMillis) throws InvalidFromTimeException {
+    public void isStartTimeValid(long startTimeMillis, int timeRange) throws InvalidFromTimeException {
         // Calculate the current date minus 60 days
-        LocalDate currentDateMinus60Days = LocalDate.now().minusDays(60);
+        LocalDate currentDateMinus60Days = LocalDate.now().minusDays(timeRange);
         System.out.println("currentDateMinus60Days: " + currentDateMinus60Days);
         // Convert the LocalDate to LocalDateTime for comparison
         LocalDateTime validStartTime = currentDateMinus60Days.atStartOfDay();
@@ -218,11 +218,11 @@ public class TransactionListService {
 
     }
 
-    public void isDateRangeValid(long fromTime, long toTime) throws InvalidDateRangeException {
+    public void isDateRangeValid(long fromTime, long toTime, long dayRange) throws InvalidDateRangeException {
         // Calculate the difference in milliseconds between start and end times
         long differenceInMillis = toTime - fromTime;
         // Define the maximum allowed difference for 1 day (24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
-        long maxDifferenceInMillis = 24L * 60L * 60L * 1000L;
+        long maxDifferenceInMillis = 24L * 60L * 60L * 1000L * dayRange;
         // Compare the difference with the maximum allowed difference
         if (differenceInMillis > maxDifferenceInMillis) {
             throw new InvalidDateRangeException();

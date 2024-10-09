@@ -18,6 +18,5 @@ public class ResponseCodes {
     public static final String PARAMETER_ERROR_MSG = "Parameter error,please check";
 
     public static final String INSUFFICIENT_MSG = "Insufficient deduce amount";
-
     public static final String REJECT_CANCEL_MSG = "Refuse to cancel this transaction";
 }

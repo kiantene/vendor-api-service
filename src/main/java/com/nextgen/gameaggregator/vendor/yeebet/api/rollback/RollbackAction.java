@@ -23,9 +23,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class RollbackAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -38,8 +40,6 @@ public class RollbackAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
 
     @PostMapping(path = EndPoints.ROLLBACK)
     public ResponseVo rollBack(HttpServletRequest request) {
@@ -54,7 +54,7 @@ public class RollbackAction {
 
         ResponseVo responseVo = new ResponseVo();
 
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
@@ -67,12 +67,12 @@ public class RollbackAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollbackDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(rollbackDto,gameSession,body);
+            this.doVerification(rollbackDto, gameSession, body);
 
             // 1 - failed to process deduct function (failed to place bet), 9 = failed to process deposit function (failed to settle transaction)
-            if(rollbackDto.getType().equals(RequestType.BET_REQUEST) || rollbackDto.getType().equals(RequestType.SETTLE_REQUEST)){
+            if (rollbackDto.getType().equals(RequestType.BET_REQUEST) || rollbackDto.getType().equals(RequestType.SETTLE_REQUEST)) {
                 // Retrieve the latest wallet balance from Operator
-                balance = walletService.processRollback(traceId,rollbackDto, gameSession, vendorService, httpRequestLog);
+                balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
                 // set vo
                 responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
@@ -81,15 +81,15 @@ public class RollbackAction {
             }
 
             // 7 - failed to process cancel request at deduct function (return error msg to reject the cancel request)
-            if(rollbackDto.getType().equals(RequestType.CANCEL_REQUEST)){
+            if (rollbackDto.getType().equals(RequestType.CANCEL_REQUEST)) {
                 // set vo
-                responseVo.setDesc(ResponseCodes.REJECT_CANCEL_MSG);
+                responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
                 responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
             }
 
-        } catch(BetNotFoundException |
-                BetRefundIdempotentViolationException |
-                BetResultIdempotentViolationException e){
+        } catch (BetNotFoundException |
+                 BetRefundIdempotentViolationException |
+                 BetResultIdempotentViolationException e) {
 
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
@@ -98,32 +98,32 @@ public class RollbackAction {
             responseVo.setResult(ResponseCodes.SUCCESS_CODE);
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
-        } catch(VendorCurrencyNotSupportException |
-                AuthenticationException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                DisabledAgentPlayerException |
-                DisabledGameException |
-                RecordNotFoundException |
-                TransactionStillProcessingException e){
+        } catch (VendorCurrencyNotSupportException |
+                 AuthenticationException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 RecordNotFoundException |
+                 TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
 
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
 
             // set vo
             responseVo.setDesc(ResponseCodes.PARAMETER_ERROR_MSG);
             responseVo.setResult(ResponseCodes.PARAMETER_ERROR_CODE);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
 
             responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
             responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
-        }finally{
+        } finally {
             httpService.end(httpRequestLog, responseVo);
         }
 
@@ -165,7 +165,7 @@ public class RollbackAction {
         MultiValueMap<String, String> sortedMultiValueMap = vendorService.convertToSortedMultiValueMap(trimmedString);
 
         // generate sign value
-        String verify_sign = vendorService.generateSign(sortedMultiValueMap,secret_key);
+        String verify_sign = vendorService.generateSign(sortedMultiValueMap, secret_key);
 
         ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
     }
