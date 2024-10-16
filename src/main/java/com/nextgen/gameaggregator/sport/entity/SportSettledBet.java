@@ -1,11 +1,9 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.BetInformation;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,14 +36,19 @@ public class SportSettledBet extends BetInformation {
         this.newBetAmount = sportUnsettledBet.getNewBetAmount();
     }
 
-    public SportSettledBet(String traceId, VendorPlayer vendorPlayer, AgentPlayer agentPlayer, SportAdjustmentData sportAdjustmentData, String rawData) {
+    public SportSettledBet(String traceId,
+                           VendorPlayer vendorPlayer,
+                           AgentPlayer agentPlayer,
+                           SportAdjustmentData sportAdjustmentData,
+                           String rawData,
+                           VendorGame vendorGame) {
+
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(sportAdjustmentData, this);
 
-        //TODO retrieve vendor_game_id and game_category_id
-        this.setVendorGameId(999);
-        this.setGameCategoryId(999);
+        this.setVendorGameId(vendorGame.getId());
+        this.setGameCategoryId(vendorGame.getGameCategoryId());
 
         this.setBetId(traceId);
         this.setInternalTransactionId(traceId);
@@ -68,6 +71,7 @@ public class SportSettledBet extends BetInformation {
         this.setRawData(rawData);
         this.setResettleNum(0);
         this.setStatus(BetStatus.SETTLED.code);
+        this.setBetType(BetType.NORMAL_BET.code);
 
         this.setVendorBetTime(sportAdjustmentData.getTimestamp());
         this.setVendorSettleTime(sportAdjustmentData.getTimestamp());

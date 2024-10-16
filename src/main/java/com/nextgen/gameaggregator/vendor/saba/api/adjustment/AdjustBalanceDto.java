@@ -25,6 +25,11 @@ public class AdjustBalanceDto extends GeneralDto implements SportAdjustmentData 
     private AdjustBalanceInfoDto balanceInfo;
 
     @Override
+    public String getVendorGameCode() {
+        return "1";
+    }
+
+    @Override
     public String getVendorUsername() {
         return userId;
     }

@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.100-hotfix</version>
+    <version>1.1.101</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2024-10-15T08:49:16Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2024-10-16T04:32:32Z</project.build.outputTimestamp>
         <spring.profiles.active>${env.SPRING_PROFILES_ACTIVE:dev}</spring.profiles.active>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>

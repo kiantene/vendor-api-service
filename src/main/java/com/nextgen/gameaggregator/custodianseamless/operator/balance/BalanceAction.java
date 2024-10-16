@@ -5,49 +5,42 @@ import com.nextgen.gameaggregator.custodianseamless.constant.WalletServiceEndpoi
 import com.nextgen.gameaggregator.custodianseamless.exception.InvalidWalletServiceResponseException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeoutException;
-import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHttpService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.balance.BalanceRequest;
+import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
 import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.LoggingService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(path = WalletServiceEndpoints.OPERATOR_ENDPOINT)
-@Slf4j
 public class BalanceAction {
 
-    @Autowired
-    private TransferHttpService transferHttpService;
+    private final AgentService agentService;
+    private final TransferHttpService transferHttpService;
+    private final ValidationService validationService;
+    private final CurrencyService currencyService;
+    private final AgentCurrencyService agentCurrencyService;
+    private final TransferService transferService;
+    private final BalanceRequest  balanceRequest;
+    private final LoggingService loggingService;
 
-    @Autowired
-    private ValidationService validationService;
-
-    @Autowired
-    private GameUrlService gameUrlService;
-
-    @Autowired
-    private TransferService transferService;
-    @Autowired
-    private BalanceRequest  balanceRequest;
-    @Autowired
-    private LoggingService loggingService;
 
     @PostMapping(path = WalletServiceEndpoints.OPERATOR_BALANCE)
     public OperatorResponseVo<BalanceData> balance(HttpServletRequest request) {
@@ -61,6 +54,10 @@ public class BalanceAction {
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
+            transferWalletRequestLog.setTraceId(traceId);
+            transferWalletRequestLog.setRequestType(TransferWalletRequestLog.BALANCE);
+            transferWalletRequestLog.setUsername(dto.getUsername());
+            transferWalletRequestLog.setCurrency(dto.getCurrency());
 
             // 1. Validate all fields in the request object
             loggingService.logStart();
@@ -71,11 +68,13 @@ public class BalanceAction {
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
             loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Integer agentId = apiCredential.getAgent().getId();
+            transferWalletRequestLog.setAgentId(agentId);
             loggingService.logProcessTime("balance ｜ validationService.validateApiKey", traceId);
 
             // 3. validate duplicate traceId request
             loggingService.logStart();
-            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+            transferService.checkTraceIdExists(dto.getTraceId(), agentId);
             loggingService.logProcessTime("balance ｜ transferService.checkTraceIdExists", traceId);
 
             // 4. Validate the signature
@@ -85,29 +84,30 @@ public class BalanceAction {
             loggingService.logProcessTime("balance ｜ validationService.validateSignature", traceId);
 
             // 5. Check Agent Status
-            loggingService.logStart();
-            validationService.validateAgentStatus(apiCredential.getAgent());
+            Agent agent = agentService.get(agentId);
+            validationService.validateAgentStatus(agent);
             loggingService.logProcessTime("balance ｜ validationService.validateAgentStatus", traceId);
 
             // 6. check Agent Wallet type and seamless type
             loggingService.logStart();
-            validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
+            validationService.validateIsCustodianSeamlessAgentWalletType(agent);
             loggingService.logProcessTime("balance ｜ validationService.validateIsCustodianSeamlessAgentWalletType", traceId);
 
             // 7.1 Check if Currency exist
             loggingService.logStart();
-            Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
-            loggingService.logProcessTime("balance ｜ gameUrlService.checkCurrency", traceId);
+            Currency currency = currencyService.getByCode(dto.getCurrency());
+            loggingService.logProcessTime("balance ｜ currencyService.getByCode", traceId);
+
             // 7.2 Check if Agent Currency supported
             loggingService.logStart();
-            AgentCurrency agentCurrency =
-                    gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
-            loggingService.logProcessTime("balance ｜ gameUrlService.checkAgentCurrencySupported", traceId);
+            agentCurrencyService.getByAgentIdAndCurrencyId(agentId, currency.getId());
+            loggingService.logProcessTime("balance ｜ agentCurrencyService.getByAgentIdAndCurrencyId", traceId);
 
             // 8. Check if agent player account exists and is disabled
             loggingService.logStart();
-            AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
-            loggingService.logProcessTime("balance ｜ transferService.checkAgentPlayer", traceId);
+            AgentPlayer agentPlayer = transferService.checkAgentPlayer(agentId, dto.getUsername());
+            validationService.validateAgentStatus(apiCredential.getAgent());
+            loggingService.logProcessTime("balance ｜ validationService.validateAgentStatus", traceId);
 
             loggingService.logStart();
             BalanceData balanceData = balanceRequest.call(traceId, agentPlayer, currency, transferWalletRequestLog);
@@ -149,29 +149,25 @@ public class BalanceAction {
         } catch (WalletServiceAccessKeyNotFoundException exception) {
             transferHttpService.logError(transferWalletRequestLog, exception);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
-            exception.printStackTrace();
 
         } catch (WalletServiceTimeoutException exception) {
             transferHttpService.logError(transferWalletRequestLog, exception);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
-            exception.printStackTrace();
 
         } catch (InvalidWalletServiceResponseException exception) {
             transferHttpService.logError(transferWalletRequestLog, exception);
-            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            exception.printStackTrace();
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             transferHttpService.logError(transferWalletRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
             transferWalletRequestLog.setResponseStatus(responseVo.getStatus());
+            transferHttpService.end(transferWalletRequestLog, responseVo);
         }
 
-        transferHttpService.end(transferWalletRequestLog, responseVo);
         return responseVo;
     }
 }

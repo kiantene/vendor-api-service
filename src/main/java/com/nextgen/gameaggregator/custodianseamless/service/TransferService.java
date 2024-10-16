@@ -25,7 +25,6 @@ import com.nextgen.gameaggregator.repository.wallet.reader.AccessKeyReaderReposi
 import com.nextgen.gameaggregator.repository.wallet.reader.TransferHistoryReaderRepository;
 import com.nextgen.gameaggregator.service.KafkaService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -37,26 +36,30 @@ import java.util.Optional;
 @Slf4j
 public class TransferService {
 
-    @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
+    private final AgentPlayerRepository agentPlayerRepository;
+    private final GameUrlService gameUrlService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final AccessKeyReaderRepository accessKeyReaderRepository;
+    private final TransferHistoryService transferHistoryService;
+    private final KafkaService kafkaService;
+    private final TransferHistoryReaderRepository transferHistoryReaderRepository;
 
-    @Autowired
-    private GameUrlService gameUrlService;
+    public TransferService(AgentPlayerRepository agentPlayerRepository,
+                           GameUrlService gameUrlService,
+                           RedisTemplate<String, Object> redisTemplate,
+                           AccessKeyReaderRepository accessKeyReaderRepository,
+                           TransferHistoryService transferHistoryService,
+                           KafkaService kafkaService,
+                           TransferHistoryReaderRepository transferHistoryReaderRepository) {
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Autowired
-    private AccessKeyReaderRepository accessKeyReaderRepository;
-
-    @Autowired
-    private TransferHistoryService transferHistoryService;
-
-    @Autowired
-    private KafkaService kafkaService;
-
-    @Autowired
-    private TransferHistoryReaderRepository transferHistoryReaderRepository;
+        this.agentPlayerRepository = agentPlayerRepository;
+        this.gameUrlService = gameUrlService;
+        this.redisTemplate = redisTemplate;
+        this.accessKeyReaderRepository = accessKeyReaderRepository;
+        this.transferHistoryService = transferHistoryService;
+        this.kafkaService = kafkaService;
+        this.transferHistoryReaderRepository = transferHistoryReaderRepository;
+    }
 
     @Cacheable(value = "TraceIds", key = "{#traceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
     public TraceIdRequest checkTraceIdExists(String traceId, Integer agentId) throws DuplicateRequestException {
@@ -68,13 +71,12 @@ public class TransferService {
         }
     }
 
-    public void  checkReferenceIdExists(String referenceId, Integer agentId) throws DuplicateReferenceIdException {
+    public void checkReferenceIdExists(String referenceId, Integer agentId) throws DuplicateReferenceIdException {
         Optional<RawTransferHistory> rawTransferHistory = transferHistoryService.getTransactionHistoryById(referenceId, agentId);
         if (rawTransferHistory.isPresent()) {
             throw new DuplicateReferenceIdException("referenceId :" + referenceId + " existing within 1 days ");
         }
     }
-
 
     public TransferHistory getTransferHistoryByReferenceId(String referenceId, Integer agentId, Currency currency, String username)
             throws TransferHistoryNotFoundException {
@@ -83,8 +85,8 @@ public class TransferService {
 
         TransferHistory transferHistory = null;
         if (rawTransferHistory.isPresent()) {
-            transferHistory =  new TransferHistory(rawTransferHistory.get());
-        }else{
+            transferHistory = new TransferHistory(rawTransferHistory.get());
+        } else {
             transferHistory = transferHistoryReaderRepository.findTransferHistoriesByAgentIdAndReferenceId(agentId, referenceId);
         }
 
@@ -102,13 +104,11 @@ public class TransferService {
 
     }
 
-
-
-    @CachePut(value = "AgentPlayers", key = "{#agent.id, #username}", cacheManager = "cacheManager")
-    public AgentPlayer checkAgentPlayer(Agent agent, String username) throws DisabledAgentPlayerException {
-        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
+    @CachePut(value = "AgentPlayers", key = "{#agentId, #username}", cacheManager = "cacheManager")
+    public AgentPlayer checkAgentPlayer(Integer agentId, String username) throws DisabledAgentPlayerException {
+        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
         if (agentPlayer == null) {
-            agentPlayer = gameUrlService.createAgentPlayer(agent.getId(), username);
+            agentPlayer = gameUrlService.createAgentPlayer(agentId, username);
             agentPlayerRepository.save(agentPlayer);
         } else {
             if (agentPlayer.getStatus().equals(Status.INACTIVE.code)) {
@@ -143,7 +143,7 @@ public class TransferService {
                                                        Integer transactionType) throws InvalidResponseException {
 
 
-            //validate wallet service should only response SC_OK and SC_INSUFFICIENT_FUNDS status
+        //validate wallet service should only response SC_OK and SC_INSUFFICIENT_FUNDS status
         if ((!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) &&
                 (!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS))) {
             throw new InvalidResponseException("Invalid Wallet Service Response Code :" + balanceBeforeAfterVo.getStatus());

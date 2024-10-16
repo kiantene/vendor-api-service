@@ -1,25 +1,25 @@
 package com.nextgen.gameaggregator.custodianseamless.operator.getsingletransaction;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.custodianseamless.constant.WalletServiceEndpoints;
 import com.nextgen.gameaggregator.custodianseamless.exception.TransferHistoryNotFoundException;
-import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHttpService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.service.AgentCurrencyService;
+import com.nextgen.gameaggregator.service.CurrencyService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,17 +29,27 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class GetSingleTransactionAction {
 
-    @Autowired
-    private TransferHttpService transferHttpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private GameUrlService gameUrlService;
-    @Autowired
-    private TransferService transferService;
+    private final TransferHttpService transferHttpService;
+    private final ValidationService validationService;
+    private final CurrencyService currencyService;
+    private final AgentCurrencyService agentCurrencyService;
+    private final TransferService transferService;
+
+    public GetSingleTransactionAction(TransferHttpService transferHttpService,
+                                      ValidationService validationService,
+                                      CurrencyService currencyService,
+                                      AgentCurrencyService agentCurrencyService,
+                                      TransferService transferService) {
+
+        this.transferHttpService = transferHttpService;
+        this.validationService = validationService;
+        this.currencyService = currencyService;
+        this.agentCurrencyService = agentCurrencyService;
+        this.transferService = transferService;
+    }
 
     @PostMapping(path = WalletServiceEndpoints.OPERATOR_GET_SINGLE_TRANSACTION)
-    public OperatorResponseVo<GetSingleTransactionData> getsingletransaction(HttpServletRequest request) {
+    public OperatorResponseVo<GetSingleTransactionData> getSingleTransaction(HttpServletRequest request) {
 
         TransferWalletRequestLog transferWalletRequestLog = transferHttpService.start(request);
         OperatorResponseVo<GetSingleTransactionData> responseVo = new OperatorResponseVo<>();
@@ -50,6 +60,10 @@ public class GetSingleTransactionAction {
             GetSingleTransactionDto dto = HttpService.convertJsonToDto(body, GetSingleTransactionDto.class);
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
+            transferWalletRequestLog.setTraceId(traceId);
+            transferWalletRequestLog.setRequestType(TransferWalletRequestLog.GET_TXN);
+            transferWalletRequestLog.setUsername(dto.getUsername());
+            transferWalletRequestLog.setCurrency(dto.getCurrency());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -57,9 +71,11 @@ public class GetSingleTransactionAction {
             // 2. Check if api key is valid
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Integer agentId = apiCredential.getAgent().getId();
+            transferWalletRequestLog.setAgentId(agentId);
 
             // 3. validate duplicate traceId request
-            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+            transferService.checkTraceIdExists(dto.getTraceId(), agentId);
 
             // 4. Validate the signature
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
@@ -72,17 +88,17 @@ public class GetSingleTransactionAction {
             validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
 
             // 7.1 Check if Currency exist
-            Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
+            Currency currency = currencyService.getByCode(dto.getCurrency());
             // 7.2 Check if Agent Currency supported
-            AgentCurrency agentCurrency =
-                    gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
+            agentCurrencyService.getByAgentIdAndCurrencyId(agentId, currency.getId());
 
             TransferHistory transferHistory =
                     transferService.getTransferHistoryByReferenceId(dto.getReferenceId(), apiCredential.getAgent().getId(),
                             currency, dto.getUsername());
 
-
             GetSingleTransactionData getSingleTransactionData = new GetSingleTransactionData(transferHistory, currency);
+            transferWalletRequestLog.setAmount(transferHistory.getTransferAmount());
+            transferWalletRequestLog.setResponseBody(new Gson().toJson(transferHistory));
 
             responseVo.setData(getSingleTransactionData);
 
@@ -120,16 +136,13 @@ public class GetSingleTransactionAction {
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             transferHttpService.logError(transferWalletRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
             transferWalletRequestLog.setResponseStatus(responseVo.getStatus());
+            transferHttpService.end(transferWalletRequestLog, responseVo);
         }
 
-
-
-        transferHttpService.end(transferWalletRequestLog, responseVo);
         return responseVo;
     }
 }

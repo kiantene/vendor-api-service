@@ -7,10 +7,12 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
+import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class KafkaService {
 
+    @Value("${logging.log-to-kafka:true}")
+    private boolean logToKafka;
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
     private final CurrencyConversionService currencyConversionService;
@@ -267,11 +271,28 @@ public class KafkaService {
     }
 
     public void produceApiRequestLog(ApiRequestLog apiRequestLog) {
-        try {
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog);
-        } catch (Exception e) {
-            log.error("[" + apiRequestLog.getRoundId() + "] " + e.getMessage());
+        if (this.logToKafka) {
+            try {
+                jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog);
+            } catch (Exception e) {
+                log.error("[" + apiRequestLog.getRoundId() + "] " + e.getMessage());
+                log.info(new Gson().toJson(apiRequestLog));
+            }
+        } else {
             log.info(new Gson().toJson(apiRequestLog));
+        }
+    }
+
+    public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
+        if (this.logToKafka) {
+            try {
+                jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_WALLET_REQUEST_LOG, transferWalletRequestLog.getUsername(), transferWalletRequestLog);
+            } catch (Exception e) {
+                log.error(transferWalletRequestLog.getTraceId() + " : " + e.getMessage());
+                log.info(new Gson().toJson(transferWalletRequestLog));
+            }
+        } else {
+            log.info(new Gson().toJson(transferWalletRequestLog));
         }
     }
 }

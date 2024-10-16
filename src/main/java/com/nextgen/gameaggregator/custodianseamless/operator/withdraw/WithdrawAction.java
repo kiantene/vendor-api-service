@@ -10,23 +10,26 @@ import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAcces
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeoutException;
 import com.nextgen.gameaggregator.custodianseamless.operator.deposit.TransferData;
 import com.nextgen.gameaggregator.custodianseamless.operator.deposit.TransferDto;
-import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.custodianseamless.service.RequestTrackerService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHistoryService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHttpService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.withdraw.WithdrawRequest;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.service.AgentCurrencyService;
+import com.nextgen.gameaggregator.service.CurrencyService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,22 +39,33 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class WithdrawAction {
 
-    @Autowired
-    private TransferHttpService transferHttpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private GameUrlService gameUrlService;
-    @Autowired
-    private TransferService transferService;
-    @Autowired
-    private TransferHistoryService transferHistoryService;
+    private final TransferHttpService transferHttpService;
+    private final ValidationService validationService;
+    private final CurrencyService currencyService;
+    private final AgentCurrencyService agentCurrencyService;
+    private final TransferService transferService;
+    private final TransferHistoryService transferHistoryService;
+    private final WithdrawRequest withdrawRequest;
+    private final RequestTrackerService requestTrackerService;
 
-    @Autowired
-    private WithdrawRequest withdrawRequest;
+    public WithdrawAction(TransferHttpService transferHttpService,
+                          ValidationService validationService,
+                          CurrencyService currencyService,
+                          AgentCurrencyService agentCurrencyService,
+                          TransferService transferService,
+                          TransferHistoryService transferHistoryService,
+                          WithdrawRequest withdrawRequest,
+                          RequestTrackerService requestTrackerService) {
 
-    @Autowired
-    private RequestTrackerService requestTrackerService;
+        this.transferHttpService = transferHttpService;
+        this.validationService = validationService;
+        this.currencyService = currencyService;
+        this.agentCurrencyService = agentCurrencyService;
+        this.transferService = transferService;
+        this.transferHistoryService = transferHistoryService;
+        this.withdrawRequest = withdrawRequest;
+        this.requestTrackerService = requestTrackerService;
+    }
 
     @PostMapping(path = WalletServiceEndpoints.OPERATOR_WITHDRAW)
     public OperatorResponseVo<TransferData> withdraw(HttpServletRequest request) {
@@ -66,12 +80,17 @@ public class WithdrawAction {
             // Retrieve request body in original string format and convert into dto
             String body = transferWalletRequestLog.getRequestBody();
 
-            //1. check is duplicate request within the time window
-            requestTrackerService.isNewRequest(body, 300L);
+//            //1. check is duplicate request within the time window
+//            requestTrackerService.isNewRequest(body, 300L);
 
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
+            transferWalletRequestLog.setTraceId(traceId);
+            transferWalletRequestLog.setRequestType(TransferWalletRequestLog.WITHDRAWAL);
+            transferWalletRequestLog.setUsername(dto.getUsername());
+            transferWalletRequestLog.setCurrency(dto.getCurrency());
+            transferWalletRequestLog.setAmount(dto.getTransferAmount());
 
             // 2. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -79,12 +98,14 @@ public class WithdrawAction {
             // 3. Check if api key is valid
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            Integer agentId = apiCredential.getAgent().getId();
+            transferWalletRequestLog.setAgentId(agentId);
 
             // 4. validate duplicate traceId request
-            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+            transferService.checkTraceIdExists(dto.getTraceId(), agentId);
 
             // 5. validate duplicate referenceId request
-            transferService.checkReferenceIdExists(dto.getReferenceId(), apiCredential.getAgent().getId());
+            transferService.checkReferenceIdExists(dto.getReferenceId(), agentId);
 
             // 6. Validate the signature
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
@@ -97,13 +118,12 @@ public class WithdrawAction {
             validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
 
             // 9.1 Check if Currency exist
-            currency = gameUrlService.checkCurrency(dto.getCurrency());
+            currency = currencyService.getByCode(dto.getCurrency());
             // 9.2 Check if Agent Currency supported
-            AgentCurrency agentCurrency =
-                    gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
+            agentCurrencyService.getByAgentIdAndCurrencyId(agentId, currency.getId());
 
             // 10. Check if agent player account exists and is disabled
-            AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
+            AgentPlayer agentPlayer = transferService.checkAgentPlayer(agentId, dto.getUsername());
 
             rawTransferHistory =
                     transferHistoryService.preGenerateRawTransferHistory(dto.getReferenceId(), agentPlayer, currency,
@@ -149,32 +169,28 @@ public class WithdrawAction {
             rawTransferHistory.setErrorCode(exception.getWalletStatus());
             transferHttpService.logError(transferWalletRequestLog, exception);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
-            exception.printStackTrace();
 
         } catch (WalletServiceTimeoutException exception) {
             rawTransferHistory.setErrorCode(exception.getWalletStatus());
             transferHttpService.logError(transferWalletRequestLog, exception);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
-            exception.printStackTrace();
 
         } catch (InvalidWalletServiceResponseException exception) {
             rawTransferHistory.setErrorCode(exception.getWalletStatus());
             transferHttpService.logError(transferWalletRequestLog, exception);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
-            exception.printStackTrace();
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             transferHttpService.logError(transferWalletRequestLog, exception);
-            exception.printStackTrace();
 
         } finally {
             if (rawTransferHistory != null && currency != null) {
                 TransferData transferData = transferService.saveTransactionHistory(rawTransferHistory, currency);
 
-                if(rawTransferHistory.getErrorCode().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) ||
+                if (rawTransferHistory.getErrorCode().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) ||
                         rawTransferHistory.getErrorCode().equals(ResponseCodes.Status.SC_USER_NOT_EXISTS.code)
-                ){
+                ) {
                     responseVo.setResponseCode(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS);
                 }
 
@@ -182,11 +198,9 @@ public class WithdrawAction {
             }
             responseVo.setMessage(responseVo.getStatus().description);
             transferWalletRequestLog.setResponseStatus(responseVo.getStatus());
-
+            transferHttpService.end(transferWalletRequestLog, responseVo);
         }
 
-        transferHttpService.end(transferWalletRequestLog, responseVo);
         return responseVo;
-
     }
 }
