@@ -10,6 +10,7 @@ public interface AgentCurrencyRepository extends JpaRepository<AgentCurrency, In
     @Cacheable(value = "AgentCurrencies", key = "{#agentId, #currencyId, #status}", cacheManager = "cacheManager")
     AgentCurrency findAgentCurrencyByAgentIdAndCurrencyIdAndStatus(Integer agentId, Integer currencyId, Integer status);
 
+    AgentCurrency findByAgentIdAndCurrencyId(Integer agentId, Integer currencyId);
 
     List<AgentCurrency> findAgentCurrencyByAgentIdAndStatus(Integer agentId,Integer status);
 

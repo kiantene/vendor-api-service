@@ -50,6 +50,7 @@ public class SportWalletServiceImpl implements SportWalletService {
     private final SportUnsettleAction sportUnsettleAction;
     private final VendorPlayerService vendorPlayerService;
     private final VendorService vendorService;
+    private final VendorGameService vendorGameService;
 
     private final SportSingleBetProcessor sportSingleBetProcessor;
     private final SportMultipleBetProcessor sportMultipleBetProcessor;
@@ -72,6 +73,7 @@ public class SportWalletServiceImpl implements SportWalletService {
                                   SportUnsettleAction sportUnsettleAction,
                                   VendorPlayerService vendorPlayerService,
                                   VendorService vendorService,
+                                  VendorGameService vendorGameService,
                                   SportSingleBetProcessor sportSingleBetProcessor,
                                   SportMultipleBetProcessor sportMultipleBetProcessor,
                                   SportUpdateBetProcessor sportUpdateBetProcessor,
@@ -92,6 +94,7 @@ public class SportWalletServiceImpl implements SportWalletService {
         this.sportUnsettleAction = sportUnsettleAction;
         this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
+        this.vendorGameService = vendorGameService;
         this.sportSingleBetProcessor = sportSingleBetProcessor;
         this.sportMultipleBetProcessor = sportMultipleBetProcessor;
         this.sportUpdateBetProcessor = sportUpdateBetProcessor;
@@ -583,7 +586,10 @@ public class SportWalletServiceImpl implements SportWalletService {
     }
 
     @Override
-    public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException, InsufficientBalanceException {
+    public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog)
+            throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException,
+            BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException,
+            VendorCurrencyNotSupportException, InsufficientBalanceException, GameNotSupportedException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(SportAdjustmentAction.class.getSimpleName());
@@ -600,7 +606,10 @@ public class SportWalletServiceImpl implements SportWalletService {
         sportBetAdjustmentLogService.idempotentCheck(traceId, vendorPlayer.getId().toString(), sportAdjustmentData.getExternalTransactionId());
 
         try {
-            SportSettledBet sportSettledBet = new SportSettledBet(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, httpRequestLog.getRequestBody());
+            // get VendorGame
+            VendorGame vendorGame = vendorGameService.getByVendorIdAndVendorGameCode(vendorPlayer.getVendorId(), sportAdjustmentData.getVendorGameCode());
+
+            SportSettledBet sportSettledBet = new SportSettledBet(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, httpRequestLog.getRequestBody(), vendorGame);
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
 
             // Adjustment Request to Operator
@@ -636,7 +645,8 @@ public class SportWalletServiceImpl implements SportWalletService {
             } else {
                 throw e;
             }
-
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            throw gameNotSupportedException;
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
 

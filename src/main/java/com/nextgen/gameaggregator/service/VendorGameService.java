@@ -69,7 +69,7 @@ public class VendorGameService {
         return vendorGame;
     }
 
-    @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
+    @Cacheable(value = "VendorGames", key = "#root.methodName + '_' + #gameId", cacheManager = "cacheManager")
     public VendorGame getByGameId(Integer gameId, VendorGame vendorGame) throws GameNotSupportedException {
         if (vendorGame == null) {
             vendorGame = vendorGameRepository.findById(gameId).orElse(null);

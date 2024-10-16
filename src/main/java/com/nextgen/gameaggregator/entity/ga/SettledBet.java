@@ -73,6 +73,11 @@ public class SettledBet extends BetInformation {
         modelMapper.map(endRoundSettledBet, this);
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
+
+        //if no result time then will set it as settle time
+        if(endRoundSettledBet.getResultTime() == null) {
+            this.setResultTime(endRoundSettledBet.getVendorSettleTime());
+        }
     }
 
     public SettledBet(AdjustmentData adjustmentData, String traceId, GameSession gameSession) {

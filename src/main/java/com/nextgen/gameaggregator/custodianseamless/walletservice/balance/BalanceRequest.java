@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.custodianseamless.exception.InvalidWalletServi
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeoutException;
 import com.nextgen.gameaggregator.custodianseamless.operator.balance.BalanceData;
-import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.custodianseamless.service.WalletRequestValidationService;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.dto.WalletServiceBalanceDto;
@@ -15,28 +14,27 @@ import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceVo;
 import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.wallet.AccessKey;
-import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
+import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.LoggingService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
@@ -48,24 +46,23 @@ public class BalanceRequest {
     @Value("${walletservice.timeout:1000}")
     public Integer timeout;
 
-    @Autowired
-    AuthenticationService authenticationService;
+    private final AuthenticationService authenticationService;
+    private final TransferService transferService;
+    private final LoggingService loggingService;
 
-    @Autowired
-    WalletRequestValidationService walletRequestValidationService;
+    public BalanceRequest(AuthenticationService authenticationService,
+                          TransferService transferService,
+                          LoggingService loggingService) {
 
-    @Autowired
-    TransferService transferService;
-
-    @Autowired
-    private LoggingService loggingService;
+        this.authenticationService = authenticationService;
+        this.transferService = transferService;
+        this.loggingService = loggingService;
+    }
 
     public BalanceData call(String traceId, AgentPlayer agentPlayer, Currency currency, TransferWalletRequestLog transferWalletRequestLog) throws
-            WalletServiceAccessKeyNotFoundException,
-            InvalidWalletServiceResponseException, WalletServiceTimeoutException {
+            WalletServiceAccessKeyNotFoundException, InvalidWalletServiceResponseException, WalletServiceTimeoutException {
 
         BalanceVo responseVo;
-
         BalanceData balanceData = new BalanceData(agentPlayer, currency);
         loggingService.logStart();
         AccessKey accessKey = transferService.getWalletServiceAccessKey();
@@ -73,26 +70,29 @@ public class BalanceRequest {
         String apiUrl = walletServiceUrl;
 
         WalletServiceBalanceDto dto = new WalletServiceBalanceDto(traceId, agentPlayer, currency);
-
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, accessKey.getApiSecret());
-        headerMap.add(WalletServiceEndpoints.HEADER_SIGNATURE, signature);
-        headerMap.add(WalletServiceEndpoints.HEADER_API_KEY, accessKey.getApiKey());
 
-        transferWalletRequestLog.setWalletServiceStart(System.currentTimeMillis());
-        transferWalletRequestLog.setWalletServiceHeader(headerMap);
-        transferWalletRequestLog.setWalletServiceData(dto);
-        transferWalletRequestLog.setWalletServiceEndPoints(apiUrl+WalletServiceEndpoints.WALLET_BALANCE);
+        transferWalletRequestLog.setWalletStart(System.currentTimeMillis());
+        transferWalletRequestLog.setWalletData(new Gson().toJson(dto));
+
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
+        ResponseEntity<String> response = null;
+
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_BALANCE)
-                    .header(WalletServiceEndpoints.HEADER_SIGNATURE, signature)
+            response = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_BALANCE)
                     .header(WalletServiceEndpoints.HEADER_API_KEY, accessKey.getApiKey())
+                    .header(WalletServiceEndpoints.HEADER_SIGNATURE, signature)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .body(BodyInserters.fromValue(dto))
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                     .toEntity(String.class)
+                    .timeout(Duration.ofMillis(timeout))
+                    .onErrorResume(TimeoutException.class, e -> {
+                        isTimeout.set(true);
+                        return Mono.empty();
+                    })
                     .onErrorResume(WebClientRequestException.class, e -> {
                         log.error("TraceId {} Failed wallet service call to {}: {}, ",
                                 traceId, apiUrl + WalletServiceEndpoints.WALLET_BALANCE, e.getMessage());
@@ -100,67 +100,90 @@ public class BalanceRequest {
                                 .body("Error wallet service call to " + apiUrl + WalletServiceEndpoints.WALLET_BALANCE
                                         + ", Exception " + e.getMessage()));
                     })
-                    .retry(1)
-                    .timeout(Duration.ofMillis(timeout))
                     .block();
 
-            transferWalletRequestLog.setWalletServiceEnd(System.currentTimeMillis());
+            Long timestamp = System.currentTimeMillis();
+            transferWalletRequestLog.setWalletEnd(timestamp);
+            responseVo = this.validateResponse(response, isTimeout, transferWalletRequestLog);
+            balanceData.setAmount(responseVo.getData().getBalance());
+            balanceData.setTimestamp(timestamp);
+            transferWalletRequestLog.setAmount(balanceData.getAmount());
 
-
-            if (apiResponse != null) {
-                transferWalletRequestLog.setWalletServiceHttpStatusCode(apiResponse.getStatusCode().value());
-                transferWalletRequestLog.setWalletServiceResponse(apiResponse.getBody());
-            }
-
-            // 1. validate HTTP Response Code
-            WalletRequestValidationService.validateVendorHttpStatusResponse(apiResponse);
-
-            //2. validate operator response
-            responseVo = new Gson().fromJson(apiResponse.getBody(), BalanceVo.class);
-
-            // 4. wallet service response object validation
-            Optional.ofNullable(responseVo).orElseThrow(InvalidWalletServiceResponseException::new);
-            WalletRequestValidationService.validateResponse(responseVo);
-
-            if (responseVo.getStatus() != null) {
-                transferWalletRequestLog.setWalletServiceResponseStatus(responseVo.getStatus());
-            }
-
-            // 5. validate wallet response fail status
-            if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-                if ((responseVo.getData().getBalance() == null) ||
-                        (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
-                        (!responseVo.getData().getTokenId().equals(dto.getTokenId()))) {
-
-                    throw new InvalidResponseException("Invalid Wallet Service Response Value compare with request param ");
-
-                } else {
-                    balanceData.setAmount(responseVo.getData().getBalance());
-                    balanceData.setTimestamp(transferWalletRequestLog.getWalletServiceEnd());
-                }
-
-
-            } else {
-                throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
-            }
-
-
-
-        } catch (HttpResponseStatusCodeException |
-                 JsonSyntaxException | InvalidResponseException
-                invalidResponseException) {
-            throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        } catch (InvalidResponseException invalidResponseException) {
+            throw new InvalidWalletServiceResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (Exception exception) {
-            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
-                transferWalletRequestLog.setWalletServiceEnd(System.currentTimeMillis());
-                throw new WalletServiceTimeoutException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
-            } else {
-                exception.printStackTrace();
-                throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            transferWalletRequestLog.setException(exception.getClass().getSimpleName());
+            transferWalletRequestLog.setExceptionMessage(exception.getMessage());
+
+            throw exception;
+        } finally {
+            if (transferWalletRequestLog.getWalletEnd() == null) {
+                Long timestamp = System.currentTimeMillis();
+                transferWalletRequestLog.setWalletEnd(timestamp);
+            }
+
+            if (response != null) {
+                HttpStatusCode httpStatusCode = response.getStatusCode();
+                transferWalletRequestLog.setWalletHttpStatusCode(httpStatusCode.value());
             }
         }
 
         return balanceData;
+    }
+
+    private BalanceVo validateResponse(ResponseEntity<String> response, AtomicBoolean isTimeout, TransferWalletRequestLog transferWalletRequestLog)
+            throws InvalidWalletServiceResponseException, JsonSyntaxException, WalletServiceTimeoutException, InvalidResponseException {
+
+        final Integer INVALID_RESPONSE = ResponseCodes.Status.SC_INVALID_RESPONSE.code;
+
+        // check if it is timed out
+        if (isTimeout.get()) throw new WalletServiceTimeoutException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
+
+        // check if response is empty
+        if (response == null) throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
+
+        HttpStatusCode httpStatusCode = response.getStatusCode();
+        transferWalletRequestLog.setWalletHttpStatusCode(httpStatusCode.value());
+        transferWalletRequestLog.setWalletResponse(response.getBody());
+
+        // check is HTTP status code of the request is not 200
+        if (httpStatusCode.isError()) {
+            throw new InvalidWalletServiceResponseException(httpStatusCode.value());
+        }
+
+        // convert response to VO
+        BalanceVo balanceVo = new Gson().fromJson(response.getBody(), BalanceVo.class);
+        WalletRequestValidationService.validateResponse(balanceVo);
+        BalanceVo.ResponseData responseData = balanceVo.getData();
+
+        // check if wallet response status is empty
+        if (balanceVo.getStatus() == null) throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
+
+        transferWalletRequestLog.setWalletResponseStatus(balanceVo.getStatus());
+
+        // check if wallet response status is SC_OK
+        if (!balanceVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            throw new InvalidWalletServiceResponseException(balanceVo.getStatus().code);
+        }
+
+        // validate username and tokenId
+        String username = responseData.getUsername();
+        Integer tokenId = responseData.getTokenId();
+        BigDecimal balance = responseData.getBalance();
+
+        if (!transferWalletRequestLog.getTraceId().equals(balanceVo.getTraceId())) { // trace id mismatch
+            throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_TRACE_ID_MISMATCHED.code);
+        }
+
+        if (username == null || tokenId == null || balance == null) { // empty response value
+            throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
+        }
+
+        if (!transferWalletRequestLog.getUsername().equals(username)) {
+            throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_USERNAME_MISMATCHED.code);
+        }
+
+        return balanceVo;
     }
 }

@@ -17,10 +17,12 @@ public interface SportWalletService {
     ExecutorService THREAD_POOL = Executors.newFixedThreadPool(32);
 
     WalletRequest placeBet(WalletRequest walletRequest)
-            throws InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidRequestException;
+            throws InsufficientBalanceException, InvalidOperatorResponseException,
+            BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidRequestException;
 
     WalletRequest placeMultipleBets(WalletRequest walletRequest)
-            throws InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidRequestException;
+            throws InsufficientBalanceException, InvalidOperatorResponseException,
+            BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidRequestException;
 
     WalletRequest confirmBet(WalletRequest walletRequest) throws
             InvalidPlayerException, BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
@@ -31,21 +33,25 @@ public interface SportWalletService {
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidRequestException, InvalidPlayerException;
 
     BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog)
-            throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException;
+            throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException,
+            InvalidOperatorResponseException, BetResultIdempotentViolationException;
 
     WalletRequest refund(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidPlayerException, InvalidRequestException;
 
     BetEvent refund(String traceId, SportRefundData sportRefundData, HttpRequestLog httpRequestLog)
-            throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException, RecordNotFoundException;
+            throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException,
+            InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException,
+            BetResultIdempotentViolationException, RecordNotFoundException;
 
     WalletRequest unsettle(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidRequestException, InvalidPlayerException;
 
     BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog)
-            throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException, BetResultIdempotentViolationException;
+            throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException,
+            InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException, BetResultIdempotentViolationException;
 
     WalletRequest resettle(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
@@ -55,6 +61,8 @@ public interface SportWalletService {
             throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException;
 
     BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog)
-            throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException, InsufficientBalanceException;
+            throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException,
+            BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException,
+            VendorCurrencyNotSupportException, InsufficientBalanceException, GameNotSupportedException;
 
 }

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -39,8 +40,9 @@ public class BetService {
     private final ValidationService validationService;
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
     private final RedissonService redissonService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+    private final SettledBetService settledBetService;
 
     @Autowired
     public BetService(GameSessionService gameSessionService,
@@ -48,7 +50,10 @@ public class BetService {
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService, RedissonService redissonService) {
+                      VendorService vendorService,
+                      RedissonService redissonService,
+                      SettledBetService settledBetService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -56,8 +61,9 @@ public class BetService {
         this.validationService = validationService;
         this.httpService = httpService;
         this.vendorService = vendorService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
         this.redissonService = redissonService;
+        this.settledBetService = settledBetService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -94,7 +100,7 @@ public class BetService {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            // request idempotent checking.
+            // request Idempotent checking
             if (requestIdempotentLogService.checkExists(betDto, betDto.getUser()) == null) {
                 requestIdempotentLogService.create(betDto, betDto.getUser());
             } else {
@@ -285,7 +291,6 @@ public class BetService {
             if (userLock != null && userLock.isHeldByCurrentThread()) {
                 userLock.unlock();
             }
-
             if (!isRequestExists) {
                 requestIdempotentLogService.delete(betDto, betDto.getUser());
             }
@@ -344,14 +349,14 @@ public class BetService {
         }
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
+    private void doVerification(BetDto dto, GameSession gameSession) throws BetResultIdempotentViolationException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
 
         List<String> sevenmojoPlatform = Arrays.asList(PlatformType.SEVENMOJO, PlatformType.SEVENMOJOLATAM);
-
+        this.verifySettledBet(dto, gameSession);
         // check platform (only 7mojo will return bet game code)
         if (!sevenmojoPlatform.contains(dto.getPlatform())) {
             ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
@@ -484,5 +489,13 @@ public class BetService {
         }
 
         return balance;
+    }
+
+    private void verifySettledBet(BetDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+        if (!settledBetList.isEmpty() && settledBetList.get(0).getOperatorStatus().equals(1)) {
+            throw new BetResultIdempotentViolationException(settledBetList.get(0));
+        }
     }
 }
