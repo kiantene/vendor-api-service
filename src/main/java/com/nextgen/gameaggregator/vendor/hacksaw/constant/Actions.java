@@ -13,5 +13,6 @@ public class Actions {
 
     public static final String ROLLBACK = "Rollback";
     public static final String LOGOUT = "logout";
+    public static final String END_SESSION = "EndSession";
     
 }

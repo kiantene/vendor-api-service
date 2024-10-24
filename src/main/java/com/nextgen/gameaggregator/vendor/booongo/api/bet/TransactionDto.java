@@ -105,13 +105,19 @@ public class TransactionDto implements BetResultData {
     }
 
     @Override
-    public Long getVendorBetTime() { return getTimeStamp(this.getC_at()); }
+    public Long getVendorBetTime() {
+        return getTimeStamp(this.getC_at());
+    }
 
     @Override
-    public Long getResultTime() { return getTimeStamp(this.getC_at()); }
+    public Long getResultTime() {
+        return getTimeStamp(this.getC_at());
+    }
 
     @Override
-    public Long getVendorSettleTime() { return getTimeStamp(this.getC_at()); }
+    public Long getVendorSettleTime() {
+        return getTimeStamp(this.getC_at());
+    }
 
     @Override
     public BigDecimal getJackpotAmount() {
@@ -135,11 +141,7 @@ public class TransactionDto implements BetResultData {
     public BetStatus getBetStatus() {
 
         // Check condition to decide it is settled or unsettle
-        if (this.getArgs().getRound_finished() == true) {
-            return BetStatus.SETTLED;
-        } else {
-            return BetStatus.UNSETTLED;
-        }
+        return BetStatus.SETTLED;
     }
 
     public Long getTimeStamp(String datetime) {

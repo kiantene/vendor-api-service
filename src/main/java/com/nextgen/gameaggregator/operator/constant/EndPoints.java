@@ -14,6 +14,8 @@ public class EndPoints {
     public static final String WALLET_WIN = "/wallet/win";
     public static final String WALLET_ROLLBACK = "/wallet/rollback";
 
+    public static final String WALLET_CREATE_BET_RESULT = "/wallet/create_bet_result";
+
     public static final String API_VERIFY_PATH = "/api_verify";
 
     public static final String GET_VERIFY_INFO = "/get_verify_info";

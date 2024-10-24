@@ -95,6 +95,9 @@ public class GeneralAction {
             case Actions.ROLLBACK:
                 vo = rollbackService.rollback(httpRequestLog, traceId);
                 break;
+            case Actions.END_SESSION:
+                // no do anything and return success
+                break;
             default:
                 throw new InvalidRequestException();
         }

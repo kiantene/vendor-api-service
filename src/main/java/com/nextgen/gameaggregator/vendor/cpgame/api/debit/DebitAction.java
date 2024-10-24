@@ -28,12 +28,12 @@ import java.net.URLDecoder;
 @Slf4j
 public class DebitAction {
     private final HttpService httpService;
-
     private final VendorLineService vendorLineService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
+    private final VendorService vendorService;
 
     @Autowired
     public DebitAction(HttpService httpService,
@@ -41,7 +41,8 @@ public class DebitAction {
                        ValidationService validationService,
                        GameSessionService gameSessionService,
                        WalletService walletService,
-                       VendorPlayerService vendorPlayerService) {
+                       VendorPlayerService vendorPlayerService,
+                       VendorService vendorService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
@@ -49,6 +50,7 @@ public class DebitAction {
         this.gameSessionService = gameSessionService;
         this.vendorPlayerService = vendorPlayerService;
         this.walletService = walletService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.UNSETTLED)
@@ -77,6 +79,7 @@ public class DebitAction {
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, body);
