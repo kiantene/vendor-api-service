@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetIdempotentLogRepository;
@@ -67,6 +68,33 @@ public class BetIdempotentLogService {
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 
+    }
+
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
+    public RawBetIdempotentLog checkExistsForQa(SettledBet settledBet) {
+        String betIdempotentId = this.generateBetIdempotentIdForQa(settledBet);
+        return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
+
+    }
+
+    private String generateBetIdempotentIdForQa(SettledBet settledBet) {
+
+        String betIdempotentId = settledBet.getVendorBetId() + "_" + settledBet.getRoundId() + "_" + settledBet.getVendorPlayerId();
+        betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
+
+        return betIdempotentId;
+
+    }
+
+    public RawBetIdempotentLog createForQa(SettledBet settledBet) {
+        RawBetIdempotentLog entity = new RawBetIdempotentLog();
+        String betIdempotentId = this.generateBetIdempotentIdForQa(settledBet);
+
+        entity.setId(betIdempotentId);
+        entity.setBalance(settledBet.getBalance());
+
+        rawBetIdempotentLogRepository.save(entity);
+        return entity;
     }
 
     public void idempotentCheck(String id) throws DuplicateRequestException {

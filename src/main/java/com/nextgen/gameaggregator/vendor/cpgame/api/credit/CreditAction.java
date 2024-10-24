@@ -35,6 +35,7 @@ public class CreditAction {
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
 
+
     @Autowired
     public CreditAction(VendorService vendorService, HttpService httpService,
                         VendorLineService vendorLineService, GameSessionService gameSessionService,
@@ -72,12 +73,12 @@ public class CreditAction {
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, body);
 
             ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
-
 
             // Set it as unsettle status even the bet request will show is end round
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
