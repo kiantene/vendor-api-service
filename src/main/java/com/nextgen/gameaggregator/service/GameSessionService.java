@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.game.url.GameLaunchDto;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
 import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -83,6 +85,54 @@ public class GameSessionService {
 
     }
 
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "#token", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameLaunchDto.agentId, #gameLaunchDto.agentPlayerUsername, #gameLaunchDto.vendorLineId, #gameLaunchDto.currencyId}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameLaunchDto.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameLaunchDto.vendorPlayerUsername, #gameLaunchDto.openGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameLaunchDto.vendorPlayerId", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameLaunchDto.vendorPlayerId, #gameLaunchDto.openGameCode}", cacheManager = "cacheManager"),
+    })
+    public GameSession create(String token, GameUrlDto gameUrlDto, GameLaunchDto gameLaunchDto, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode, String vendorPlatformCode) {
+
+        GameSession entity = new GameSession();
+        entity.setToken(token); // used for operator
+        entity.setVendorToken(token); // used for vendor
+        entity.setId(token);
+        entity.setAgentId(gameLaunchDto.getAgentId());
+        entity.setAgentPlayerId(gameLaunchDto.getAgentPlayerId());
+        entity.setAgentPlayerUsername(gameLaunchDto.getAgentPlayerUsername());
+        entity.setVendorPlayerId(gameLaunchDto.getVendorPlayerId());
+        entity.setVendorPlayerUsername(gameLaunchDto.getVendorPlayerUsername());
+        entity.setVendorLineId(gameLaunchDto.getVendorLineId());
+        entity.setStatus(Status.ACTIVE.code);
+        entity.setCreateTime(System.currentTimeMillis());
+        entity.setTerminateTime(null);
+
+        entity.setProductId(gameLaunchDto.getProductId());
+        entity.setProductGameId(gameLaunchDto.getProductGameId());
+
+        entity.setTraceId(gameUrlDto.getTraceId());
+        entity.setLanguage(gameUrlDto.getLanguage());
+        entity.setVendorId(gameLaunchDto.getVendorId());
+        entity.setVendorGameId(gameLaunchDto.getVendorGameId());
+        entity.setVendorGameCode(gameLaunchDto.getOpenGameCode());
+        entity.setGameCategoryId(gameLaunchDto.getGameCategoryId());
+        entity.setCurrencyId(gameLaunchDto.getCurrencyId());
+        entity.setCurrencyCode(gameLaunchDto.getCurrencyCode());
+        entity.setGameCode(gameUrlDto.getGameCode());
+        entity.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+        entity.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
+        entity.setLanguageId(gameLaunchDto.getLanguageId());
+        entity.setPlatformId(gameLaunchDto.getPlatformId());
+        entity.setVendorPlatformCode(vendorPlatformCode);
+        entity.setLobbyUrl(Optional.ofNullable(gameUrlDto.getLobbyUrl()).orElse(""));
+        entity.setIpAddress(Optional.ofNullable(gameUrlDto.getIpAddress()).orElse(""));
+
+        rawGameSessionRepository.save(entity);
+        return entity;
+    }
+
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @Caching(put = {
             @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
@@ -93,7 +143,7 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
-                                     Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
+                                     Integer currencyId, String currencyCode, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode, String lobbyUrl, String ipAddress) throws AuthenticationException {
 
         gameSession.setTraceId(dto.getTraceId());
@@ -102,8 +152,8 @@ public class GameSessionService {
         gameSession.setVendorGameId(vendorGame.getId());
         gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
-        gameSession.setCurrencyId(currency.getId());
-        gameSession.setCurrencyCode(currency.getCode());
+        gameSession.setCurrencyId(currencyId);
+        gameSession.setCurrencyCode(currencyCode);
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
         gameSession.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());

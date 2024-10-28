@@ -53,6 +53,8 @@ public class ResponseCodes {
         SC_USERNAME_MISMATCHED(41, "Request username is different from Response username"),
         SC_INVALID_DATE_7_RANGE(42, "Date range should be within seven days."),
 
+        SC_PRODUCT_ACCESS_DENIED(43, "Not allowed to access the product."),
+        SC_PRODUCT_COMBINATION_NOT_SUPPORTED(44, "Product combination (game category/currency) not supported."),    
         ;
 
 

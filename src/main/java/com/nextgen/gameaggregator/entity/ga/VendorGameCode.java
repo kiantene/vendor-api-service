@@ -11,6 +11,7 @@ public class VendorGameCode extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
+    private Integer productGameId;
     private String openGameCode;
     private String betGameCode;
     private String imageSquare;

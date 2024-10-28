@@ -110,11 +110,11 @@ public class VendorService extends BaseVendorService {
                 agent.getId(), currency.getId(), language.getId(), Status.ACTIVE.code);
     }
 
-    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendorId}", cacheManager = "cacheManager")
-    public VendorLanguageCode findVendorLanguageCode(Integer vendorId, Language language) throws VendorLanguageNotSupportedException {
+    @Cacheable(value = "VendorLanguages", key = "{#languageId, #vendorId}", cacheManager = "cacheManager")
+    public VendorLanguageCode findVendorLanguageCode(Integer vendorId, Integer languageId) throws VendorLanguageNotSupportedException {
 
         VendorLanguageCode vendorLanguageCode =
-                vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, language.getId());
+                vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, languageId);
         Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
 
         if (vendorLanguageCode.getStatus() == 0) {

@@ -306,7 +306,7 @@ public class WarehouseBetHistoryService {
 
     }
 
-    public void setWarehouseBetHistoryInfoCache(VendorGame vendorGame, Currency currency) {
+    public void setWarehouseBetHistoryInfoCache(VendorGame vendorGame, Integer currencyId) {
 
         CompletableFuture<VendorGame> futureVendorGame = CompletableFuture.supplyAsync(() -> {
             try {
@@ -318,7 +318,7 @@ public class WarehouseBetHistoryService {
 
         CompletableFuture<Currency> futureCurrency = CompletableFuture.supplyAsync(() -> {
             try {
-                return currencyService.getByCurrencyId(currency.getId(), currency);
+                return currencyService.get(currencyId);
             } catch (InvalidCurrencyException e) {
                 throw new RuntimeException(e);
             }
