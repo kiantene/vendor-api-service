@@ -35,13 +35,14 @@ public class VendorLineService {
         this.agentVendorLineRepository = agentVendorLineRepository;
     }
 
-    @Cacheable(value = "VendorLines", key = "{#agent.id, #vendor.id, #currency.id, #gameCategory.id}", cacheManager = "cacheManager")
-    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor, Currency currency, GameCategory gameCategory)
+    @Cacheable(value = "VendorLines", key = "{#agentId, #vendorId, #currencyId, #gameCategoryId}", cacheManager = "cacheManager")
+    public VendorLine findAgentVendorLine(Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId)
             throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
                 findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryId(
-                        agent.getId(), vendor.getId(), currency.getId(), gameCategory.getId());
+                        agentId, vendorId, currencyId, gameCategoryId);
+
         //vendor line not found
         if (agentVendorLines.isEmpty()) {
             throw new InvalidVendorLineException();

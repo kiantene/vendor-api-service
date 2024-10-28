@@ -135,7 +135,8 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         cacheNamesConfigurationMap.put("Currencies", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
-
+        cacheNamesConfigurationMap.put("CurrencyCode", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(6)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorCurrencies", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentVendorLine", RedisCacheConfiguration.defaultCacheConfig()
@@ -174,6 +175,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("ProductGameCodes", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("promoData", RedisCacheConfiguration.defaultCacheConfig()
@@ -181,6 +184,16 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("playerBalance", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(10)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("rawBetRefundLogs", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("HighestPriorityLine", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("ProductAgentVendorLine", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("ProductGameDeactivated", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("AgentSupportedCurrency", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("ProductVendorGameCode", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
 
         // EvoPlay Increase Balance EndPoints use

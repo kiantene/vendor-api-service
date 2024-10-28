@@ -61,7 +61,7 @@ public class GameUrlService {
         this.vendorService = vendorService;
     }
 
-    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
+    public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
                                   VendorLine vendorLine, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException {
 
@@ -74,7 +74,7 @@ public class GameUrlService {
             String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
             GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(gameUrl);
-            MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), gameSession, credentials);
+            MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
 
             httpRequestLog.setOperatorData(httpRequestLog.getRequestBody());
             httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
@@ -110,21 +110,24 @@ public class GameUrlService {
 
     }
 
-    public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform,
-                                                   Currency currency)
+    public VendorGameCode checkGameDetailSupported(GameLaunchDto gameLaunchDto)
             throws GameNotSupportedException, GameCurrencyNotSupportException {
 
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(vendorGame.getVendorGameCode(),
-                platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendorId());
+        String openGameCode = gameLaunchDto.getOpenGameCode();
+        Integer currencyId = gameLaunchDto.getCurrencyId();
+        Integer platformId = gameLaunchDto.getPlatformId();
+        Integer languageId = gameLaunchDto.getLanguageId();
+        Integer vendorId = gameLaunchDto.getVendorId();
+        Integer vendorGameId = gameLaunchDto.getVendorGameId();
+
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(openGameCode,
+                platformId, languageId, Status.ACTIVE.code, vendorId);
 
         Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
-        VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGame.getId(), currency.getId());
+        VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGameId, currencyId);
 
-        //not currency match with the requested game id
-        Optional.ofNullable(vendorGameCurrency).orElseThrow(GameCurrencyNotSupportException::new);
-
-        if (vendorGameCurrency.getStatus() == 0) {
+        if (vendorGameCurrency == null || vendorGameCurrency.getStatus() == 0) {
             throw new GameCurrencyNotSupportException();
         }
 
@@ -184,13 +187,13 @@ public class GameUrlService {
         return agentPlayer;
     }
 
-    @CachePut(value = "VendorPlayers", key = "{#agentPlayer.id, #vendorLine.id, #currency.id}", cacheManager = "cacheManager")
-    public VendorPlayer checkVendorPlayer(AgentPlayer agentPlayer, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
+    @CachePut(value = "VendorPlayers", key = "{#agentPlayer.id, #vendorLine.id, #currencyId}", cacheManager = "cacheManager")
+    public VendorPlayer checkVendorPlayer(AgentPlayer agentPlayer, VendorLine vendorLine, Integer currencyId) throws DisabledAgentPlayerException {
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
-                currency.getId());
+                currencyId);
 
         if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorLine.getVendorId(), currency.getId());
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorLine.getVendorId(), currencyId);
             vendorPlayerRepository.save(vendorPlayer);
         } else {
             if (vendorPlayer.getStatus().equals(Status.INACTIVE.code)) {
@@ -199,35 +202,6 @@ public class GameUrlService {
         }
         return vendorPlayer;
     }
-
-    @CachePut(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}", cacheManager = "cacheManager")
-    public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
-
-        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
-        VendorPlayer vendorPlayer = null;
-        Integer vendorId = vendorLine.getVendorId();
-
-        if (agentPlayer == null) {
-            agentPlayer = this.createAgentPlayer(agent.getId(), username);
-            agentPlayerRepository.save(agentPlayer);
-        } else {
-
-            if (agentPlayer.getStatus().equals(Status.INACTIVE.code)) {
-                throw new DisabledAgentPlayerException();
-            }
-
-            vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
-                    currency.getId());
-        }
-
-        if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId, currency.getId());
-            vendorPlayerRepository.save(vendorPlayer);
-        }
-
-        return this.createGameSession(agentPlayer, vendorPlayer, vendorLine);
-    }
-
 
     public AgentPlayer createAgentPlayer(Integer agentId, String username) {
         AgentPlayer entity = new AgentPlayer();
