@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,9 +19,12 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@Getter
+@Setter
 public class VendorService extends BaseVendorService {
 
     private final VendorGameCodeService vendorGameCodeService;
+    private boolean settledByBet = false;
 
     @Autowired
     public VendorService(VendorGameCodeService vendorGameCodeService) {
@@ -89,5 +94,11 @@ public class VendorService extends BaseVendorService {
         }
         return false;
 
+    }
+
+    @Override
+    public boolean shouldSettleByBet() {
+        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return this.settledByBet;
     }
 }

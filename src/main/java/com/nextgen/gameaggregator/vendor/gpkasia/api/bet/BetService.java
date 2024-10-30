@@ -19,6 +19,7 @@ import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -39,10 +40,11 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final HttpService httpService;
-    private final VendorService vendorService;
     private final RedissonService redissonService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final SettledBetService settledBetService;
+    private final AutowireCapableBeanFactory autowireCapableBeanFactory;
+    private final VendorGameCodeService vendorGameCodeService;
 
     @Autowired
     public BetService(GameSessionService gameSessionService,
@@ -50,20 +52,22 @@ public class BetService {
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      VendorService vendorService,
                       RedissonService redissonService,
                       SettledBetService settledBetService,
-                      RequestIdempotentLogService requestIdempotentLogService) {
+                      RequestIdempotentLogService requestIdempotentLogService,
+                      AutowireCapableBeanFactory autowireCapableBeanFactory,
+                      VendorGameCodeService vendorGameCodeService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.httpService = httpService;
-        this.vendorService = vendorService;
         this.redissonService = redissonService;
         this.settledBetService = settledBetService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.autowireCapableBeanFactory = autowireCapableBeanFactory;
+        this.vendorGameCodeService = vendorGameCodeService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -86,6 +90,9 @@ public class BetService {
         boolean isRequestExists = false;
 
         RLock userLock = null;
+
+        VendorService vendorService = new VendorService(vendorGameCodeService);
+        autowireCapableBeanFactory.autowireBean(vendorService);
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
@@ -134,10 +141,15 @@ public class BetService {
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, gameSession);
+            this.doVerification(betDto, gameSession, vendorService);
 
             //7mojo
             if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
+                // 7Mojo Live game multiple bet will settle by bet
+                if (gameSession.getGameCategoryId().equals(5)){
+                    vendorService.setSettledByBet(true);
+                }
+
                 if (betDto.getIstips().equals(BetType.TIPS)) {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
@@ -349,14 +361,20 @@ public class BetService {
         }
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession) throws BetResultIdempotentViolationException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
+    private void doVerification(BetDto dto, GameSession gameSession, VendorService vendorService) throws BetResultIdempotentViolationException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
-
         List<String> sevenmojoPlatform = Arrays.asList(PlatformType.SEVENMOJO, PlatformType.SEVENMOJOLATAM);
-        this.verifySettledBet(dto, gameSession);
+
+        //If SEVENMOJO and SEVENMOJOLATAM live game will settle by bet,
+        // so no need check this
+        if (!(dto.getPlatform().equals(PlatformType.SEVENMOJO) && gameSession.getGameCategoryId().equals(5))
+                && !(dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM) && gameSession.getGameCategoryId().equals(5))) {
+            this.verifySettledBet(dto, gameSession);
+        }
+
         // check platform (only 7mojo will return bet game code)
         if (!sevenmojoPlatform.contains(dto.getPlatform())) {
             ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);

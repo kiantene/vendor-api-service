@@ -74,6 +74,8 @@ public class UpdateBalanceAction {
             this.doValidation(dto);
             // Get GameSession by vendor player username
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            // Switch game from lobby, update game code
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
