@@ -43,8 +43,15 @@ public class CancelBetNSettleService {
             this.doValidation(cancelBetNSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetNSettleDto.getUid());
-
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetNSettleDto.getUid());
+            } catch (AuthenticationException playerNotFoundException) {
+                gameSession = gameSessionService.generateNewSessionToken(cancelBetNSettleDto.getUid()); //generate new token
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelBetNSettleDto, gameSession);
 
@@ -54,12 +61,6 @@ public class CancelBetNSettleService {
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
-        } catch (AuthenticationException | InvalidPlayerException playerNotFoundException) {
-            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-            
-        } catch (DisabledAgentPlayerException | DisabledVendorLineException |
-                 DisabledGameException failedException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (BetNotFoundException | RecordNotFoundException betNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.DATA_NOT_EXIST);
@@ -111,9 +112,8 @@ public class CancelBetNSettleService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException,
-            DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException, AuthenticationException {
+    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws InvalidPlayerException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUid());
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
     }
 }

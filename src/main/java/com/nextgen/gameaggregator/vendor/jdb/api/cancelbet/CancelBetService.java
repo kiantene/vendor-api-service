@@ -1,21 +1,23 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
-import java.math.BigDecimal;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 @Service
 public class CancelBetService {
@@ -31,33 +33,39 @@ public class CancelBetService {
     public CommonVo cancelBet(ActionDto actionDto, String traceId) {
         // Construct VO
         CommonVo vo = new CommonVo();
-    
+
         BigDecimal balance = null;
-    
+
         try {
             // Convert original request body into dto
             CancelBetDto cancelBetDto = HttpService.convertJsonToDto(actionDto.getParams(), CancelBetDto.class);
-    
+
             // 1. Validate request parameters from vendor
             this.doValidation(cancelBetDto);
-    
+
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetDto.getUid());
-    
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetDto.getUid()); //token check
+            } catch (AuthenticationException authenticationException) { //if expired
+                gameSession = gameSessionService.generateNewSessionToken(cancelBetDto.getUid()); //generate new token
+                gameSessionService.updateByVendorCurrencyCode(gameSession, cancelBetDto.getCurrency());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
+
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelBetDto, gameSession);
-    
+
             // 4. Send refund to Operator
             balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService, actionDto.getHttpRequestLog());
-            
+
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetRefundIdempotentViolationException | RecordNotFoundException successException) {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
-
-        } catch (AuthenticationException | InvalidPlayerException playerNotFoundException) {
-            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
@@ -89,7 +97,8 @@ public class CancelBetService {
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
-        } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException | DisabledGameException exception) {
+        } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException |
+                 DisabledGameException exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -107,18 +116,16 @@ public class CancelBetService {
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         }
-    
+
         return vo;
     }
-    
+
     private void doValidation(CancelBetDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
             CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUid());
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
