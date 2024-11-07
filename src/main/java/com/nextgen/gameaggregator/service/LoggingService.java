@@ -1,12 +1,14 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -75,7 +77,7 @@ public class LoggingService {
      */
     public void logDataFlowByVendor(String description, Integer vendorId, String roundId, Object data) {
         if (!enableVendorDataFlowLogs) return;
-        if (!getVendorList().contains(vendorId)) return;
+        if (!EnvUtils.getVendorListFromEnv(this.vendorList).contains(vendorId)) return;
 
         AtomicInteger logCounter = logCounterHolder.get(); // Get the counter for the current thread
 
@@ -86,16 +88,5 @@ public class LoggingService {
         jsonObject.put("Data", new Gson().toJson(data));
         jsonObject.put("Time", System.currentTimeMillis());
         log.info(jsonObject.toString());
-    }
-
-    public List<Integer> getVendorList() {
-        // Convert the string to a list of integers
-        if (vendorList == null || vendorList.isBlank()) {
-            return new ArrayList<>();  // Default empty list
-        } else {
-            return Arrays.stream(vendorList.split(","))
-                    .map(Integer::parseInt)
-                    .toList();
-        }
     }
 }

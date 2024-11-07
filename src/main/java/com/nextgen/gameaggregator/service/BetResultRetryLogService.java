@@ -121,10 +121,10 @@ public class BetResultRetryLogService {
             MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
             WalletBalanceVo responseVo;
             AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+            String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
             String traceId = UUID.randomUUID().toString();
             String updatedOperatorData = this.updateOperatorDataWithNewTraceId(operatorData, traceId);
-            String apiUrl = agentApiCredential.getCallbackUrl();
 
             headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
             httpRequestLog.setOperatorData(updatedOperatorData);

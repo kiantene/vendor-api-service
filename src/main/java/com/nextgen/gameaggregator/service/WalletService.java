@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -14,8 +15,11 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
@@ -25,10 +29,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class WalletService {
+
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final BetResultLogService betResultLogService;
@@ -46,6 +52,14 @@ public class WalletService {
     private final VendorService vendorCurrencyConversionService;
     private final BetIdempotentLogService betIdempotentLogService;
     private final ThreadPoolTaskScheduler taskScheduler;
+    private final RedisTemplate<String, Object> redisTemplate;
+    @Value("${endround-process.retry-interval-in-seconds:5}")
+    private long retryIntervalInSecondsValue;
+    @Value("${endround-process.retry-max-attempts:5}")
+    private int retryMaxAttempts;
+    @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
+    private String retryVendorList;
+
 
     @Autowired
     public WalletService(BetResultLogService betResultLogService,
@@ -62,7 +76,8 @@ public class WalletService {
                          BetNotFoundLogService betNotFoundLogService,
                          VendorService vendorCurrencyConversionService,
                          BetIdempotentLogService betIdempotentLogService,
-                         ThreadPoolTaskScheduler taskScheduler) {
+                         ThreadPoolTaskScheduler taskScheduler,
+                         RedisTemplate<String, Object> redisTemplate) {
 
         this.betResultLogService = betResultLogService;
         this.betRefundLogService = betRefundLogService;
@@ -79,6 +94,7 @@ public class WalletService {
         this.vendorCurrencyConversionService = vendorCurrencyConversionService;
         this.betIdempotentLogService = betIdempotentLogService;
         this.taskScheduler = taskScheduler;
+        this.redisTemplate = redisTemplate;
     }
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -406,11 +422,18 @@ public class WalletService {
         }
 
         loggingService.logStart();
+        //settle by round
         if (!vendorService.shouldSettleByBet()) {
-            //settle by round
-            loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-            this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
-            loggingService.logDataFlowByVendor("After notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+
+            // Get the list of vendors from ENV for retry vendor
+            List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
+
+            // Check if the vendor is eligible to process the end round
+            if (vendorList.contains(settledBet.getVendorId())) {
+                this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+            } else {
+                this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
+            }
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
@@ -563,6 +586,63 @@ public class WalletService {
                 log.error("[{}] notifyEndRoundAsync -> {}", traceId, exception.getMessage());
             }
         }, Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
+    }
+
+    private void executeRetryEndRound(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId, int remainingAttempts) {
+        remainingAttempts--;
+
+        String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+
+        if (remainingAttempts <= 0) {
+            redisTemplate.delete(redisKey);
+            processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
+            return;
+        }
+
+        Integer redisUnsettledBetCount = (Integer) redisTemplate.opsForValue().get(redisKey);
+        boolean isMatched = redisUnsettledBetCount != null && redisUnsettledBetCount == unsettledBetList.size();
+
+        // if redisUnsettledBetCount is null, mean vendor send endRound after 2 hours of redis key TTL (will proceed to process endRound)
+        if (redisUnsettledBetCount == null || isMatched) {
+            redisTemplate.delete(redisKey);
+            processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
+        } else {
+            String endRoundRetryCounterRedisKey = String.format(RedisKeyConstant.END_ROUND_RETRY_COUNTER_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+            redisTemplate.opsForValue().increment(endRoundRetryCounterRedisKey);
+            redisTemplate.expire(endRoundRetryCounterRedisKey, 5L, TimeUnit.MINUTES);
+            final int finalRetryCount = remainingAttempts;
+            taskScheduler.schedule(() -> executeRetryEndRound(settledBet, vendorService, gameSession, traceId, finalRetryCount), Instant.now().plusSeconds(this.retryIntervalInSecondsValue));
+        }
+    }
+
+    private void processEndRound(SettledBet settledBet, List<UnsettledBet> unsettledBetList, BaseVendorService vendorService, GameSession gameSession, String traceId) {
+        try {
+            unsettledBetList = this.filterFailedUnsettledBet(unsettledBetList);
+
+            // multiple bets within same round
+            for (UnsettledBet betRecord : unsettledBetList) {
+                if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
+                    final String newTraceId = UUID.randomUUID().toString();
+
+                    //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
+                    if (betRecord.getVendorSettleTime() == null) {
+                        betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
+                    }
+
+                    SettledBet newSettledBet = new SettledBet(betRecord, vendorService, newTraceId);
+
+                    //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
+                    EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
+                            gameSession.getCurrencyCode(), gameSession.getGameCode());
+                    endRoundSettledBet.setInternalTransactionId(newTraceId);
+
+                    kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
+                }
+            }
+        } catch (Exception exception) {
+            log.error("[{}] notifyEndRoundAsync -> {}", traceId, exception.getMessage());
+        }
     }
 
     private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)

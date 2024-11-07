@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
@@ -11,13 +12,17 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
+import com.nextgen.gameaggregator.util.EnvUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -27,18 +32,33 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
+@Getter
 public class UnsettledBetService {
+    private final RawUnsettledBetRepository rawUnsettledBetRepository;
+    private final BetIdempotentLogService betIdempotentLogService;
+    private final KafkaService kafkaService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
+    private final RedisTemplate<String, Object> redisTemplate;
+    @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
+    private String retryVendorList;
+
     @Autowired
-    private RawUnsettledBetRepository rawUnsettledBetRepository;
-    @Autowired
-    private BetIdempotentLogService betIdempotentLogService;
-    @Autowired
-    private KafkaService kafkaService;
-    @Autowired
-    private UnsettledBetCachingService unsettledBetCachingService;
+    public UnsettledBetService(RawUnsettledBetRepository rawUnsettledBetRepository,
+                               BetIdempotentLogService betIdempotentLogService,
+                               KafkaService kafkaService,
+                               UnsettledBetCachingService unsettledBetCachingService,
+                               RedisTemplate<String, Object> redisTemplate) {
+
+        this.rawUnsettledBetRepository = rawUnsettledBetRepository;
+        this.betIdempotentLogService = betIdempotentLogService;
+        this.kafkaService = kafkaService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -89,7 +109,15 @@ public class UnsettledBetService {
             @CachePut(value = "UnsettledBetByETID", key = "{#unsettledBet.vendorPlayerId, #unsettledBet.externalTransactionId}", cacheManager = "cacheManager")
     })
     public UnsettledBet save(UnsettledBet unsettledBet) {
+        String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, unsettledBet.getRoundId(), unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId());
+
         rawUnsettledBetRepository.save(unsettledBet);
+
+        List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
+        if (vendorList.contains(unsettledBet.getVendorId())) {
+            redisTemplate.opsForValue().increment(redisKey, 1L);
+            redisTemplate.expire(redisKey, 2L, TimeUnit.HOURS);
+        }
         return unsettledBet;
     }
 
@@ -105,8 +133,16 @@ public class UnsettledBetService {
             @CacheEvict(value = "UnsettledBetByETID", key = "{#entity.vendorPlayerId, #entity.externalTransactionId}", cacheManager = "cacheManager")
     })
     public void delete(UnsettledBet entity) {
+        String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId());
+
         try {
             rawUnsettledBetRepository.delete(entity);
+
+            List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
+            if (vendorList.contains(entity.getVendorId())) {
+                redisTemplate.opsForValue().decrement(redisKey, 1L);
+                redisTemplate.expire(redisKey, 2L, TimeUnit.HOURS);
+            }
         } catch (DataRetrievalFailureException e) {
             // if cannot find document id will cause this exception
         }

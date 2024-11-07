@@ -25,16 +25,15 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class KafkaService {
 
-    @Value("${logging.log-to-kafka:true}")
-    private boolean logToKafka;
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
     private final CurrencyConversionService currencyConversionService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
-
     private final S3BetService s3BetService;
+    @Value("${logging.log-to-kafka:true}")
+    private boolean logToKafka;
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
@@ -69,9 +68,9 @@ public class KafkaService {
                 vendorPlayerUsername = "";
             }
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, vendorPlayerUsername, betHistory);
-            //ga-1726 temporary remove delete actions
-            //settledBetService.delete(settledBet);
+            //NOV 7, disable sending bet data to topic_bet_history_v2, due to no longer using mariaDB, using clickhouse now
+            //jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, vendorPlayerUsername, betHistory);
+
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
             e.printStackTrace();
