@@ -196,6 +196,8 @@ public class GameExcelService {
                     vendorGameCode.setPlatformId(platform.getId());
                     //default status as false if platform is disable
                     vendorGameCode.setStatus(platform.getStatus().equals(0) ? 0 : vendorGameCodeLang.getStatus());
+                    vendorGameCode.setProductId(0);
+                    vendorGameCode.setProductGameId(0);
 
                     vendorGameCode.prepareSave(0, USERTYPE);
                 }
