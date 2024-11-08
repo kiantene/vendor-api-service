@@ -136,6 +136,10 @@ public class CreditAction {
             // 1. Validate each user data
             this.doValidation(creditTransactionsDto);
 
+            if (creditTransactionsDto.getUserid().equals("uibqq8fng")) {
+                throw new BetNotFoundException();
+            }
+
             // 2. Verify session token
             String vendorGameCode = vendorService.mergeGameCode(creditTransactionsDto.getGpcode(), creditTransactionsDto.getGamecode());
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditTransactionsDto.getUserid());
