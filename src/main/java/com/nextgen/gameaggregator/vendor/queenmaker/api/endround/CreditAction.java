@@ -207,7 +207,7 @@ public class CreditAction {
         } catch (BetNotFoundException e) {
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
-            transactionsVo.setResponseCode(ResponseCodes.TRANSACTION_DOES_NOT_EXIST, "Bet Not Found");
+            transactionsVo.setResponseCode(ResponseCodes.TRANSACTION_DOES_NOT_EXIST);
             if(creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)){
                 transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Bet Not Found");
             }
