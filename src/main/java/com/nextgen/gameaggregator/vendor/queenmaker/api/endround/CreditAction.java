@@ -150,10 +150,6 @@ public class CreditAction {
                 RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
                 balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService, httpRequestLog);
             } else if (creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
-                if (creditTransactionsDto.getUserid().equals("uibqq8fng")) {
-                    throw new BetNotFoundException();
-                }
-                
                 List<UnsettledBet> unsettledBet = unsettledBetService.getByRoundId(creditTransactionsDto.getExternalroundid(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
                 if (unsettledBet.isEmpty()) {
                     balance = this.getBalance(traceId, gameSession);
