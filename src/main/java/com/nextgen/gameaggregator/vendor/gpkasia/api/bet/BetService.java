@@ -79,13 +79,13 @@ public class BetService {
 
         BigDecimal balance = null;
 
+        GameSession gameSession = new GameSession();
+
         ResultType resultType = null;
 
         String gameCode = null;
 
         BigDecimal money = null;
-
-        GameSession gameSession = new GameSession();
 
         boolean isRequestExists = false;
 
@@ -369,8 +369,9 @@ public class BetService {
 
     private void doVerification(BetDto dto, GameSession gameSession, VendorService vendorService) throws BetResultIdempotentViolationException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUser());
-
+        if (dto.getCode().equals(BetType.POINTIN)) { //only check if it's bet
+            validationService.validateEligibleBet(gameSession, dto.getUser());
+        }
         // Verify vendor gameCode
         List<String> sevenmojoPlatform = Arrays.asList(PlatformType.SEVENMOJO, PlatformType.SEVENMOJOLATAM);
 
