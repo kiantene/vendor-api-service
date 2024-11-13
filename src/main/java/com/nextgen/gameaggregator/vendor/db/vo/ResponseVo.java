@@ -26,11 +26,11 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        boolean status = true;
+        boolean status = false;
 
         // check if the code is not 1000
         if (!this.code.equals(BigInteger.valueOf(ResponseCodes.SUCCESS))) {
-            status = false;
+            status = true;
         }
 
         return status;

@@ -65,6 +65,7 @@ public class TransactionDetailAction {
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
+            this.doValidation(dto);
 
             // 2. Check if api key is valid
             String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
@@ -169,5 +170,12 @@ public class TransactionDetailAction {
         }
 
         return responseVo;
+    }
+
+    private void doValidation(TransactionDetailDto dto) throws InvalidRequestException {
+        // toTime cannot smaller than fromtime
+        if (dto.getToTime() < dto.getFromTime()) {
+            throw new InvalidRequestException();
+        }
     }
 }

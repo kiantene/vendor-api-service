@@ -62,16 +62,16 @@ public class TransactionListService {
     public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId) throws SQLException {
         TransactionsListData transactionsListData = new TransactionsListData();
         List<Sort.Order> orders = this.generateOrder();
-        if(!enableClickHouse){
-            transactionsListData= this.findByAgentIdAndCreateTimeBetween(agentId, dto);
-        }else{
-            Long betCount =  warehouseBetHistoryService.findByAgentIdAndCreateTimeBetweenCount(agentId, dto);
-            if(betCount>0){
-                List<Object> transactions =  warehouseBetHistoryService.findByAgentIdAndSettledTimeBetween(agentId, dto);
+        if (!enableClickHouse) {
+            transactionsListData = this.findByAgentIdAndCreateTimeBetween(agentId, dto);
+        } else {
+            Long betCount = warehouseBetHistoryService.findByAgentIdAndCreateTimeBetweenCount(agentId, dto);
+            if (betCount > 0) {
+                List<Object> transactions = warehouseBetHistoryService.findByAgentIdAndSettledTimeBetween(agentId, dto);
                 transactionsListData.setTransactions(transactions);
                 transactionsListData.setCurrentPage(dto.getPageNo());
                 transactionsListData.setTotalItems(betCount);
-                float totalPageCount = (float) betCount /dto.getPageSize();
+                float totalPageCount = (float) betCount / dto.getPageSize();
                 int pageTotal = (int) Math.ceil(totalPageCount); // Use Math.ceil to round up
                 transactionsListData.setTotalPages(pageTotal);
             }
@@ -181,7 +181,6 @@ public class TransactionListService {
     public void isStartTimeValid(long startTimeMillis, int timeRange) throws InvalidFromTimeException {
         // Calculate the current date minus 60 days
         LocalDate currentDateMinus60Days = LocalDate.now().minusDays(timeRange);
-        System.out.println("currentDateMinus60Days: " + currentDateMinus60Days);
         // Convert the LocalDate to LocalDateTime for comparison
         LocalDateTime validStartTime = currentDateMinus60Days.atStartOfDay();
         // Convert the start time in milliseconds to LocalDateTime
