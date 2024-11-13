@@ -86,4 +86,9 @@ public class VendorService extends BaseVendorService {
         return Instant.parse(date).toEpochMilli();
     }
 
+    @Override
+    public boolean shouldSettleByBet() {
+        return true;
+    }
+
 }
