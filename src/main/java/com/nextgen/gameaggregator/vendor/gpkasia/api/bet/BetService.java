@@ -79,13 +79,13 @@ public class BetService {
 
         BigDecimal balance = null;
 
+        GameSession gameSession = new GameSession();
+
         ResultType resultType = null;
 
         String gameCode = null;
 
         BigDecimal money = null;
-
-        GameSession gameSession = new GameSession();
 
         boolean isRequestExists = false;
 
@@ -117,9 +117,16 @@ public class BetService {
 
             gameCode = betDto.getGameinfo();
 
-            // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
-
+            try {
+                // Verify session
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(betDto.getUser()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, gameCode);
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             // verify bet game code of 7mojo
             if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
                 // check credential env is available or not
@@ -146,7 +153,7 @@ public class BetService {
             //7mojo
             if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
                 // 7Mojo Live game multiple bet will settle by bet
-                if (gameSession.getGameCategoryId().equals(5)){
+                if (gameSession.getGameCategoryId().equals(5)) {
                     vendorService.setSettledByBet(true);
                 }
 
@@ -275,7 +282,6 @@ public class BetService {
 
             vo.setData(betDataVo);
         } catch (InvalidPlayerException |
-                 AuthenticationException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
@@ -363,8 +369,9 @@ public class BetService {
 
     private void doVerification(BetDto dto, GameSession gameSession, VendorService vendorService) throws BetResultIdempotentViolationException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUser());
-
+        if (dto.getCode().equals(BetType.POINTIN)) { //only check if it's bet
+            validationService.validateEligibleBet(gameSession, dto.getUser());
+        }
         // Verify vendor gameCode
         List<String> sevenmojoPlatform = Arrays.asList(PlatformType.SEVENMOJO, PlatformType.SEVENMOJOLATAM);
 
