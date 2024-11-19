@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.entity.ga.custom;
 
-import com.nextgen.gameaggregator.entity.ga.Currency;
-import com.nextgen.gameaggregator.entity.ga.Vendor;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
-import com.nextgen.gameaggregator.entity.ga.GameCategory;
+import com.nextgen.gameaggregator.entity.ga.*;
+
 import lombok.Data;
 
 @Data
@@ -13,4 +11,5 @@ public class WarehouseFutureEntity {
     private Currency currency;
     private Vendor vendor;
     private GameCategory gameCategory;
+    private Agent agent;
 }

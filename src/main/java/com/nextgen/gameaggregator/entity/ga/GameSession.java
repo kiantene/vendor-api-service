@@ -22,6 +22,7 @@ public class GameSession {
     private String agentPlayerUsername;
     private String vendorPlayerUsername;
     private Long vendorPlayerId;
+    private String productCode;
     private Integer productId;
     private Integer productGameId;
     private Integer vendorId;
@@ -44,6 +45,7 @@ public class GameSession {
     private String ipAddress;
     private Long createTime;
     private Long terminateTime;
+    private Boolean isLaunchByProductGame;
 
     public GameSession(EndRoundSettledBet endRoundSettledBet) {
         this.agentPlayerUsername = endRoundSettledBet.getAgentPlayerUsername();

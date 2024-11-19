@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.sport.processor;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.BetHistory;
+
 import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -113,7 +114,9 @@ public class SportResettleBetProcessor {
         betHistory.setWinLoss(diffWinAmount);
         betHistory.setEffectiveTurnover(BigDecimal.ZERO);
         kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
-        kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
+       // kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
+
+       kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
     }
 
     private void updateSettledBet(SportSettledBet sportSettledBet, WalletRequest walletRequest, BigDecimal balance) {

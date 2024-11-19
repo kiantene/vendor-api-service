@@ -9,6 +9,7 @@ public class GameLaunchDto {
     private Integer agentId;
     private Integer masterAgentId;
     private Integer houseId;
+    private String productCode;
     private Integer productId;
     private Integer productGameId;
     private Integer gameCategoryId;
@@ -24,4 +25,5 @@ public class GameLaunchDto {
     private String vendorPlayerUsername;
     private String openGameCode;
     private Integer vendorLineId;
+    private Boolean isLaunchByProductGame;
 }

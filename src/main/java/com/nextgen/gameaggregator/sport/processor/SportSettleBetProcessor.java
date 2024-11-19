@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.sport.processor;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.SportMasterUnsettledBetMariaDB;
-import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
-import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -119,7 +116,8 @@ public class SportSettleBetProcessor {
             BetHistory betHistory = sportUnsettledBet.toBetHistory(betStatus, resultType);
             kafkaService.produceBetHistory(betHistory, walletRequest.getVendorPlayerUsername(), fromVendorRate);
 
-            kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
+            // kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
 
             // Update status in sport_unsettled_bet (MariaDB)
             SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBet);

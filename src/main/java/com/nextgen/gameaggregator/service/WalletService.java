@@ -365,8 +365,10 @@ public class WalletService {
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
                 kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
-                kafkaService.produceWarehouseBetHistory
-                        (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                // kafkaService.produceWarehouseBetHistory
+                //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
@@ -979,8 +981,11 @@ public class WalletService {
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
-            kafkaService.produceWarehouseBetHistory
-                    (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            // kafkaService.produceWarehouseBetHistory
+            //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 
             loggingService.logStart();
