@@ -32,8 +32,13 @@ public class KafkaService {
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
     private final S3BetService s3BetService;
+    private final VendorService vendorService;
+    private final VendorGameCodeService vendorGameCodeService;
+    private final AgentService agentService;
+
     @Value("${logging.log-to-kafka:true}")
     private boolean logToKafka;
+
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
@@ -43,7 +48,10 @@ public class KafkaService {
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
                         CachingService cachingService,
-                        S3BetService s3BetService
+                        S3BetService s3BetService,
+                        VendorService vendorService,
+                        VendorGameCodeService vendorGameCodeService,
+                        AgentService agentService
     ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
@@ -53,6 +61,9 @@ public class KafkaService {
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.s3BetService = s3BetService;
+        this.vendorService = vendorService;
+        this.vendorGameCodeService = vendorGameCodeService;
+        this.agentService = agentService;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -121,7 +132,7 @@ public class KafkaService {
             WarehouseFutureEntity warehouseFutureEntity =
                     warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
                             betHistory.getVendorGameId(), betHistory.getVendorId(),
-                            betHistory.getGameCategoryId(), betHistory.getCurrencyId());
+                            betHistory.getGameCategoryId(), betHistory.getCurrencyId(), betHistory.getAgentId());
 
 
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
@@ -160,39 +171,39 @@ public class KafkaService {
     public void producePreprocessingBetHistory(BetHistory betHistory, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
 
         try {
-            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V2);
+            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V3);
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
             WarehouseFutureEntity warehouseFutureEntity =
                     warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
                             betHistory.getVendorGameId(), betHistory.getVendorId(),
-                            betHistory.getGameCategoryId(), betHistory.getCurrencyId());
+                            betHistory.getGameCategoryId(), betHistory.getCurrencyId(), betHistory.getAgentId());
 
 
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
                 AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
                 agentPlayerUsername = agentPlayer.getUsername();
-                log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+                log.error("PreprocessingBetHistoryV3-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
             if (vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()) {
                 VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
                 vendorPlayerUsername = vendorPlayer.getUsername();
-                log.error("WarehouseBetHistory-vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+                log.error("PreprocessingBetHistoryV3-vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
-            com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory
-                    = new com.nextgen.gameaggregator.entity.warehouse.BetHistory
-                    (betHistory, agentPlayerUsername, vendorPlayerUsername, warehouseFutureEntity);
+            BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, null, null, null, agentPlayerUsername,
+            vendorPlayerUsername, warehouseFutureEntity);
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V2, warehouseBetHistory);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V3, betHistoryV3);
 
         } catch (Exception e) {
-            log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            log.error("PreprocessingBetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
             e.printStackTrace();
         }
     }
+
 
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
@@ -292,6 +303,54 @@ public class KafkaService {
             }
         } else {
             log.info(new Gson().toJson(transferWalletRequestLog));
+        }
+    }
+
+    private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
+        return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(betHistory.getVendorGameId(), betHistory.getVendorId(), betHistory.getGameCategoryId(),
+            betHistory.getCurrencyId(), betHistory.getAgentId());
+    }
+
+    public void produceBetHistoryV3(BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername) {
+        try {
+            // TODO : Will re-enable after the new game list import is deployed
+            // if (productId == null || productCode == null) {
+            //     Vendor vendor = vendorService.getById(betHistory.getVendorId());
+            //     productId = vendor.getProduct().getId();
+            //     productCode = vendor.getProduct().getCode();
+            // }
+
+            // if (productGameId == null) {
+            //     VendorGameCode vendorGameCode = vendorGameCodeService.getByTop1VendorGameId(betHistory.getVendorGameId());
+            //     productGameId = vendorGameCode.getProductGameId();
+            // }
+
+            if (agentPlayerUsername == null) {
+                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
+                agentPlayerUsername = agentPlayer.getUsername();
+            }
+
+            if (vendorPlayerUsername == null) {
+                VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+                vendorPlayerUsername = vendorPlayer.getUsername();
+            }
+
+            WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
+            BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, productCode, productId, productGameId, agentPlayerUsername,
+                    vendorPlayerUsername, warehouseFutureEntity);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(betHistoryV3);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V3, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                return null;
+            });
+
+        } catch (Exception e) {
+            log.error("BetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
         }
     }
 }

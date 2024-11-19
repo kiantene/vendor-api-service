@@ -218,8 +218,9 @@ public class SportWalletServiceImpl implements SportWalletService {
             BetHistory betHistory = sportUnsettledBet.toBetHistory(betStatus, resultType);
             kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
-            kafkaService.produceWarehouseBetHistory
-                    (betHistory, agentPlayer.getUsername(), sportUnsettledBet.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            // kafkaService.produceWarehouseBetHistory
+            //        (betHistory, agentPlayer.getUsername(), sportUnsettledBet.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportUnsettledBet.getVendorPlayerUsername());
 
             // Update status in sport_unsettled_bet (MariaDB)
             SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBet);
@@ -349,8 +350,9 @@ public class SportWalletServiceImpl implements SportWalletService {
         kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
-        kafkaService.produceWarehouseBetHistory
-                (betHistory, agentPlayer.getUsername(), sportRefundData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+        // kafkaService.produceWarehouseBetHistory
+        //         (betHistory, agentPlayer.getUsername(), sportRefundData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportRefundData.getVendorPlayerUsername());
 
         // Insert record into sport_settled_bet (Couchbase)
         sportSettledBetService.save(new SportSettledBet(sportUnsettledBet));
@@ -452,8 +454,10 @@ public class SportWalletServiceImpl implements SportWalletService {
             kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
-            kafkaService.produceWarehouseBetHistory
-                    (betHistory, agentPlayer.getUsername(), sportUnsettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            // kafkaService.produceWarehouseBetHistory
+            //         (betHistory, agentPlayer.getUsername(), sportUnsettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportUnsettleData.getVendorPlayerUsername());
 
             // update data from couchbase settled bet
             sportSettledBet.setInternalTransactionId(internalTransactionId);
@@ -569,9 +573,10 @@ public class SportWalletServiceImpl implements SportWalletService {
             kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
 
 
-            kafkaService.produceWarehouseBetHistory
-                    (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            // kafkaService.produceWarehouseBetHistory
+            //         (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
 
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -632,9 +637,10 @@ public class SportWalletServiceImpl implements SportWalletService {
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
             kafkaService.produceBetHistory(betHistory, vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
 
-            kafkaService.produceWarehouseBetHistory
-                    (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+            // kafkaService.produceWarehouseBetHistory
+            //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
 
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), vendorPlayer.getUsername());
 
         } catch (InvalidOperatorResponseException e) {
 

@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.entity.ga;
 
 import lombok.Data;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "vendors")
@@ -21,4 +18,10 @@ public class Vendor {
     @Column(name = "is_support_transfer")
     private Integer isSupportTransfer;
     private Integer status;
+    private Integer productId;
+
+    // TODO : Will re-enable after the new game list import is deployed
+    // @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    // @JoinColumn(name = "product_id", nullable = false, insertable = false, updatable = false)
+    // private Product product;
 }

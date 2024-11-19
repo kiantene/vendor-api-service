@@ -109,8 +109,10 @@ public class GameSessionService {
         entity.setCreateTime(System.currentTimeMillis());
         entity.setTerminateTime(null);
 
+        entity.setProductCode(gameLaunchDto.getProductCode());
         entity.setProductId(gameLaunchDto.getProductId());
         entity.setProductGameId(gameLaunchDto.getProductGameId());
+        entity.setIsLaunchByProductGame(gameLaunchDto.getIsLaunchByProductGame());
 
         entity.setTraceId(gameUrlDto.getTraceId());
         entity.setLanguage(gameUrlDto.getLanguage());

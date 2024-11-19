@@ -112,6 +112,7 @@ public class GameUrlAction {
 
             gameLaunchDto.setVendorId(vendorId);
             gameLaunchDto.setGameCategoryId(gameCategoryId);
+            gameLaunchDto.setIsLaunchByProductGame(isLaunchByProductGame);
 
             if (isLaunchByProductGame) {
 
@@ -203,6 +204,9 @@ public class GameUrlAction {
             gameLaunchDto.setVendorPlayerId(vendorPlayer.getId());
             gameLaunchDto.setVendorPlayerUsername(vendorPlayer.getUsername());
             gameLaunchDto.setVendorLineId(vendorLine.getId());
+
+            // TODO : Will re-enable after the new game list import is deployed
+            // gameLaunchDto.setProductCode(vendor.getProduct().getCode());
 
             String gameSessionToken = UUID.randomUUID().toString();
             GameSession gameSession = gameSessionService.create(gameSessionToken, dto, gameLaunchDto, vendorCurrency, vendorLanguageCode, vendorPlatformCode);

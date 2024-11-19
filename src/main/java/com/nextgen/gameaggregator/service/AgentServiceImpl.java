@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.AgentNotFoundException;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentCurrencyRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentRepository;
+
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -42,5 +43,10 @@ public class AgentServiceImpl implements AgentService {
     public Boolean isCurrencySupportedByAgent(Integer agentId, Integer currencyId) {
         AgentCurrency agentCurrency = agentCurrencyRepository.findByAgentIdAndCurrencyId(agentId, currencyId);
         return agentCurrency != null && agentCurrency.getStatus().equals(Status.ACTIVE.code);
+    }
+
+    @Override
+    public Agent getAgent(Integer agentId) throws AgentNotFoundException {
+        return this.get(agentId);
     }
 }

@@ -32,6 +32,7 @@ public class WarehouseBetHistoryService {
     private final Integer[] excludeGameCategoryIds = {6}; // skip sport category
     private final NamedParameterJdbcTemplate clickHouseJdbcTemplate;
     private final VendorCurrencyRepository vendorCurrencyRepository;
+    private final AgentService agentService;
 
     private final S3BetService s3BetService;
     @Autowired
@@ -39,7 +40,8 @@ public class WarehouseBetHistoryService {
                                        GameCategoryService gameCategoryService, CurrencyService currencyService,
                                        NamedParameterJdbcTemplate clickHouseJdbcTemplate,
                                        VendorCurrencyRepository vendorCurrencyRepository,
-                                       S3BetService s3BetService){
+                                       S3BetService s3BetService,
+                                       AgentService agentService){
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
         this.gameCategoryService = gameCategoryService;
@@ -47,7 +49,7 @@ public class WarehouseBetHistoryService {
         this.clickHouseJdbcTemplate = clickHouseJdbcTemplate;
         this.vendorCurrencyRepository = vendorCurrencyRepository;
         this.s3BetService = s3BetService;
-
+        this.agentService = agentService;
     }
 
     public List<Object> findByAgentIdAndSettledTimeBetween(Integer agentId, TransactionsListDto dto) throws SQLException {
@@ -328,7 +330,7 @@ public class WarehouseBetHistoryService {
                 (futureVendorGame, futureCurrency).join(); // Wait for all to complete
     }
 
-    public WarehouseFutureEntity getWarehouseBetHistoryInfoCache(Integer vendorGameId, Integer vendorId, Integer gameCategoryId, Integer currencyId) {
+    public WarehouseFutureEntity getWarehouseBetHistoryInfoCache(Integer vendorGameId, Integer vendorId, Integer gameCategoryId, Integer currencyId, Integer agentId) {
 
         CompletableFuture<VendorGame> futureVendorGame = CompletableFuture.supplyAsync(() -> {
             try {
@@ -362,6 +364,14 @@ public class WarehouseBetHistoryService {
             }
         });
 
+        CompletableFuture<Agent> futureAgent = CompletableFuture.supplyAsync(() -> {
+            try {
+                return agentService.getAgent(agentId);
+            } catch (AgentNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         CompletableFuture.allOf(futureVendorGame, futureVendor, futureCurrency, futureGameCategory).join(); // Wait for all to complete
 
         WarehouseFutureEntity warehouseFutureEntity = new WarehouseFutureEntity();
@@ -372,6 +382,7 @@ public class WarehouseBetHistoryService {
             warehouseFutureEntity.setVendor(futureVendor.get());
             warehouseFutureEntity.setGameCategory(futureGameCategory.get());
             warehouseFutureEntity.setCurrency(futureCurrency.get());
+            warehouseFutureEntity.setAgent(futureAgent.get());
 
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);

@@ -97,8 +97,10 @@ public class KafkaConsumerService {
                 // process bet as normal bet and send to kafka topic_bet_history topic
                 kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
                 // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
-                kafkaService.produceWarehouseBetHistory
-                        (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                // kafkaService.produceWarehouseBetHistory
+                //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
