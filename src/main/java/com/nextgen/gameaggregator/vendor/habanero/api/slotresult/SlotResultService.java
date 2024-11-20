@@ -62,7 +62,7 @@ public class SlotResultService {
             this.doValidation(fundInfoDto);
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession);
+            this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession, responseVo);
 
             //construct result Dto
             SlotResultDto resultDto = new ModelMapper().map(fundInfoDto, SlotResultDto.class);
@@ -91,7 +91,9 @@ public class SlotResultService {
                 //setup debit and credit bet type respond message
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessCredit(true);
             }
-
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
@@ -110,12 +112,16 @@ public class SlotResultService {
         }
     }
 
-    private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession) throws
-            NoAvailableLineException {
+    private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession, TransferVo responseVo) throws
+            NoAvailableLineException, InvalidRequestException {
 
         //Verify vendor currency code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
 
+        if (fundTransferRequestDto.getFundDto().getDebitAndCredit() && !responseVo.getFundTransferResponseVo().getStatusVo().getSuccessDebit()) {
+            throw new InvalidRequestException();
+        }
+
     }
-    
+
 }

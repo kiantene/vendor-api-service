@@ -12,6 +12,7 @@ public class BetDetailUrlInfo implements IBetDetailUrlInfo {
     private String transactionId;
     private String externalTransactionId;
     private String externalRoundId;
+    private String vendorBetId;
     private String username;
     private Integer currencyId;
     private String currencyCode;
@@ -40,7 +41,7 @@ public class BetDetailUrlInfo implements IBetDetailUrlInfo {
 
     // Full constructor for all fields
     public BetDetailUrlInfo(String betId, String transactionId, String externalTransactionId,
-                            String externalRoundId, String username, Integer currencyId,
+                            String externalRoundId, String vendorBetId, String username, Integer currencyId,
                             String currencyCode, String vendorCurrencyCode, String gameCode,
                             Integer vendorId, String vendorCode, String gameCategoryCode,
                             BigDecimal betAmount, BigDecimal winAmount, BigDecimal winLoss,
@@ -52,6 +53,7 @@ public class BetDetailUrlInfo implements IBetDetailUrlInfo {
         this.transactionId = transactionId;
         this.externalTransactionId = externalTransactionId;
         this.externalRoundId = externalRoundId;
+        this.vendorBetId = vendorBetId;
         this.username = username;
         this.currencyId = currencyId;
         this.currencyCode = currencyCode;

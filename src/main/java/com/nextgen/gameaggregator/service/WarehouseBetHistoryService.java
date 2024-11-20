@@ -35,13 +35,14 @@ public class WarehouseBetHistoryService {
     private final AgentService agentService;
 
     private final S3BetService s3BetService;
+
     @Autowired
-    public WarehouseBetHistoryService (VendorGameService vendorGameService, VendorService vendorService,
-                                       GameCategoryService gameCategoryService, CurrencyService currencyService,
-                                       NamedParameterJdbcTemplate clickHouseJdbcTemplate,
-                                       VendorCurrencyRepository vendorCurrencyRepository,
-                                       S3BetService s3BetService,
-                                       AgentService agentService){
+    public WarehouseBetHistoryService(VendorGameService vendorGameService, VendorService vendorService,
+                                      GameCategoryService gameCategoryService, CurrencyService currencyService,
+                                      NamedParameterJdbcTemplate clickHouseJdbcTemplate,
+                                      VendorCurrencyRepository vendorCurrencyRepository,
+                                      S3BetService s3BetService,
+                                      AgentService agentService) {
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
         this.gameCategoryService = gameCategoryService;
@@ -121,7 +122,7 @@ public class WarehouseBetHistoryService {
                 "SELECT COUNT(1)" +
                         "FROM bet_history WHERE toYYYYMMDD(toDateTime(vendor_settle_time/1000)) BETWEEN :startDateStr AND :endDateStr " +
                         " AND agent_id = :agentId AND vendor_settle_time BETWEEN :startTime AND :endTime ";
-        
+
         Map<String, Object> params = new HashMap<>();
         params.put("agentId", agentId);
         params.put("startDateStr", startDateStr);
@@ -162,7 +163,7 @@ public class WarehouseBetHistoryService {
         params.put("betId", betId);
 
 
-        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+        BetDetailUrlInfo betDetailUrlInfo = new BetDetailUrlInfo();
 
         clickHouseJdbcTemplate.query(sqlStmt, params, rs -> {
             while (rs.next()) {
@@ -205,7 +206,7 @@ public class WarehouseBetHistoryService {
     public IBetDetailUrlInfo getBetHistoryDetailV2(Integer agentId, String betId, long fromTime, long toTime) throws BetNotFoundException {
         String sqlStmt =
                 "SELECT " +
-                        "id , round_id, external_transaction_id, " +
+                        "id , round_id, external_transaction_id, vendor_bet_id, " +
                         "agent_player_username, currency_id,  currency_code, " +
                         "vendor_player_username, game_code, vendor_id,  vendor_code, " +
                         "game_category_code, bet_amount, win_amount, " +
@@ -216,7 +217,7 @@ public class WarehouseBetHistoryService {
                         "game_session_token " +
                         "FROM bet_history WHERE " +
                         "agent_id = :agentId AND id= :betId " +
-                        "AND vendor_settle_time BETWEEN :startTime AND :endTime "+
+                        "AND vendor_settle_time BETWEEN :startTime AND :endTime " +
                         "ORDER BY vendor_settle_time ASC " +
                         "LIMIT 1 ";
 
@@ -226,13 +227,14 @@ public class WarehouseBetHistoryService {
         params.put("startTime", fromTime);
         params.put("endTime", toTime);
 
-        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+        BetDetailUrlInfo betDetailUrlInfo = new BetDetailUrlInfo();
 
         clickHouseJdbcTemplate.query(sqlStmt, params, rs -> {
             while (rs.next()) {
                 betDetailUrlInfo.setBetId(rs.getString("id"));
                 betDetailUrlInfo.setExternalTransactionId(rs.getString("external_transaction_id"));
                 betDetailUrlInfo.setExternalRoundId(rs.getString("round_id"));
+                betDetailUrlInfo.setVendorBetId(rs.getString("vendor_bet_id"));
                 betDetailUrlInfo.setUsername(rs.getString("agent_player_username"));
                 betDetailUrlInfo.setCurrencyId(rs.getInt("currency_id"));
                 betDetailUrlInfo.setCurrencyCode(rs.getString("currency_code"));
@@ -268,7 +270,7 @@ public class WarehouseBetHistoryService {
 
 
     public IBetDetailUrlInfo getBetHistoryDetailFromS3(String betId) throws BetNotFoundException {
-        BetDetailUrlInfo betDetailUrlInfo =  new BetDetailUrlInfo();
+        BetDetailUrlInfo betDetailUrlInfo = new BetDetailUrlInfo();
 
         try {
             com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory = s3BetService.readBetHistoryFromS3File(betId);
@@ -301,7 +303,7 @@ public class WarehouseBetHistoryService {
                     vendorCurrencyRepository.findByVendorIdAndCurrencyId
                             (warehouseBetHistory.getVendorId(), warehouseBetHistory.getCurrencyId());
             betDetailUrlInfo.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
-        }catch ( Exception exception){
+        } catch (Exception exception) {
             log.error("Error reading S3 file :" + exception.getMessage());
         }
         return (betDetailUrlInfo.getBetId() == null) ? null : betDetailUrlInfo;
@@ -366,7 +368,7 @@ public class WarehouseBetHistoryService {
 
         CompletableFuture<Agent> futureAgent = CompletableFuture.supplyAsync(() -> {
             try {
-                return agentService.getAgent(agentId);
+                return agentService.get(agentId);
             } catch (AgentNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -392,12 +394,12 @@ public class WarehouseBetHistoryService {
     }
 
 
-    public Boolean checkIsDelaySettlement( BetHistory warehouseBetHistory ){
+    public Boolean checkIsDelaySettlement(BetHistory warehouseBetHistory) {
 
         boolean isDelaySettlement = false;
-        if(Arrays.stream(excludeGameCategoryIds).noneMatch(n -> Objects.equals(n, warehouseBetHistory.getGameCategoryId()))){
+        if (Arrays.stream(excludeGameCategoryIds).noneMatch(n -> Objects.equals(n, warehouseBetHistory.getGameCategoryId()))) {
             Instant daysAgo = Instant.now().minus(Duration.ofDays(5)); // Subtract 5 days from the current time
-            if(warehouseBetHistory.getVendorBetTime()< daysAgo.toEpochMilli()){
+            if (warehouseBetHistory.getVendorBetTime() < daysAgo.toEpochMilli()) {
                 isDelaySettlement = true;
             }
         }

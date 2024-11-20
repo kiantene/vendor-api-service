@@ -31,34 +31,47 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class TransferAction {
 
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final VendorService vendorService;
+    private final VendorLineService vendorLineService;
+    private final SlotBetService slotBetService;
+    private final SlotResultService slotResultService;
+    private final PokerBetService pokerBetService;
+    private final PokerResultService pokerResultService;
+    private final RefundService refundService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private SlotBetService slotBetService;
-    @Autowired
-    private SlotResultService slotResultService;
-    @Autowired
-    private PokerBetService pokerBetService;
-    @Autowired
-    private PokerResultService pokerResultService;
-    @Autowired
-    private RefundService refundService;
+    public TransferAction(HttpService httpService,
+                          GameSessionService gameSessionService,
+                          VendorService vendorService,
+                          VendorLineService vendorLineService,
+                          ValidationService validationService,
+                          SlotBetService slotBetService,
+                          SlotResultService slotResultService,
+                          PokerBetService pokerBetService,
+                          PokerResultService pokerResultService,
+                          RefundService refundService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.vendorService = vendorService;
+        this.vendorLineService = vendorLineService;
+        this.slotBetService = slotBetService;
+        this.slotResultService = slotResultService;
+        this.pokerBetService = pokerBetService;
+        this.pokerResultService = pokerResultService;
+        this.refundService = refundService;
+    }
 
     @PostMapping(path = EndPoints.TRANSFER)
     public ResponseEntity<TransferVo> transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         TransferVo responseVo = new TransferVo();
-        Integer httpStatus = HttpStatus.SC_OK;
+        int httpStatus = HttpStatus.SC_OK;
+        GameSession gameSession = new GameSession();
 
         try {
             //Retrieve request body in original string format
@@ -76,7 +89,15 @@ public class TransferAction {
             this.doValidation(transferDto);
 
             //Get GameSession
-            GameSession gameSession = this.getGameSession(transferDto);
+            try {
+                gameSession = this.getGameSession(transferDto);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(transferDto.getSubAuth().getUsername()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, transferDto.getBaseGame().getKeyName());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, gameSession.getVendorCurrencyCode());
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(transferDto, gameSession);

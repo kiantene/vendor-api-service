@@ -46,7 +46,7 @@ public class BetDetailService implements SportBetDetail<SportBetDetailVo> {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("vendor_id", vendorId);
-        formData.add("trans_id", iBetDetailUrlInfo.getExternalTransactionId());
+        formData.add("trans_id", iBetDetailUrlInfo.getVendorBetId());
 
         return formData;
     }
