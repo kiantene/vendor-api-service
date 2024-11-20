@@ -44,9 +44,4 @@ public class AgentServiceImpl implements AgentService {
         AgentCurrency agentCurrency = agentCurrencyRepository.findByAgentIdAndCurrencyId(agentId, currencyId);
         return agentCurrency != null && agentCurrency.getStatus().equals(Status.ACTIVE.code);
     }
-
-    @Override
-    public Agent getAgent(Integer agentId) throws AgentNotFoundException {
-        return this.get(agentId);
-    }
 }

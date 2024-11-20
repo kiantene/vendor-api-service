@@ -12,6 +12,8 @@ public interface IBetDetailUrlInfo {
 
     String getExternalRoundId();
 
+    String getVendorBetId();
+
     String getUsername();
 
     Integer getCurrencyId();
