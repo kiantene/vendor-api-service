@@ -64,13 +64,23 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
+        // spribe
         this.betWinVendorList.add(32);
-        this.betWinVendorList.add(55);
-        this.betWinVendorList.add(7);
-        this.betWinVendorList.add(19);
 
+        // DB
+        this.betWinVendorList.add(55);
+
+        // spadegaming
+        this.betWinVendorList.add(7);
         this.betLoseVendorList.add(7);
+
+        // habanero
+        this.betWinVendorList.add(19);
         this.betLoseVendorList.add(19);
+
+        // cpg
+        this.betWinVendorList.add(48);
+        this.betLoseVendorList.add(48);
     }
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
