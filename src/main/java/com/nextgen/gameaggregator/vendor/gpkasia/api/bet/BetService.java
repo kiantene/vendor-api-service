@@ -375,10 +375,9 @@ public class BetService {
         // Verify vendor gameCode
         List<String> sevenmojoPlatform = Arrays.asList(PlatformType.SEVENMOJO, PlatformType.SEVENMOJOLATAM);
 
-        //If SEVENMOJO and SEVENMOJOLATAM live game will settle by bet,
-        // so no need check this
-        if (!(dto.getPlatform().equals(PlatformType.SEVENMOJO) && gameSession.getGameCategoryId().equals(5))
-                && !(dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM) && gameSession.getGameCategoryId().equals(5))) {
+        // BGAMINGASIA and BGAMINGLATAM will check idempotent by player and round id before bet
+        if ((dto.getPlatform().equals(PlatformType.BGAMINGLATAM))
+                || (dto.getPlatform().equals(PlatformType.BGAMINGASIA))) {
             this.verifySettledBet(dto, gameSession);
         }
 

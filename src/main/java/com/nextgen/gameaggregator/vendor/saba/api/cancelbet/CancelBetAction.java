@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.BetIdempotentLogService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.RedissonService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
@@ -18,6 +19,7 @@ import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,17 +34,20 @@ public class CancelBetAction {
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
     private final BetIdempotentLogService betIdempotentLogService;
+    private final RedissonService redissonService;
 
     @Autowired
     public CancelBetAction(HttpService httpService,
                            SportWalletService sportWalletService,
                            WalletRequestService walletRequestService,
-                           BetIdempotentLogService betIdempotentLogService) {
+                           BetIdempotentLogService betIdempotentLogService,
+                           RedissonService redissonService) {
 
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
         this.betIdempotentLogService = betIdempotentLogService;
+        this.redissonService = redissonService;
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
@@ -53,6 +58,7 @@ public class CancelBetAction {
 
         // Construct Vo
         GeneralVo vo = new GeneralVo();
+        RLock rLock;
 
         try {
             RequestDto<CancelBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
@@ -73,8 +79,15 @@ public class CancelBetAction {
                 final String refId = txn.getRefId();
                 final String externalTransactionId = VendorService.generateExtTxnId(operationId, refId);
                 final WalletRequest newWalletRequest = new WalletRequest(walletRequest);
+
+                String redisKey = "RedissonLock:Saba" + refId;
+                rLock = redissonService.getLock(redisKey); //check for lock
+                if (rLock.remainTimeToLive() != -2) { // time in milliseconds -2 if the lock does not exist. -1 if the lock exists but has no associated expire.
+                    redissonService.waitUntilLockReleased(rLock, httpRequestLog); //loop until lock is released
+                } //else is not exist, proceed
                 newWalletRequest.setExternalTransactionId(externalTransactionId);
                 newWalletRequest.setVendorBetId(refId);
+
 
                 SportWalletService.THREAD_POOL.submit(() -> {
                     try {

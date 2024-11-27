@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -34,15 +35,19 @@ public class EndRoundAction {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
 
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
     @Autowired
     public EndRoundAction(HttpService httpService,
                           GameSessionService gameSessionService,
                           WalletService walletService,
                           VendorLineService vendorLineService,
-                          VendorService vendorService) {
+                          VendorService vendorService,
+                          RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
     }
@@ -53,13 +58,22 @@ public class EndRoundAction {
         EndRoundVo responseVo = new EndRoundVo();
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
-
+        boolean isRequestExists = false;
+        EndRoundDto dto = new EndRoundDto();
         try {
             // Retrieve request body in original string format and convert into dto
-            EndRoundDto dto = HttpService.convertQueryStringToDto(httpRequestLog, EndRoundDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, EndRoundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            // request Idempotent checking
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             try {
@@ -137,9 +151,12 @@ public class EndRoundAction {
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 
