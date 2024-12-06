@@ -42,6 +42,9 @@ public class GameUrlService implements GameUrl {
         formData.add("SiteCode", Formats.SITE_CODE);
         formData.add("GameCode", gameSession.getVendorGameCode());
         formData.add("LangCode", gameSession.getVendorLanguageCode());
+        if (gameSession.getCurrencyCode().equals("CLP")) {
+            formData.add("MinBet", "100");
+        }
         Optional.ofNullable(gameSession.getLobbyUrl()).filter(value -> !value.isEmpty()).ifPresent(value -> formData.add("BackUrl", value));
 
         return formData;
