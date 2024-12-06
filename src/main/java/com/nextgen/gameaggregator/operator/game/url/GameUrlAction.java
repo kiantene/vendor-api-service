@@ -1,12 +1,5 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
-import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
@@ -15,9 +8,14 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @Slf4j
@@ -142,7 +140,7 @@ public class GameUrlAction {
                     vendorLine = vendorLineService.getVendorLineById(vendorLineId);
                     vendorId = vendorLine.getVendorId();
                 }
-                
+
                 VendorGameCode vendorGameCode = vendorGameCodeService.getByProductGame(productGameId, vendorId, platformId, gameLaunchDto.getLanguageId());
                 productGameService.verifyProductGameDeactivated(productGameId, agentId, gameLaunchDto.getMasterAgentId(), gameLaunchDto.getHouseId());
                 gameCode = vendorGameCode.getOpenGameCode();
@@ -374,7 +372,7 @@ public class GameUrlAction {
         gameLaunchDto.setCurrencyId(currencyId);
         gameLaunchDto.setCurrencyCode(currency.getCode());
         // 5.2 Check if Agent Currency supported
-        agentService.isCurrencySupported(agentId, currencyId);
+        gameUrlService.isCurrencySupportedByAgent(agentId, currencyId);
 
         // 6. check if platform supported
         loggingService.logStart();

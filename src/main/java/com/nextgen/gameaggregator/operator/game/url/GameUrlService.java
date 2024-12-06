@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.writer.*;
+import com.nextgen.gameaggregator.service.AgentService;
+import com.nextgen.gameaggregator.service.AgentServiceImpl;
 import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class GameUrlService {
     private static final String USERTYPE = "operator-api-service";
+    private final AgentService agentService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
@@ -35,10 +38,10 @@ public class GameUrlService {
     private final VendorService vendorService;
     private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
     private final CurrencyRepository currencyRepository;
-    private final AgentCurrencyRepository agentCurrencyRepository;
 
     @Autowired
-    public GameUrlService(AutowireCapableBeanFactory autowireCapableBeanFactory,
+    public GameUrlService(AgentServiceImpl agentService,
+                          AutowireCapableBeanFactory autowireCapableBeanFactory,
                           RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
                           VendorPlayerRepository vendorPlayerRepository,
@@ -46,9 +49,9 @@ public class GameUrlService {
                           PlatformRepository platformRepository,
                           VendorGameCurrencyRepository vendorGameCurrencyRepository,
                           CurrencyRepository currencyRepository,
-                          AgentCurrencyRepository agentCurrencyRepository,
                           VendorService vendorService) {
 
+        this.agentService = agentService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
@@ -57,7 +60,6 @@ public class GameUrlService {
         this.platformRepository = platformRepository;
         this.vendorGameCurrencyRepository = vendorGameCurrencyRepository;
         this.currencyRepository = currencyRepository;
-        this.agentCurrencyRepository = agentCurrencyRepository;
         this.vendorService = vendorService;
     }
 
@@ -158,12 +160,12 @@ public class GameUrlService {
         return currency;
     }
 
-    public AgentCurrency checkAgentCurrencySupported(Agent agent, Currency currency) throws CurrencyNotSupportedException {
+    public void isCurrencySupportedByAgent(Integer agentId, Integer currencyId) throws CurrencyNotSupportedException {
+        boolean isSupported = agentService.isCurrencySupportedByAgent(agentId, currencyId);
 
-        AgentCurrency agentCurrency = agentCurrencyRepository.
-                findAgentCurrencyByAgentIdAndCurrencyIdAndStatus(agent.getId(), currency.getId(), Status.ACTIVE.code);
-        Optional.ofNullable(agentCurrency).orElseThrow(CurrencyNotSupportedException::new);
-        return agentCurrency;
+        if (!isSupported) {
+            throw new CurrencyNotSupportedException("AgentId: " + agentId + " CurrencyId: " + currencyId);
+        }
     }
 
     public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {

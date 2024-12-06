@@ -6,5 +6,6 @@ import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 
 public interface AgentService {
     Agent get(Integer id) throws AgentNotFoundException;
-    void isCurrencySupported(Integer agentId, Integer currencyId) throws CurrencyNotSupportedException;
+
+    Boolean isCurrencySupportedByAgent(Integer agentId, Integer currencyId) throws CurrencyNotSupportedException;
 }
