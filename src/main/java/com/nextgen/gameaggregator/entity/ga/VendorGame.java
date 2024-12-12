@@ -24,4 +24,6 @@ public class VendorGame extends BaseEntity {
     private String imageSquare;
     private String imageLandscape;
     private Integer status;
+
+    private Boolean requireDebit;
 }

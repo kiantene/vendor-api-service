@@ -31,6 +31,12 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGame", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
+    public VendorGame getByVendorGameCode(String vendorGameCode, Integer vendorId) {
+        return vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+    }
+
+    // deprecated, use getByVendorGameCode so that it will cache null values
     @Cacheable(value = "VendorGames", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) throws GameNotSupportedException {
 
@@ -40,13 +46,6 @@ public class VendorGameService {
             throw new GameNotSupportedException();
         }
         return vendorGame;
-    }
-
-    @Cacheable(value = "VendorGames", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
-    public VendorGame getByVendorIdAndVendorGameCode(Integer vendorId, String vendorGameCode) throws GameNotSupportedException {
-
-        VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
-        return Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
     }
 
     @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")

@@ -6,10 +6,12 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundInfoDto;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PokerResultDto extends FundInfoDto implements BetResultData {
 

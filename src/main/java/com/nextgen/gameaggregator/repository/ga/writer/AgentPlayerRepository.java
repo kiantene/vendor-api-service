@@ -11,6 +11,4 @@ public interface AgentPlayerRepository extends JpaRepository<AgentPlayer, Long> 
 
     @Cacheable(value = "AgentPlayers", key = "{#agentId, #username, #status}", cacheManager = "cacheManager")
     AgentPlayer findByAgentIdAndUsernameAndStatus(Integer agentId, String username, Integer status);
-
-    AgentPlayer findByIdAndStatus(Long id, Integer status);
 }

@@ -15,6 +15,7 @@ public interface RawGameSessionRepository extends CouchbaseRepository<GameSessio
     GameSession findByAgentIdAndTraceId(Integer agentId, String traceId);
 
     GameSession findByToken(String token);
+
     GameSession findByVendorToken(String vendorToken);
 
     GameSession findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(String vendorPlayerUsername);
@@ -22,4 +23,8 @@ public interface RawGameSessionRepository extends CouchbaseRepository<GameSessio
     GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(String vendorPlayerUsername, String vendorGameCode);
 
     List<GameSession> findByAgentPlayerUsernameAndStatus(String userName, Integer status);
+
+    List<GameSession> findByVendorPlayerUsername(String username);
+
+    List<GameSession> findByVendorPlayerUsernameAndVendorGameCode(String username, String vendorGameCode);
 }

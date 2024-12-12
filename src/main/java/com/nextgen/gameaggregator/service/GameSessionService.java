@@ -17,9 +17,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -170,6 +170,7 @@ public class GameSessionService {
 
     }
 
+    // deprecated, use getByVendorPlayerUsername instead
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
@@ -179,6 +180,32 @@ public class GameSessionService {
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;
+    }
+
+    @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")
+    public GameSession getByVendorPlayerUsername(String username, String vendorGameCode) {
+
+        List<GameSession> gameSessionList;
+
+        if (vendorGameCode == null) {
+            gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
+        } else {
+            gameSessionList = rawGameSessionRepository.findByVendorPlayerUsernameAndVendorGameCode(username, vendorGameCode);
+        }
+
+        if (gameSessionList.isEmpty()) {
+            return null;
+        } else {
+            return gameSessionList.stream()
+                    .max(Comparator.comparingLong(GameSession::getCreateTime))
+                    .get();
+        }
+
+    }
+
+    public GameSession getLastGameSessionByVendorPlayerUsername(String username) {
+
+        return null;
     }
 
     @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")
@@ -327,7 +354,7 @@ public class GameSessionService {
 
         if (vendorId == null) return;
 
-        VendorGame vendorGame = vendorGameService.getByVendorIdAndVendorGameCode(vendorId, vendorGameCode);
+        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
         gameSession.setVendorGameId(vendorGame.getId());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorGameCode(vendorGameCode);

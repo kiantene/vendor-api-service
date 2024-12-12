@@ -2,12 +2,16 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Actions;
@@ -16,7 +20,6 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,34 +27,75 @@ import java.util.Optional;
 
 @Service
 public class TransferService {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
+
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
+    private final OperatorWalletService operatorWalletService;
+    private final WalletRequestService walletRequestService;
+    private final VendorGameService vendorGameService;
+
+    public TransferService(HttpService httpService,
+                           VendorLineService vendorLineService,
+                           GameSessionService gameSessionService,
+                           WalletService walletService,
+                           VendorService vendorService,
+                           ValidationService validationService,
+                           OperatorWalletService operatorWalletService,
+                           WalletRequestService walletRequestService,
+                           VendorGameService vendorGameService) {
+
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+        this.validationService = validationService;
+        this.operatorWalletService = operatorWalletService;
+        this.walletRequestService = walletRequestService;
+        this.vendorGameService = vendorGameService;
+    }
+
+    private void dataMapper(WalletRequest walletRequest, TransferDto dto, GameSession gameSession, boolean debit) {
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(dto.getAcctId());
+        walletRequest.setExternalTransactionId(dto.getExternalTransactionId());
+        walletRequest.setRoundId(dto.getRoundId());
+        walletRequest.setVendorGameCode(dto.getGameCode());
+        walletRequest.setTimestamp(dto.getVendorBetTime());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(dto.getVendorBetId());
+        walletRequest.setTransferAmount(dto.getAmount());
+        walletRequest.setBetAmount(debit ? null : dto.getBetAmount());
+        walletRequest.setWinAmount(debit ? null : dto.getWinAmount());
+        walletRequest.setEffectiveTurnover(debit ? null : dto.getEffectiveTurnover());
+        walletRequest.setJackpotAmount(debit ? null : BigDecimal.ZERO);
+        walletRequest.setResultType(debit ? null : ResultType.BET_WIN.code);
+        walletRequest.setVendorBetTime(dto.getVendorBetTime());
+        walletRequest.setVendorSettleTime(debit ? null : dto.getVendorSettleTime());
+    }
 
     public TransferVo transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getId();
         TransferVo transferVo = new TransferVo();
-        String transferId = "";
         String merchantCode = "";
         String merchantTxId = "";
-        String acctId = "";
-        Boolean isCancel = false;
+        boolean isCancel = false;
+        boolean requireDebit = false;
 
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
+            transferVo.setTransferId(dto.getTransferId());
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setSerialNo(traceId);
+            transferVo.setAcctId(dto.getAcctId());
             this.doValidation(dto);
 
             // User acctId and gameCode to get rawGameSession if gameCode is not null
@@ -60,16 +104,24 @@ public class TransferService {
                     : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
 
             merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
-            transferId = dto.getTransferId();
             merchantTxId = gameSession.getToken();
-            acctId = gameSession.getVendorPlayerUsername();
+            VendorGame vendorGame = vendorGameService.getByVendorGameId(gameSession.getVendorGameId());
+            requireDebit = vendorGame.getRequireDebit();
             this.doVerification(dto, gameSession, merchantCode);
 
             switch (dto.getType()) {
                 case Actions.PLACE_BET -> {
                     // Place bet action
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
-                    transferVo.setBalance(betEvent.getLastBalance());
+                    if (!requireDebit) {
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+                        transferVo.setBalance(betEvent.getLastBalance());
+
+                    } else {
+                        this.dataMapper(walletRequest, dto, gameSession, true);
+                        walletRequest = operatorWalletService.betDebit(walletRequest);
+                        transferVo.setBalance(walletRequest.getBalanceAfter());
+                    }
+
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                 }
@@ -83,22 +135,26 @@ public class TransferService {
                 }
                 case Actions.PAYOUT -> {
                     // Payout action
-                    WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    String type = Optional.ofNullable(dto.getSpecialGame()).map(SpecialGameDto::getType).orElse(null);
-                    ResultType resultType = determineResultType(type, winDataDto);
-                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
-                    transferVo.setBalance(payoutBalance);
+                    if (!requireDebit) {
+                        WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
+                        String type = Optional.ofNullable(dto.getSpecialGame()).map(SpecialGameDto::getType).orElse(null);
+                        ResultType resultType = determineResultType(type, winDataDto);
+                        BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
+                        transferVo.setBalance(payoutBalance);
+
+                    } else {
+                        this.dataMapper(walletRequest, dto, gameSession, false);
+                        walletRequest = operatorWalletService.betCredit(walletRequest);
+                        transferVo.setBalance(walletRequest.getBalanceAfter());
+                    }
+
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                 }
                 default -> transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             }
 
-            transferVo.setTransferId(transferId);
-            transferVo.setMerchantCode(merchantCode);
             transferVo.setMerchantTxId(merchantTxId);
-            transferVo.setAcctId(acctId);
-            transferVo.setSerialNo(traceId);
 
         } catch (AuthenticationException authenticationException) {
             // account not found 
@@ -153,19 +209,19 @@ public class TransferService {
                 transferVo.setBalance(e.getBalance());
                 transferVo.setMsg(ResponseCode.SUCCESS.description);
                 transferVo.setResponseCode(ResponseCode.SUCCESS);
-                transferVo.setTransferId(transferId);
-                transferVo.setMerchantCode(merchantCode);
                 transferVo.setMerchantTxId(merchantTxId);
-                transferVo.setAcctId(acctId);
-                transferVo.setSerialNo(traceId);
             }
-            
+
         } catch (Exception exception) {
             transferVo.setResponseCode(isCancel ? ResponseCode.INVALID_REQUEST : ResponseCode.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            httpService.end(httpRequestLog, transferVo);
+            if (!requireDebit) {
+                httpService.end(httpRequestLog, transferVo);
+            } else {
+                walletRequestService.end(walletRequest, httpRequestLog, transferVo);
+            }
         }
 
         return transferVo;

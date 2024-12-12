@@ -14,12 +14,6 @@ import java.util.UUID;
 
 @Data
 public class WalletRequest {
-    // Http Info
-    private String traceId;
-    private String requestBody;
-    private String errorMessage;
-    private Integer status;
-
     // Master data Ids
     protected Integer agentId;
     protected Long agentPlayerId;
@@ -32,7 +26,6 @@ public class WalletRequest {
     protected Integer vendorGameId;
     protected Integer gameCategoryId;
     protected String vendorToken;
-
     // Bet Info
     protected String token;
     protected String transactionId;
@@ -56,13 +49,20 @@ public class WalletRequest {
     protected List<MultipleBetDto> betIds;
     protected String newVendorBetId;
     protected String newRoundId;
-
+    protected Boolean isPreProcessBet = false;
     // Sports Bet Info
     protected BigDecimal newBetAmount;
     protected BigDecimal newWinAmount;
     protected BigDecimal creditAmount;
     protected BigDecimal debitAmount;
-
+    // Fish Transaction Info
+    protected Integer takeAll;
+    protected BigDecimal transferAmount;
+    // Http Info
+    private String traceId;
+    private String requestBody;
+    private String errorMessage;
+    private Integer status;
     // Operator Info
     private String requestType;
     @JsonIgnore
@@ -85,6 +85,10 @@ public class WalletRequest {
     private Long betEnd;
     private Long operatorStart;
     private Long operatorEnd;
+
+    //currency conversion
+    private BigDecimal fromVendorRate;
+    private BigDecimal toVendorRate;
 
     public WalletRequest() {
         this.init(UUID.randomUUID().toString());
@@ -112,7 +116,13 @@ public class WalletRequest {
         this.startTime = System.currentTimeMillis();
         this.balanceBefore = BigDecimal.ZERO;
         this.balanceAfter = BigDecimal.ZERO;
+        this.fromVendorRate = BigDecimal.ONE;
+        this.toVendorRate = BigDecimal.ONE;
+        this.takeAll = 0;
+        this.operatorResponseStatus = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING;
         this.vendorSettleTime = System.currentTimeMillis();
+        this.timestamp = System.currentTimeMillis();
+        this.status = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     }
 
     public void setBalanceAfter(BigDecimal balanceAfter) {

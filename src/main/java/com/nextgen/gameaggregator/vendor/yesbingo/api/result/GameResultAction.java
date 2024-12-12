@@ -5,7 +5,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
@@ -44,6 +47,7 @@ public class GameResultAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // Verify data
             this.doVerification(dto, gameSession);

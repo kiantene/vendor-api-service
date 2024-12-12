@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.entity.ga;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.BetResultType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Entity
 @Table(name = "bet_history")
@@ -136,5 +138,23 @@ public class BetHistory {
             this.vendorSettleTime = (this.vendorSettleTime == null) ? System.currentTimeMillis() : this.vendorSettleTime;
             this.resultTime = (this.resultTime == null) ? System.currentTimeMillis() : this.resultTime;
         }
+    }
+
+    public static Integer retrieveResultType(BigDecimal win, BigDecimal jackpot) {
+        BigDecimal winAmt = Optional.ofNullable(win).orElse(BigDecimal.ZERO);
+        BigDecimal jackpotAmt = Optional.ofNullable(jackpot).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmt.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmt.compareTo(BigDecimal.ZERO) > 0;
+
+        Integer betResultType = BetResultType.LOSE.code;
+
+        if (isJackpotAmountMoreThanZero) {
+            betResultType = BetResultType.JACKPOT.code;
+        } else if (isWinAmountMoreThanZero) {
+            betResultType = BetResultType.WIN.code;
+        }
+
+        return betResultType;
     }
 }

@@ -1,12 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.action;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -18,21 +12,26 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping(EndPoints.PATH)
 public class ApiAction {
 
-    @Autowired
-    private HttpService httpService;
-    
-    @Autowired
-    private AuthenticateService authenticateService;
+    private final HttpService httpService;
+    private final AuthenticateService authenticateService;
+    private final BalanceService balanceService;
+    private final TransferService transferService;
 
-    @Autowired
-    private BalanceService balanceService;
-
-    @Autowired
-    private TransferService transferService;
+    public ApiAction(HttpService httpService, 
+                     AuthenticateService authenticateService, 
+                     BalanceService balanceService, 
+                     TransferService transferService) {
+        this.httpService = httpService;
+        this.authenticateService = authenticateService;
+        this.balanceService = balanceService;
+        this.transferService = transferService;
+    }
 
     // Handle incoming API requests
     @PostMapping

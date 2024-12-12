@@ -35,17 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SportBetAction {
 
     private final AgentApiCredentialService agentApiCredentialService;
-    private final AuthenticationService authenticationService;
-    private final WalletRequestService walletRequestService;
 
     @Autowired
-    public SportBetAction(AgentApiCredentialService agentApiCredentialService,
-                          AuthenticationService authenticationService,
-                          WalletRequestService walletRequestService) {
+    public SportBetAction(AgentApiCredentialService agentApiCredentialService) {
 
         this.agentApiCredentialService = agentApiCredentialService;
-        this.authenticationService = authenticationService;
-        this.walletRequestService = walletRequestService;
     }
 
     public WalletRequest callToOperator(WalletRequest walletRequest, VendorCurrency vendorCurrency)
@@ -62,7 +56,7 @@ public class SportBetAction {
         SportBetDto dto = new SportBetDto(walletRequest, fromVendorRate);
 
         try {
-            String signature = authenticationService.generateSignatureWithJson(new ObjectMapper().writeValueAsString(dto), agentApiCredential.getApiSecret());
+            String signature = AuthenticationService.generateSignatureWithJson(new ObjectMapper().writeValueAsString(dto), agentApiCredential.getApiSecret());
 
             walletRequest.setOperatorData(new ObjectMapper().writeValueAsString(dto));
             walletRequest.setOperatorEndpoint(apiUrl + EndPoints.SPORT_BET);
@@ -104,7 +98,7 @@ public class SportBetAction {
             walletRequest.setOperatorResponse(responseBody);
             WalletBalanceVo walletBalanceVo = new Gson().fromJson(responseBody, WalletBalanceVo.class);
 
-            walletRequestService.validateOperatorResponse(walletRequest, walletBalanceVo);
+            WalletRequestService.validateOperatorResponse(walletRequest, walletBalanceVo);
 
             BigDecimal balance = walletBalanceVo.getData().getBalance();
 

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -30,6 +31,26 @@ public class BetIdempotentLogService {
 
         rawBetIdempotentLogRepository.save(entity);
         return entity;
+    }
+
+    public RawBetIdempotentLog create(WalletRequest walletRequest) {
+        RawBetIdempotentLog entity = new RawBetIdempotentLog();
+        String betIdempotentId = this.generateBetIdempotentId(walletRequest);
+
+        entity.setId(betIdempotentId);
+        entity.setBalance(walletRequest.getBalanceAfter());
+
+        rawBetIdempotentLogRepository.save(entity);
+        return entity;
+    }
+
+    private String generateBetIdempotentId(WalletRequest walletRequest) {
+
+        String betIdempotentId = walletRequest.getVendorBetId() + "_" + walletRequest.getRoundId() + "_" + walletRequest.getVendorPlayerUsername();
+        betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
+
+        return betIdempotentId;
+
     }
 
     private String generateBetIdempotentId(BetResultData betResultData, GameSession gameSession) {
