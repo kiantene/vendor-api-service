@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;

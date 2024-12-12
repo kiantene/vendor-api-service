@@ -612,7 +612,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
         try {
             // get VendorGame
-            VendorGame vendorGame = vendorGameService.getByVendorIdAndVendorGameCode(vendorPlayer.getVendorId(), sportAdjustmentData.getVendorGameCode());
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(sportAdjustmentData.getVendorGameCode(), vendorPlayer.getVendorId());
 
             SportSettledBet sportSettledBet = new SportSettledBet(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, httpRequestLog.getRequestBody(), vendorGame);
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());

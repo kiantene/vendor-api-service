@@ -82,6 +82,9 @@ public class KafkaService {
             //NOV 7, disable sending bet data to topic_bet_history_v2, due to no longer using mariaDB, using clickhouse now
             //jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, vendorPlayerUsername, betHistory);
 
+            //NOV 7, disable sending bet data to topic_bet_history_v2, due to no longer using mariaDB, using clickhouse now
+            //jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, vendorPlayerUsername, betHistory);
+
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
             e.printStackTrace();

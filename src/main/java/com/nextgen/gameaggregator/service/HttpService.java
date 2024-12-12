@@ -4,8 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
+import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
+import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,12 +39,17 @@ public class HttpService {
     private static final Integer THREAD_SIZE = 32;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
     private final KafkaService kafkaService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
 
     @Autowired
-    public HttpService(KafkaService kafkaService) {
+    public HttpService(KafkaService kafkaService,
+                       RequestIdempotentLogService requestIdempotentLogService) {
+
         this.kafkaService = kafkaService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public static String getStackTrace(Exception exception) {
@@ -147,6 +156,22 @@ public class HttpService {
 //        httpRequestLog.setRequestBodyDto(object);
 
         return object;
+    }
+
+    public void isDuplicateRequest(RequestIdempotency requestIdempotency) throws DuplicateRequestException {
+        String idempotentKey = requestIdempotency.getTransactionId() + '_' + requestIdempotency.getVendorPlayerUsername();
+        RequestIdempotentLog requestIdempotentLog = requestIdempotentLogService.get(idempotentKey);
+
+        if (requestIdempotentLog == null) {
+
+            RequestIdempotentLog newLog = new RequestIdempotentLog();
+            newLog.setId(idempotentKey);
+            newLog.setCreateTime(System.currentTimeMillis());
+            requestIdempotentLogService.save(newLog); // add to cache
+
+        } else {
+            throw new DuplicateRequestException(requestIdempotentLog);
+        }
     }
 
     public HttpRequestLog start(HttpServletRequest request) {

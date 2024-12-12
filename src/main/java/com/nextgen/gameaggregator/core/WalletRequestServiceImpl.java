@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.core;
 
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.*;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class WalletRequestServiceImpl implements WalletRequestService {
     private final AgentPlayerService agentPlayerService;
     private final AgentApiCredentialService agentApiCredentialService;
     private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
 
 
     public WalletRequestServiceImpl(HttpService httpService,
@@ -25,7 +27,8 @@ public class WalletRequestServiceImpl implements WalletRequestService {
                                     VendorPlayerService vendorPlayerService,
                                     AgentPlayerService agentPlayerService,
                                     AgentApiCredentialService agentApiCredentialService,
-                                    VendorGameService vendorGameService) {
+                                    VendorGameService vendorGameService,
+                                    VendorService vendorService) {
 
         this.httpService = httpService;
         this.currencyService = currencyService;
@@ -33,6 +36,24 @@ public class WalletRequestServiceImpl implements WalletRequestService {
         this.agentPlayerService = agentPlayerService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+    }
+
+    @Override
+    public void initialise(WalletRequest walletRequest) throws BetNotAllowedException, InternalServerException {
+        walletRequest.setBetStart(System.currentTimeMillis());
+
+        if (walletRequest.getBetStatus() == null) {
+            walletRequest.setBetStatus(BetStatus.SETTLED);
+        }
+
+        this.populateAgentLineInfo(walletRequest, walletRequest.getAgentId());
+
+        try {
+            this.populateCurrencyConversionRates(walletRequest, walletRequest.getVendorId(), walletRequest.getCurrencyId());
+        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
+            throw new InternalServerException(vendorCurrencyNotSupportException.getMessage());
+        }
     }
 
     @Override
@@ -48,6 +69,7 @@ public class WalletRequestServiceImpl implements WalletRequestService {
         walletRequest.setCurrencyId(gameSession.getCurrencyId());
         walletRequest.setCurrencyCode(gameSession.getCurrencyCode());
         walletRequest.setVendorPlayerId(gameSession.getVendorPlayerId());
+        walletRequest.setGameCode(gameSession.getGameCode());
 
         return walletRequest;
     }
@@ -75,15 +97,9 @@ public class WalletRequestServiceImpl implements WalletRequestService {
         walletRequest.setVendorLineId(vendorPlayer.getVendorLineId());
         walletRequest.setVendorPlayerId(vendorPlayer.getId());
         walletRequest.setVendorPlayerUsername(vendorPlayer.getUsername());
+        walletRequest.setCurrencyId(vendorPlayer.getCurrencyId());
 
-        try {
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-
-            walletRequest.setOperatorEndpoint(agentApiCredential.getCallbackUrl());
-            walletRequest.setApiSecret(agentApiCredential.getApiSecret());
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            throw new BetNotAllowedException("Agent Line (agentId: " + agentId + ") is disabled");
-        }
+        this.populateAgentLineInfo(walletRequest, agentId);
     }
 
     @Override
@@ -100,6 +116,40 @@ public class WalletRequestServiceImpl implements WalletRequestService {
     }
 
     @Override
+    public void updateByVendorGameCode(WalletRequest walletRequest, String vendorGameCode, boolean checkStatus) throws BetNotAllowedException, InternalServerException {
+
+        Integer vendorId = walletRequest.getVendorId();
+        if (vendorId == null) {
+            throw new InternalServerException("Vendor Id cannot be null, call WalletRequest.updateByVendorUsername first");
+        }
+
+        try {
+            VendorGame vendorGame = vendorGameService.getByVendorGameCode(vendorGameCode, vendorId);
+            if (vendorGame == null) {
+                throw new GameNotSupportedException(vendorGameCode + "-" + vendorId + " cannot be found");
+            }
+
+            if (checkStatus && vendorGame.getStatus().equals(Status.INACTIVE.code)) {
+                throw new GameNotSupportedException(vendorGameCode + "-" + vendorId + " is disabled");
+            }
+
+            walletRequest.setVendorGameId(vendorGame.getId());
+            walletRequest.setGameCode(vendorGame.getCode());
+            walletRequest.setVendorGameCode(vendorGameCode);
+            walletRequest.setGameCategoryId(vendorGame.getGameCategoryId());
+
+            if (vendorGame.getBetDataPreprocessing() == 1) {
+                walletRequest.setIsPreProcessBet(true);
+            }
+
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            throw new BetNotAllowedException(gameNotSupportedException.getClass().getSimpleName() + ": " + gameNotSupportedException.getMessage());
+        } catch (Exception exception) {
+            throw new InternalServerException(exception.getMessage());
+        }
+    }
+
+    @Override
     public void updateByCurrencyId(WalletRequest walletRequest, Integer currencyId) throws BetNotAllowedException {
         try {
             String currencyCode = currencyService.get(currencyId).getCode();
@@ -112,34 +162,32 @@ public class WalletRequestServiceImpl implements WalletRequestService {
     }
 
     @Override
-    public void validateOperatorResponse(WalletRequest request, WalletBalanceVo response)
-            throws InvalidOperatorResponseException, InsufficientBalanceException {
+    public void populateAgentLineInfo(WalletRequest walletRequest, Integer agentId) throws BetNotAllowedException {
+        try {
+            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+            String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
-        final Integer INVALID_RESPONSE = ResponseCodes.Status.SC_INVALID_RESPONSE.code;
-        WalletBalanceVo.ResponseData responseData = response.getData();
+            walletRequest.setOperatorEndpoint(apiUrl);
+            walletRequest.setApiKey(agentApiCredential.getApiKey());
+            walletRequest.setApiSecret(agentApiCredential.getApiSecret());
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            throw new BetNotAllowedException("Agent Line (agentId: " + agentId + ") is disabled");
+        }
+    }
 
-        if (!response.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-            if (response.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS)) {
-                throw new InsufficientBalanceException();
-            } else {
-                throw new InvalidOperatorResponseException(response.getStatus().code);
-            }
+    @Override
+    public void populateCurrencyConversionRates(WalletRequest walletRequest, Integer vendorId, Integer currencyId) throws VendorCurrencyNotSupportException {
+        // To retrieve currency conversion rates
+        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorId, currencyId);
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+        BigDecimal toVendorRate = vendorCurrency.getToVendorRate();
+
+        if (fromVendorRate != null && fromVendorRate.compareTo(BigDecimal.ZERO) > 0) {
+            walletRequest.setFromVendorRate(fromVendorRate);
         }
 
-        String username = responseData.getUsername();
-        String currency = responseData.getCurrency();
-        BigDecimal balance = responseData.getBalance();
-
-        if (!request.getTraceId().equals(response.getTraceId())) {
-            throw new InvalidOperatorResponseException(INVALID_RESPONSE);
-        }
-
-        if (username == null || currency == null || balance == null) {
-            throw new InvalidOperatorResponseException(INVALID_RESPONSE);
-        }
-
-        if (!request.getOperatorUsername().equals(username) || !request.getCurrencyCode().equals(currency)) {
-            throw new InvalidOperatorResponseException(INVALID_RESPONSE);
+        if (toVendorRate != null && toVendorRate.compareTo(BigDecimal.ZERO) > 0) {
+            walletRequest.setToVendorRate(toVendorRate);
         }
     }
 
@@ -173,6 +221,11 @@ public class WalletRequestServiceImpl implements WalletRequestService {
         newLog.setBetStart(walletRequest.getBetStart());
         newLog.setBetEnd(walletRequest.getBetEnd());
         newLog.setErrorMessage(walletRequest.getErrorMessage());
+        newLog.setRequestType(walletRequest.getRequestType());
+//
+//        if (StringUtils.hasText(walletRequest.getErrorMessage())) {
+//            newLog.setStatus(HttpService.ERROR);
+//        }
 
         httpService.end(newLog, responseVo);
     }

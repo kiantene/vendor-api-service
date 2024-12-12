@@ -173,6 +173,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorPlayerUsername", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorGame", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ProductGameCodes", RedisCacheConfiguration.defaultCacheConfig()
@@ -195,6 +197,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ProductVendorGameCode", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("WalletTransaction", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
 
         // EvoPlay Increase Balance EndPoints use
         cacheNamesConfigurationMap.put("EvoPlayBalance", RedisCacheConfiguration.defaultCacheConfig()

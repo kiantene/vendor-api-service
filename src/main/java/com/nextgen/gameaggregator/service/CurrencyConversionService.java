@@ -64,6 +64,7 @@ public class CurrencyConversionService {
         }
     }
 
+    // deprecated, use convertFromVendorRate instead
     public BigDecimal doCurrencyConversionRateFromVendorForAmount(BigDecimal amount, BigDecimal conversionRate) {
 
         //amount that needed to do conversion when they are not 0 or null.
@@ -73,6 +74,20 @@ public class CurrencyConversionService {
 
         return amount;
 
+    }
+
+    public static BigDecimal convertFromVendorRate(BigDecimal amount, BigDecimal rate, boolean checkPositive) {
+        BigDecimal convertedAmount = amount;
+        if (amount != null) { // only convert if it is not null
+            if (checkPositive) {
+                if (amount.compareTo(BigDecimal.ZERO) > 0) {
+                    convertedAmount = new BigDecimal(amount.multiply(rate).stripTrailingZeros().toPlainString());
+                }
+            } else {
+                convertedAmount = new BigDecimal(amount.multiply(rate).stripTrailingZeros().toPlainString());
+            }
+        }
+        return convertedAmount;
     }
 
     public void doCurrencyConversionRateToVendor(WalletBalanceVo walletBalanceVo, BigDecimal conversionRate) {

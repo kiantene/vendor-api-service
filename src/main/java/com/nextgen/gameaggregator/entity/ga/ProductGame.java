@@ -17,6 +17,7 @@ public class ProductGame {
     private String code;
     private String name;
     private Integer isPremiumGame;
+    private Boolean requireDebit;
     private Double defaultCharges;
     private Integer status;
     private Long createById;

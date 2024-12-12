@@ -75,7 +75,7 @@ public class SettledBet extends BetInformation {
         this.setCreateTime(System.currentTimeMillis());
 
         //if no result time then will set it as settle time
-        if(endRoundSettledBet.getResultTime() == null) {
+        if (endRoundSettledBet.getResultTime() == null) {
             this.setResultTime(endRoundSettledBet.getVendorSettleTime());
         }
     }

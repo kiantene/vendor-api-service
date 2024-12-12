@@ -1,17 +1,17 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollout;
+package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RollOutDto implements BetData {
+public class RollOutDto implements RequestIdempotency {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -48,24 +48,18 @@ public class RollOutDto implements BetData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String session;
 
+    public Long getTimestamp() {
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond() * 1000;
+    }
+
     @Override
-    public String getExternalTransactionId() {
+    public String getTransactionId() {
         return this.mtcode;
     }
 
     @Override
-    public String getRoundId() {
-        return this.roundid;
-    }
-
-//    @Override
-//    public String getGameCode() {
-//        return this.gamecode;
-//    }
-
-    @Override
-    public Long getTimestamp() {
-        Instant instant = Instant.parse(this.getEventTime());
-        return instant.getEpochSecond();
+    public String getVendorPlayerUsername() {
+        return this.account;
     }
 }

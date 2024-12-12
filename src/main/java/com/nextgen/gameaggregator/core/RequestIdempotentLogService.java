@@ -13,4 +13,7 @@ public interface RequestIdempotentLogService {
     RequestIdempotentLog checkExists(BetResultData betResultData, String vendorPlayerUsername) throws TransactionStillProcessingException;
 
     RequestIdempotentLog create(BetResultData betResultData, String vendorPlayerUsername);
+
+    RequestIdempotentLog save(RequestIdempotentLog requestIdempotentLog);
+    RequestIdempotentLog get(String id);
 }

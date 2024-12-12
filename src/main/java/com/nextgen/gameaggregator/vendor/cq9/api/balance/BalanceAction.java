@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.balance;
 
+import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -14,38 +14,45 @@ import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class BalanceAction {
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private WalletService walletService;
+    private final GameService gameService;
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final VendorPlayerService vendorPlayerService;
+    private final CurrencyService currencyService;
+    private final WalletService walletService;
+
+    public BalanceAction(GameServiceImpl gameService,
+                         HttpService httpService,
+                         VendorLineService vendorLineService,
+                         VendorPlayerService vendorPlayerService,
+                         CurrencyService currencyService,
+                         WalletService walletService) {
+
+        this.gameService = gameService;
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.vendorPlayerService = vendorPlayerService;
+        this.currencyService = currencyService;
+        this.walletService = walletService;
+    }
 
     @GetMapping(path = EndPoints.BALANCE)
     public ResponseVo<CommonVo> balance(HttpServletRequest request, @PathVariable("account") String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        
+
         String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
         BalancePathVariableDto pathVariableDto = new BalancePathVariableDto();
@@ -56,15 +63,17 @@ public class BalanceAction {
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
 
-        try {
-            CommonVo commonVo = new CommonVo();
+        CommonVo commonVo = new CommonVo();
+        Integer currencyId = 0;
 
+        try {
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(pathVariableDto, wToken);
 
             // 2. Get vendor player details
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            currencyId = vendorPlayer.getCurrencyId();
+            GameSession gameSession = gameService.getGameSessionByUsername(account, null);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(vendorPlayer, wToken);
@@ -78,14 +87,27 @@ public class BalanceAction {
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-            httpService.logError(httpRequestLog, authenticationException);
+            // due to vendor's abnormal behaviour of calling balance endpoint even after player has left the game
+            // we will return balance as zero instead of throwing error to vendor
+            try {
+                Currency currency = currencyService.get(currencyId);
+                commonVo.setCurrency(currency.getCode());
 
-        } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-            httpService.logError(httpRequestLog, credentialNotFoundException);
+            } catch (InvalidCurrencyException invalidCurrencyException) {
+                commonVo.setCurrency("PHP"); // just default to a random currency code
+            }
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
+            commonVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(commonVo);
+
+        } catch (CredentialNotFoundException | InvalidPlayerException |
+                 InvalidVendorLineException playerNotFoundException) { // any other exception encountered
+
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, playerNotFoundException);
+
+        } catch (
+                InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
@@ -93,20 +115,12 @@ public class BalanceAction {
             statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-            httpService.logError(httpRequestLog, invalidPlayerException);
-
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
                 httpService.logError(httpRequestLog, invalidRequestException);
             }
-
-        } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -121,14 +135,15 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(BalancePathVariableDto pathVariableDto, String wToken) throws InvalidPlayerException, InvalidRequestException {
+    private void doValidation(BalancePathVariableDto pathVariableDto, String wToken) throws InvalidRequestException {
         // Validate value from Header and Path Variable
-        Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
-        Optional.ofNullable(pathVariableDto.getAccount()).orElseThrow(InvalidRequestException::new);
+
+        if (wToken == null || pathVariableDto.getAccount() == null) {
+            throw new InvalidRequestException();
+        }
 
         // Validation with custom exception
         ValidationUtils.validateRequest(pathVariableDto);
-        
     }
 
     private void doVerification(VendorPlayer vendorPlayer, String wToken) throws InvalidVendorLineException, CredentialNotFoundException {

@@ -1,10 +1,16 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.*;
@@ -12,7 +18,6 @@ import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,20 +31,38 @@ import java.util.Optional;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private RedissonService redissonService;
+
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+    private final WalletRequestService walletRequestService;
+    private final OperatorWalletService operatorWalletService;
+    private final VendorGameService vendorGameService;
+
+    public DebitAction(
+            HttpService httpService,
+            VendorLineService vendorLineService,
+            GameSessionService gameSessionService,
+            WalletService walletService,
+            ValidationService validationService,
+            VendorService vendorService,
+            WalletRequestService walletRequestService,
+            OperatorWalletService operatorWalletService,
+            VendorGameService vendorGameService) {
+
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.vendorService = vendorService;
+        this.walletRequestService = walletRequestService;
+        this.operatorWalletService = operatorWalletService;
+        this.vendorGameService = vendorGameService;
+    }
 
     @PostMapping(path = EndPoints.WALLET_DEBIT)
     public DebitVo DebitAction(HttpServletRequest request) {
@@ -115,7 +138,7 @@ public class DebitAction {
 
         // 3. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
+        String[] parts = VendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
         String gpcode = parts[0];
         String gamecode = parts[1];
         ValidationUtils.isEquals(debitTransactionsDto.getGpcode(), gpcode, GameNotSupportedException::new);
@@ -131,31 +154,54 @@ public class DebitAction {
         vendorService.checkBetIsSettled(gameSession, debitTransactionsDto);
     }
 
+    private void dataMapper(WalletRequest walletRequest, DebitTransactionsDto dto, GameSession gameSession) {
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(dto.getUserid());
+        walletRequest.setExternalTransactionId(dto.getExternalTransactionId());
+        walletRequest.setRoundId(dto.getRoundId());
+        walletRequest.setVendorGameCode(dto.getGamecode());
+        walletRequest.setTimestamp(dto.getVendorBetTime());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(dto.getVendorBetId());
+        walletRequest.setTransferAmount(dto.getAmt());
+    }
+
     private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String body, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         String traceId = httpRequestLog.getId();
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
+        boolean requireDebit = false;
 
         try {
             // 1. Validate each user data
             this.doValidation(debitTransactionsDto);
 
             // 2. Verify session token
-            String vendorGameCode = vendorService.mergeGameCode(debitTransactionsDto.getGpcode(), debitTransactionsDto.getGamecode());
+            String vendorGameCode = VendorService.mergeGameCode(debitTransactionsDto.getGpcode(), debitTransactionsDto.getGamecode());
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitTransactionsDto.getUserid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            VendorGame vendorGame = vendorGameService.getByVendorGameId(gameSession.getVendorGameId());
+            requireDebit = vendorGame.getRequireDebit();
 
             // 3. Verify Credential and Currency
             this.doVerification(debitTransactionsDto, gameSession, clientId, clientSecret);
 
             // 4. Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitTransactionsDto, body, httpRequestLog);
+            if (!requireDebit) {
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, debitTransactionsDto, body, httpRequestLog);
+                transactionsVo.setBal(betEvent.getLastBalance());
+            } else {
+                this.checkForDuplicateRequest(debitTransactionsDto);
+                this.dataMapper(walletRequest, debitTransactionsDto, gameSession);
+                walletRequest = operatorWalletService.betDebit(walletRequest);
+                transactionsVo.setBal(walletRequest.getBalanceAfter());
+            }
 
             // 5. Set transactionsVo
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(debitTransactionsDto.getPtxid());
-            transactionsVo.setBal(betEvent.getLastBalance());
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
             transactionsVo.setDup(false);
 
@@ -203,7 +249,11 @@ public class DebitAction {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            httpService.end(httpRequestLog, transactionsVo);
+            if (!requireDebit) {
+                httpService.end(httpRequestLog, transactionsVo);
+            } else {
+                walletRequestService.end(walletRequest, httpRequestLog, transactionsVo);
+            }
         }
 
         return transactionsVo;
@@ -217,6 +267,22 @@ public class DebitAction {
             // nothing to do
         }
         return balance;
+    }
+
+    private void checkForDuplicateRequest(DebitTransactionsDto debitTransactionsDto) throws DuplicateRequestException {
+        RequestIdempotency requestIdempotency = new RequestIdempotency() {
+            @Override
+            public String getTransactionId() {
+                return debitTransactionsDto.getVendorBetId();
+            }
+
+            @Override
+            public String getVendorPlayerUsername() {
+                return debitTransactionsDto.getUserid();
+            }
+        };
+
+        httpService.isDuplicateRequest(requestIdempotency);
     }
 }
 

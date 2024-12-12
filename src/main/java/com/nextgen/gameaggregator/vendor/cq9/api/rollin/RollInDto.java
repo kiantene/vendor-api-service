@@ -1,20 +1,17 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollin;
+package com.nextgen.gameaggregator.vendor.cq9.api.rollin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.BetResultLog;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RollInDto implements WinData {
+public class RollInDto implements RequestIdempotency {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -75,57 +72,26 @@ public class RollInDto implements WinData {
     @NotBlank
     private String gametype;
 
+    public Long getTimestamp() {
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.toEpochMilli();
+    }
+
+    public BigDecimal getEffectiveTurnover() {
+
+        return switch (this.gametype) {
+            case "table", "live" -> this.validbet;
+            default -> this.bet;
+        };
+    }
+
     @Override
-    public String getExternalTransactionId() {
+    public String getTransactionId() {
         return this.mtcode;
     }
 
     @Override
-    public BigDecimal getAmount() {
-        return this.amount;
-    }
-
-    @Override
-    public String getRoundId() {
-        return this.roundid;
-    }
-
-    @Override
-    public String getGameId() {
-        return this.gamecode;
-    }
-
-    @Override
-    public Long getTimestamp() {
-        Instant instant = Instant.parse(this.getEventTime());
-        return instant.getEpochSecond();
-    }
-
-    @Override
-    public ResultType getWinType() {
-        return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover() {
-        BigDecimal effectiveTurnover = BigDecimal.ZERO;
-        switch(this.gametype) {
-            case "fish":
-            case "arcade":
-                effectiveTurnover = this.bet;
-                break;
-            case "table":
-            case "live":
-                effectiveTurnover = this.validbet;
-                break;
-            default:
-        }
-
-        return effectiveTurnover;
-    }
-
-    @Override
-    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
-        return betResultLog;
+    public String getVendorPlayerUsername() {
+        return this.account;
     }
 }

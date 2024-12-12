@@ -22,8 +22,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
         String externalTransactionId = (betResultData.getExternalTransactionId() == null) ? "" : betResultData.getExternalTransactionId();
         vendorPlayerUsername = (vendorPlayerUsername == null) ? "" : vendorPlayerUsername;
 
-        String requestIdempotentLogId = externalTransactionId + "_" + vendorPlayerUsername;
-        return requestIdempotentLogId;
+        return externalTransactionId + "_" + vendorPlayerUsername;
     }
 
     @Override
@@ -54,5 +53,17 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
         createRequestIdempotentLog.setCreateTime(System.currentTimeMillis());
         requestIdempotentLogRepository.save(createRequestIdempotentLog);
         return createRequestIdempotentLog;
+    }
+
+    @Override
+    @CachePut(value = "RequestIdempotentLog", key = "#requestIdempotentLog.id", cacheManager = "cacheManager")
+    public RequestIdempotentLog save(RequestIdempotentLog requestIdempotentLog) {
+        return requestIdempotentLogRepository.save(requestIdempotentLog);
+    }
+
+    @Override
+    @Cacheable(value = "RequestIdempotentLog", key = "#id", cacheManager = "cacheManager")
+    public RequestIdempotentLog get(String id) {
+        return requestIdempotentLogRepository.findById(id).orElse(null);
     }
 }

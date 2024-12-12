@@ -18,11 +18,9 @@ public class AuthenticationService {
         return actualSignature;
     }
 
-    public String generateSignatureWithJson(String jsonPayload, String apiSecret) {
+    public static String generateSignatureWithJson(String jsonPayload, String apiSecret) {
 
-        String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
-
-        return actualSignature;
+        return ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
     }
 
 }
