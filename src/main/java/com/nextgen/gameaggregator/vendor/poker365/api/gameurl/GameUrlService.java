@@ -64,7 +64,7 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
         this.website = ValidationUtils.validateCredential(credentials.get(Credentials.WEBSITE));
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("user", gameSession.getVendorPlayerUsername());
+        formData.add("user", String.valueOf(gameSession.getVendorPlayerId()));
         formData.add("extension1", account);
         formData.add("userName", gameSession.getVendorPlayerUsername());
         //need discuss
@@ -104,7 +104,7 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
 
         MultiValueMap<String, String> param = new LinkedMultiValueMap<>();
         param.add("cert", cert);
-        param.add("user", gameSession.getVendorPlayerUsername());
+        param.add("user", String.valueOf(gameSession.getVendorPlayerId()));
         param.add("userName", gameSession.getVendorPlayerUsername());
         param.add("extension1", account);
         param.add("currency", gameSession.getVendorCurrencyCode());
