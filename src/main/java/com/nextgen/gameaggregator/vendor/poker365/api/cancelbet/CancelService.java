@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +23,7 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class CancelAction {
+public class CancelService {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final GameSessionService gameSessionService;
@@ -35,10 +34,10 @@ public class CancelAction {
     Integer vendorPlayerId;
 
     @Autowired
-    public CancelAction(HttpService httpService, GameSessionService gameSessionService,
-                        AgentPlayerService agentPlayerService, VendorLineService vendorLineService,
-                        VendorService vendorService,
-                        WalletService walletService, VendorPlayerService vendorPlayerService) {
+    public CancelService(HttpService httpService, GameSessionService gameSessionService,
+                         AgentPlayerService agentPlayerService, VendorLineService vendorLineService,
+                         VendorService vendorService,
+                         WalletService walletService, VendorPlayerService vendorPlayerService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
@@ -49,9 +48,7 @@ public class CancelAction {
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
-    public CommonVo cancel(HttpServletRequest request) throws JsonProcessingException {
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+    public CommonVo cancel(HttpRequestLog httpRequestLog, String traceId) throws JsonProcessingException {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         try {

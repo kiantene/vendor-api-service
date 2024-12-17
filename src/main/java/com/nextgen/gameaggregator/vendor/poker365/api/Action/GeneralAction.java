@@ -5,6 +5,9 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.poker365.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.poker365.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.poker365.api.cancelbet.CancelService;
+import com.nextgen.gameaggregator.vendor.poker365.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
@@ -21,6 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeneralAction {
 
     private final BalanceService balanceService;
+    private final BetService betService;
+    private final CancelService cancelService;
+    private final SettleService settleService;
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -31,13 +37,16 @@ public class GeneralAction {
     Integer vendorPlayerId;
 
     @Autowired
-    public GeneralAction(BalanceService balanceService, HttpService httpService,
+    public GeneralAction(BalanceService balanceService, BetService betService, CancelService cancelService, SettleService settleService, HttpService httpService,
                          WalletService walletService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
         this.balanceService = balanceService;
+        this.betService = betService;
+        this.cancelService = cancelService;
+        this.settleService = settleService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.httpService = httpService;
@@ -80,14 +89,14 @@ public class GeneralAction {
 
 
     private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws
-            InvalidRequestException {
+            InvalidRequestException, JsonProcessingException {
 
 
         return switch (actionDto.getMessage().getAction()) {
             case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
-//            case "WITHDRAW" -> betService.bet(httpRequestLog, traceId);
-//            case "DEPOSIT" -> settleService.settle(httpRequestLog, traceId);
-//            case "ROLLBACK" -> rollBackService.rollback(httpRequestLog, traceId);
+            case "bet" -> betService.bet(httpRequestLog, traceId);
+            case "cancelBet" -> cancelService.cancel(httpRequestLog, traceId);
+            case "settle" -> settleService.settle(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
         };
     }

@@ -1,29 +1,29 @@
-package com.nextgen.gameaggregator.vendor.poker365.api.bet;
+package com.nextgen.gameaggregator.vendor.poker365.api.settle;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BetAction {
-
+public class SettleService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -35,13 +35,13 @@ public class BetAction {
     Integer vendorPlayerId;
 
     @Autowired
-    public BetAction(HttpService httpService,
-                     ValidationService validationService,
-                     WalletService walletService,
-                     VendorService vendorService,
-                     GameSessionService gameSessionService,
-                     VendorLineService vendorLineService,
-                     AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+    public SettleService(HttpService httpService,
+                         ValidationService validationService,
+                         WalletService walletService,
+                         VendorService vendorService,
+                         GameSessionService gameSessionService,
+                         VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
         this.validationService = validationService;
         this.walletService = walletService;
         this.vendorService = vendorService;
@@ -52,36 +52,35 @@ public class BetAction {
         this.vendorPlayerService = vendorPlayerService;
     }
 
-    @PostMapping(path = EndPoints.BET)
-    public CommonVo bet(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+    @PostMapping(path = EndPoints.SETTLE)
+    public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
-
+        BigDecimal balance;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
 
             // 2. Validate request parameters (Non-database calls)
-            this.doValidation(betDto);
+            this.doValidation(settleDto);
 
 
-            this.vendorPlayerId = Integer.valueOf(betDto.getMessage().getUserId());
+            this.vendorPlayerId = Integer.valueOf(settleDto.getMessage().getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, gameSession);
+            this.doVerification(settleDto, gameSession);
 
+            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
 
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
-                    httpRequestLog.getRequestBody(), httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+
 
             // 6. Set response data
-            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
 
@@ -113,12 +112,12 @@ public class BetAction {
         return commonVo;
     }
 
-    private void doValidation(BetDto betDto) throws InvalidRequestException {
+    private void doValidation(SettleDto settleDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(betDto);
+        ValidationUtils.validateRequest(settleDto);
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(SettleDto settleDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, DisabledGameException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -127,9 +126,9 @@ public class BetAction {
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
-        ValidationUtils.isEquals(cert, betDto.getKey(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(cert, settleDto.getKey(), InvalidPlayerException::new);
 
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), betDto.getMessage().getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), settleDto.getMessage().getUserId(), InvalidPlayerException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
