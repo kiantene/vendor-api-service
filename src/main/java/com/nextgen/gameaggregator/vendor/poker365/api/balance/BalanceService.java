@@ -8,52 +8,45 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-@RestController
-@RequestMapping(path = EndPoints.PATH)
+@Service
 @Slf4j
-public class BalanceAction {
+public class BalanceService {
 
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
-    private final HttpService httpService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
+    private final HttpService httpService;
+
     Integer vendorPlayerId;
 
     @Autowired
-    public BalanceAction(HttpService httpService,
-                         WalletService walletService,
-                         VendorService vendorService,
-                         GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+    public BalanceService(
+            WalletService walletService,
+            VendorService vendorService,
+            GameSessionService gameSessionService,
+            VendorLineService vendorLineService,
+            AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, HttpService httpService) {
         this.walletService = walletService;
         this.vendorService = vendorService;
-        this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
+        this.httpService = httpService;
     }
-
-    @PostMapping(path = EndPoints.BALANCE)
-    public CommonVo balance(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+    
+    public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
         try {
             // 1. Retrieve request body in original string format and convert into dto

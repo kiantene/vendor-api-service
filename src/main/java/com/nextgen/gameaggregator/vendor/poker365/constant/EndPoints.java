@@ -8,7 +8,7 @@ public class EndPoints {
     public static final String LAUNCH_GAME = "/login";
     public static final String LOG_OUT = "/logout";
     public static final String BALANCE = "/getBalance";
-    public static final String RESULT = "/gameroundresult";
+    public static final String SETTLE = "/settle";
     public static final String BET_DETAILS = "/reports/dailyReport";
     public static final Integer TIMEOUT = 10000;
 

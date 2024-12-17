@@ -49,7 +49,7 @@ public class CancelAction {
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
-    public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo cancel(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         CommonVo commonVo = new CommonVo();
