@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.poker365.api.cancelbet.CancelService;
 import com.nextgen.gameaggregator.vendor.poker365.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -64,8 +65,14 @@ public class GeneralAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
-            commonVo = this.actionHandling(actionDto, traceId, httpRequestLog);
+//            ActionDto actionDto = HttpService.convertQueryStringToDto(body, ActionDto.class);
+            ActionDto actionDto = VendorService.convertQueryStringToDtoUrlDecode(body, ActionDto.class);
+//            actionDto.convertJsonToMessage(String.valueOf(actionDto.getMessage()));
+            String formatedMessageDto = actionDto.getMessage();
+
+            MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
+
+            commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);
 
 //        } catch (InvalidPlayerException e) {
 //            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_PLAYER_NOT_FOUND));
@@ -88,11 +95,11 @@ public class GeneralAction {
     }
 
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws
+    private CommonVo actionHandling(MessageDto messageDto, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidRequestException, JsonProcessingException {
 
 
-        return switch (actionDto.getMessage().getAction()) {
+        return switch (messageDto.getAction()) {
             case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
             case "bet" -> betService.bet(httpRequestLog, traceId);
             case "cancelBet" -> cancelService.cancel(httpRequestLog, traceId);

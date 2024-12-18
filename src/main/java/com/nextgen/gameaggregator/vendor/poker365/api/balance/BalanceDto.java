@@ -19,4 +19,10 @@ public class BalanceDto {
     @Valid
     @JsonProperty("message")
     private MessageDto message;
+
+//    public void convertJsonToDto(String message) throws JsonProcessingException {
+//        MessageDto messageDto = HttpService.convertJsonToDto(message, MessageDto.class);
+//
+//        setMessage(messageDto);
+//    }
 }

@@ -1,14 +1,25 @@
 package com.nextgen.gameaggregator.vendor.poker365.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
+@Service
+@Slf4j
 public class VendorService extends BaseVendorService {
 
     @Autowired
@@ -21,6 +32,48 @@ public class VendorService extends BaseVendorService {
     private WalletService walletService;
     @Autowired
     private HttpService httpService;
+
+    public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
+        Map<String, Object> queryParameterMap = new HashMap<>();
+
+        // TODO: To review on this exception handling
+        try {
+            queryString = URLDecoder.decode(queryString, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
+        String[] fields = queryString.split("&");
+
+        for (String field : fields) {
+            String[] kv = field.split("=");
+            if (kv.length == 2) {
+                Object currentValue = queryParameterMap.get(kv[0]);
+                if (currentValue == null) {
+                    queryParameterMap.put(kv[0], kv[1]);
+                } else if (currentValue instanceof String) {
+                    String[] values = {(String) currentValue, kv[1]};
+                    queryParameterMap.put(kv[0], values);
+                } else if (currentValue instanceof String[]) {
+                    String[] values = (String[]) currentValue;
+                    Integer newLength = values.length + 1;
+                    String[] newValues = Arrays.copyOf(values, newLength);
+                    newValues[newLength - 1] = kv[1];
+                    queryParameterMap.put(kv[0], newValues);
+                }
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+
+        T object;
+        try {
+            object = mapper.convertValue(queryParameterMap, objectClass);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidRequestException();
+        }
+
+        return object;
+    }
 
     public void validateExternalGameSessionId(String externalGameSessionId) throws InvalidRequestException {
         if (!externalGameSessionId.matches("^[a-zA-Z0-9_-]+$")) {
