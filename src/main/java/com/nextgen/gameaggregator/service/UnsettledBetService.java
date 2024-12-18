@@ -115,7 +115,7 @@ public class UnsettledBetService {
 
         List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
         if (vendorList.contains(unsettledBet.getVendorId())) {
-            redisTemplate.opsForValue().increment(redisKey, 1L);
+            redisTemplate.opsForSet().add(redisKey, unsettledBet.getId());
             redisTemplate.expire(redisKey, 2L, TimeUnit.HOURS);
         }
         return unsettledBet;
@@ -140,7 +140,7 @@ public class UnsettledBetService {
 
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
             if (vendorList.contains(entity.getVendorId())) {
-                redisTemplate.opsForValue().decrement(redisKey, 1L);
+                redisTemplate.opsForSet().remove(redisKey, entity.getId());
                 redisTemplate.expire(redisKey, 2L, TimeUnit.HOURS);
             }
         } catch (DataRetrievalFailureException e) {

@@ -72,7 +72,7 @@ public class VendorService extends BaseVendorService {
 
     public ConfigGameDto setConfigGameDto(GameTableDto gameTableDto, String categoryCode) {
         ConfigGameDto configGameDto = new ConfigGameDto();
-        if (categoryCode!=null && !categoryCode.isBlank()) {
+        if (categoryCode != null && !categoryCode.isBlank()) {
             // into game category lobby
             configGameDto.setCategory(categoryCode);
         } else {
@@ -108,8 +108,12 @@ public class VendorService extends BaseVendorService {
             // Convert the JSON request body to SettleDto object
             CreditDto dto = gson.fromJson(requestBody, CreditDto.class);
 
-            // Remap roundId
-            settledBet.setRoundId(dto.getGame().getId().split("-")[0]);
+            // Remap roundId before 20th Dec 2024
+            if (settledBet.getVendorBetTime() < 1734652800000L) {
+                settledBet.setRoundId(dto.getGame().getId().split("-")[0]);
+            } else {
+                settledBet.setRoundId(dto.getGame().getId());
+            }
 
 
         } catch (JsonParseException e) {
