@@ -432,7 +432,8 @@ public class WalletService {
 
             // Check if the vendor is eligible to process the end round
             if (vendorList.contains(settledBet.getVendorId())) {
-                this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+                SettledBet finalSettledBet = settledBet;
+                taskScheduler.schedule(() -> this.executeRetryEndRound(finalSettledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1), Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
             } else {
                 this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
             }
@@ -602,11 +603,11 @@ public class WalletService {
             return;
         }
 
-        Integer redisUnsettledBetCount = (Integer) redisTemplate.opsForValue().get(redisKey);
-        boolean isMatched = redisUnsettledBetCount != null && redisUnsettledBetCount == unsettledBetList.size();
+        int redisUnsettledBetCount = Objects.requireNonNullElse(redisTemplate.opsForSet().size(redisKey), 0L).intValue();
+        boolean isMatched = redisUnsettledBetCount != 0 && redisUnsettledBetCount == unsettledBetList.size();
 
         // if redisUnsettledBetCount is null, mean vendor send endRound after 2 hours of redis key TTL (will proceed to process endRound)
-        if (redisUnsettledBetCount == null || isMatched) {
+        if (redisUnsettledBetCount == 0 || isMatched) {
             redisTemplate.delete(redisKey);
             processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
         } else {

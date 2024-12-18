@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -46,6 +45,8 @@ public class EndWagerAction {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -91,7 +92,7 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
-        } catch(AuthenticationException authenticationException){
+        } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
             httpService.logError(httpRequestLog, authenticationException);
 
@@ -260,10 +261,15 @@ public class EndWagerAction {
             // do nothing
         }
 
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
 
-        if (unsettledBetList.isEmpty()) {
+
+        if (unsettledBet == null) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
+        } else {
+            //fix GA-8574 bug
+            //found unsettled bet and set game session game Id
+            gameSession.setVendorGameId(unsettledBet.getVendorGameId());
         }
 
         // Set as BET_WIN / BET_LOST because

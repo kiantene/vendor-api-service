@@ -49,7 +49,7 @@ public class RefundBetAction {
 
         ResponseVo vo = new ResponseVo();
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -62,7 +62,16 @@ public class RefundBetAction {
             this.doValidation(refundBetDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(refundBetDto.getPlayerId(), refundBetDto.getGameCode());
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(refundBetDto.getPlayerId(), refundBetDto.getGameCode());
+
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(refundBetDto.getPlayerId());
+                gameSessionService.updateByVendorGameCode(gameSession, refundBetDto.getGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // 3. get Bet History for checking
             this.doVerification(refundBetDto, gameSession, apHash, body);
@@ -72,10 +81,6 @@ public class RefundBetAction {
 
             vo.setTimestamp(VendorService.getTimestamp());
             vo.setBalance(balance);
-
-        } catch (AuthenticationException e) {
-            vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
-            httpService.logError(httpRequestLog, e);
 
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
