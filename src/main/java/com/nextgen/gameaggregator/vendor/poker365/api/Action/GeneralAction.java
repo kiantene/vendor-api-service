@@ -65,11 +65,8 @@ public class GeneralAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-//            ActionDto actionDto = HttpService.convertQueryStringToDto(body, ActionDto.class);
             ActionDto actionDto = VendorService.convertQueryStringToDtoUrlDecode(body, ActionDto.class);
-//            actionDto.convertJsonToMessage(String.valueOf(actionDto.getMessage()));
             String formatedMessageDto = actionDto.getMessage();
-
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
             commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);
