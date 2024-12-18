@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.poker365.api.cancelbet.CancelService;
 import com.nextgen.gameaggregator.vendor.poker365.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,8 +66,8 @@ public class GeneralAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            ActionDto actionDto = VendorService.convertQueryStringToDtoUrlDecode(body, ActionDto.class);
-            String formatedMessageDto = actionDto.getMessage();
+            CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
             commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);

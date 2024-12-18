@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,22 +60,24 @@ public class BetService {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            CommonDto commonDto = com.nextgen.gameaggregator.vendor.poker365.service.VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            String formatedMessageDto = commonDto.getMessage();
+            MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
             // 2. Validate request parameters (Non-database calls)
-            this.doValidation(betDto);
+            this.doValidation(commonDto, messageDto);
 
 
-            this.vendorPlayerId = Integer.valueOf(betDto.getMessage().getUserId());
+            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, gameSession);
+            this.doVerification(commonDto, messageDto, gameSession);
 
 
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
                     httpRequestLog.getRequestBody(), httpRequestLog);
 
             // 6. Set response data
@@ -110,12 +113,13 @@ public class BetService {
         return commonVo;
     }
 
-    private void doValidation(BetDto betDto) throws InvalidRequestException {
+    private void doValidation(CommonDto commonDto, MessageDto messageDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(betDto);
+        ValidationUtils.validateRequest(commonDto);
+        ValidationUtils.validateRequest(messageDto);
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, DisabledGameException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -124,9 +128,9 @@ public class BetService {
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
-        ValidationUtils.isEquals(cert, betDto.getKey(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
 
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), betDto.getMessage().getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
