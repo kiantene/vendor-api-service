@@ -33,7 +33,7 @@
         <mariadb-java-client.version>3.1.2</mariadb-java-client.version>
         <lombok.version>1.18.26</lombok.version>
         <kafka.version>3.4.0</kafka.version>
-        <kafka-json-schema-serializer.version>5.5.1</kafka-json-schema-serializer.version>
+        <kafka-json-schema-serializer.version>7.4.0</kafka-json-schema-serializer.version>
         <commons-codec.version>1.15</commons-codec.version>
         <io-netty.version>4.1.90.Final</io-netty.version>
         <poi.version>5.2.2</poi.version>
@@ -125,6 +125,11 @@
             <groupId>io.confluent</groupId>
             <artifactId>kafka-json-schema-serializer</artifactId>
             <version>${kafka-json-schema-serializer.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
