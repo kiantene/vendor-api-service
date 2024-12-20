@@ -9,18 +9,15 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
-@RestController
-@RequestMapping(path = EndPoints.PATH)
+@Service
 @Slf4j
 public class BetService {
 
@@ -52,7 +49,6 @@ public class BetService {
         this.vendorPlayerService = vendorPlayerService;
     }
 
-    @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
 
@@ -60,7 +56,7 @@ public class BetService {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CommonDto commonDto = com.nextgen.gameaggregator.vendor.poker365.service.VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 

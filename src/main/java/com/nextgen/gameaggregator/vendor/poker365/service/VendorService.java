@@ -22,16 +22,23 @@ import java.util.Map;
 @Slf4j
 public class VendorService extends BaseVendorService {
 
-    @Autowired
+
     private VendorLineService vendorLineService;
-    @Autowired
     private GameSessionService gameSessionService;
-    @Autowired
     private VendorGameCodeService vendorGameCodeService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
     private HttpService httpService;
+
+    private boolean rejectSettleAfterRollback = true;
+
+    @Autowired
+    private VendorService(VendorLineService vendorLineService, GameSessionService gameSessionService, VendorGameCodeService vendorGameCodeService, WalletService walletService, HttpService httpService) {
+        this.vendorLineService = vendorLineService;
+        this.gameSessionService = gameSessionService;
+        this.vendorGameCodeService = vendorGameCodeService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+    }
 
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
         Map<String, Object> queryParameterMap = new HashMap<>();
@@ -74,6 +81,13 @@ public class VendorService extends BaseVendorService {
 
         return object;
     }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        //Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return this.rejectSettleAfterRollback;
+    }
+
 
     public void validateExternalGameSessionId(String externalGameSessionId) throws InvalidRequestException {
         if (!externalGameSessionId.matches("^[a-zA-Z0-9_-]+$")) {

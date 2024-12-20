@@ -9,19 +9,17 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-@RestController
-@RequestMapping(path = EndPoints.PATH)
+@Service
 @Slf4j
 public class CancelService {
     private final HttpService httpService;
@@ -47,28 +45,28 @@ public class CancelService {
         this.vendorPlayerService = vendorPlayerService;
     }
 
-    @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancel(HttpRequestLog httpRequestLog, String traceId) throws JsonProcessingException {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         try {
 
             String body = httpRequestLog.getRequestBody();
-            CancelDto cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
+            CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            String formatedMessageDto = commonDto.getMessage();
+            MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
             // 2. Validate request parameters (Non-database calls)
-            this.doValidation(cancelDto);
+            this.doValidation(commonDto, messageDto);
 
-
-            this.vendorPlayerId = Integer.valueOf(cancelDto.getMessage().getUserId());
+            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(cancelDto, gameSession);
+            this.doVerification(commonDto, messageDto, gameSession);
 
-            balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+            balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
@@ -84,12 +82,13 @@ public class CancelService {
         return commonVo;
     }
 
-    private void doValidation(CancelDto cancelDto) throws InvalidRequestException {
+    private void doValidation(CommonDto commonDto, MessageDto messageDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(cancelDto);
+        ValidationUtils.validateRequest(commonDto);
+        ValidationUtils.validateRequest(messageDto);
     }
 
-    private void doVerification(CancelDto cancelDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -99,9 +98,9 @@ public class CancelService {
         Integer vendorLineId = vendorLine.getId();
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(cert, cancelDto.getKey(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
 
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), cancelDto.getMessage().getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active

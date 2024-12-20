@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -12,7 +11,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MessageDto extends CommonDto implements BetResultData {
+public class MessageDto implements BetResultData {
 
     @NotBlank
     @Size(max = 255)
@@ -61,16 +60,6 @@ public class MessageDto extends CommonDto implements BetResultData {
     }
 
     @Override
-    public String getGameId() {
-        return this.getGameId();
-    }
-
-    @Override
-    public BigDecimal getBetAmount() {
-        return this.getBetAmount();
-    }
-
-    @Override
     public BigDecimal getWinAmount() {
         return null;
     }
@@ -97,7 +86,7 @@ public class MessageDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -114,4 +103,5 @@ public class MessageDto extends CommonDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
     }
+
 }
