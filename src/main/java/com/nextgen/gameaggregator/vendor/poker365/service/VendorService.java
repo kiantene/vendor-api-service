@@ -85,7 +85,7 @@ public class VendorService extends BaseVendorService {
     @Override
     public boolean shouldRejectCancelRequest() {
         //Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
-        return this.rejectSettleAfterRollback;
+        return false;
     }
 
 

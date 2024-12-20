@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.poker365.api.Action;
+package com.nextgen.gameaggregator.vendor.poker365.api.action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
