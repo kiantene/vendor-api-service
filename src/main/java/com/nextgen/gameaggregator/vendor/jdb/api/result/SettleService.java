@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
@@ -28,8 +27,6 @@ public class SettleService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
 
     public CommonVo settle(ActionDto actionDto, String traceId) {
@@ -45,9 +42,6 @@ public class SettleService {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getUid());
-
-            // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(settleDto, gameSession);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
@@ -65,8 +59,7 @@ public class SettleService {
         } catch (AuthenticationException authenticationException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (BetNotFoundException | DisabledAgentPlayerException |
-                 DisabledVendorLineException | DisabledGameException e) {
+        } catch (BetNotFoundException e) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
@@ -75,8 +68,7 @@ public class SettleService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (InvalidAgentApiCredentialException | JsonProcessingException |
-                 GameNotSupportedException | CurrencyNotSupportedException InvalidRequestException) {
+        } catch (InvalidAgentApiCredentialException | JsonProcessingException invalidRequestException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -86,9 +78,6 @@ public class SettleService {
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
             }
-
-        } catch (InvalidPlayerException invalidPlayerException) {
-            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) {
 
@@ -100,22 +89,5 @@ public class SettleService {
 
     private void doValidation(SettleDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
-    }
-
-    private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
-            DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-            InvalidRequestException, InvalidPlayerException, AuthenticationException {
-
-        //validate vendor username, agent vendor line, player status, and game status
-        //validationService.validateEligibleBet(gameSession, dto.getUid());
-
-        // Verify vendor gameCode, currency
-        //String[] parts = gameSession.getVendorGameCode().split("_");
-        //int mType = Integer.parseInt(parts[1]);
-        //ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
-        //ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify game category
-        //if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();
     }
 }
