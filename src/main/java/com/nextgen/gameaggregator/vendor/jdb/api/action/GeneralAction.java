@@ -32,8 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 public class GeneralAction {
 
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
     private HttpService httpService;
 
     // CQ9 Action Services

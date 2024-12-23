@@ -44,7 +44,7 @@ public class SettleService {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getUid());
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
