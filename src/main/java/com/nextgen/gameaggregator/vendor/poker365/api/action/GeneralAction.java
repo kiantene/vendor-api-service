@@ -96,21 +96,21 @@ public class GeneralAction {
     private CommonVo actionHandling(MessageDto messageDto, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidRequestException, JsonProcessingException {
 
-        if (messageDto.getAction() == null) {
-            for (TransactionMessageDto transaction : messageDto.getTransactionMessageDto()) {
-                if ("settle".equals(transaction.getAction())) {
-                    return settleService.settle(httpRequestLog, traceId);
-                }
-            }
-        } else {
-            return switch (messageDto.getAction()) {
-                case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
-                case "bet" -> betService.bet(httpRequestLog, traceId);
-                case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
-//            case "settle" -> settleService.settle(httpRequestLog, traceId);
-                default -> throw new InvalidRequestException();
-            };
-        }
-        return null;
+//        if (messageDto.getAction() == null) {
+//            for (TransactionMessageDto transaction : messageDto.getTransactionMessageDto()) {
+//                if ("settle".equals(transaction.getAction())) {
+//                    return settleService.settle(httpRequestLog, traceId);
+//                }
+//            }
+//        } else {
+        return switch (messageDto.getAction()) {
+            case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
+            case "bet" -> betService.bet(httpRequestLog, traceId);
+            case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
+            case "settle" -> settleService.settle(httpRequestLog, traceId);
+            default -> throw new InvalidRequestException();
+        };
     }
+//        return null;
+//    }
 }

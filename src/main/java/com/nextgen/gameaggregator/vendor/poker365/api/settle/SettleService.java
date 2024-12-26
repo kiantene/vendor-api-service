@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @Slf4j
@@ -62,22 +61,22 @@ public class SettleService {
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
-            List<TransactionsDto> transactionsDto = messageDto.getTransactionsDto();
+//            List<TransactionsDto> transactionsDto = messageDto.getTransactionsDto();
             // 2. Validate request parameters (Non-database calls)
-            this.doValidation(commonDto, transactionsDto);
+            this.doValidation(commonDto, messageDto);
 
 
-            this.vendorPlayerId = Integer.valueOf(transactionsDto.get(0).getUserId());
+            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, transactionsDto, gameSession);
+            this.doVerification(commonDto, messageDto, gameSession);
 
-            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, transactionsDto.get(0).getWinAmount(), transactionsDto.get(0).getJackpotAmount(), false);
+            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, messageDto.getWinAmount(), messageDto.getJackpotAmount(), false);
 
-            balance = walletService.processBetResult(traceId, gameSession, transactionsDto.get(0), resultType, vendorService, httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, messageDto, resultType, vendorService, httpRequestLog);
 
 
             // 6. Set response data
@@ -114,15 +113,14 @@ public class SettleService {
         return commonVo;
     }
 
-    private void doValidation(CommonDto commonDto, List<TransactionsDto> transactionsDto) throws InvalidRequestException {
+    private void doValidation(CommonDto commonDto, MessageDto messageDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(commonDto);
-        for (TransactionsDto transaction : transactionsDto) {
-            ValidationUtils.validateRequest(transaction);
-        }
+        ValidationUtils.validateRequest(messageDto);
+
     }
 
-    private void doVerification(CommonDto commonDto, List<TransactionsDto> transactionsDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, DisabledGameException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -133,7 +131,7 @@ public class SettleService {
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
         ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
 
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), String.valueOf(transactionsDto.get(0).getUserId()), InvalidPlayerException::new);
+        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), String.valueOf(messageDto.getUserId()), InvalidPlayerException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active

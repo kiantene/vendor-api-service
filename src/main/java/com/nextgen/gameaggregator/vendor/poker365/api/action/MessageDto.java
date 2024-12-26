@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MessageDto {
@@ -15,7 +13,7 @@ public class MessageDto {
     @JsonProperty("action")
     private String action;
 
-    @Size(max = 255)
-    @JsonProperty("transactions")
-    private List<TransactionMessageDto> transactionMessageDto;
+//    @Size(max = 255)
+//    @JsonProperty("transactions")
+//    private List<TransactionMessageDto> transactionMessageDto;
 }
