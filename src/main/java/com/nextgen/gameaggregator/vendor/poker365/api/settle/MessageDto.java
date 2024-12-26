@@ -46,10 +46,9 @@ public class MessageDto implements BetResultData {
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
-    @DecimalMin(value = "0.0")
     @JsonProperty("bonus")
     private BigDecimal bonus;
-    
+
     @Override
     public String getExternalTransactionId() {
         return this.txId;
