@@ -41,11 +41,17 @@ public class MessageDto implements BetResultData {
     @NotNull
     @Digits(integer = 20, fraction = 8)
     @DecimalMin(value = "0.0")
+    @JsonProperty("payAmount")
+    private BigDecimal payAmount;
+
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("profit")
     private BigDecimal profit;
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
+    @DecimalMin(value = "0.0")
     @JsonProperty("bonus")
     private BigDecimal bonus;
 
@@ -71,7 +77,11 @@ public class MessageDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.profit;
+        if (this.bonus.compareTo(BigDecimal.ZERO) > 0) {
+            return this.payAmount.subtract(this.bonus);
+        } else {
+            return this.payAmount;
+        }
     }
 
     @Override
