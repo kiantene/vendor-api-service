@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.GameService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,14 +22,21 @@ import java.math.BigDecimal;
 @Slf4j
 public class BetNSettleService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameService gameService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+
+    public BetNSettleService(GameService gameService,
+                             WalletService walletService,
+                             ValidationService validationService,
+                             VendorService vendorService) {
+
+        this.gameService = gameService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.vendorService = vendorService;
+    }
 
     public CommonVo betNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -44,7 +50,7 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betNSettleDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(betNSettleDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);
@@ -58,7 +64,7 @@ public class BetNSettleService {
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
-        
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             vo.setBalance(betResultIdempotentViolationException.getBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -66,7 +72,8 @@ public class BetNSettleService {
         } catch (AuthenticationException | InvalidPlayerException playerNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (BetNotFoundException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException failedException) {
+        } catch (BetNotFoundException | DisabledAgentPlayerException | DisabledVendorLineException |
+                 DisabledGameException failedException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException cannotCancelException) {
@@ -89,7 +96,7 @@ public class BetNSettleService {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
 
         } catch (JsonProcessingException | GameNotSupportedException |
-            CurrencyNotSupportedException | VendorPlatformNotSupportedException invalidValidRequestException) {
+                 CurrencyNotSupportedException | VendorPlatformNotSupportedException invalidValidRequestException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -99,7 +106,7 @@ public class BetNSettleService {
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
             }
-            
+
         } catch (Exception exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
@@ -129,7 +136,7 @@ public class BetNSettleService {
         ResultType resultType = ResultType.BET_LOSE;
         BigDecimal zero = BigDecimal.ZERO;
 
-        if (dto.getWinAmount().compareTo(zero) > 0 || dto.getJackpotAmount().compareTo(zero) > 0) { 
+        if (dto.getWinAmount().compareTo(zero) > 0 || dto.getJackpotAmount().compareTo(zero) > 0) {
             resultType = ResultType.BET_WIN;
         }
 

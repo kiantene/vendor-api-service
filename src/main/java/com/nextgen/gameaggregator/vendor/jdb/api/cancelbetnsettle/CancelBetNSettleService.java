@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,12 +17,21 @@ import java.math.BigDecimal;
 @Service
 public class CancelBetNSettleService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameService gameService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
+    public CancelBetNSettleService(GameServiceImpl gameService,
+                                   GameSessionService gameSessionService,
+                                   WalletService walletService,
+                                   VendorService vendorService) {
+
+        this.gameService = gameService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -39,7 +47,7 @@ public class CancelBetNSettleService {
             // 2. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelBetNSettleDto.getUid());
+                gameSession = gameService.getGameSessionByUsername(cancelBetNSettleDto.getUid());
             } catch (AuthenticationException playerNotFoundException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetNSettleDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyId(gameSession);

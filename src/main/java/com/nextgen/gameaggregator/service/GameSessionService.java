@@ -203,13 +203,13 @@ public class GameSessionService {
 
     }
 
-    @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
-    public GameSession getLastGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
+    @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
+    public GameSession getLastGameSessionByVendorPlayerUsername(String username) {
 
         List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
 
         if (gameSessionList.isEmpty()) {
-            throw new AuthenticationException();
+            return null;
         }
 
         return gameSessionList.stream()

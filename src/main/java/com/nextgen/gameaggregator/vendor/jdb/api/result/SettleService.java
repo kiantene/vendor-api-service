@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.GameService;
+import com.nextgen.gameaggregator.service.GameServiceImpl;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -12,22 +13,25 @@ import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@Slf4j
 public class SettleService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameService gameService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
+    public SettleService(GameServiceImpl gameService,
+                         WalletService walletService,
+                         VendorService vendorService) {
+
+        this.gameService = gameService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     public CommonVo settle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -41,7 +45,7 @@ public class SettleService {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid());
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
