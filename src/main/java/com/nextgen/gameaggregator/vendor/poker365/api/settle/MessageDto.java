@@ -116,7 +116,7 @@ public class MessageDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return null;
+        return 0;
     }
 
     @Override
