@@ -71,8 +71,11 @@ public class BetService {
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
-
-
+            //26184739 (timeout001)
+            //26184741(gxt1)
+            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
+                Thread.sleep(10000);
+            }
             BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
                     httpRequestLog.getRequestBody(), httpRequestLog);
 

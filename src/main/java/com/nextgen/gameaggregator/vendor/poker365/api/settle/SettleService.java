@@ -75,6 +75,7 @@ public class SettleService {
             this.doVerification(commonDto, messageDto, gameSession);
 
             ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, messageDto.getWinAmount(), messageDto.getJackpotAmount(), false);
+            
 
             balance = walletService.processBetResult(traceId, gameSession, messageDto, resultType, vendorService, httpRequestLog);
 
