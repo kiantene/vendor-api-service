@@ -78,15 +78,18 @@ public class BalanceService {
             commonVo.setBalance(getWalletBalance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
-//        } catch (InvalidPlayerException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_PLAYER_NOT_FOUND));
-//            httpService.logError(httpRequestLog, e);
-//        } catch (AuthenticationException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_AUTHENTICATION_FAILED));
-//            httpService.logError(httpRequestLog, e);
-//        } catch (InvalidRequestException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_REGULATORY_GENERAL));
-//            httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
+            commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
+            commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException e) {
+            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
+            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
@@ -105,7 +108,7 @@ public class BalanceService {
     }
 
     private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
+            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 

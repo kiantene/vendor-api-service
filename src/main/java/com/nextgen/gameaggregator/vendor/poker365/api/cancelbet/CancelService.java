@@ -71,6 +71,24 @@ public class CancelService {
             commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
+        } catch (BetNotFoundException | BetRefundIdempotentViolationException |
+                 BetResultIdempotentViolationException e) {
+            commonVo.setStatus(ResponseCodes.NO_DATA.status);
+            commonVo.setMsg(ResponseCodes.NO_DATA.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidPlayerException e) {
+            commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
+            commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
+            commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException e) {
+            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
+            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
@@ -89,7 +107,7 @@ public class CancelService {
     }
 
     private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
+            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
@@ -98,7 +116,7 @@ public class CancelService {
         Integer vendorLineId = vendorLine.getId();
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor line is active
