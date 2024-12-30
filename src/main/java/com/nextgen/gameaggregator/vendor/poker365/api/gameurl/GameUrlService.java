@@ -67,6 +67,7 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
         formData.add("user", String.valueOf(gameSession.getVendorPlayerId()));
         formData.add("extension1", account);
         formData.add("userName", gameSession.getVendorPlayerUsername());
+        formData.add("gameId", gameSession.getVendorGameCode());
         //need discuss
         formData.add("jackpot", "1");
 
