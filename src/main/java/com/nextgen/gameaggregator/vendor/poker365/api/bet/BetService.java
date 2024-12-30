@@ -74,7 +74,7 @@ public class BetService {
             //26184739 (timeout001)
             //26184741(gxt1)
             if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-                Thread.sleep(10000);
+                Thread.sleep(9000);
             }
             BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
                     httpRequestLog.getRequestBody(), httpRequestLog);

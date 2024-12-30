@@ -71,7 +71,7 @@ public class CancelService {
             commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
-        } catch (BetNotFoundException | BetRefundIdempotentViolationException |
+        } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
             commonVo.setStatus(ResponseCodes.NO_DATA.status);
             commonVo.setMsg(ResponseCodes.NO_DATA.message);

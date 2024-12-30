@@ -70,12 +70,10 @@ public class SettleService {
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
-
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
             ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, messageDto.getWinAmount(), messageDto.getJackpotAmount(), false);
-            
 
             balance = walletService.processBetResult(traceId, gameSession, messageDto, resultType, vendorService, httpRequestLog);
 
@@ -85,7 +83,7 @@ public class SettleService {
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
 
-        } catch (BetNotFoundException | BetResultIdempotentViolationException | TransactionStillProcessingException e) {
+        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
             commonVo.setStatus(ResponseCodes.NO_DATA.status);
             commonVo.setMsg(ResponseCodes.NO_DATA.message);
             httpService.logError(httpRequestLog, e);
