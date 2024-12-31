@@ -83,6 +83,25 @@ public class WalletBetResultAction {
         this.betLoseVendorList.add(48);
     }
 
+    public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
+        String jsonApiResponse = null;
+        currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
+
+        long startTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            httpRequestLog.setAgentId(agentId);
+            jsonApiResponse = new Gson().toJson(dto);
+
+        }
+
+        responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+        betResultRetryLogService.create(jsonApiResponse, gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
+
+        return responseVo;
+    }
+
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
