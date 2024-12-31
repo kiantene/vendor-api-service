@@ -46,7 +46,7 @@ public class MessageDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getTxId();
+        return this.getGameNumber();
     }
 
     @Override
