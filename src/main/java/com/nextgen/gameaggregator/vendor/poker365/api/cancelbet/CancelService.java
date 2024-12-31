@@ -67,7 +67,7 @@ public class CancelService {
             this.doVerification(commonDto, messageDto, gameSession);
 
             if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-                Thread.sleep(2000);
+                Thread.sleep(5000);
             }
             balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
 

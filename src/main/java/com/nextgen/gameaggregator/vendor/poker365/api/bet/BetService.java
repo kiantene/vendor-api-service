@@ -72,7 +72,7 @@ public class BetService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
             //26184739 (timeout001)
-            //26184741(gxt1)
+            //26184741(gxt1)26181055(gxt5)
             if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
                 Thread.sleep(9000);
             }
