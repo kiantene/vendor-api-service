@@ -96,11 +96,11 @@ public class UpdateBalanceAction {
             }
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
 
-        } catch (
-                InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 

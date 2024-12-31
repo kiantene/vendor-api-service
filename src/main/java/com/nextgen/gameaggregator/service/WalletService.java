@@ -341,7 +341,13 @@ public class WalletService {
         try {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
-            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
+
+
+            if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {
+                balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate);
+            } else {
+                balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
+            }
 
             loggingService.logStart();
             cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
@@ -457,6 +463,23 @@ public class WalletService {
         betInformation.setVendorBetTime(vendorBetTime);
         betInformation.setVendorSettleTime(vendorSettleTime);
         betInformation.setResultTime(resultTime);
+    }
+
+    private boolean doCheckPPEndRoundForceProcessRetry(Integer vendorId, ResultType resultType, BigDecimal winAmount, Integer previousOperatorStatus) {
+
+        boolean shouldForceRetry = false;
+
+        if (vendorId.equals(1)) {
+            if (resultType.equals(ResultType.END)) {
+                if (winAmount.compareTo(BigDecimal.ZERO) != 0) {
+                    if (!previousOperatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
+                        shouldForceRetry = true;
+                    }
+                }
+            }
+        }
+
+        return shouldForceRetry;
     }
 
     private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService, GameSession gameSession, String roundId)
