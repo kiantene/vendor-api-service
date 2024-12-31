@@ -66,9 +66,9 @@ public class CancelService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-                Thread.sleep(5000);
-            }
+//            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
+//                Thread.sleep(5000);
+//            }
             balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setBalance(balance);
