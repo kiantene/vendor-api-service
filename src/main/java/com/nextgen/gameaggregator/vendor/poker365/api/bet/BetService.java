@@ -1,11 +1,13 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.bet;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
@@ -29,6 +31,8 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final VendorPlayerService vendorPlayerService;
+    private final WalletRequestService walletRequestService;
+    private final OperatorWalletService operatorWalletService;
     Integer vendorPlayerId;
 
     @Autowired
@@ -38,7 +42,7 @@ public class BetService {
                       VendorService vendorService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
-                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
         this.validationService = validationService;
         this.walletService = walletService;
         this.vendorService = vendorService;
@@ -47,6 +51,27 @@ public class BetService {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
+        this.walletRequestService = walletRequestService;
+        this.operatorWalletService = operatorWalletService;
+    }
+
+
+    private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
+
+
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setExternalTransactionId(dto.getRoundId());
+        walletRequest.setRoundId(dto.getRoundId());
+        walletRequest.setVendorGameCode(dto.getGameId());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(dto.getTxId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        //walletRequest.setAction("debit");
+//        walletRequest.setTakeAll(0);
+        walletRequest.setTransferAmount(dto.getBetAmount());
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
@@ -59,6 +84,8 @@ public class BetService {
             CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
+            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
@@ -76,18 +103,23 @@ public class BetService {
             if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
                 Thread.sleep(9000);
             }
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
-                    httpRequestLog.getRequestBody(), httpRequestLog);
+
+            //Map data for walletRequest
+            this.dataMapper(walletRequest, messageDto, gameSession);
+            //Process full bet data
+            walletRequest = operatorWalletService.betDebit(walletRequest);
+//            BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
+//                    httpRequestLog.getRequestBody(), httpRequestLog);
 
             // 6. Set response data
-            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
 
-        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
-            commonVo.setStatus(ResponseCodes.NO_DATA.status);
-            commonVo.setMsg(ResponseCodes.NO_DATA.message);
-            httpService.logError(httpRequestLog, e);
+//        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
+//            commonVo.setStatus(ResponseCodes.NO_DATA.status);
+//            commonVo.setMsg(ResponseCodes.NO_DATA.message);
+//            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);
