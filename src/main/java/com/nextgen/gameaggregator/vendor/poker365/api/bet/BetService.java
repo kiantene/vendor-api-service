@@ -42,7 +42,10 @@ public class BetService {
                       VendorService vendorService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
-                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
+                      AgentPlayerService agentPlayerService,
+                      VendorPlayerService vendorPlayerService,
+                      WalletRequestService walletRequestService,
+                      OperatorWalletService operatorWalletService) {
         this.validationService = validationService;
         this.walletService = walletService;
         this.vendorService = vendorService;

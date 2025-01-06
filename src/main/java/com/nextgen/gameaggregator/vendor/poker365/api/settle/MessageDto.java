@@ -41,6 +41,18 @@ public class MessageDto implements BetResultData {
     @NotNull
     @Digits(integer = 20, fraction = 8)
     @DecimalMin(value = "0.0")
+    @JsonProperty("betAmount")
+    private BigDecimal betAmount;
+
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
+    @DecimalMin(value = "0.0")
+    @JsonProperty("realBetMoney")
+    private BigDecimal realBetMoney;
+
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
+    @DecimalMin(value = "0.0")
     @JsonProperty("payAmount")
     private BigDecimal payAmount;
 
@@ -72,7 +84,7 @@ public class MessageDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return this.realBetMoney;
     }
 
     @Override
