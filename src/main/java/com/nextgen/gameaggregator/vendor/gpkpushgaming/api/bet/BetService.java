@@ -251,6 +251,56 @@ public class BetService {
                 balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
             }
 
+            //pushgaming
+            if (betDto.getPlatform().equals(PlatformType.PUSHGAMING) || betDto.getPlatform().equals(PlatformType.PUSHGAMINGLATAM)) {
+                if (betDto.getFinished().equals(BetType.FINISHED)) {
+                    // if end-round
+
+                    if (betDto.getCode().equals(BetType.POINTIN)) {
+                        // slot game place bet and lose
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    } else {
+//                        Thread.sleep(150); // sleep 150ms avoid win endpoint haven't lock
+
+                        userLock = redissonService.getRedissonClient().getLock("RedissonLock:GPK-PUSHGAMING:" + betDto.getRoundId());
+
+                        // get the lock time
+                        long remainTime = userLock.remainTimeToLive();
+
+                        // if remainTime is -1 meant forever lock, -2 meant the lock is expired or not exist
+                        while (remainTime != -2) {
+                            remainTime = userLock.remainTimeToLive();
+
+                            // if remainTime is forever lock then break the loop
+                            if (remainTime == -1) {
+                                break;
+                            }
+                        }
+
+                        // settle bet
+                        resultType = getResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
+                } else {
+                    // not yet end(unsettled)
+                    if (betDto.getCode().equals(BetType.POINTIN)) {
+                        // place bet
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+
+                        balance = betEvent.getLastBalance();
+                    } else {
+                        userLock = redissonService.getRedissonClient().getLock("RedissonLock:GPK-PUSHGMING:" + betDto.getRoundId());
+                        userLock.lock(5, TimeUnit.SECONDS);
+
+                        // mini game un-finished win request
+                        resultType = getResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
+                }
+            }
+
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             // check the code value to define it is deducted or gain money
