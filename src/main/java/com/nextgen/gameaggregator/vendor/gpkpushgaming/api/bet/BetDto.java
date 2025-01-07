@@ -303,6 +303,11 @@ public class BetDto extends ActionDto implements BetResultData {
             settledTime = Long.parseLong(this.timestamp) * 1000;
         }
 
+        //pushgaming
+        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
+            settledTime = Long.parseLong(this.timestamp) * 1000;
+        }
+
         return settledTime;
     }
 
@@ -367,6 +372,15 @@ public class BetDto extends ActionDto implements BetResultData {
         //booming & spinomenal
         if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
             status = BetStatus.SETTLED;
+        }
+
+        //pushgaming
+        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
+            if (this.finished == null) {
+                status = BetStatus.UNSETTLED;
+            } else {
+                status = BetStatus.SETTLED;
+            }
         }
 
         return status;
