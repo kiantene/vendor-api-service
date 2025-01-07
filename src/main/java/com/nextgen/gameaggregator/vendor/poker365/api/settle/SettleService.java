@@ -81,7 +81,6 @@ public class SettleService {
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
         walletRequest.setWinLoss(BigDecimal.ZERO);
-        walletRequest.setResettleNum(0);
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
