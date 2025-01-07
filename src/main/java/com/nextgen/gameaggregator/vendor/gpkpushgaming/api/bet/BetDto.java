@@ -376,13 +376,18 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //pushgaming
         if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            if (this.finished == null) {
-                status = BetStatus.UNSETTLED;
+            if (this.finished != null && this.finished.equals(BetType.FINISHED)) {
+                status = BetStatus.SETTLED;
             } else {
+                if (this.code.equals(BetType.POINTIN)) {
+                    status = BetStatus.UNSETTLED;
+                    return status;
+                }
                 status = BetStatus.SETTLED;
             }
         }
-
         return status;
+
+
     }
 }

@@ -254,7 +254,7 @@ public class BetService {
             //pushgaming
             if (betDto.getPlatform().equals(PlatformType.PUSHGAMING) || betDto.getPlatform().equals(PlatformType.PUSHGAMINGLATAM)) {
                 if (betDto.getFinished() != null && betDto.getFinished().equals(BetType.FINISHED)) {
-                    // if end-round
+                    // If the Increase transaction (code=1) is received after finished=true, transaction should also be processed.
 
                     if (betDto.getCode().equals(BetType.POINTIN)) {
                         // slot game place bet and lose
