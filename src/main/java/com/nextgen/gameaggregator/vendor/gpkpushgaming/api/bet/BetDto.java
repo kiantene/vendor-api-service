@@ -142,14 +142,6 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
-        //pushgaming
-        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            // dealid equals to null mean did not get any win amount in buy bonus game
-            if (this.dealid == null) {
-                vendorBetId = this.bRoundid;
-            }
-        }
-
         return vendorBetId;
     }
 
@@ -291,38 +283,6 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public Long getVendorSettleTime() {
         Long settledTime = null;
-
-        //7mojo
-        if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
-            if (this.istips.equals(BetType.TIPS)) {
-                // tips
-                settledTime = Long.parseLong(this.timestamp) * 1000;
-            } else {
-                // settled
-                if (this.finished.equals(BetType.FINISHED)) {
-                    settledTime = Long.parseLong(this.timestamp) * 1000;
-                }
-            }
-        }
-
-        //turbo game
-        if (this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)) {
-            if (this.dealid.contains("settle") && this.finished.equals(BetType.FINISHED)) {
-                settledTime = Long.parseLong(this.timestamp) * 1000;
-            }
-        }
-
-        //bgaming
-        if (this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)) {
-            if (this.finished.equals(BetType.FINISHED)) {
-                settledTime = Long.parseLong(this.timestamp) * 1000;
-            }
-        }
-
-        //booming & spinomenal
-        if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
-            settledTime = Long.parseLong(this.timestamp) * 1000;
-        }
 
         //pushgaming
         if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {

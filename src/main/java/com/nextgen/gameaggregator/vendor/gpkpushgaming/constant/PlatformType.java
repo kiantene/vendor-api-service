@@ -5,7 +5,7 @@ import java.util.List;
 
 public class PlatformType {
 
-    // slot
+    // slot & mini
     public static final String BGAMINGASIA = "9";
     public static final String BGAMINGLATAM = "12";
 
@@ -17,14 +17,17 @@ public class PlatformType {
     public static final String TURBOGAME = "11";
     public static final String TURBOGAMELATAM = "14";
 
+    //slot
     public static final String BOOMING = "7";
 
     public static final String BOOMINGLATAM = "15";
 
+    //slot
     public static final String SPINOMENAL = "20";
 
     public static final String SPINOMENALLATAM = "21";
 
+    //slot
     public static final String PUSHGAMING = "30";
 
     public static final String PUSHGAMINGLATAM = "31";
