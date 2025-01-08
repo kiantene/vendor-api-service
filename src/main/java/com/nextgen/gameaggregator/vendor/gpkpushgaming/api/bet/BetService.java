@@ -253,27 +253,13 @@ public class BetService {
 
             //pushgaming
             if (betDto.getPlatform().equals(PlatformType.PUSHGAMING) || betDto.getPlatform().equals(PlatformType.PUSHGAMINGLATAM)) {
-                if (betDto.getFinished() != null && betDto.getFinished().equals(BetType.FINISHED)) {
-                    // If the Increase transaction (code=1) is received after finished=true, transaction should also be processed.
-
-                    if (betDto.getCode().equals(BetType.POINTIN)) {
-                        // slot game place bet and lose
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
-                    } else {
-                        // settle bet
-                        resultType = getResultType(betDto);
-
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-                    }
+                if (betDto.getFinished() == null) {
+                    // unsettled
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    balance = betEvent.getLastBalance();
                 } else {
-                    // unsettled bet
-                    if (betDto.getCode().equals(BetType.POINTIN)) {
-                        // place bet
-                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-
-                        balance = betEvent.getLastBalance();
-                    } else {
-                        // mini game un-finished win request
+                    // settled
+                    if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
                         resultType = getResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
@@ -508,6 +494,31 @@ public class BetService {
             //one time settlement
 
             if (dto.getFinished().equals(BetType.FINISHED)) {
+                // if end-round(normal bet or end of bonus game)
+                if (dto.getCode().equals(BetType.POINTIN)) {
+                    // did not lose all money or exactly lose
+                    resultType = (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                } else {
+                    // it means exactly win
+                    resultType = ResultType.BET_WIN;
+                }
+            } else {
+                // unfinished
+                if (dto.getBetinfo().compareTo(BigDecimal.ZERO) > 0) {
+                    // first round of bonus game will happen bet amount (did not lose all money or exactly lose)
+                    resultType = (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                } else {
+                    // middle of bonus game (betinfo value is zero,so just check for the money value)
+                    resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                }
+            }
+        }
+
+        //pushgaming
+        if (dto.getPlatform().equals(PlatformType.PUSHGAMING) || dto.getPlatform().equals(PlatformType.PUSHGAMINGLATAM)) {
+            //one time settlement
+
+            if (dto.getFinished() != null && dto.getFinished().equals(BetType.FINISHED)) {
                 // if end-round(normal bet or end of bonus game)
                 if (dto.getCode().equals(BetType.POINTIN)) {
                     // did not lose all money or exactly lose

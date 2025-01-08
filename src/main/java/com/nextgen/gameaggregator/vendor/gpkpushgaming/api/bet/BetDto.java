@@ -112,6 +112,14 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        //pushgaming
+        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if (this.dealid == null) {
+                exTransId = this.bRoundid;
+            }
+        }
+
         return exTransId;
     }
 
@@ -131,6 +139,14 @@ public class BetDto extends ActionDto implements BetResultData {
         if (this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)) {
             if (this.getIstips().equals(BetType.NOTTIPS) && this.finished.equals(BetType.FINISHED) && this.code.equals(BetType.POINTOUT)) {
                 vendorBetId = this.betid;
+            }
+        }
+
+        //pushgaming
+        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if (this.dealid == null) {
+                vendorBetId = this.bRoundid;
             }
         }
 
@@ -256,6 +272,11 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming & spinomenal
         if (this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM) || this.platform.equals(PlatformType.SPINOMENAL) || this.platform.equals(PlatformType.SPINOMENALLATAM)) {
+            betTime = Long.parseLong(this.timestamp) * 1000;
+        }
+
+        //pushgaming
+        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
             betTime = Long.parseLong(this.timestamp) * 1000;
         }
 
