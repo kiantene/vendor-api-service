@@ -44,7 +44,7 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betNSettleDto.getUid());
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betNSettleDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);

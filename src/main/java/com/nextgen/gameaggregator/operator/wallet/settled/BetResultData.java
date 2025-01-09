@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.settled;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
 
@@ -22,4 +21,7 @@ public interface BetResultData {
     BigDecimal getJackpotAmount();
     Integer getIsFreespin();
     BetStatus getBetStatus();
+    default boolean getShouldSettleByBet() {
+        return false;
+    }
 }

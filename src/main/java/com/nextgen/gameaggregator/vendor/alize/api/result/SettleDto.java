@@ -137,4 +137,9 @@ public class SettleDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
+
+    @Override
+    public boolean getShouldSettleByBet()  {
+        return true;
+    }
 }

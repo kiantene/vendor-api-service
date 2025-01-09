@@ -295,7 +295,6 @@ public class KafkaService {
             log.info(new Gson().toJson(apiRequestLog));
         }
     }
-
     public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
         if (this.logToKafka) {
             try {

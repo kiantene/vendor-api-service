@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundInfoDto;
+import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -84,6 +85,10 @@ public class PokerResultDto extends FundInfoDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.getGameStateMode().equals(GameStateMode.ENDROUND) || this.getGameStateMode().equals(GameStateMode.EXPIRE)) {
+            //handle settle bet
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
     }
 }

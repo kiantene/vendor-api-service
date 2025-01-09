@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.habanero.api.pokerbet;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -20,7 +20,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
@@ -73,12 +72,11 @@ public class PokerBetService {
             betDto.setGameId(gameId);
 
             //process unsettle bet data
-            ResultType resultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), true);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             //return success respond
             responseVo.setResponseCode(ResponseCodes.TRANSFER_SUCCESS);
-            responseVo.getFundTransferResponseVo().setBalance(balance.setScale(2, RoundingMode.DOWN));
+            responseVo.getFundTransferResponseVo().setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             responseVo.getFundTransferResponseVo().setCurrencyCode(gameSession.getVendorCurrencyCode());
             if (fundTransferRequestDto.getFundDto().getDebitAndCredit()) {
                 //setup debit and credit bet type respond message

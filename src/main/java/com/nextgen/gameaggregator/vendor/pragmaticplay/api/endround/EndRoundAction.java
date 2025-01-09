@@ -96,6 +96,10 @@ public class EndRoundAction {
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
+        } catch (InternalServerTimeoutRetryException internalServerTimeoutRetryException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
+            httpService.logError(httpRequestLog, internalServerTimeoutRetryException);
+
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
