@@ -12,7 +12,6 @@ import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -214,5 +213,10 @@ public class GameResultDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public boolean getShouldSettleByBet()  {
+        return true;
     }
 }

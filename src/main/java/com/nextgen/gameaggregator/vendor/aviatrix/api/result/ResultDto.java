@@ -131,4 +131,9 @@ public class ResultDto implements BetResultData, RollbackData {
     public Long getVendorSettledTime() {
         return this.timestamp * 1000;
     }
+
+    @Override
+    public boolean getShouldSettleByBet()  {
+        return true;
+    }
 }

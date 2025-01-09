@@ -9,13 +9,15 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @JacksonXmlRootElement(localName = "release")
 @JsonIgnoreProperties(ignoreUnknown = true)

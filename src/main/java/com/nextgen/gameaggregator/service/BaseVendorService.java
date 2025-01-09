@@ -77,11 +77,6 @@ public abstract class BaseVendorService {
         return false;
     }
 
-    public boolean shouldSettleByBet() {
-        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
-        return false;
-    }
-
     public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
 
         //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details

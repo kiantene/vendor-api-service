@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.config;
 
+import com.couchbase.client.core.env.TimeoutConfig;
 import com.couchbase.client.java.env.ClusterEnvironment;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 @Configuration
 @EnableCouchbaseRepositories
@@ -32,6 +34,8 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
     private String bucketName;
     @Value("${spring.couchbase.scopeName}")
     private String scopeName;
+    @Value("${spring.couchbase.defaultTimeout:5}")
+    private Long defaultSeconds;
 
     private String couchbaseCertName = "game_aggregator-root-certificate.pem";
 
@@ -69,6 +73,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
     @Override
     protected void configureEnvironment(final ClusterEnvironment.Builder builder) {
         File file = null;
+
         try {
             File filed = new File("");
             System.out.println(filed.getAbsolutePath());
@@ -84,6 +89,17 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
             throw new RuntimeException(e);
         }
         Path path = file.toPath();
-        builder.securityConfig().enableTls(true).trustCertificate(path);
+
+        // Add the existing security configuration
+        builder.securityConfig()
+                .enableTls(true)
+                .trustCertificate(path);
+
+        // Add the connectTimeout configuration
+        Duration defaultTimeout = Duration.ofSeconds(defaultSeconds);
+        builder.timeoutConfig(TimeoutConfig
+                //N1QL select timeout
+                .queryTimeout(defaultTimeout)
+        );
     }
 }
