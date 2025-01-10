@@ -8,9 +8,12 @@ import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.service.AgentService;
 import com.nextgen.gameaggregator.service.AgentServiceImpl;
 import com.nextgen.gameaggregator.service.VendorService;
+import com.nextgen.gameaggregator.util.EnvUtils;
 import com.nextgen.gameaggregator.util.NameUtils;
+import com.nextgen.gameaggregator.util.TestingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
 
 @Service
@@ -38,6 +42,12 @@ public class GameUrlService {
     private final VendorService vendorService;
     private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
     private final CurrencyRepository currencyRepository;
+    @Value("${is-test-env:false}")
+    private Boolean isTestEnv;
+    @Value("${testing.prefix-vendor-list:}")
+    private String envPrefixVendorList;
+    @Value("${spring.profiles.active}")
+    private String testEnv;
 
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
@@ -218,6 +228,15 @@ public class GameUrlService {
 
         String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId)
                 + NameUtils.excelColumnNameFormula(currencyId);
+
+        //GA-8495 - Add env prefix to vendorPlayerUsername for testing env
+        if (isTestEnv) {
+            HashSet<Integer> envPrefixVendors = EnvUtils.getVendorHashSetFromEnv(envPrefixVendorList);
+            if (envPrefixVendors.contains(vendorId)) {
+                vendorPlayerUsername = TestingUtils.addEnvToUsername(vendorPlayerUsername, testEnv);
+            }
+        }
+
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
         entity.setVendorLineId(vendorLineId);
