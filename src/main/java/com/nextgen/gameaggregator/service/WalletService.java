@@ -446,9 +446,15 @@ public class WalletService {
 
             // Check if the vendor is eligible to process the end round
             if (vendorList.contains(settledBet.getVendorId())) {
-                SettledBet finalSettledBet = settledBet;
-                loggingService.logDataFlowByVendor("Before executeRetryEndRound", settledBet.getVendorId(), settledBet.getRoundId(), finalSettledBet);
-                taskScheduler.schedule(() -> this.executeRetryEndRound(finalSettledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1), Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
+                loggingService.logDataFlowByVendor("Before executeRetryEndRound", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                if (Objects.equals(settledBet.getVendorId(), 18)) { // RG need to delay 5 seconds
+                    SettledBet finalSettledBet = settledBet;
+                    loggingService.logDataFlowByVendor("Before executeRetryEndRound with taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), finalSettledBet);
+                    taskScheduler.schedule(() -> this.executeRetryEndRound(finalSettledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1), Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
+                } else {
+                    loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                    this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+                }
             } else {
                 loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
                 this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
