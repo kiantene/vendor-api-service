@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -102,7 +101,7 @@ public class S3BetService {
 
         } catch (NoSuchKeyException e) {
             throw new Exception("File not found in S3 with betId :"+betId);
-        } catch (JsonMappingException | JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new Exception("Error deserializing JSON from S3 file with betId :"+betId, e);
         } catch (Exception e) {
             throw new RuntimeException("Error reading S3 file with betId :"+betId, e);
