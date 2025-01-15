@@ -14,8 +14,6 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Matcher;
 
 @Data
@@ -103,13 +101,9 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public String getExternalTransactionId() {
         String exTransId = this.dealid;
-
         //pushgaming
-        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            // dealid equals to null mean did not get any win amount in buy bonus game
-            if (this.dealid == null) {
-                exTransId = this.bRoundid;
-            }
+        if ((this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) && this.dealid == null) {
+            exTransId = this.bRoundid;
         }
 
         return exTransId;
@@ -117,16 +111,12 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        String vendorBetId = this.dealid;
-
-        return vendorBetId;
+        return this.dealid;
     }
 
     @Override
     public String getRoundId() {
-        String roundId = this.bRoundid;
-
-        return roundId;
+        return this.bRoundid;
     }
 
     @Override
@@ -208,9 +198,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        Integer status = 0;
-
-        return status;
+        return 0;
     }
 
     @Override

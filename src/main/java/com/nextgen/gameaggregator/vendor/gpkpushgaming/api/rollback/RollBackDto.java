@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -56,16 +55,14 @@ public class RollBackDto extends ActionDto implements RollbackData {
     private String istips;
 
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String root_roundid;
+    private String rootRoundid;
 
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String root_dealid;
+    private String rootDealid;
 
     @Override
     public String getRollbackId() {
-        String exTransId = this.dealid;
-
-        return exTransId;
+        return this.dealid;
     }
 
     @Override

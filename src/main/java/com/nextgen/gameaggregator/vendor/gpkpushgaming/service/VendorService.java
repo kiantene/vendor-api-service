@@ -89,11 +89,7 @@ public class VendorService extends BaseVendorService {
     @Override
     public boolean shouldDoRollbackByRound(GameSession gameSession) {
         // Handle for GPK BGAMING game, will be alwaus rollback by round
-        if (gameSession.getGameCode().startsWith("GPKBG")) {
-            return true;
-        }
-        return false;
-
+        return gameSession.getGameCode().startsWith("GPKBG");
     }
 
     @Override

@@ -1,18 +1,22 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.constant;
 
-import java.util.HashMap;
-import java.util.Map;
+import lombok.AllArgsConstructor;
 
-public class ResponseCodes {
-    public static final int SUCCESS = 0;
+@AllArgsConstructor
+public enum ResponseCodes {
+    SUCCESS(0, "Success"),
+    INSUFFICIENT_BALANCE(1085, "The transfer of account failed, as the account balance is insufficient"),
+    ERROR(1001, "Error");
 
-    public static final int INSUFFICIENT_BALANCE = 1085;
+    public final Integer code;
+    public final String message;
 
-    public static final int ERROR = 1001;
-
-    public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
-        put(SUCCESS, "Success");
-        put(INSUFFICIENT_BALANCE, "The transfer of account failed, as the account balance is insufficient");
-        put(ERROR, "Error");
-    }};
+    public static ResponseCodes fromCode(int code) {
+        for (ResponseCodes responseCode : ResponseCodes.values()) {
+            if (responseCode.code == code) {
+                return responseCode;
+            }
+        }
+        throw new IllegalArgumentException("Unknown response code: " + code);
+    }
 }

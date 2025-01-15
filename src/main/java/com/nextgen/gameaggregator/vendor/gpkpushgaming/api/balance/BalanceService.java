@@ -33,7 +33,7 @@ public class BalanceService {
                           WalletService walletService,
                           HttpService httpService,
                           AgentPlayerService agentPlayerService,
-                          VendorGameService vendorGameService){
+                          VendorGameService vendorGameService) {
         this.gameSessionService = gameSessionService;
 
         this.vendorLineService = vendorLineService;
@@ -48,7 +48,7 @@ public class BalanceService {
         CommonVo vo = new CommonVo();
         BalanceDataVo dataVo = new BalanceDataVo();
 
-        try{
+        try {
             balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -63,7 +63,7 @@ public class BalanceService {
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
+            vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setUser(balanceDto.getUser());
@@ -71,18 +71,9 @@ public class BalanceService {
 
             vo.setData(dataVo);
 
-        } catch (InvalidRequestException |
-                 AuthenticationException |
-                 InvalidPlayerException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 DisabledVendorLineException |
-                 CredentialNotFoundException e) {
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR);
-        }catch(Exception e){
-            httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR);
+            vo.setCodeMsg(ResponseCodes.ERROR.code);
         }
 
         return vo;
@@ -107,7 +98,7 @@ public class BalanceService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser(), InvalidPlayerException::new);
 
         //Verify received api_token is same with credential
-        String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
+        String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_TOKEN);
         ValidationUtils.isEquals(token, dto.getApiToken(), InvalidRequestException::new);
     }
 }

@@ -46,29 +46,29 @@ public class GameUrlService implements GameUrl {
         // trim game code by removing "_stg" or "_STG"
         String vendorGameCode = VendorService.trimGameCode(gameSession.getVendorGameCode());
 
-        formData.add("api_token", credentials.get(Credentials.api_token));
+        formData.add("api_token", credentials.get(Credentials.API_TOKEN));
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
-        formData.add("platform", credentials.get(Credentials.platform_id));
+        formData.add("platform", credentials.get(Credentials.PLATFORM_ID));
         formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode", vendorGameCode);
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
         formData.add("ip", gameSession.getIpAddress());
-        formData.add("country", credentials.get(Credentials.country));
-        formData.add("city", credentials.get(Credentials.city));
+        formData.add("country", credentials.get(Credentials.COUNTRY));
+        formData.add("city", credentials.get(Credentials.CITY));
         formData.add("homeUrl", gameSession.getLobbyUrl());
 
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException{
-        GameUrlVo responseVo = new GameUrlVo();
+    public PGGameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+        PGGameUrlVo responseVo = new PGGameUrlVo();
 
         //construct API address
-        String urlScheme = credentials.get(Credentials.api_url);
+        String urlScheme = credentials.get(Credentials.API_URL);
 
         //check vendor status in our DB
         Optional.ofNullable(urlScheme).orElseThrow(InvalidVendorLineException::new);
@@ -99,9 +99,6 @@ public class GameUrlService implements GameUrl {
         // Trigger create member function by calling vendor api
         ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
 
-//        log.info("gpk create player: " + apiResponse.toString());
-//        log.info("gpk create player request: " + jsonString);
-
         long startTime = System.currentTimeMillis();
 
         // Convert HashMap to JSON string using Gson
@@ -111,9 +108,6 @@ public class GameUrlService implements GameUrl {
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
 
-//        log.info("gpk create game url: " + apiResponse2.toString());
-//        log.info("gpk create game url request: " + jsonString2);
-
         long endTime = System.currentTimeMillis();
 
         // only record response from API which is for generate game url
@@ -121,10 +115,10 @@ public class GameUrlService implements GameUrl {
                 EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
-        try{
+        try {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse2);
-            responseVo = new Gson().fromJson(apiResponse2.getBody(), GameUrlVo.class);
+            responseVo = new Gson().fromJson(apiResponse2.getBody(), PGGameUrlVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -141,7 +135,7 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private ResponseEntity<String> createMember(String urlScheme, String createPlayer){
+    private ResponseEntity<String> createMember(String urlScheme, String createPlayer) {
         //Construct the API to register player from vendor site
         URI uri = UriComponentsBuilder.fromUriString(urlScheme)
                 .path(EndPoints.CREATE_PLAYER)
@@ -155,7 +149,6 @@ public class GameUrlService implements GameUrl {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createPlayer)
                 .retrieve()
-                // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(EndPoints.RETRY)
@@ -163,7 +156,7 @@ public class GameUrlService implements GameUrl {
                 .block();
     }
 
-    private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame){
+    private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame) {
         //Construct the API to register player from vendor site
         URI uri = UriComponentsBuilder.fromUriString(urlScheme)
                 .path(EndPoints.LAUNCH_GAME)
@@ -177,7 +170,6 @@ public class GameUrlService implements GameUrl {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginGame)
                 .retrieve()
-                // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(EndPoints.RETRY)

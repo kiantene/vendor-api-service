@@ -16,15 +16,11 @@ public class CommonVo implements HttpResponse {
 
     public void setCodeMsg(Integer code) {
         this.code = code;
-        this.msg = ResponseCodes.RESPONSE_DESCRIPTION.get(this.code);
+        this.msg = ResponseCodes.fromCode(this.code).message;
     }
 
     @Override
     public boolean hasError() {
-        if(this.code != 0){
-            return true;
-        }
-
-        return false;
+        return this.code != 0;
     }
 }

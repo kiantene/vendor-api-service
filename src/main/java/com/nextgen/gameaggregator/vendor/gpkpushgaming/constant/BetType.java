@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.constant;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class BetType {
     public static final String FINISHED = "1";
 

@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.constant;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.Arrays;
 import java.util.List;
 
+@UtilityClass
 public class PlatformType {
 
     // slot & mini
@@ -32,5 +35,22 @@ public class PlatformType {
 
     public static final String PUSHGAMINGLATAM = "31";
 
-    public static final List<String> PlatformTypeList = Arrays.asList(BGAMINGASIA, BGAMINGLATAM, SEVENMOJO, SEVENMOJOLATAM, TURBOGAME, TURBOGAMELATAM, BOOMING, BOOMINGLATAM, SPINOMENAL, SPINOMENALLATAM, PUSHGAMING, PUSHGAMINGLATAM);
+    protected static final List<String> PLATFORMTYPELIST = Arrays.asList(
+            "BGAMINGASIA",
+            "BGAMINGLATAM",
+            "SEVENMOJO",
+            "SEVENMOJOLATAM",
+            "TURBOGAME",
+            "TURBOGAMELATAM",
+            "BOOMING",
+            "BOOMINGLATAM",
+            "SPINOMENAL",
+            "SPINOMENALLATAM",
+            "PUSHGAMING",
+            "PUSHGAMINGLATAM"
+    );
+
+    public static List<String> getPlatformTypeList() {
+        return PLATFORMTYPELIST;
+    }
 }

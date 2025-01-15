@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -70,7 +69,7 @@ public class RollBackService {
             // Retrieve the latest wallet balance from Operator
             balance = walletService.processRollback(traceId, rollBackDto, gameSession, vendorService, httpRequestLog);
 
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
+            vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney().setScale(2, RoundingMode.DOWN));
@@ -83,7 +82,7 @@ public class RollBackService {
             httpService.logError(httpRequestLog, e);
 
             balance = e.getBalance();
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
+            vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney());
@@ -94,7 +93,7 @@ public class RollBackService {
 
         } catch (BetNotFoundException | BetRefundIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
+            vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney());
@@ -103,17 +102,10 @@ public class RollBackService {
 
             vo.setData(dataVo);
 
-        } catch (AuthenticationException |
-                 InvalidRequestException |
-                 InvalidPlayerException |
-                 CredentialNotFoundException e) {
-            // this error code is for trigger retry(vendor will thread this transaction as cancel)
-            httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR);
         } catch (Exception e) {
             // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR);
+            vo.setCodeMsg(ResponseCodes.ERROR.code);
         }
 
         return vo;
@@ -129,26 +121,13 @@ public class RollBackService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser(), InvalidPlayerException::new);
 
         //Verify received api_token is same with credential
-        String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
+        String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_TOKEN);
         ValidationUtils.isEquals(token, dto.getApiToken(), InvalidRequestException::new);
 
         // check platform id
-        if (!PlatformType.PlatformTypeList.contains(dto.getPlatform())) {
+        if (!PlatformType.getPlatformTypeList().contains(dto.getPlatform())) {
             throw new InvalidRequestException();
         }
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
-
-        BigDecimal balance = BigDecimal.ZERO;
-
-        try {
-            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-        } catch (Exception ignored) {
-
-        }
-
-        return balance;
-    }
 }

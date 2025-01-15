@@ -30,7 +30,7 @@ public class GeneralAction {
     private final RollBackService rollBackService;
 
     @Autowired
-    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, RollBackService rollBackService){
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, RollBackService rollBackService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
@@ -39,14 +39,14 @@ public class GeneralAction {
     }
 
     @PostMapping(path = EndPoints.ACTION)
-    public CommonVo action(HttpServletRequest request){
+    public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
 
         CommonVo vo = new CommonVo();
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             // Construct this vo for action handling purpose
@@ -59,30 +59,23 @@ public class GeneralAction {
 
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR);
-        } finally{
+            vo.setCodeMsg(ResponseCodes.ERROR.code);
+        } finally {
             httpService.end(httpRequestLog, vo);
         }
 
         return vo;
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog){
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         CommonVo vo = new CommonVo();
 
-        switch (actionDto.getCmd()) {
-            case Actions.BALANCE:
-                vo = balanceService.balance(httpRequestLog, traceId);
-                break;
-            case Actions.BET_SETTLE:
-                vo = betService.transaction(httpRequestLog, traceId);
-                break;
-            case Actions.ROLLBACK:
-                vo = rollBackService.rollback(httpRequestLog, traceId);
-                break;
-        }
-
-        return vo;
+        return switch (actionDto.getCmd()) {
+            case Actions.BALANCE -> balanceService.balance(httpRequestLog, traceId);
+            case Actions.BET_SETTLE -> betService.transaction(httpRequestLog, traceId);
+            case Actions.ROLLBACK -> rollBackService.rollback(httpRequestLog, traceId);
+            default -> vo;
+        };
     }
 
     private void doValidation(ActionDto dto) throws InvalidRequestException {
