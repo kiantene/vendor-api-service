@@ -92,7 +92,13 @@ public class BetService {
             this.doVerification(betDto, gameSession);
 
             //pushgaming
-            balance = processPushGamingBet(httpRequestLog, traceId, betDto, balance, gameSession, vendorService);
+            if (betDto.getFinished() == null) {
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                balance = betEvent.getLastBalance();
+            } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
+                ResultType updatedResultType = getResultType(betDto);
+                balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
+            }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
@@ -216,16 +222,4 @@ public class BetService {
             throw new TransactionStillProcessingException();
         }
     }
-
-    private BigDecimal processPushGamingBet(HttpRequestLog httpRequestLog, String traceId, BetDto betDto, BigDecimal balance, GameSession gameSession, VendorService vendorService) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, MergedBetDataIntegrityException, BetNotFoundException {
-        if (betDto.getFinished() == null) {
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-            balance = betEvent.getLastBalance();
-        } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
-            ResultType updatedResultType = getResultType(betDto);
-            balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
-        }
-        return balance;
-    }
-
 }
