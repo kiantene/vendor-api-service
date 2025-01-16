@@ -55,7 +55,7 @@ public class KafkaConsumerService {
     private VendorPlayerService vendorPlayerService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException {
+    public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
 
         //prepare endRoundProcess Log
         Exception exception = null;
@@ -71,6 +71,9 @@ public class KafkaConsumerService {
         endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
         SettledBet settledBet = new SettledBet(endRoundSettledBet);
         settledBet.setResultType(endRoundSettledBet.getGaResultType());
+
+        //check if unsettledBet still exist, if no longer exist, throw BetNotFoundException
+        UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
 
         processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
         processEndRoundLog.setRoundId(settledBet.getRoundId());
@@ -108,7 +111,6 @@ public class KafkaConsumerService {
             }
 
             //prepare delete unsettledBet
-            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
             unsettledBetService.delete(unsettledBet);
 
             //prepare and send endRound to operator

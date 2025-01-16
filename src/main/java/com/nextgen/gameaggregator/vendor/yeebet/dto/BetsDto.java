@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.yeebet.dto;
 
-import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
