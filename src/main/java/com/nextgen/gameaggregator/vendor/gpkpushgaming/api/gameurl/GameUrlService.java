@@ -1,19 +1,19 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.gameurl;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.util.RequestLogVo;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,18 +26,26 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
-public class GameUrlService implements GameUrl {
-    @Autowired
-    RequestService requestService;
+public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
+    String apiToken = "api_token";
+    String platform = "platform";
+    String timestamp = "timestamp";
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
+
+    public GameUrlService() {
+        super(PGGameUrlVo.class);
+        this.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        this.setAutoMapResponse(false);
+    }
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
@@ -46,11 +54,11 @@ public class GameUrlService implements GameUrl {
         // trim game code by removing "_stg" or "_STG"
         String vendorGameCode = VendorService.trimGameCode(gameSession.getVendorGameCode());
 
-        formData.add("api_token", credentials.get(Credentials.API_TOKEN));
+        formData.add(apiToken, credentials.get(Credentials.API_TOKEN));
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
-        formData.add("platform", credentials.get(Credentials.PLATFORM_ID));
-        formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
+        formData.add(platform, credentials.get(Credentials.PLATFORM_ID));
+        formData.add(timestamp, String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode", vendorGameCode);
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
@@ -64,111 +72,67 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public PGGameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
-        PGGameUrlVo responseVo = new PGGameUrlVo();
-
+    public PGGameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidVendorLineException, InvalidVendorResponseException, TimeoutException {
         //construct API address
-        String urlScheme = credentials.get(Credentials.API_URL);
-
-        //check vendor status in our DB
-        Optional.ofNullable(urlScheme).orElseThrow(InvalidVendorLineException::new);
-
-        // convert multi value map into hash map for login game
-        Map<String, Object> loginGame = VendorService.convertToHashMap(formData);
-
-        // convert platform id from string into int
-        loginGame.put("platform", Integer.parseInt((String) loginGame.get("platform")));
-
-        // convert timestamp from string into int
-        loginGame.put("timestamp", Long.parseLong((String) loginGame.get("timestamp")));
-
-        Map<String, Object> createPlayer = new HashMap<>();
-
-        createPlayer.put("api_token", loginGame.get("api_token"));
-        createPlayer.put("user", loginGame.get("user"));
-        createPlayer.put("password", loginGame.get("user"));
-        createPlayer.put("username", loginGame.get("user"));
-        createPlayer.put("currency", gameSession.getVendorCurrencyCode());
-        createPlayer.put("platform", loginGame.get("platform"));
-        createPlayer.put("timestamp", loginGame.get("timestamp"));
-
-        // Convert HashMap to JSON string using Gson
-        Gson gson = new Gson();
-        String jsonString = gson.toJson(createPlayer);
+        String launchUrl = credentials.get(Credentials.API_URL);
 
         // Trigger create member function by calling vendor api
-        ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
+        ResponseEntity<String> apiResponse = this.checkAndCreateAccount(formData, credentials, gameSession);
 
-        long startTime = System.currentTimeMillis();
-
-        // Convert HashMap to JSON string using Gson
-        Gson gson2 = new Gson();
-        String jsonString2 = gson2.toJson(loginGame);
-
-        // request to get game url through vendor api
-        ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
-
-        long endTime = System.currentTimeMillis();
-
-        // only record response from API which is for generate game url
-        RequestLogVo requestLogVo2 = requestService.createRequestLogVo(
-                EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
-
-        try {
-            // 1. validate HTTP Response Code
-            requestService.validateVendorHttpStatusResponse(apiResponse2);
-            responseVo = new Gson().fromJson(apiResponse2.getBody(), PGGameUrlVo.class);
-
-            //2. validate vendor response
-            Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
-            RequestService.validateResponse(responseVo);
-
-            RequestService.successResponseLog(requestLogVo2);
-
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo2, invalidException, gameSession);
-            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
-            throw new InvalidVendorResponseException(exceptionMsg);
+        if (apiResponse != null) {
+            httpRequestLog.setResponseBody(apiResponse.getBody());
         }
+
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
+
+        HttpHeaders httpHeaders = this.getHeaders(new HttpHeaders(), formData, credentials, gameSession);
+
+        URI uri = UriComponentsBuilder.fromUriString(launchUrl)
+                .path(EndPoints.LAUNCH_GAME)
+                .build()
+                .encode()
+                .toUri();
+
+        // Trigger doPost to get game url function by calling vendor api
+        ResponseEntity<String> response = this.doPost(launchUrl, uri.toString(), httpHeaders, formData, isTimeout);
+
+        this.validateResponse(response, isTimeout, httpRequestLog, PGGameUrlVo.class, gameSession);
+
+        PGGameUrlVo responseVo = new Gson().fromJson(response.getBody(), PGGameUrlVo.class);
+
+        httpRequestLog.setUrl(responseVo.getGameUrl());
 
         return responseVo;
     }
 
-    private ResponseEntity<String> createMember(String urlScheme, String createPlayer) {
-        //Construct the API to register player from vendor site
+    private ResponseEntity<String> checkAndCreateAccount(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+            throws InvalidVendorLineException {
+        //construct API address & check vendor status in our DB
+        String urlScheme = Optional.of(credentials.get(Credentials.API_URL))
+                .orElseThrow(InvalidVendorLineException::new);
+
         URI uri = UriComponentsBuilder.fromUriString(urlScheme)
                 .path(EndPoints.CREATE_PLAYER)
                 .build()
                 .encode()
                 .toUri();
 
+
+        MultiValueMap<String, String> createPlayer = new LinkedMultiValueMap<>();
+
+        createPlayer.put(apiToken, formData.get(apiToken));
+        createPlayer.put("user", formData.get("user"));
+        createPlayer.put("password", formData.get("user"));
+        createPlayer.put("username", formData.get("user"));
+        createPlayer.add("currency", gameSession.getVendorCurrencyCode());
+        createPlayer.put(platform, formData.get(platform));
+        createPlayer.put(timestamp, formData.get(timestamp));
+
         return WebClient.create()
                 .post()
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createPlayer)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(EndPoints.RETRY)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-    }
-
-    private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame) {
-        //Construct the API to register player from vendor site
-        URI uri = UriComponentsBuilder.fromUriString(urlScheme)
-                .path(EndPoints.LAUNCH_GAME)
-                .build()
-                .encode()
-                .toUri();
-
-        return WebClient.create()
-                .post()
-                .uri(uri)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(loginGame)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
