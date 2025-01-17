@@ -7,11 +7,13 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -34,6 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 @Slf4j
 public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
+    @Autowired
+    RequestService requestService;
+
     String apiToken = "api_token";
     String platform = "platform";
     String timestamp = "timestamp";
@@ -77,10 +82,13 @@ public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
         String launchUrl = credentials.get(Credentials.API_URL);
 
         // Trigger create member function by calling vendor api
-        ResponseEntity<String> apiResponse = this.checkAndCreateAccount(formData, credentials, gameSession);
-
-        if (apiResponse != null) {
-            httpRequestLog.setResponseBody(apiResponse.getBody());
+        try {
+            ResponseEntity<String> apiResponse = this.checkAndCreateAccount(formData, credentials, gameSession);
+            if (apiResponse != null) {
+                httpRequestLog.setResponseBody(apiResponse.getBody());
+            }
+        } catch (Exception e) {
+            throw new InvalidVendorResponseException(e.getMessage());
         }
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
@@ -94,11 +102,11 @@ public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
                 .toUri();
 
         // Trigger doPost to get game url function by calling vendor api
-        ResponseEntity<String> response = this.doPost(launchUrl, uri.toString(), httpHeaders, formData, isTimeout);
+        ResponseEntity<String> apiResponse2 = this.doPost(launchUrl, uri.toString(), httpHeaders, formData, isTimeout);
 
-        this.validateResponse(response, isTimeout, httpRequestLog, PGGameUrlVo.class, gameSession);
+        this.validateResponse(apiResponse2, isTimeout, httpRequestLog, PGGameUrlVo.class, gameSession);
 
-        PGGameUrlVo responseVo = new Gson().fromJson(response.getBody(), PGGameUrlVo.class);
+        PGGameUrlVo responseVo = new Gson().fromJson(apiResponse2.getBody(), PGGameUrlVo.class);
 
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
@@ -131,7 +139,7 @@ public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
         return WebClient.create()
                 .post()
                 .uri(uri)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .bodyValue(createPlayer)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
