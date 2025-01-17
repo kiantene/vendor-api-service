@@ -78,7 +78,7 @@ public class BetService {
             this.doValidation(betDto);
 
             // request Idempotent checking
-            requestIdempotentChecking(betDto);
+            this.requestIdempotentChecking(betDto);
 
             gameCode = betDto.getGameinfo();
 
