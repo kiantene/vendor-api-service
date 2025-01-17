@@ -36,18 +36,18 @@ public class PlatformType {
     public static final String PUSHGAMINGLATAM = "31";
 
     protected static final List<String> PLATFORMTYPELIST = Arrays.asList(
-            "BGAMINGASIA",
-            "BGAMINGLATAM",
-            "SEVENMOJO",
-            "SEVENMOJOLATAM",
-            "TURBOGAME",
-            "TURBOGAMELATAM",
-            "BOOMING",
-            "BOOMINGLATAM",
-            "SPINOMENAL",
-            "SPINOMENALLATAM",
-            "PUSHGAMING",
-            "PUSHGAMINGLATAM"
+            BGAMINGASIA,
+            BGAMINGLATAM,
+            SEVENMOJO,
+            SEVENMOJOLATAM,
+            TURBOGAME,
+            TURBOGAMELATAM,
+            BOOMING,
+            BOOMINGLATAM,
+            SPINOMENAL,
+            SPINOMENALLATAM,
+            PUSHGAMING,
+            PUSHGAMINGLATAM
     );
 
     public static List<String> getPlatformTypeList() {
