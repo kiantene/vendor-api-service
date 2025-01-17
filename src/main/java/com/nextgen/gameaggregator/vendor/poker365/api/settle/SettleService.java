@@ -71,16 +71,27 @@ public class SettleService {
         walletRequest.setTakeAll(0);
         walletRequest.setTransferAmount(dto.getProfit());
         walletRequest.setBetAmount(dto.getRealBetMoney());
-        BigDecimal winAmount = dto.getBonus().compareTo(BigDecimal.ZERO) > 0
-                ? dto.getProfit().subtract(dto.getBonus())
-                : dto.getProfit();
+//        BigDecimal winAmount = dto.getBonus().compareTo(BigDecimal.ZERO) > 0
+//                ? dto.getProfit().subtract(dto.getBonus())
+//                : dto.getProfit();
+
+        BigDecimal winAmount;
+        if (dto.getProfit().compareTo(BigDecimal.ZERO) > 0) {
+            winAmount = (dto.getBonus().compareTo(BigDecimal.ZERO) > 0)
+                    ? dto.getProfit().subtract(dto.getBonus())
+                    : dto.getProfit();
+        } else {
+            winAmount = BigDecimal.ZERO;
+        }
+
         walletRequest.setWinAmount(winAmount);
         walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
         walletRequest.setJackpotAmount(dto.getJackpotAmount());
         walletRequest.setResultType(ResultType.BET_WIN.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
-        walletRequest.setWinLoss(BigDecimal.ZERO);
+
+        walletRequest.setWinLoss(dto.getProfit().add(dto.getBetAmount()));
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
