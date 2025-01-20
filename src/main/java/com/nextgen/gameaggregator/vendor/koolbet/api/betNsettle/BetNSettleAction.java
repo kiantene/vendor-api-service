@@ -87,6 +87,8 @@ public class BetNSettleAction {
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.ERROR);
             httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
     }

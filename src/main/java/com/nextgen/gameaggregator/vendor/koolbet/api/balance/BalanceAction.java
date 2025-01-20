@@ -52,7 +52,7 @@ public class BalanceAction {
 
         String traceId = httpRequestLog.getId();
 
-        CommonVo balanceVo = new CommonVo();
+        CommonVo responseVo = new CommonVo();
 
         try {
             //Retrieve request body in original string format
@@ -74,16 +74,18 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return double balance and success code
-            balanceVo.setResponseCode(ResponseCode.SUCCESS);
-            balanceVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            balanceVo.setUsername(gameSession.getVendorPlayerUsername());
-            balanceVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch (Exception e) {
             log.error("Exception in koolbet balance", e);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        return balanceVo;
+        return responseVo;
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {

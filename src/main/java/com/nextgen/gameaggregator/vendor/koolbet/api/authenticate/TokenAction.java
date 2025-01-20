@@ -53,7 +53,7 @@ public class TokenAction {
 
         String traceId = httpRequestLog.getId();
 
-        CommonVo tokenVo = new CommonVo();
+        CommonVo responseVo = new CommonVo();
 
         try {
             //Retrieve request body in original string format
@@ -75,15 +75,17 @@ public class TokenAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return double balance and success code
-            tokenVo.setResponseCode(ResponseCode.SUCCESS);
-            tokenVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            tokenVo.setUsername(gameSession.getVendorPlayerUsername());
-            tokenVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
         } catch (Exception e) {
 
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        return tokenVo;
+        return responseVo;
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {
