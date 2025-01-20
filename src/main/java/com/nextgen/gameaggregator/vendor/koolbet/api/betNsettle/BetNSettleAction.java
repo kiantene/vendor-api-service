@@ -4,7 +4,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.api.vo.CommonVo;
@@ -30,8 +33,6 @@ public class BetNSettleAction {
 
     private final WalletService walletService;
 
-    private final VendorLineService vendorLineService;
-
     private final VendorService vendorService;
 
 
@@ -39,11 +40,10 @@ public class BetNSettleAction {
 
     @Autowired
     public BetNSettleAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                            VendorLineService vendorLineService, VendorService vendorService, ValidationService validationService) {
+                            VendorService vendorService, ValidationService validationService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
         this.validationService = validationService;
     }
@@ -64,7 +64,7 @@ public class BetNSettleAction {
             BetNSettleDto betNSettleDto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            //this.doValidation(commonDto);
+            this.doValidation(betNSettleDto);
 
             //get rawGameSession by token id
             GameSession gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
@@ -73,7 +73,6 @@ public class BetNSettleAction {
             this.doVerification(betNSettleDto, gameSession);
 
             //make a ResultType for bet and settle process indicator
-            //ResultType resultType = this.getResultType(betNSettleDto);
             ResultType resultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
             //Process full bet data
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, httpRequestLog);
@@ -93,9 +92,14 @@ public class BetNSettleAction {
         return responseVo;
     }
 
+    private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
     private void doVerification(BetNSettleDto betNSettleDto, GameSession gameSession) throws
-            AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException,
-            CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException, DisabledVendorLineException,
+            DisabledAgentPlayerException, DisabledGameException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betNSettleDto.getCurrency(), CurrencyNotSupportedException::new);
