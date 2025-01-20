@@ -75,16 +75,10 @@ public class SettleService {
 //                ? dto.getProfit().subtract(dto.getBonus())
 //                : dto.getProfit();
 
-        BigDecimal winAmount;
-        if (dto.getProfit().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal amount = (dto.getBonus().compareTo(BigDecimal.ZERO) > 0)
-                    ? dto.getProfit().subtract(dto.getBonus())
-                    : dto.getProfit();
-            winAmount = amount.add(dto.getBetAmount());
+        
+        BigDecimal amount = dto.getProfit().subtract(dto.getBonus());
+        BigDecimal winAmount = amount.add(dto.getBetAmount());
 
-        } else {
-            winAmount = BigDecimal.ZERO;
-        }
         ResultType resultType = vendorService.calculateResultType(dto.getRealBetMoney(), winAmount, dto.getJackpotAmount(), false);
 
         walletRequest.setWinAmount(winAmount);

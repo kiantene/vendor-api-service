@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
@@ -29,13 +32,15 @@ public class CancelService {
     private final VendorLineService vendorLineService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
+    private final WalletRequestService walletRequestService;
+    private final OperatorWalletService operatorWalletService;
     Integer vendorPlayerId;
 
     @Autowired
     public CancelService(HttpService httpService, GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService, VendorLineService vendorLineService,
                          VendorService vendorService,
-                         WalletService walletService, VendorPlayerService vendorPlayerService) {
+                         WalletService walletService, VendorPlayerService vendorPlayerService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
@@ -43,13 +48,31 @@ public class CancelService {
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
+        this.walletRequestService = walletRequestService;
+        this.operatorWalletService = operatorWalletService;
+    }
+
+    private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
+
+
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setExternalTransactionId(dto.getRoundId());
+        walletRequest.setRoundId(dto.getRoundId());
+        walletRequest.setVendorId(gameSession.getVendorId());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        //walletRequest.setAction("debit");
+//        walletRequest.setTakeAll(0);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+
     }
 
     public CommonVo cancel(HttpRequestLog httpRequestLog, String traceId) throws JsonProcessingException {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         try {
-
+            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             String body = httpRequestLog.getRequestBody();
             CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
@@ -69,16 +92,17 @@ public class CancelService {
 //            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
 //                Thread.sleep(5000);
 //            }
-            balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
-
-            commonVo.setBalance(balance);
+//            balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
+            this.dataMapper(walletRequest, messageDto, gameSession);
+            walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
+            commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
-        } catch (BetRefundIdempotentViolationException |
-                 BetResultIdempotentViolationException e) {
-            commonVo.setStatus(ResponseCodes.NO_DATA.status);
-            commonVo.setMsg(ResponseCodes.NO_DATA.message);
-            httpService.logError(httpRequestLog, e);
+//        } catch (BetRefundIdempotentViolationException |
+//                 BetResultIdempotentViolationException e) {
+//            commonVo.setStatus(ResponseCodes.NO_DATA.status);
+//            commonVo.setMsg(ResponseCodes.NO_DATA.message);
+//            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidPlayerException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
