@@ -69,7 +69,7 @@ public class SettleService {
         walletRequest.setVendorBetId(dto.getTxId());
         //walletRequest.setAction("credit");
         walletRequest.setTakeAll(0);
-        walletRequest.setTransferAmount(dto.getProfit());
+        walletRequest.setTransferAmount(dto.getBetAmount());
         walletRequest.setBetAmount(dto.getRealBetMoney());
 //        BigDecimal winAmount = dto.getBonus().compareTo(BigDecimal.ZERO) > 0
 //                ? dto.getProfit().subtract(dto.getBonus())
