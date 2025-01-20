@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.authenticate;
+package com.nextgen.gameaggregator.vendor.koolbet.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -28,7 +28,7 @@ import java.math.RoundingMode;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class TokenAction {
+public class BalanceAction {
 
     private final HttpService httpService;
 
@@ -39,21 +39,20 @@ public class TokenAction {
     private final VendorLineService vendorLineService;
 
     @Autowired
-    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService) {
+    public BalanceAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
     }
 
-
-    @PostMapping(path = EndPoints.TOKEN)
+    @PostMapping(path = EndPoints.BALANCE)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
 
-        CommonVo tokenVo = new CommonVo();
+        CommonVo balanceVo = new CommonVo();
 
         try {
             //Retrieve request body in original string format
@@ -75,15 +74,16 @@ public class TokenAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return double balance and success code
-            tokenVo.setResponseCode(ResponseCode.SUCCESS);
-            tokenVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            tokenVo.setUsername(gameSession.getVendorPlayerUsername());
-            tokenVo.setCurrency(gameSession.getCurrencyCode());
-        } catch (Exception e) {
+            balanceVo.setResponseCode(ResponseCode.SUCCESS);
+            balanceVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            balanceVo.setUsername(gameSession.getVendorPlayerUsername());
+            balanceVo.setCurrency(gameSession.getCurrencyCode());
 
+        } catch (Exception e) {
+            log.error("Exception in koolbet balance", e);
         }
 
-        return tokenVo;
+        return balanceVo;
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {

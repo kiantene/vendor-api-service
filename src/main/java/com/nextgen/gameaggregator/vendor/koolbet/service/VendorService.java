@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -94,5 +95,14 @@ public class VendorService extends BaseVendorService {
         paramText.append("AgentId=").append(AGENT_ID);
 
         return paramText.toString();
+    }
+
+    public static long getTimeStamp(String timestamp) {
+        //convert date time string to timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse(timestamp, formatter);
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC-4"));
+        return zonedDateTime.toInstant().toEpochMilli();
+
     }
 }

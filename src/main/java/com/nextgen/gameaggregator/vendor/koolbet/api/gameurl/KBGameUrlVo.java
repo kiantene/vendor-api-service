@@ -7,16 +7,14 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KBGameUrlVo implements GameUrlVo {
-
-
-    private String data;
-
-    private String errorCode;
-
-    private String message;
+    
+    private String Data;
+    private int DisplayMode;
+    private int ErrorCode;
+    private String Message;
 
     @Override
     public String getGameUrl() {
-        return this.getData();
+        return this.Data;
     }
 }

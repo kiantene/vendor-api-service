@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.authenticate;
+package com.nextgen.gameaggregator.vendor.koolbet.api.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
@@ -8,14 +8,14 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TokenVo implements HttpResponse {
+public class CommonVo implements HttpResponse {
     Integer errorCode;
     String message;
     String username;
     String currency;
     Double balance;
 
-    public TokenVo() {
+    public CommonVo() {
         setResponseCode(ResponseCode.SUCCESS);
     }
 

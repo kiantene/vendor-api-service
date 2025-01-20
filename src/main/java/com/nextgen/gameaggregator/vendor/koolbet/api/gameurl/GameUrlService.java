@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.koolbet.constant.Languages;
 import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,22 +53,20 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("Token", gameSession.getToken());
         params.put("GameId", gameSession.getVendorGameCode());
-        params.put("Lang", "en-US");
+        params.put("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
 
         //Encrypt param before sending
         String key = VendorService.generateKey(params, credentials.get(Credentials.AGENT_ID), credentials.get(Credentials.API_TOKEN));
-        log.info("Key: {}", key);
 
         //setup form data
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("Token", gameSession.getToken());
         formData.add("GameId", gameSession.getVendorGameCode());
-        formData.add("Lang", "en-US");
+        formData.add("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
         formData.add("HomeUrl", gameSession.getLobbyUrl());
         formData.add("AgentId", credentials.get(Credentials.AGENT_ID));
         formData.add("Key", key);
 
-        log.info(formData.toString());
         return formData;
     }
 
@@ -78,16 +77,8 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-//        URI uri = UriComponentsBuilder.fromUriString(this.getLaunchUrl())
-//                .queryParams(formData)
-//                .build()
-//                .encode()
-//                .toUri();
-
         ResponseEntity<String> response = this.doGet(this.getLaunchUrl(), EndPoints.GAME_URL, formData, isTimeout);
-        //ResponseEntity<String> response = ResponseEntity.ok().body(uri.toString());
 
-        log.info("Koolbet GameUrlService response: " + response.getBody());
         this.validateResponse(response, isTimeout, httpRequestLog, KBGameUrlVo.class, gameSession);
 
         KBGameUrlVo responseVo = new Gson().fromJson(response.getBody(), KBGameUrlVo.class);
