@@ -85,11 +85,12 @@ public class SettleService {
         } else {
             winAmount = BigDecimal.ZERO;
         }
+        ResultType resultType = vendorService.calculateResultType(dto.getRealBetMoney(), winAmount, dto.getJackpotAmount(), false);
 
         walletRequest.setWinAmount(winAmount);
         walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
         walletRequest.setJackpotAmount(dto.getJackpotAmount());
-        walletRequest.setResultType(ResultType.BET_WIN.code);
+        walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
