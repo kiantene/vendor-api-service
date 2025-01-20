@@ -77,9 +77,11 @@ public class SettleService {
 
         BigDecimal winAmount;
         if (dto.getProfit().compareTo(BigDecimal.ZERO) > 0) {
-            winAmount = (dto.getBonus().compareTo(BigDecimal.ZERO) > 0)
+            BigDecimal amount = (dto.getBonus().compareTo(BigDecimal.ZERO) > 0)
                     ? dto.getProfit().subtract(dto.getBonus())
                     : dto.getProfit();
+            winAmount = amount.add(dto.getBetAmount());
+
         } else {
             winAmount = BigDecimal.ZERO;
         }
@@ -90,8 +92,6 @@ public class SettleService {
         walletRequest.setResultType(ResultType.BET_WIN.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
-
-        walletRequest.setWinLoss(dto.getProfit().add(dto.getBetAmount()));
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
