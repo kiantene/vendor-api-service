@@ -13,7 +13,9 @@ public class EndPoints {
     public static final String CANCEL_BET = "/cancel-bet";
 
     public static final String SESSION_BET = "/sessionBet";
-    public static final String CANCEL_SESSION_BET = "/sessionBet";
+
+    public static final String CANCEL_SESSION_BET = "/cancelSessionBet";
+    
     public static final String JACKPOT_WIN = "/jackpot-win";
 
     public static final String TRANSACTION = "/transaction";

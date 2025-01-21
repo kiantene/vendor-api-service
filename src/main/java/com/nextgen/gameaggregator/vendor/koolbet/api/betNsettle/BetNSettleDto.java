@@ -14,26 +14,26 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetNSettleDto extends CommonDto implements BetResultData {
-    @NotBlank(message = "Currency is required")
+    @NotBlank
     private String currency;
 
-    @NotNull(message = "Game is required")
-    @Positive(message = "Game must be a positive integer")
+    @NotNull
+    @Positive
     private Integer game;
 
-    @NotNull(message = "Round is required")
-    @Positive(message = "Round must be a positive integer")
+    @NotNull
+    @Positive
     private long round;
 
-    @NotNull(message = "WagersTime is required")
-    @Positive(message = "WagersTime must be a positive integer")
+    @NotNull
+    @Positive
     private long wagersTime;
 
-    @NotNull(message = "BetAmount is required")
-    @Positive(message = "BetAmount must be a positive number")
+    @NotNull
+    @Positive
     private double betAmount;
 
-    @NotNull(message = "WinloseAmount is required")
+    @NotNull
     private double winloseAmount;
 
     private String platform;

@@ -57,6 +57,7 @@ public class CancelSessionBetDto extends CommonDto implements RollbackData {
 
     @Override
     public String getRoundId() {
-        return String.valueOf(this.sessionId);
+        return null;
     }
+
 }
