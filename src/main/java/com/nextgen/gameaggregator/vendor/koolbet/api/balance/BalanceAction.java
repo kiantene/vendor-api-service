@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -23,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -75,12 +71,16 @@ public class BalanceAction {
 
             //return double balance and success code
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            responseVo.setBalance(balance.doubleValue());
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
+        } catch (AuthenticationException e) {
+            responseVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            log.error("Exception in koolbet balance", e);
+            responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

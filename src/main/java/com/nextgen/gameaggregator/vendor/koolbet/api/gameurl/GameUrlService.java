@@ -64,6 +64,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         formData.add("GameId", gameSession.getVendorGameCode());
         formData.add("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
         formData.add("HomeUrl", gameSession.getLobbyUrl());
+        formData.add("Platform", gameSession.getVendorPlatformCode());
         formData.add("AgentId", credentials.get(Credentials.AGENT_ID));
         formData.add("Key", key);
 

@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,37 +17,27 @@ import java.util.Random;
 @Slf4j
 @Data
 public class VendorService extends BaseVendorService {
-    private static final String AGENT_ID = "kb469zf_oneapistg";
-    private static final String AGENT_KEY = "6a37bbb11a222f63d2ce7a57d2c180eef1a23bc8";
-
     // Characters for random text generation
     private static final String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
     public static String generateKey(Map<String, String> params, String agentId, String agentKey) {
         try {
             // Generate param_text from parameters
-            String paramText = buildParamText(params);
+            String paramText = buildParamText(params, agentId);
 
             String dayText = ZonedDateTime.now(ZoneId.of("UTC-4"))
                     .format(DateTimeFormatter.ofPattern("yyMMdd"));
             // Generate auth_key
-            String authKey = md5(dayText + AGENT_ID + AGENT_KEY);
+            String authKey = md5(dayText + agentId + agentKey);
 
             // Generate random texts
             String randomFrontText = generateRandomText();
             String randomEndText = generateRandomText();
 
             // Generate final key
-            String finalKey = randomFrontText + md5(paramText + authKey) + randomEndText;
-
-            log.info("paramText: {}", paramText);
-            log.info("dayText: {}", dayText);
-            log.info("authKey: {}", authKey);
-            log.info("randomFrontText: {}", randomFrontText);
-            log.info("randomEndText: {}", randomEndText);
-            return finalKey;
+            return randomFrontText + md5(paramText + authKey) + randomEndText;
         } catch (Exception e) {
-            throw new RuntimeException("Error generating key", e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -77,32 +66,23 @@ public class VendorService extends BaseVendorService {
         return sb.toString();
     }
 
-    private static String buildParamText(Map<String, String> params) {
+    private static String buildParamText(Map<String, String> params, String agentId) {
         StringBuilder paramText = new StringBuilder();
 
         // Add all parameters in the order they were inserted
         for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (paramText.length() > 0) {
+            if (!paramText.isEmpty()) {
                 paramText.append("&");
             }
             paramText.append(entry.getKey()).append("=").append(entry.getValue());
         }
 
         // Add AgentId at the end
-        if (paramText.length() > 0) {
+        if (!paramText.isEmpty()) {
             paramText.append("&");
         }
-        paramText.append("AgentId=").append(AGENT_ID);
+        paramText.append("AgentId=").append(agentId);
 
         return paramText.toString();
-    }
-
-    public static long getTimeStamp(String timestamp) {
-        //convert date time string to timestamp
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        LocalDateTime localDateTime = LocalDateTime.parse(timestamp, formatter);
-        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC-4"));
-        return zonedDateTime.toInstant().toEpochMilli();
-
     }
 }

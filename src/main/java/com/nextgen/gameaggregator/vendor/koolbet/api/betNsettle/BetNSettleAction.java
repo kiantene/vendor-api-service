@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.betNsettle;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -78,13 +79,32 @@ public class BetNSettleAction {
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, httpRequestLog);
 
             //Set Response Data
-            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setResponseCode(ResponseCode.BET_SUCCESS);
             responseVo.setUsername(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_ACCEPTED);
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException e) {
+            responseVo.setResponseCode(ResponseCode.BET_INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
@@ -99,11 +119,11 @@ public class BetNSettleAction {
 
     private void doVerification(BetNSettleDto betNSettleDto, GameSession gameSession) throws
             AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException, DisabledVendorLineException,
-            DisabledAgentPlayerException, DisabledGameException {
+            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betNSettleDto.getCurrency(), CurrencyNotSupportedException::new);
-
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betNSettleDto.getGame()), GameNotSupportedException::new);
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
     }

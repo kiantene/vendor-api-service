@@ -3,10 +3,9 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.betNsettle;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.api.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,28 +14,31 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetNSettleDto extends CommonDto implements BetResultData {
     @NotBlank
+    @Size(max = 5)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
     @NotNull
-    @Positive
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Integer game;
 
     @NotNull
-    @Positive
+    @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private long round;
 
     @NotNull
-    @Positive
+    @Size(max = 255)
     private long wagersTime;
 
     @NotNull
-    @Positive
-    private double betAmount;
+    @PositiveOrZero
+    private BigDecimal betAmount;
 
     @NotNull
-    private double winloseAmount;
-
-    private String platform;
+    @PositiveOrZero
+    private BigDecimal winloseAmount;
 
     @Override
     public String getExternalTransactionId() {
@@ -60,22 +62,22 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return BigDecimal.valueOf(this.betAmount);
+        return this.betAmount;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.valueOf(this.winloseAmount);
+        return this.winloseAmount;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.winloseAmount;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.valueOf(this.betAmount);
+        return this.betAmount;
     }
 
     @Override
@@ -106,10 +108,5 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
-    }
-
-    @Override
-    public boolean getShouldSettleByBet() {
-        return true;
     }
 }

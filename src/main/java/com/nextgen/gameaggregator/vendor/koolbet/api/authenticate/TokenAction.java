@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -79,8 +76,12 @@ public class TokenAction {
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
+        } catch (AuthenticationException e) {
+            responseVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-
+            responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

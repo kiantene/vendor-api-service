@@ -3,56 +3,58 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.sessionBetNsettle;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.api.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SessionBetNSettleDto extends CommonDto implements BetResultData {
-    @NotNull
-    @Positive
-    private double betAmount;
 
-    @NotNull
     @NotBlank
+    @Size(max = 5)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
     @NotNull
-    @Positive
-    private int game;
-
-    private String platform;
-
-    private int preserve;
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private Integer game;
 
     @NotNull
-    @Positive
+    @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private long round;
 
     @NotNull
-    @Positive
-    private int sessionId;
-
-    private double turnover;
-
-    @NotNull
-    @Positive
-    private int type;
-
-    @NotNull
-    @NotBlank
-    private String userId;
-
-    @NotNull
-    @Positive
+    @Size(max = 255)
     private long wagersTime;
 
-    private double winloseAmount;
+    @NotNull
+    @PositiveOrZero
+    private BigDecimal betAmount;
+
+    @NotNull
+    @PositiveOrZero
+    private BigDecimal winloseAmount;
+
+    @NotNull
+    @Positive
+    private BigInteger sessionId;
+
+    @NotNull
+    @Positive
+    private Integer type;
+
+    @NotNull
+    @PositiveOrZero
+    private Integer preserve;
+
 
     @Override
     public String getExternalTransactionId() {
@@ -76,27 +78,27 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return type == 2 ? null : BigDecimal.valueOf(this.betAmount);
+        return this.betAmount;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return type == 1 ? null : BigDecimal.valueOf(this.winloseAmount);
+        return this.winloseAmount;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.betAmount.negate();
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.valueOf(this.turnover);
+        return this.betAmount;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return type == 2 ? null : this.wagersTime;
+        return this.wagersTime;
     }
 
     @Override
@@ -106,7 +108,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return type == 1 ? null : this.wagersTime;
+        return type == Formats.SESSION_BET_TYPE_BET ? null : this.wagersTime;
     }
 
     @Override
@@ -121,7 +123,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return type == 1 ? BetStatus.UNSETTLED : BetStatus.SETTLED;
+        return type == Formats.SESSION_BET_TYPE_BET ? BetStatus.UNSETTLED : BetStatus.SETTLED;
     }
 
 }

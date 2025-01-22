@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.cancelSessionBet;
+package com.nextgen.gameaggregator.vendor.koolbet.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
@@ -8,11 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-import java.math.BigInteger;
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancelSessionBetDto extends CommonDto implements RollbackData {
+public class CancelBetDto extends CommonDto implements RollbackData {
 
     @NotNull
     @NotBlank
@@ -36,14 +34,6 @@ public class CancelSessionBetDto extends CommonDto implements RollbackData {
     @NotNull
     @NotBlank
     private String userId;
-
-    @NotNull
-    @Positive
-    private BigInteger sessionId;
-
-    @NotNull
-    @Positive
-    private int type;
 
     @Override
     public String getRollbackId() {
