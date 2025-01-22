@@ -22,17 +22,12 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     private String currency;
 
     @NotNull
-    @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Integer game;
 
     @NotNull
-    @Size(max = 255)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private long round;
 
     @NotNull
-    @Size(max = 255)
     private long wagersTime;
 
     @NotNull
