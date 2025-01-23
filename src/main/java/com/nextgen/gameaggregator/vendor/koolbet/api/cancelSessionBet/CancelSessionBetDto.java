@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
@@ -20,18 +21,18 @@ public class CancelSessionBetDto extends CommonDto implements RollbackData {
 
     @NotNull
     @Positive
-    private int game;
+    private Integer game;
 
     @NotNull
     @Positive
-    private long round;
+    private Integer round;
 
     @NotNull
     @Positive
-    private double betAmount;
+    private BigDecimal betAmount;
 
     @NotNull
-    private double winloseAmount;
+    private BigDecimal winloseAmount;
 
     @NotNull
     @NotBlank
@@ -43,7 +44,7 @@ public class CancelSessionBetDto extends CommonDto implements RollbackData {
 
     @NotNull
     @Positive
-    private int type;
+    private Integer type;
 
     @Override
     public String getRollbackId() {

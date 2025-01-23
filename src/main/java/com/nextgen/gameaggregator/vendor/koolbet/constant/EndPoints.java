@@ -19,6 +19,8 @@ public class EndPoints {
 
     public static final String CANCEL_SESSION_BET = "/cancelSessionBet";
 
+    public static final String REWARD = "/reward";
+
     // API url call to vendor
     public static final String GAME_URL = "/singleWallet/LoginWithoutRedirect";
 }

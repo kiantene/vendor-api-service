@@ -1,4 +1,5 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.betNsettle;
+package com.nextgen.gameaggregator.vendor.koolbet.api.reward;
+
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -26,7 +27,7 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BetNSettleAction {
+public class RewardAction {
 
     private final HttpService httpService;
 
@@ -39,8 +40,8 @@ public class BetNSettleAction {
     private final ValidationService validationService;
 
     @Autowired
-    public BetNSettleAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                            VendorService vendorService, ValidationService validationService) {
+    public RewardAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
+                        VendorService vendorService, ValidationService validationService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -48,8 +49,8 @@ public class BetNSettleAction {
         this.validationService = validationService;
     }
 
-    @PostMapping(path = EndPoints.BET)
-    public CommonVo bet(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.REWARD)
+    public CommonVo reward(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -60,63 +61,57 @@ public class BetNSettleAction {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
-            //Convert original request body into commonDto
-            BetNSettleDto betNSettleDto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
+            //Convert original request body into rewardDto
+            RewardDto rewardDto = HttpService.convertJsonToDto(body, RewardDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            this.doValidation(betNSettleDto);
+            this.doValidation(rewardDto);
 
             //get rawGameSession by token id
-            GameSession gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(rewardDto.getToken());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(betNSettleDto, gameSession);
+            this.doVerification(rewardDto, gameSession);
 
-            //make a ResultType for bet and settle process indicator
-            ResultType resultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
+            //make a ResultType for reward as bet win
+            ResultType resultType = ResultType.BET_WIN;
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, rewardDto, resultType, vendorService, httpRequestLog);
 
             //Set Response Data
-            responseVo.setResponseCode(ResponseCode.BET_SUCCESS);
+            responseVo.setResponseCode(ResponseCode.REWARD_SUCCESS);
             responseVo.setUsername(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 
-        } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
-            httpService.logError(httpRequestLog, transactionStillProcessingException);
-
-        } catch (BetResultIdempotentViolationException e) {
-            responseVo.setResponseCode(ResponseCode.BET_ALREADY_ACCEPTED);
-            httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
-            responseVo.setResponseCode(ResponseCode.BET_TOKEN_EXPIRED);
+            responseVo.setResponseCode(ResponseCode.REWARD_TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
-        } catch (InsufficientBalanceException e) {
-            responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.REWARD_ALREADY_ACCEPTED);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException e) {
-            responseVo.setResponseCode(ResponseCode.BET_INVALID_PARAMETER);
+            responseVo.setResponseCode(ResponseCode.REWARD_INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
+            responseVo.setResponseCode(ResponseCode.REWARD_OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
+
         return responseVo;
     }
 
-    private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
+    private void doValidation(RewardDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetNSettleDto betNSettleDto, GameSession gameSession) throws
+    private void doVerification(RewardDto betNSettleDto, GameSession gameSession) throws
             AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException, DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 
@@ -126,4 +121,5 @@ public class BetNSettleAction {
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
     }
+
 }
