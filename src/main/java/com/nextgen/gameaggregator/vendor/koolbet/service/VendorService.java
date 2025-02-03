@@ -26,7 +26,7 @@ public class VendorService extends BaseVendorService {
             String paramText = buildParamText(params, agentId);
 
             String dayText = ZonedDateTime.now(ZoneId.of("UTC-4"))
-                    .format(DateTimeFormatter.ofPattern("yyMMdd"));
+                    .format(DateTimeFormatter.ofPattern("yyMMd"));
             // Generate auth_key
             String authKey = md5(dayText + agentId + agentKey);
 
