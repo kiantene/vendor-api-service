@@ -189,6 +189,15 @@ public class WalletBetResultAction {
             //5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
+            if (dto.getBetAmount().compareTo(BigDecimal.ZERO) > 0) { //if bet amount exist in result
+                //operator check negative value
+                BigDecimal balance = responseVo.getData().getBalance();
+                boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+                if (isNegativeBalance) {
+                    throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+                }
+            } //else do nothing
+            
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
