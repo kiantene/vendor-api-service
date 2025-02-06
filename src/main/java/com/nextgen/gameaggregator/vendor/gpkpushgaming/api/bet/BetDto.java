@@ -100,13 +100,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        String exTransId = this.dealid;
-        //pushgaming
-        if ((this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) && this.dealid == null) {
-            exTransId = this.bRoundid;
-        }
-
-        return exTransId;
+        return this.dealid;
     }
 
     @Override
@@ -126,13 +120,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        BigDecimal betAmount = null;
-
-        if (this.code.equals(BetType.POINTIN)) {
-            betAmount = this.money;
-        }
-
-        return betAmount;
+        return this.money;
     }
 
     @Override
@@ -165,7 +153,6 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         Long betTime = null;
-
         //pushgaming
         if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
             betTime = Long.parseLong(this.timestamp) * 1000;
@@ -218,7 +205,5 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
         return status;
-
-
     }
 }

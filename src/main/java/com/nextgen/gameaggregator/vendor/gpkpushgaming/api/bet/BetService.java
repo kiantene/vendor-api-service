@@ -77,9 +77,6 @@ public class BetService {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            // request Idempotent checking
-            this.requestIdempotentChecking(betDto);
-
             gameCode = betDto.getGameinfo();
 
             // Verify session
@@ -147,7 +144,6 @@ public class BetService {
     private void doValidation(BetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
@@ -212,14 +208,5 @@ public class BetService {
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         return walletService.getBalance(traceId, gameSession, httpRequestLog);
-    }
-
-    private boolean requestIdempotentChecking(BetDto betDto) throws TransactionStillProcessingException {
-        if (requestIdempotentLogService.checkExists(betDto, betDto.getUser()) == null) {
-            requestIdempotentLogService.create(betDto, betDto.getUser());
-            return false;
-        } else {
-            throw new TransactionStillProcessingException();
-        }
     }
 }
