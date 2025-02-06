@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
@@ -33,12 +32,10 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
     private String apiUrl1;
     private String apiUrl2;
-    private String apiKey;
     private String snCode;
     private String agentKey;
     private String agentPass;
     private String secretCode;
-    private HttpHeaders httpHeaders;
 
     public GameUrlService() {
 
@@ -53,53 +50,11 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         this.agentPass = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_PASS));
         this.apiUrl1 = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL1));
         this.apiUrl2 = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL2));
-        this.apiKey = ValidationUtils.validateCredential(credentials.get(Credentials.API_KEY));
         this.snCode = ValidationUtils.validateCredential(credentials.get(Credentials.SN_CODE));
         this.secretCode = VendorService.generateSecretCode(agentPass);
 
-//        String uuid = UUID.randomUUID().toString();
-//        String digest = VendorService.encryptLoginMd5Key(uuid, snCode, gameSession.getVendorPlayerUsername(), secretCode);
-//
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        Map<String, Object> params = new HashMap<>();
-//        params.put("random", uuid);
-//        params.put("sn", snCode);
-//        params.put("loginId", gameSession.getVendorPlayerUsername());
-//        params.put("digest", digest);
-//
-//        Map<String, Object> formData = new HashMap<String, Object>();
-//        formData.put("id", uuid);
-//        formData.put("method", EndPoints.GAME_URL);
-//        formData.put("params", params);
-//        formData.put("jsonrpc", "2.0");
-
         return new LinkedMultiValueMap<>();
-
-//        MultiValueMap<String, String> formDataJson = null;
-//        try {
-//            formDataJson = buildFormDataJson(gameSession);
-//        } catch (JsonProcessingException e) {
-//            throw new InvalidFormatException("Failed to process JSON");
-//        }
-//        return formDataJson;
     }
-
-//    private MultiValueMap<String, String> buildFormDataJson(GameSession gameSession) throws JsonProcessingException {
-//        MultiValueMap<String, String> formDataJson = new LinkedMultiValueMap<>();
-//        formDataJson.add("id", "123");
-//        formDataJson.add("method", EndPoints.GAME_URL);
-//        formDataJson.add("jsonrpc", "2.0");
-//
-//        Map<String, Object> params = new HashMap<>();
-//        params.put("random", uuid);
-//        params.put("digest", digest);
-//        params.put("sn", snCode);
-//        params.put("loginId", gameSession.getVendorPlayerUsername());
-//
-//        String paramsJson = new ObjectMapper().writeValueAsString(params);
-//        formDataJson.add("params", paramsJson);
-//        return formDataJson;
-//    }
 
     @Override
     public BgLiveGameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog)
@@ -115,9 +70,8 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         try {
             digest = VendorService.encryptLoginMd5Key(uuid, snCode, gameSession.getVendorPlayerUsername(), secretCode);
         } catch (InvalidFormatException e) {
-            throw new InvalidVendorResponseException("MD5 Encryption Failed" + e); // 这里转换异常
+            throw new InvalidVendorResponseException("MD5 Encryption Failed" + e);
         }
-        ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> params = new HashMap<>();
         params.put("random", uuid);
         params.put("sn", snCode);
@@ -131,13 +85,6 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formLoginData.put("jsonrpc", "2.0");
         httpRequestLog.setUrl(apiUrl1);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
-
-//        URI uri = UriComponentsBuilder.fromUriString(apiUrl1)
-//                .queryParams(formData)
-//                .build()
-//                .encode()
-//                .toUri();
-
 
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
@@ -156,6 +103,9 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
 
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
+        if (response == null || response.getBody() == null) {
+            throw new InvalidVendorResponseException("MD5 Encryption Failed");
+        }
         try {
             String body = response.getBody();
             LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
@@ -164,8 +114,8 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
             responseVo.setData(gameUrl);
 
             return responseVo;
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException("Error processing JSON", e);
         }
 
     }
@@ -193,8 +143,6 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
         httpRequestLog.setUrl(this.apiUrl1 + EndPoints.CREATE_USER);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
-        HttpHeaders headers = new HttpHeaders();
-//
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
                 .uri(apiUrl1 + EndPoints.CREATE_USER)

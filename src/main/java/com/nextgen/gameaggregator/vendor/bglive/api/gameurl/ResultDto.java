@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResultDto {
-    
+
     @JsonProperty("success")
     private boolean success;
 }
