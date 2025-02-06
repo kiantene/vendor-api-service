@@ -2,13 +2,13 @@ package com.nextgen.gameaggregator.vendor.bglive.api.gameurl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
@@ -19,13 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -60,22 +57,23 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         this.snCode = ValidationUtils.validateCredential(credentials.get(Credentials.SN_CODE));
         this.secretCode = VendorService.generateSecretCode(agentPass);
 
-        String uuid = UUID.randomUUID().toString();
-        String digest = VendorService.encryptMd5Key(uuid, snCode, secretCode);
+//        String uuid = UUID.randomUUID().toString();
+//        String digest = VendorService.encryptLoginMd5Key(uuid, snCode, gameSession.getVendorPlayerUsername(), secretCode);
+//
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        Map<String, Object> params = new HashMap<>();
+//        params.put("random", uuid);
+//        params.put("sn", snCode);
+//        params.put("loginId", gameSession.getVendorPlayerUsername());
+//        params.put("digest", digest);
+//
+//        Map<String, Object> formData = new HashMap<String, Object>();
+//        formData.put("id", uuid);
+//        formData.put("method", EndPoints.GAME_URL);
+//        formData.put("params", params);
+//        formData.put("jsonrpc", "2.0");
 
-        // set DTO
-        UserDto userDto = VendorService.setUserDto(uuid, digest, snCode, gameSession.getVendorPlayerUsername(), agentKey);
-
-
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("params", userDto);
-        body.put("id", "123");
-        body.put("method", EndPoints.GAME_URL);
-        body.put("jsonrpc", "2.0");
-
-        LinkedMultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("body", new Gson().toJson(body));
-        return formData;
+        return new LinkedMultiValueMap<>();
 
 //        MultiValueMap<String, String> formDataJson = null;
 //        try {
@@ -112,24 +110,64 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         } catch (Exception e) {
             throw new InvalidVendorResponseException("Failed to checkAndCreateAccount or getBalance or createSessionToken : " + e);
         }
+        String uuid = UUID.randomUUID().toString();
+        String digest;
+        try {
+            digest = VendorService.encryptLoginMd5Key(uuid, snCode, gameSession.getVendorPlayerUsername(), secretCode);
+        } catch (InvalidFormatException e) {
+            throw new InvalidVendorResponseException("MD5 Encryption Failed" + e); // 这里转换异常
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> params = new HashMap<>();
+        params.put("random", uuid);
+        params.put("sn", snCode);
+        params.put("loginId", gameSession.getVendorPlayerUsername());
+        params.put("digest", digest);
 
+        Map<String, Object> formLoginData = new HashMap<String, Object>();
+        formLoginData.put("id", uuid);
+        formLoginData.put("method", EndPoints.GAME_URL);
+        formLoginData.put("params", params);
+        formLoginData.put("jsonrpc", "2.0");
         httpRequestLog.setUrl(apiUrl1);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-        URI uri = UriComponentsBuilder.fromUriString(apiUrl1)
-                .queryParams(formData)
-                .build()
-                .encode()
-                .toUri();
+//        URI uri = UriComponentsBuilder.fromUriString(apiUrl1)
+//                .queryParams(formData)
+//                .build()
+//                .encode()
+//                .toUri();
 
-        ResponseEntity<String> response = ResponseEntity.ok().body(uri.toString());
+
+        WebClient webClient = WebClient.create();
+        ResponseEntity<String> response = webClient.post()
+                .uri(apiUrl1 + EndPoints.GAME_URL)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(formLoginData)
+                .retrieve()
+                .toEntity(String.class)
+                .retry(RETRY_COUNT)
+                .timeout(Duration.ofMillis(TIMEOUT))
+                .onErrorResume(TimeoutException.class, e -> {
+                    isTimeout.set(true);
+                    return Mono.error(e);
+                })
+                .block();
+
 
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
+        try {
+            String body = response.getBody();
+            LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
+            String gameUrl = loginDto.getResult();
+            BgLiveGameUrlVo responseVo = new BgLiveGameUrlVo();
+            responseVo.setData(gameUrl);
 
-        BgLiveGameUrlVo responseVo = new BgLiveGameUrlVo();
-        responseVo.setData(uri.toString());
+            return responseVo;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
 
-        return responseVo;
     }
 
 
@@ -139,18 +177,18 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> params = new HashMap<>();
         String uuid = UUID.randomUUID().toString();
-        String digest = VendorService.encryptMd5Key(uuid, snCode, secretCode);
+        String digest = VendorService.encryptCreateUserMd5Key(uuid, snCode, secretCode);
         params.put("random", uuid);
         params.put("sn", snCode);
         params.put("loginId", gameSession.getVendorPlayerUsername());
         params.put("agentLoginId", agentKey);
         params.put("digest", digest);
 
-        Map<String, Object> postData = new HashMap<String, Object>();
-        postData.put("id", uuid);
-        postData.put("method", EndPoints.CREATE_USER);
-        postData.put("params", params);
-        postData.put("jsonrpc", "2.0");
+        Map<String, Object> formData = new HashMap<String, Object>();
+        formData.put("id", uuid);
+        formData.put("method", EndPoints.CREATE_USER);
+        formData.put("params", params);
+        formData.put("jsonrpc", "2.0");
 
 
         httpRequestLog.setUrl(this.apiUrl1 + EndPoints.CREATE_USER);
@@ -161,7 +199,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         ResponseEntity<String> response = webClient.post()
                 .uri(apiUrl1 + EndPoints.CREATE_USER)
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(postData)
+                .bodyValue(formData)
                 .retrieve()
                 .toEntity(String.class)
                 .retry(RETRY_COUNT)

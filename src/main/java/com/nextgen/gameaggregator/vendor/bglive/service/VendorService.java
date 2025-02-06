@@ -29,9 +29,24 @@ public class VendorService extends BaseVendorService {
         this.gameSessionService = gameSessionService;
     }
 
-    public static String encryptMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
+    public static String encryptCreateUserMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
         try {
             String combined = random + snCode + secretCode;
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(combined.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new InvalidFormatException("Encrypt MD5 Fail");
+        }
+    }
+
+    public static String encryptLoginMd5Key(String random, String snCode, String loginId, String secretCode) throws InvalidFormatException {
+        try {
+            String combined = random + snCode + loginId + secretCode;
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(combined.getBytes());
             StringBuilder sb = new StringBuilder();
@@ -64,4 +79,13 @@ public class VendorService extends BaseVendorService {
         userDto.setAgentLoginId(agentLoginId);
         return userDto;
     }
+
+//    public static LoginDto setLoginDto(String random, String digest, String sn, String loginId) {
+//        LoginDto loginDto = new LoginDto();
+//        loginDto.setRandom(random);
+//        loginDto.setDigest(digest);
+//        loginDto.setSn(sn);
+//        loginDto.setLoginId(loginId);
+//        return loginDto;
+//    }
 }
