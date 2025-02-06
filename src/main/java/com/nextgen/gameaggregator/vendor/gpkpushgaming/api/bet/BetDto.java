@@ -125,13 +125,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        BigDecimal winAmount = null;
-
-        if (this.code.equals(BetType.POINTOUT)) {
-            winAmount = this.money;
-        }
-
-        return winAmount;
+        return this.money;
     }
 
     @Override
@@ -141,13 +135,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        BigDecimal turnover = null;
-
-        if (this.code.equals(BetType.POINTIN)) {
-            turnover = this.money;
-        }
-
-        return turnover;
+        return this.money;
     }
 
     @Override

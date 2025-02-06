@@ -7,13 +7,11 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
-import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -36,8 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 @Slf4j
 public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
-    @Autowired
-    RequestService requestService;
 
     String apiToken = "api_token";
     String platform = "platform";

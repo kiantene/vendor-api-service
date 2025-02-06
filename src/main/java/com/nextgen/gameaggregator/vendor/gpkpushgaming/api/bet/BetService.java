@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet;
 
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -33,7 +32,6 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final HttpService httpService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final VendorGameCodeService vendorGameCodeService;
 
@@ -43,8 +41,6 @@ public class BetService {
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      SettledBetService settledBetService,
-                      RequestIdempotentLogService requestIdempotentLogService,
                       AutowireCapableBeanFactory autowireCapableBeanFactory,
                       VendorGameCodeService vendorGameCodeService) {
 
@@ -53,7 +49,6 @@ public class BetService {
         this.walletService = walletService;
         this.validationService = validationService;
         this.httpService = httpService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.vendorGameCodeService = vendorGameCodeService;
     }
@@ -72,8 +67,7 @@ public class BetService {
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
-
-
+            
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
