@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelBetDto implements RollbackData {
@@ -19,7 +21,7 @@ public class CancelBetDto implements RollbackData {
 
     @NotNull
     @Positive
-    private int game;
+    private Integer game;
 
     @NotNull
     @Positive
@@ -27,10 +29,10 @@ public class CancelBetDto implements RollbackData {
 
     @NotNull
     @Positive
-    private double betAmount;
+    private BigDecimal betAmount;
 
     @NotNull
-    private double winloseAmount;
+    private BigDecimal winloseAmount;
 
     @NotNull
     @NotBlank
