@@ -4,7 +4,6 @@ package com.nextgen.gameaggregator.vendor.bglive.service;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.vendor.bglive.api.gameurl.UserDto;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -69,23 +68,4 @@ public class VendorService extends BaseVendorService {
             throw new InvalidFormatException("SHA-1 algorithm not found");
         }
     }
-
-    public static UserDto setUserDto(String random, String digest, String sn, String loginId, String agentLoginId) {
-        UserDto userDto = new UserDto();
-        userDto.setRandom(random);
-        userDto.setDigest(digest);
-        userDto.setSn(sn);
-        userDto.setLoginId(loginId);
-        userDto.setAgentLoginId(agentLoginId);
-        return userDto;
-    }
-
-//    public static LoginDto setLoginDto(String random, String digest, String sn, String loginId) {
-//        LoginDto loginDto = new LoginDto();
-//        loginDto.setRandom(random);
-//        loginDto.setDigest(digest);
-//        loginDto.setSn(sn);
-//        loginDto.setLoginId(loginId);
-//        return loginDto;
-//    }
 }
