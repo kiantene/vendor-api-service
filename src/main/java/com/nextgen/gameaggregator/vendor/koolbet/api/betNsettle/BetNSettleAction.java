@@ -79,7 +79,7 @@ public class BetNSettleAction {
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.BET_SUCCESS);
-            responseVo.setUsername(traceId);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 

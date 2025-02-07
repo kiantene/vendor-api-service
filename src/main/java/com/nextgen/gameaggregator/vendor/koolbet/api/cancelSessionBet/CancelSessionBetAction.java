@@ -83,7 +83,7 @@ public class CancelSessionBetAction {
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_SUCCESS);
-            responseVo.setUsername(traceId);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 

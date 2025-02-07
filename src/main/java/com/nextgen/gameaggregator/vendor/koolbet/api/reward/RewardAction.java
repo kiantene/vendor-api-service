@@ -80,7 +80,7 @@ public class RewardAction {
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.REWARD_SUCCESS);
-            responseVo.setUsername(traceId);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 
