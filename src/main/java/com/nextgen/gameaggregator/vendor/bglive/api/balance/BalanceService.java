@@ -69,11 +69,11 @@ public class BalanceService {
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            commonVo.setId(httpRequestLog.getId());
+            commonVo.setId(balanceDto.getId());
             commonVo.setResult(getWalletBalance);
 
         } catch (JsonProcessingException | InvalidRequestException | InvalidPlayerException e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.ERROR.code, ResponseCodes.ERROR.message, String.valueOf(e));
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.ERROR.code, ResponseCodes.ERROR.message, ResponseCodes.ERROR.message);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException |
                  InvalidVendorLineException | CredentialNotFoundException e) {
@@ -85,7 +85,7 @@ public class BalanceService {
         } catch (InvalidOperatorResponseException e) {
             throw new RuntimeException(e);
         }
- 
+
         return commonVo;
     }
 
