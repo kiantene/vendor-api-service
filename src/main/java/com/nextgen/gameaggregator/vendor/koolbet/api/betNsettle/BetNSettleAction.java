@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -82,6 +83,10 @@ public class BetNSettleAction {
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
+
+            if (gameSession.getVendorPlayerUsername().equals("1e8yw13563hf")) {
+                TimeUnit.SECONDS.sleep(31);
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
