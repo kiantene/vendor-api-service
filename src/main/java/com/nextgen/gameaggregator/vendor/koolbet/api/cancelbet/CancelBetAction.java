@@ -9,10 +9,10 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.api.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,8 +100,7 @@ public class CancelBetAction {
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
-            }
-            if (e.getStatus().equals(BetStatus.REFUNDED.code)) {
+            } else if (e.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //if found the bet in refunded status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_CANCELED);
             } else {

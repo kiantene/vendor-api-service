@@ -92,7 +92,7 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override

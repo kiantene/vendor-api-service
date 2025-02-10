@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -87,12 +88,15 @@ public class CancelSessionBetAction {
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 
+            if (gameSession.getVendorPlayerUsername().equals("1e8yw13563gf")) {
+                TimeUnit.SECONDS.sleep(31);
+            }
+
         } catch (BetResultIdempotentViolationException e) {
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
-            }
-            if (e.getStatus().equals(BetStatus.REFUNDED.code)) {
+            } else if (e.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //if found the bet in refunded status
                 responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_ALREADY_CANCELED);
             } else {
