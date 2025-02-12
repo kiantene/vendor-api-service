@@ -3,14 +3,8 @@ package com.nextgen.gameaggregator.vendor.bglive.api.Action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.aglive.api.bet.BetService;
-import com.nextgen.gameaggregator.vendor.aglive.api.endround.SettleService;
-import com.nextgen.gameaggregator.vendor.aglive.api.refund.RefundService;
-import com.nextgen.gameaggregator.vendor.aglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -29,26 +23,16 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final BalanceService balanceAction;
-    private final BetService betService;
-    private final SettleService settleService;
-    private final RefundService refundService;
-    private final VendorService vendorService;
-    private final VendorLineService vendorLineService;
+
 
     @Autowired
-    public GeneralAction(HttpService httpService, BalanceService balanceAction, BetService betService, VendorService vendorService,
-                         SettleService settleService, RefundService refundService, VendorLineService vendorLineService) {
+    public GeneralAction(HttpService httpService, BalanceService balanceAction) {
         this.httpService = httpService;
         this.balanceAction = balanceAction;
-        this.betService = betService;
-        this.vendorService = vendorService;
-        this.settleService = settleService;
-        this.refundService = refundService;
-        this.vendorLineService = vendorLineService;
     }
 
     @PostMapping
-    public CommonVo action(HttpServletRequest request) throws JsonProcessingException, CredentialNotFoundException {
+    public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         CommonVo commonVo = new CommonVo();
@@ -63,9 +47,9 @@ public class GeneralAction {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
-//        } catch (Exception e) {
-//            vo.setErrorResponse(ResponseCodes.ERROR);
-//            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code, ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, commonVo);

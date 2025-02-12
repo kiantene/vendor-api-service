@@ -30,13 +30,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
+    private static final String JSON_RPC_VERSION = "2.0";
     private String apiUrl1;
-    private String apiUrl2;
     private String snCode;
     private String agentKey;
-    private String agentPass;
     private String secretCode;
-    private String jsonrpc_version = "2.0";
 
     public GameUrlService() {
 
@@ -48,9 +46,8 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
         this.agentKey = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_KEY));
-        this.agentPass = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_PASS));
+        String agentPass = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_PASS));
         this.apiUrl1 = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL1));
-        this.apiUrl2 = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL2));
         this.snCode = ValidationUtils.validateCredential(credentials.get(Credentials.SN_CODE));
         this.secretCode = VendorService.generateSecretCode(agentPass);
 
@@ -79,11 +76,11 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         params.put("loginId", gameSession.getVendorPlayerUsername());
         params.put("digest", digest);
 
-        Map<String, Object> formLoginData = new HashMap<String, Object>();
+        Map<String, Object> formLoginData = new HashMap<>();
         formLoginData.put("id", uuid);
         formLoginData.put("method", EndPoints.GAME_URL);
         formLoginData.put("params", params);
-        formLoginData.put("jsonrpc", jsonrpc_version);
+        formLoginData.put("jsonrpc", JSON_RPC_VERSION);
         httpRequestLog.setUrl(apiUrl1);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
@@ -135,11 +132,11 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         params.put("agentLoginId", agentKey);
         params.put("digest", digest);
 
-        Map<String, Object> formData = new HashMap<String, Object>();
+        Map<String, Object> formData = new HashMap<>();
         formData.put("id", uuid);
         formData.put("method", EndPoints.CREATE_USER);
         formData.put("params", params);
-        formData.put("jsonrpc", "2.0");
+        formData.put("jsonrpc", JSON_RPC_VERSION);
 
 
         httpRequestLog.setUrl(this.apiUrl1 + EndPoints.CREATE_USER);
@@ -160,6 +157,10 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
                 .block();
 
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
+
+        if (response == null || response.getBody() == null) {
+            throw new InvalidVendorResponseException("Failed to Create Account: response is null");
+        }
 
         BgLiveGameUrlVo responseVo = objectMapper.readValue(response.getBody(), BgLiveGameUrlVo.class);
 
