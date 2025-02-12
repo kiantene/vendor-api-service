@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -113,6 +114,14 @@ public class SessionBetNSettleAction {
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException e) {
+            if (e.getOperatorStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
+                httpService.logError(httpRequestLog, e);
+            } else {
+                responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
+                httpService.logError(httpRequestLog, e);
+            }
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
