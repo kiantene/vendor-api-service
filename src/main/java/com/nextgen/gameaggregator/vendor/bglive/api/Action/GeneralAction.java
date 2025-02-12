@@ -60,7 +60,7 @@ public class GeneralAction {
             commonVo = this.actionHandling(actionDto, traceId, httpRequestLog);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.ERROR.code, ResponseCodes.ERROR.message, String.valueOf(e));
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
 //        } catch (Exception e) {

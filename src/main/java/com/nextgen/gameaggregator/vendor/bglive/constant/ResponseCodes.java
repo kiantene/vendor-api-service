@@ -1,25 +1,24 @@
 package com.nextgen.gameaggregator.vendor.bglive.constant;
 
 import lombok.AllArgsConstructor;
-import org.apache.http.HttpStatus;
 
 @AllArgsConstructor
 public enum ResponseCodes {
 
-    UNKNOWN_EXCEPTION(000, "unknown Exception"),
-    NETWORK_ERROR(001, "network error"),
-    ERROR(002, "application layer unknown exception"),
-    ERROR(003, "data access unknown exception"),
-    ERROR(004, "cache access unknown exception"),
-    ERROR(005, "RPC call unknown exception"),
-    ERROR(100, "Incoming parameters are incorrect"),
-    ERROR(101, "JSON string syntax is incorrect"),
-    ERROR(501, "Server Interval Error!");
-
-    INVALID_DATA(400, "INVALID_DATA"),
-    INCORRECT_SESSION_TYPE(403, "INCORRECT_SESSION_TYPE"),
-    INVALID_SESSION(404, "INVALID_SESSION"),
-    ERROR(500, "ERROR");
+    SYSTEM_ERROR(000, "System Error");
+//    NETWORK_ERROR(001, "network error"),
+//    ERROR(002, "application layer unknown exception"),
+//    ERROR(003, "data access unknown exception"),
+//    ERROR(004, "cache access unknown exception"),
+//    ERROR(005, "RPC call unknown exception"),
+//    ERROR(100, "Incoming parameters are incorrect"),
+//    ERROR(101, "JSON string syntax is incorrect"),
+//    ERROR(501, "Server Interval Error!");
+//
+//    INVALID_DATA(400, "INVALID_DATA"),
+//    INCORRECT_SESSION_TYPE(403, "INCORRECT_SESSION_TYPE"),
+//    INVALID_SESSION(404, "INVALID_SESSION"),
+//    ERROR(500, "ERROR");
 
 //    INVALID_DATA(400, "INVALID_DATA", HttpStatus.SC_BAD_REQUEST),
 //    INCORRECT_SESSION_TYPE(403, "INCORRECT_SESSION_TYPE", HttpStatus.SC_FORBIDDEN),

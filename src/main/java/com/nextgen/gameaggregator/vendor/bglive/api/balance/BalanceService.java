@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +74,7 @@ public class BalanceService {
             commonVo.setResult(getWalletBalance);
 
         } catch (JsonProcessingException | InvalidRequestException | InvalidPlayerException e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.ERROR.code, ResponseCodes.ERROR.message, ResponseCodes.ERROR.message);
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException |
                  InvalidVendorLineException | CredentialNotFoundException e) {
@@ -83,6 +84,8 @@ public class BalanceService {
         } catch (VendorCurrencyNotSupportException e) {
             throw new RuntimeException(e);
         } catch (InvalidOperatorResponseException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidFormatException e) {
             throw new RuntimeException(e);
         }
 
@@ -97,16 +100,19 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
+            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException, InvalidFormatException {
 
         // FindVendorLine
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
         String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
+        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, balanceDto.getParams().getSn(), InvalidPlayerException::new);
 
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerUsername()), balanceDto.getParams().getLoginId(), InvalidPlayerException::new);
+        String validateSign = VendorService.encryptLoginMd5Key(balanceDto.getParams().getRandom(), snCode, gameSession.getVendorPlayerUsername(), secretKey);
+        ValidationUtils.isEquals(validateSign, balanceDto.getParams().getSign(), AuthenticationException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active

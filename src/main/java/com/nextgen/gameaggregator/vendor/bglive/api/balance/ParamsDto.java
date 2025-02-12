@@ -12,6 +12,16 @@ public class ParamsDto {
 
     @NotBlank
     @Size(max = 255)
+    @JsonProperty("random")
+    private String random;
+
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("sign")
+    private String sign;
+
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("userId")
     private String userId;
 
