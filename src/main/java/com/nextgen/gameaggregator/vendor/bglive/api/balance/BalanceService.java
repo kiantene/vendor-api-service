@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.balance;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
@@ -24,26 +23,22 @@ public class BalanceService {
     private final HttpService httpService;
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
-    private final VendorGameService vendorGameService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
 
 
-    private String vendorPlayerLoginId;
-
     @Autowired
     public BalanceService(HttpService httpService,
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
-                          VendorGameService vendorGameService,
                           GameSessionService gameSessionService,
-                          WalletService walletService, VendorPlayerService vendorPlayerService) {
+                          WalletService walletService,
+                          VendorPlayerService vendorPlayerService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
-        this.vendorGameService = vendorGameService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
@@ -59,10 +54,9 @@ public class BalanceService {
             // Handle the action and return the resulting value
             this.doValidation(balanceDto);
 
-            this.vendorPlayerLoginId = balanceDto.getParams().getLoginId();
+            String vendorPlayerLoginId = balanceDto.getParams().getLoginId();
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-//
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);
 
@@ -73,22 +67,24 @@ public class BalanceService {
             commonVo.setId(balanceDto.getId());
             commonVo.setResult(getWalletBalance);
 
-        } catch (JsonProcessingException | InvalidRequestException | InvalidPlayerException e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
+        } catch (InvalidRequestException e) {
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException |
-                 InvalidVendorLineException | CredentialNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidAgentApiCredentialException e) {
-            throw new RuntimeException(e);
-        } catch (VendorCurrencyNotSupportException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidOperatorResponseException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidFormatException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (AuthenticationException e) {
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
+        } catch (Exception e) {
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
+                    ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
+            httpService.logError(httpRequestLog, e);
+        }
         return commonVo;
     }
 
@@ -100,7 +96,12 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException, InvalidFormatException {
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            InvalidVendorLineException,
+            InvalidPlayerException,
+            CredentialNotFoundException,
+            InvalidFormatException {
 
         // FindVendorLine
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
@@ -110,7 +111,8 @@ public class BalanceService {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, balanceDto.getParams().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptLoginMd5Key(balanceDto.getParams().getRandom(), snCode, gameSession.getVendorPlayerUsername(), secretKey);
+        String validateSign = VendorService.encryptLoginMd5Key(balanceDto.getParams().getRandom(), snCode,
+                gameSession.getVendorPlayerUsername(), secretKey);
         ValidationUtils.isEquals(validateSign, balanceDto.getParams().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active

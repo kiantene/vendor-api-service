@@ -36,6 +36,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
     private String agentKey;
     private String agentPass;
     private String secretCode;
+    private String jsonrpc_version = "2.0";
 
     public GameUrlService() {
 
@@ -82,7 +83,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formLoginData.put("id", uuid);
         formLoginData.put("method", EndPoints.GAME_URL);
         formLoginData.put("params", params);
-        formLoginData.put("jsonrpc", "2.0");
+        formLoginData.put("jsonrpc", jsonrpc_version);
         httpRequestLog.setUrl(apiUrl1);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
@@ -104,7 +105,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
         if (response == null || response.getBody() == null) {
-            throw new InvalidVendorResponseException("MD5 Encryption Failed");
+            throw new InvalidVendorResponseException("Get Game Url Failed");
         }
         try {
             String body = response.getBody();
@@ -115,7 +116,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
             return responseVo;
         } catch (Exception e) {
-            throw new RuntimeException("Error processing JSON", e);
+            throw new InvalidVendorResponseException("Error processing JSON" + e);
         }
 
     }
