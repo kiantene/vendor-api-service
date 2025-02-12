@@ -70,7 +70,7 @@ public class SessionBetNSettleAction {
             SessionBetNSettleDto sessionBetNSettleDto = HttpService.convertJsonToDto(body, SessionBetNSettleDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            //this.doValidation(commonDto);
+            this.doValidation(sessionBetNSettleDto);
 
             //get rawGameSession by token id
             GameSession gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
