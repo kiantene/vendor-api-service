@@ -22,11 +22,6 @@ public class ParamsDto {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("userId")
-    private String userId;
-
-    @NotBlank
-    @Size(max = 255)
     @JsonProperty("loginId")
     private String loginId;
 
