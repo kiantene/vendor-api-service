@@ -152,4 +152,10 @@ public class SessionBetNSettleAction {
             validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
         }
     }
+
+    private void doValidation(SessionBetNSettleDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
 }
