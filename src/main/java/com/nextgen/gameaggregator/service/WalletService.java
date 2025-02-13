@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
+import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -168,8 +170,14 @@ public class WalletService {
             BigDecimal balance = balanceVo.getData().getBalance();
             unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
             unsettledBet.setBalance(balance);
+
             unsettledBetService.save(unsettledBet);
             betEvent = new BetEvent(unsettledBet, balance);
+
+            // will insert bet info record to this topic for MG
+            if(unsettledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+            }
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -237,7 +245,7 @@ public class WalletService {
 
     private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
-            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
+            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
         String rawData = httpRequestLog.getRequestBody();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
@@ -247,10 +255,16 @@ public class WalletService {
         BetInformation walletBetResultData = null;
         UnsettledBet unsettledBet = null;
         WalletBalanceVo balanceVo = null;
+        SettledBet settledBet = null;
 
         // check for idempotency in settled_bet
         loggingService.logStart();
-        SettledBet settledBet = settledBetService.idempotentCheck(traceId, gameSession, betResultData);
+        try {
+            settledBet = settledBetService.idempotentCheck(traceId, gameSession, betResultData);
+        } catch (AmbiguousTimeoutException | UnambiguousTimeoutException couchbaseTimeoutException) {
+            throw new InternalServerTimeoutRetryException(couchbaseTimeoutException.getMessage());
+        }
+
         loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.idempotentCheck", traceId);
 
         boolean retry = false;
@@ -382,6 +396,11 @@ public class WalletService {
 
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
+            // will insert bet info record to this topic for MG
+            if(settledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(settledBet, betResultData, gameSession.getVendorPlayerUsername());
+            }
+
             // delete unsettle bet only for vendors that will insert unsettle bet
             if (resultType == ResultType.WIN || resultType == ResultType.LOSE || resultType == ResultType.END) {
                 loggingService.logStart();
@@ -431,16 +450,24 @@ public class WalletService {
 
         loggingService.logStart();
         //settle by round
-        if (!vendorService.shouldSettleByBet()) {
+        if (!betResultData.getShouldSettleByBet()) {
 
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
 
             // Check if the vendor is eligible to process the end round
             if (vendorList.contains(settledBet.getVendorId())) {
-                SettledBet finalSettledBet = settledBet;
-                taskScheduler.schedule(() -> this.executeRetryEndRound(finalSettledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1), Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
+                loggingService.logDataFlowByVendor("Before executeRetryEndRound", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                if (Objects.equals(settledBet.getVendorId(), 18)) { // RG need to delay 5 seconds
+                    SettledBet finalSettledBet = settledBet;
+                    loggingService.logDataFlowByVendor("Before executeRetryEndRound with taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), finalSettledBet);
+                    taskScheduler.schedule(() -> this.executeRetryEndRound(finalSettledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1), Instant.now().plusSeconds(5)); // use ThreadPoolTaskScheduler set delay schedule to process EndRound later (5 seconds delay)
+                } else {
+                    loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                    this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+                }
             } else {
+                loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
                 this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
             }
         }
@@ -619,25 +646,31 @@ public class WalletService {
 
         String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+        loggingService.logDataFlowByVendor("Inside executeRetryEndRound 1", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
 
         if (remainingAttempts <= 0) {
             redisTemplate.delete(redisKey);
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 2", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
             processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
             return;
         }
 
         int redisUnsettledBetCount = Objects.requireNonNullElse(redisTemplate.opsForSet().size(redisKey), 0L).intValue();
+        loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis value", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForSet().members(redisKey));
         boolean isMatched = redisUnsettledBetCount != 0 && redisUnsettledBetCount == unsettledBetList.size();
 
         // if redisUnsettledBetCount is null, mean vendor send endRound after 2 hours of redis key TTL (will proceed to process endRound)
         if (redisUnsettledBetCount == 0 || isMatched) {
             redisTemplate.delete(redisKey);
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 3", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
             processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
         } else {
             String endRoundRetryCounterRedisKey = String.format(RedisKeyConstant.END_ROUND_RETRY_COUNTER_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
             redisTemplate.opsForValue().increment(endRoundRetryCounterRedisKey);
             redisTemplate.expire(endRoundRetryCounterRedisKey, 5L, TimeUnit.MINUTES);
             final int finalRetryCount = remainingAttempts;
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis retry count", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForValue().get(endRoundRetryCounterRedisKey));
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 4", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
             taskScheduler.schedule(() -> executeRetryEndRound(settledBet, vendorService, gameSession, traceId, finalRetryCount), Instant.now().plusSeconds(this.retryIntervalInSecondsValue));
         }
     }
@@ -645,6 +678,7 @@ public class WalletService {
     private void processEndRound(SettledBet settledBet, List<UnsettledBet> unsettledBetList, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         try {
             unsettledBetList = this.filterFailedUnsettledBet(unsettledBetList);
+            loggingService.logDataFlowByVendor("Inside processEndRound 1", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
 
             // multiple bets within same round
             for (UnsettledBet betRecord : unsettledBetList) {
@@ -674,7 +708,7 @@ public class WalletService {
     private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException,
-            InsufficientBalanceException {
+            InsufficientBalanceException, InternalServerTimeoutRetryException {
 
         String rawData = httpRequestLog.getRequestBody();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
@@ -683,6 +717,7 @@ public class WalletService {
         Integer agentId = gameSession.getAgentId();
         UnsettledBet unsettledBet = new UnsettledBet(betResultData, vendorGameId, vendorPlayerId);
         WalletBalanceVo balanceVo = null;
+        RawBetResultLog rawBetResultLog = null;
 
         BetInformation walletBetResultData = unsettledBet;
         walletBetResultData.setInternalTransactionId(traceId);
@@ -691,7 +726,12 @@ public class WalletService {
             case WIN, LOSE -> { // PP Win, data contains only result
                 // Idempotency checks on bet_result_log
                 loggingService.logStart();
-                RawBetResultLog rawBetResultLog = betResultLogService.idempotentCheck(traceId, gameSession, betResultData);
+                try {
+                    rawBetResultLog = betResultLogService.idempotentCheck(traceId, gameSession, betResultData);
+                } catch (AmbiguousTimeoutException | UnambiguousTimeoutException couchbaseTimeoutException) {
+                    throw new InternalServerTimeoutRetryException(couchbaseTimeoutException.getMessage());
+                }
+
                 loggingService.logProcessTime("doUnsettledBetResult ｜ betResultLogService.idempotentCheck", traceId);
 
                 loggingService.logStart();
@@ -727,7 +767,13 @@ public class WalletService {
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balance);
+                    
                     unsettledBetService.save(unsettledBet);
+
+                    // will insert bet info record to this topic for MG
+                    if(unsettledBet.getVendorId().equals(17)) {
+                        kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+                    }
 
                 } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -778,6 +824,11 @@ public class WalletService {
                     unsettledBet.setBalance(balanceVo.getData().getBalance());
                     unsettledBetService.save(unsettledBet);
 
+                    // will insert bet info record to this topic for MG
+                    if(unsettledBet.getVendorId().equals(17)) {
+                        kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+                    }
+
                 } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
                     // record status code from operator if they return an error
                     Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
@@ -819,7 +870,7 @@ public class WalletService {
     public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
             throws BetNotFoundException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
-            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
+            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
         httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
         httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
@@ -1021,6 +1072,11 @@ public class WalletService {
                     unsettledBetService.delete(unsettledBet);
                 }
                 loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
+            }
+
+            // will insert bet info record to this topic for MG
+            if(settledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(settledBet, null, gameSession.getVendorPlayerUsername());
             }
 
             RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);

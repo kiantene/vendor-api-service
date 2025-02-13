@@ -39,7 +39,7 @@ public class BalanceService {
             this.doValidation(balanceDto);
 
             // 2. Get vendor player details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUid());
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(balanceDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);

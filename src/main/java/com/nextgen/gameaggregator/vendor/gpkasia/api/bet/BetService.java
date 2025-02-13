@@ -45,6 +45,7 @@ public class BetService {
     private final SettledBetService settledBetService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final VendorGameCodeService vendorGameCodeService;
+    private final VendorService vendorService;
 
     @Autowired
     public BetService(GameSessionService gameSessionService,
@@ -56,7 +57,7 @@ public class BetService {
                       SettledBetService settledBetService,
                       RequestIdempotentLogService requestIdempotentLogService,
                       AutowireCapableBeanFactory autowireCapableBeanFactory,
-                      VendorGameCodeService vendorGameCodeService) {
+                      VendorGameCodeService vendorGameCodeService, VendorService vendorService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -68,6 +69,7 @@ public class BetService {
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.vendorGameCodeService = vendorGameCodeService;
+        this.vendorService = vendorService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -90,9 +92,6 @@ public class BetService {
         boolean isRequestExists = false;
 
         RLock userLock = null;
-
-        VendorService vendorService = new VendorService(vendorGameCodeService);
-        autowireCapableBeanFactory.autowireBean(vendorService);
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
@@ -154,7 +153,7 @@ public class BetService {
             if (betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)) {
                 // 7Mojo Live game multiple bet will settle by bet
                 if (gameSession.getGameCategoryId().equals(5)) {
-                    vendorService.setSettledByBet(true);
+                    betDto.setSettledByBet(true);
                 }
 
                 if (betDto.getIstips().equals(BetType.TIPS)) {

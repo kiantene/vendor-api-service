@@ -234,7 +234,7 @@ public class EndWagerAction {
             MergedBetDataIntegrityException,
             InsufficientBalanceException,
             TransactionStillProcessingException,
-            InvalidOperatorResponseException {
+            InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         /**
          * Test Case A:

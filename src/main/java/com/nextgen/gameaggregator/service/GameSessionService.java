@@ -170,7 +170,7 @@ public class GameSessionService {
 
     }
 
-    // deprecated, use getByVendorPlayerUsername instead
+    // deprecated, use getLastGameSessionByVendorPlayerUsername instead
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
@@ -203,9 +203,18 @@ public class GameSessionService {
 
     }
 
-    public GameSession getLastGameSessionByVendorPlayerUsername(String username) {
+    @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
+    public GameSession getLastGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
-        return null;
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
+
+        if (gameSessionList.isEmpty()) {
+            throw new AuthenticationException();
+        }
+
+        return gameSessionList.stream()
+                .max(Comparator.comparingLong(GameSession::getCreateTime))
+                .get();
     }
 
     @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")

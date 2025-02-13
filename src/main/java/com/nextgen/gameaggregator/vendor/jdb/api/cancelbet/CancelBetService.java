@@ -46,7 +46,7 @@ public class CancelBetService {
             // 2. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetDto.getUid()); //token check
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelBetDto.getUid()); //token check
             } catch (AuthenticationException authenticationException) { //if expired
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyCode(gameSession, cancelBetDto.getCurrency());

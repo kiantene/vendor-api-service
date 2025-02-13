@@ -27,9 +27,8 @@ public abstract class BaseGameUrlService<T extends GameUrlVo> implements GameUrl
     protected static final Integer TIMEOUT = 8000;
     protected static final Integer RETRY_COUNT = 3;
     protected static final String SELF_GENERATED_GAME_URL = "[Self-generated game url]";
-
-    private HttpMethod httpMethod;
     private final Class<T> responseVoClass;
+    private HttpMethod httpMethod;
     private MediaType contentType;
     private String gameUrl;
     private String credentialApiUrl;
@@ -116,7 +115,7 @@ public abstract class BaseGameUrlService<T extends GameUrlVo> implements GameUrl
         return this.onResponseSuccess(responseVo, gameSession);
     }
 
-    private ResponseEntity<String> doPost(String baseUrl, String uri, HttpHeaders httpHeaders, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
+    protected ResponseEntity<String> doPost(String baseUrl, String uri, HttpHeaders httpHeaders, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
 
         WebClient.RequestBodySpec webclient = WebClient.create(baseUrl).post().uri(uri);
 
@@ -138,7 +137,7 @@ public abstract class BaseGameUrlService<T extends GameUrlVo> implements GameUrl
                 .block();
     }
 
-    private ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
+    protected ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
 
         URI getUri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(uri)

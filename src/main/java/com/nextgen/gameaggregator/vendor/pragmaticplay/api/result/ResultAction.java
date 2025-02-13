@@ -86,6 +86,10 @@ public class ResultAction {
             responseVo.setTransactionId(transactionId);
             responseVo.setCash(balance);
 
+        } catch (InternalServerTimeoutRetryException internalServerTimeoutRetryException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, internalServerTimeoutRetryException);
+
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));

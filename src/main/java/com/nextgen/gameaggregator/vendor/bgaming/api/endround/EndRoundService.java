@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.endround;
 
-import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -33,7 +33,7 @@ public class EndRoundService {
     @Autowired
     private VendorService vendorService;
 
-    public void endRound(CommonDto commonDto, ActionDto actionDto, HttpServletRequest request, ResponseVo responseVo, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, VendorCurrencyNotSupportException {
+    public void endRound(CommonDto commonDto, ActionDto actionDto, HttpServletRequest request, ResponseVo responseVo, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -45,7 +45,7 @@ public class EndRoundService {
             //Insert Request Body
             Gson gson = new Gson();
             httpRequestLog.setRequestBody(gson.toJson(commonDto));
-            
+
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, gameSession, httpRequestLog, request);
 

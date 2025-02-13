@@ -169,7 +169,7 @@ public class SettleAction {
     private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession)
             throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
-        
+
         // Verify operator ID
         ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }

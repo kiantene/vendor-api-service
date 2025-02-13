@@ -50,7 +50,7 @@ public class RollOutDto implements RequestIdempotency {
 
     public Long getTimestamp() {
         Instant instant = Instant.parse(this.getEventTime());
-        return instant.getEpochSecond() * 1000;
+        return instant.toEpochMilli();
     }
 
     @Override

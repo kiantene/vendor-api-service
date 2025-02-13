@@ -19,15 +19,9 @@ import java.math.BigDecimal;
 public class CancelBetNSettleService {
 
     @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
 
@@ -45,7 +39,7 @@ public class CancelBetNSettleService {
             // 2. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetNSettleDto.getUid());
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelBetNSettleDto.getUid());
             } catch (AuthenticationException playerNotFoundException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetNSettleDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyId(gameSession);

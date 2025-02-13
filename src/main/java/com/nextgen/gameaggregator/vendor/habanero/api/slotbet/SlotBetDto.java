@@ -74,6 +74,6 @@ public class SlotBetDto extends FundInfoDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

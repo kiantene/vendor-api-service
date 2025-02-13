@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBetForPatching;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
@@ -129,6 +130,28 @@ public class RequestService {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
         logInfo.put("FunctionName: ", "processEndRoundLog");
+        logInfo.put("TraceId: ", processEndRoundLog.getTraceId());
+        logInfo.put("NumOfRetries: ", endRoundSettledBet.getProcessEndRoundCounter());
+        logInfo.put("NextRetryTime: ", endRoundSettledBet.getEndRoundProcessTime());
+        logInfo.put("RoundId: ", processEndRoundLog.getRoundId());
+        logInfo.put("vendorBetId: ", processEndRoundLog.getVendorBetId());
+//        logInfo.put("RawBody: ", processEndRoundLog.getRawBody());
+        logInfo.put("StartTime: ", processEndRoundLog.getStartTime());
+        logInfo.put("EndTime: ", processEndRoundLog.getEndTime());
+        logInfo.put("TimeTaken: ", processEndRoundLog.getEndTime() - processEndRoundLog.getStartTime());
+        logInfo.put("OperatorProcessStartTime: ", processEndRoundLog.getOperatorProcessStartTime());
+        logInfo.put("OperatorProcessEndTime: ", processEndRoundLog.getOperatorProcessEndTime());
+        logInfo.put("OperatorProcessTimeTaken: ", processEndRoundLog.getOperatorProcessEndTime() - processEndRoundLog.getOperatorProcessStartTime());
+        logInfo.put("OperatorStatus: ", endRoundSettledBet.getOperatorStatus());
+        logInfo.put("ErrorMessage: ", (exception == null) ? "SUCCESS" : HttpService.getStackTrace(exception));
+        log.info(gson.toJson(logInfo));
+    }
+    //endregion
+
+    public static void processEndRoundLogPatching(ProcessEndRoundLog processEndRoundLog, Exception exception, EndRoundSettledBetForPatching endRoundSettledBet) {
+        Gson gson = new Gson();
+        HashMap<String, Object> logInfo = new HashMap<>();
+        logInfo.put("FunctionName: ", "processEndRoundLogPatching");
         logInfo.put("TraceId: ", processEndRoundLog.getTraceId());
         logInfo.put("NumOfRetries: ", endRoundSettledBet.getProcessEndRoundCounter());
         logInfo.put("NextRetryTime: ", endRoundSettledBet.getEndRoundProcessTime());
