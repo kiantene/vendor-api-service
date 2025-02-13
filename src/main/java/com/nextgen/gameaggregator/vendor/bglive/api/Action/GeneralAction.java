@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.gpkasia.api.bet.BetService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +23,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeneralAction {
 
     private final HttpService httpService;
-    private final BalanceService balanceAction;
+    private final BalanceService balanceService;
+    private final BetService betService;
 
 
     @Autowired
-    public GeneralAction(HttpService httpService, BalanceService balanceAction) {
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService) {
         this.httpService = httpService;
-        this.balanceAction = balanceAction;
+        this.balanceService = balanceService;
+        this.betService = betService;
     }
 
     @PostMapping
@@ -60,8 +63,8 @@ public class GeneralAction {
     private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
 
         return switch (actionDto.getMethod()) {
-            case "open.operator.user.balance" -> balanceAction.balance(httpRequestLog, traceId);
-//            case "open.operator.order.transfer" -> settleService.settle(httpRequestLog, traceId);
+            case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
+//            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
 //            case "open.operator.calc.transfer" -> refundService.refund(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
 

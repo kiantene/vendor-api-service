@@ -107,7 +107,7 @@ public class BalanceService {
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
         String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
-        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, balanceDto.getParams().getSn(), InvalidPlayerException::new);
 

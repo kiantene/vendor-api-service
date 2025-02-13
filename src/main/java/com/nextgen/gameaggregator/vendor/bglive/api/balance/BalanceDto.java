@@ -14,8 +14,7 @@ public class BalanceDto {
     @Size(max = 255)
     @JsonProperty("id")
     private String id;
-
-
+    
     @JsonProperty("params")
     private ParamsDto params;
 
