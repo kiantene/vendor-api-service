@@ -25,4 +25,6 @@ public class KafkaConstant {
     public static final String TOPIC_TRANSFER_WALLET_REQUEST_LOG = "transfer_wallet_request_log_v1";
 
     public static final String TOPIC_BET_HISTORY_DELAY_SETTLEMENT = "topic_bet_history_delay_settlement";
+    public static final String TOPIC_BET_TRANSACTION_LOG = "topic_bet_transaction_log_v1";
+
 }

@@ -170,8 +170,14 @@ public class WalletService {
             BigDecimal balance = balanceVo.getData().getBalance();
             unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
             unsettledBet.setBalance(balance);
+
             unsettledBetService.save(unsettledBet);
             betEvent = new BetEvent(unsettledBet, balance);
+
+            // will insert bet info record to this topic for MG
+            if(unsettledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+            }
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -389,6 +395,11 @@ public class WalletService {
             }
 
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
+
+            // will insert bet info record to this topic for MG
+            if(settledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(settledBet, betResultData, gameSession.getVendorPlayerUsername());
+            }
 
             // delete unsettle bet only for vendors that will insert unsettle bet
             if (resultType == ResultType.WIN || resultType == ResultType.LOSE || resultType == ResultType.END) {
@@ -756,7 +767,13 @@ public class WalletService {
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balance);
+                    
                     unsettledBetService.save(unsettledBet);
+
+                    // will insert bet info record to this topic for MG
+                    if(unsettledBet.getVendorId().equals(17)) {
+                        kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+                    }
 
                 } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -806,6 +823,11 @@ public class WalletService {
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balanceVo.getData().getBalance());
                     unsettledBetService.save(unsettledBet);
+
+                    // will insert bet info record to this topic for MG
+                    if(unsettledBet.getVendorId().equals(17)) {
+                        kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
+                    }
 
                 } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
                     // record status code from operator if they return an error
@@ -1050,6 +1072,11 @@ public class WalletService {
                     unsettledBetService.delete(unsettledBet);
                 }
                 loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
+            }
+
+            // will insert bet info record to this topic for MG
+            if(settledBet.getVendorId().equals(17)) {
+                kafkaService.produceBetTransactionLog(settledBet, null, gameSession.getVendorPlayerUsername());
             }
 
             RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
