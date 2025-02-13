@@ -64,23 +64,8 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
-        // spribe
-        this.betWinVendorList.add(32);
-
-        // DB
-        this.betWinVendorList.add(55);
-
-        // spadegaming
-        this.betWinVendorList.add(7);
-        this.betLoseVendorList.add(7);
-
-        // habanero
-        this.betWinVendorList.add(19);
-        this.betLoseVendorList.add(19);
-
-        // cpg
-        this.betWinVendorList.add(48);
-        this.betLoseVendorList.add(48);
+        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74));
+        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74));
     }
 
     public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
@@ -197,7 +182,7 @@ public class WalletBetResultAction {
                     throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
                 }
             } //else do nothing
-            
+
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
