@@ -67,7 +67,7 @@ public class BetService {
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
-            
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
@@ -159,21 +159,11 @@ public class BetService {
     }
 
     private ResultType getResultType(BetDto dto) {
-        ResultType resultType = ResultType.WIN; // Default value is win
-
-        if (isPushGamingPlatform(dto)) {
-            if (isFinishedBet(dto)) {
-                resultType = handleFinishedBet(dto);
-            } else {
-                resultType = handleUnfinishedBet(dto);
-            }
+        if (isFinishedBet(dto)) {
+            return handleFinishedBet(dto);
+        } else {
+            return handleUnfinishedBet(dto);
         }
-
-        return resultType;
-    }
-
-    private boolean isPushGamingPlatform(BetDto dto) {
-        return dto.getPlatform().equals(PlatformType.PUSHGAMING) || dto.getPlatform().equals(PlatformType.PUSHGAMINGLATAM);
     }
 
     private boolean isFinishedBet(BetDto dto) {
@@ -183,20 +173,20 @@ public class BetService {
     private ResultType handleFinishedBet(BetDto dto) {
         if (dto.getCode().equals(BetType.POINTIN)) {
             // If did not lose all money or exactly lose
-            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
         } else {
             // It means exactly win
-            return ResultType.BET_WIN;
+            return ResultType.WIN;
         }
     }
 
     private ResultType handleUnfinishedBet(BetDto dto) {
         if (dto.getBetinfo().compareTo(BigDecimal.ZERO) > 0) {
             // First round of bonus game, bet amount (did not lose all money or exactly lose)
-            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
         } else {
             // Middle of bonus game (betinfo value is zero, so just check for the money value)
-            return dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            return dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
         }
     }
 

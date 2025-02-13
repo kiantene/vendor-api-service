@@ -91,10 +91,4 @@ public class VendorService extends BaseVendorService {
         // Handle for GPK BGAMING game, will be alwaus rollback by round
         return gameSession.getGameCode().startsWith("GPKBG");
     }
-
-    @Override
-    public boolean shouldSettleByBet() {
-        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
-        return this.settledByBet;
-    }
 }
