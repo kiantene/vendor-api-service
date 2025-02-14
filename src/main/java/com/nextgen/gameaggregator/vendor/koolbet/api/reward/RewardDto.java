@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.reward;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.koolbet.api.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.koolbet.dto.CommonDto;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,6 +14,8 @@ public class RewardDto extends CommonDto implements BetResultData {
 
 
     @NotBlank
+    @Size(max = 5)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
     @NotNull
@@ -26,13 +26,16 @@ public class RewardDto extends CommonDto implements BetResultData {
     private Integer activityId;
 
     @NotNull
-    private long orderId;
-
-    @NotNull
-    private long wagersTime;
+    @PositiveOrZero
+    private Long orderId;
 
     @NotNull
     @PositiveOrZero
+    private Long wagersTime;
+
+    @NotNull
+    @PositiveOrZero
+    @Digits(integer = 20, fraction = 2)
     private BigDecimal amount;
 
     //Optional

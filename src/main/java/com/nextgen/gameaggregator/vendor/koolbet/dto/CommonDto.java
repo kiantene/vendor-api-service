@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.dto;
+package com.nextgen.gameaggregator.vendor.koolbet.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;

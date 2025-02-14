@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.koolbet.api.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
+import com.nextgen.gameaggregator.vendor.koolbet.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -53,7 +53,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     @NotNull
     @PositiveOrZero
     @Digits(integer = 20, fraction = 2)
-    private BigInteger preserve;
+    private BigDecimal preserve;
 
 
     @Override

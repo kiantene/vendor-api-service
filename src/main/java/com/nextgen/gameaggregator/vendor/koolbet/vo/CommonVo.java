@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.vo;
+package com.nextgen.gameaggregator.vendor.koolbet.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
