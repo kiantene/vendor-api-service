@@ -6,10 +6,10 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.gpkasia.api.bet.BetService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,12 +62,17 @@ public class GeneralAction {
 
     private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
 
+//        return switch (actionDto.getMethod()) {
+//            case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
+//            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
+////            case "open.operator.calc.transfer" -> refundService.refund(httpRequestLog, traceId);
+//            default -> throw new InvalidRequestException();
+
+//        };
         return switch (actionDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
-//            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
-//            case "open.operator.calc.transfer" -> refundService.refund(httpRequestLog, traceId);
+            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
-
         };
     }
 }

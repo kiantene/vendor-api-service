@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
+import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,8 +48,8 @@ public class BetService {
         this.vendorPlayerService = vendorPlayerService;
     }
 
-    public BetVo bet(HttpRequestLog httpRequestLog, String traceId) {
-        BetVo betVo = new BetVo();
+    public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
+        CommonVo commonVo = new CommonVo();
         try {
             String body = httpRequestLog.getRequestBody();
             BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
@@ -67,8 +68,8 @@ public class BetService {
             for (OrdersDto order : betDto.getParams().getOrders()) {
                 walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
-
-            // set getbalanceVo
+            
+            BetVo betVo = new BetVo();
             betVo.setUserId(vendorPlayer.getId());
             betVo.setSn(betDto.getParams().getSn());
             betVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
@@ -76,7 +77,8 @@ public class BetService {
             String tranId = betDto.getParams().getTranId();
             betVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
 
-            betVo.setSuccessResponse(betDto.getId(), betVo);
+            commonVo.setId(betDto.getId());
+            commonVo.setResult(betVo);
 //        } catch (InvalidAgentApiCredentialException |
 //                 DisabledAgentPlayerException |
 //                 DisabledGameException |
@@ -104,12 +106,12 @@ public class BetService {
 //            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
-            betVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
                     ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
         }
-        return betVo;
+        return commonVo;
     }
 
     private void doValidation(BetDto betDto) throws InvalidRequestException {
