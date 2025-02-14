@@ -22,17 +22,21 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
     private Integer game;
 
     @NotNull
+    @PositiveOrZero
     private long round;
 
     @NotNull
+    @PositiveOrZero
     private long wagersTime;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 20, fraction = 2)
     private BigDecimal winloseAmount;
 
     @Override

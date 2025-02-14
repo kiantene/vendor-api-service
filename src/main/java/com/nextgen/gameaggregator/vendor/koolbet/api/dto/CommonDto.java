@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -9,8 +10,10 @@ import lombok.Data;
 public class CommonDto {
 
     @NotBlank
+    @Size(max = 255)
     public String reqId;
 
     @NotBlank
+    @Size(max = 255)
     public String token;
 }

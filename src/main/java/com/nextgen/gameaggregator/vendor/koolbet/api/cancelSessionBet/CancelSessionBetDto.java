@@ -2,9 +2,8 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.cancelSessionBet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,10 +14,12 @@ import java.math.BigInteger;
 public class CancelSessionBetDto implements RollbackData {
 
     @NotBlank
+    @Size(max = 255)
     public String reqId;
 
-    @NotNull
     @NotBlank
+    @Size(max = 5)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
     @NotNull
@@ -30,10 +31,13 @@ public class CancelSessionBetDto implements RollbackData {
     private long round;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
+    @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
+    @PositiveOrZero
+    @Digits(integer = 20, fraction = 2)
     private BigDecimal winloseAmount;
 
     @NotNull
