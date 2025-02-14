@@ -115,7 +115,7 @@ public class SessionBetNSettleAction {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
-            if (e.getOperatorStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+            if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
                 httpService.logError(httpRequestLog, e);
             } else {

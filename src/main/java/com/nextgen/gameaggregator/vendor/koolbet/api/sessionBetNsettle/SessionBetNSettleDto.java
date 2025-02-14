@@ -53,7 +53,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     @NotNull
     @PositiveOrZero
     @Digits(integer = 20, fraction = 2)
-    private Integer preserve;
+    private BigInteger preserve;
 
 
     @Override
