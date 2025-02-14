@@ -9,6 +9,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -23,7 +24,7 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private Long round;
+    private BigInteger round;
 
     @NotNull
     @PositiveOrZero

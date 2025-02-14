@@ -26,7 +26,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private Long round;
+    private BigInteger round;
 
     @NotNull
     @PositiveOrZero
@@ -43,7 +43,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     private BigDecimal winloseAmount;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private BigInteger sessionId;
 
     @NotNull

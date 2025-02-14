@@ -8,6 +8,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Data
 public class RewardDto extends CommonDto implements BetResultData {
@@ -27,7 +28,7 @@ public class RewardDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private Long orderId;
+    private BigInteger orderId;
 
     @NotNull
     @PositiveOrZero
