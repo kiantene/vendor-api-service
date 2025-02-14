@@ -120,12 +120,12 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.money;
+        return this.money.abs();
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.money;
+        return this.money.abs();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.money;
+        return this.money.abs();
     }
 
     @Override
