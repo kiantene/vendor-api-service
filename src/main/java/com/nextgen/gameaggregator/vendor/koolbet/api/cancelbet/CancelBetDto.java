@@ -26,7 +26,7 @@ public class CancelBetDto implements RollbackData {
 
     @NotNull
     @Positive
-    private long round;
+    private Long round;
 
     @NotNull
     @PositiveOrZero

@@ -26,11 +26,11 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private long round;
+    private Long round;
 
     @NotNull
     @PositiveOrZero
-    private long wagersTime;
+    private Long wagersTime;
 
     @NotNull
     @PositiveOrZero
