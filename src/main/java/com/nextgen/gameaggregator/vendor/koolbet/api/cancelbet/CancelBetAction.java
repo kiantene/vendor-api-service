@@ -91,6 +91,7 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_ROUND_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
+                 InvalidPlayerException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException e) {
