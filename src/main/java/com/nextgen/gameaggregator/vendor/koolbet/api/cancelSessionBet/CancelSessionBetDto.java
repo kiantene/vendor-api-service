@@ -43,6 +43,7 @@ public class CancelSessionBetDto implements RollbackData {
     @NotNull
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 50)
     private String userId;
 
     @NotNull
