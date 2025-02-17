@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 public class ResultVo {
     private Long userId;
     private String sn;
-    private BigDecimal amount;
+    private BigDecimal availableAmount;
     private String tranId;
     private String orderResult;
 
