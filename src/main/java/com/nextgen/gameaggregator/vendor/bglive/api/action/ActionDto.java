@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.bglive.api.Action;
+package com.nextgen.gameaggregator.vendor.bglive.api.action;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
