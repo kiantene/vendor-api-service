@@ -72,8 +72,7 @@ public class BetService {
             resultVo.setSn(betDto.getParams().getSn());
             resultVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
-            String tranId = betDto.getParams().getTranId();
-            resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
+            resultVo.setTranId(betDto.getParams().getTranId());
             commonVo.setSuccessResponse(betDto.getId(), resultVo);
 
         } catch (InsufficientBalanceException e) {
