@@ -64,8 +64,6 @@ public class BetService {
         String gameCode = null;
         BigDecimal money = null;
 
-//        VendorService vendorService = new VendorService(vendorGameCodeService);
-//        autowireCapableBeanFactory.autowireBean(vendorService);
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
@@ -73,13 +71,8 @@ public class BetService {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            gameCode = betDto.getGameinfo();
-
             // Verify session
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
-
-            // update game code from session
-//            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);

@@ -128,7 +128,10 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.getMoney().abs();
+        if (this.getCode().equals(BetType.POINTOUT)) {
+            return this.getMoney().abs();
+        }
+        return null;
     }
 
     @Override
@@ -138,7 +141,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.getMoney().abs();
+        return null;
     }
 
     @Override
