@@ -9,6 +9,7 @@ public class ResultVo {
     private Long userId;
     private String sn;
     private BigDecimal amount;
-    private String orderResult;
     private String tranId;
+    private String orderResult;
+
 }
