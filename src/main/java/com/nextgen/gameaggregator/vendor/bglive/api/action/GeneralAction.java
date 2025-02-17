@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.bglive.api.Action;
+package com.nextgen.gameaggregator.vendor.bglive.api.action;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.bglive.api.settlement.SettlementService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
@@ -25,13 +26,15 @@ public class GeneralAction {
     private final HttpService httpService;
     private final BalanceService balanceService;
     private final BetService betService;
+    private final SettlementService settlementService;
 
 
     @Autowired
-    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService) {
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, SettlementService settlementService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
+        this.settlementService = settlementService;
     }
 
     @PostMapping
@@ -64,6 +67,7 @@ public class GeneralAction {
         return switch (actionDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
+            case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
         };
     }
