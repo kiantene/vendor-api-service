@@ -34,6 +34,7 @@ public class BetService {
     private final HttpService httpService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final VendorGameCodeService vendorGameCodeService;
+    private final VendorService vendorService;
 
     @Autowired
     public BetService(GameSessionService gameSessionService,
@@ -42,7 +43,7 @@ public class BetService {
                       ValidationService validationService,
                       HttpService httpService,
                       AutowireCapableBeanFactory autowireCapableBeanFactory,
-                      VendorGameCodeService vendorGameCodeService) {
+                      VendorGameCodeService vendorGameCodeService, VendorService vendorService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -51,6 +52,7 @@ public class BetService {
         this.httpService = httpService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.vendorGameCodeService = vendorGameCodeService;
+        this.vendorService = vendorService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -62,8 +64,8 @@ public class BetService {
         String gameCode = null;
         BigDecimal money = null;
 
-        VendorService vendorService = new VendorService(vendorGameCodeService);
-        autowireCapableBeanFactory.autowireBean(vendorService);
+//        VendorService vendorService = new VendorService(vendorGameCodeService);
+//        autowireCapableBeanFactory.autowireBean(vendorService);
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BetDto.class);
@@ -77,7 +79,7 @@ public class BetService {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
             // update game code from session
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
+//            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
