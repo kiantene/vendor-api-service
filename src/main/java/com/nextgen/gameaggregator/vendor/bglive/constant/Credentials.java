@@ -5,9 +5,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class Credentials {
 
-    public static final String API_URL1 = "api_url1";
-
-    public static final String API_URL2 = "api_url2";
+    public static final String API_URL = "api_url";
 
     public static final String API_KEY = "api_key";
 

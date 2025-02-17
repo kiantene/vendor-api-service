@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
@@ -31,10 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
     private static final String JSON_RPC_VERSION = "2.0";
-    private String apiUrl1;
-    private String snCode;
-    private String agentKey;
-    private String secretCode;
 
     public GameUrlService() {
 
@@ -45,11 +40,6 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
-        this.agentKey = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_KEY));
-        String agentPass = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_PASS));
-        this.apiUrl1 = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL1));
-        this.snCode = ValidationUtils.validateCredential(credentials.get(Credentials.SN_CODE));
-        this.secretCode = VendorService.generateSecretCode(agentPass);
 
         return new LinkedMultiValueMap<>();
     }
@@ -58,10 +48,19 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
     public BgLiveGameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException, TimeoutException {
 
+        String snCode = credentials.getOrDefault(Credentials.SN_CODE, "");
+        String apiUrl = credentials.getOrDefault(Credentials.API_URL, "");
+        String agentPass = credentials.getOrDefault(Credentials.AGENT_PASS, "");
+        String secretCode;
         try {
-            this.createAccount(gameSession, httpRequestLog);
+            secretCode = VendorService.generateSecretCode(agentPass);
+        } catch (InvalidFormatException e) {
+            throw new InvalidVendorResponseException("Failed to generate secret code: " + e);
+        }
+        try {
+            this.createAccount(gameSession, credentials, httpRequestLog);
         } catch (Exception e) {
-            throw new InvalidVendorResponseException("Failed to checkAndCreateAccount or getBalance or createSessionToken : " + e);
+            throw new InvalidVendorResponseException("Failed to create account  : " + e);
         }
         String uuid = UUID.randomUUID().toString();
         String digest;
@@ -81,12 +80,12 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formLoginData.put("method", EndPoints.GAME_URL);
         formLoginData.put("params", params);
         formLoginData.put("jsonrpc", JSON_RPC_VERSION);
-        httpRequestLog.setUrl(apiUrl1);
+        httpRequestLog.setUrl(apiUrl);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
-                .uri(apiUrl1 + EndPoints.GAME_URL)
+                .uri(apiUrl + EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(formLoginData)
                 .retrieve()
@@ -98,8 +97,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
                     return Mono.error(e);
                 })
                 .block();
-
-
+        
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
         if (response == null || response.getBody() == null) {
             throw new InvalidVendorResponseException("Get Game Url Failed");
@@ -119,13 +117,20 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
     }
 
 
-    private void createAccount(GameSession gameSession, HttpRequestLog httpRequestLog)
+    private void createAccount(GameSession gameSession, Map<String, String> credentials, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException, TimeoutException, JsonProcessingException, InvalidFormatException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> params = new HashMap<>();
         String uuid = UUID.randomUUID().toString();
+        String apiUrl = credentials.getOrDefault(Credentials.API_URL, "");
+        String snCode = credentials.getOrDefault(Credentials.SN_CODE, "");
+        String agentPass = credentials.getOrDefault(Credentials.AGENT_PASS, "");
+        String agentKey = credentials.getOrDefault(Credentials.AGENT_KEY, "");
+        String secretCode = VendorService.generateSecretCode(agentPass);
         String digest = VendorService.encryptCreateUserMd5Key(uuid, snCode, secretCode);
+
+
         params.put("random", uuid);
         params.put("sn", snCode);
         params.put("loginId", gameSession.getVendorPlayerUsername());
@@ -139,11 +144,11 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formData.put("jsonrpc", JSON_RPC_VERSION);
 
 
-        httpRequestLog.setUrl(this.apiUrl1 + EndPoints.CREATE_USER);
+        httpRequestLog.setUrl(apiUrl + EndPoints.CREATE_USER);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
-                .uri(apiUrl1 + EndPoints.CREATE_USER)
+                .uri(apiUrl + EndPoints.CREATE_USER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(formData)
                 .retrieve()

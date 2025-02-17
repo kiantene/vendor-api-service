@@ -61,14 +61,6 @@ public class GeneralAction {
     }
 
     private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
-
-//        return switch (actionDto.getMethod()) {
-//            case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
-//            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
-////            case "open.operator.calc.transfer" -> refundService.refund(httpRequestLog, traceId);
-//            default -> throw new InvalidRequestException();
-
-//        };
         return switch (actionDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);

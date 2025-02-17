@@ -26,8 +26,7 @@ public class BalanceService {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
-
-
+    
     @Autowired
     public BalanceService(HttpService httpService,
                           VendorLineService vendorLineService,
@@ -64,8 +63,7 @@ public class BalanceService {
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            commonVo.setId(balanceDto.getId());
-            commonVo.setResult(getWalletBalance);
+            commonVo.setSuccessResponse(balanceDto.getId(), getWalletBalance);
 
         } catch (InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
