@@ -70,9 +70,10 @@ public class BetService {
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(vendorPlayer.getId());
             resultVo.setSn(betDto.getParams().getSn());
-            resultVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
+            resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
-            resultVo.setTranId(betDto.getParams().getTranId());
+            String tranId = betDto.getParams().getTranId();
+            resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
             commonVo.setSuccessResponse(betDto.getId(), resultVo);
 
         } catch (InsufficientBalanceException e) {
