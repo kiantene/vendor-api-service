@@ -11,38 +11,32 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
 public class BetService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
-    private final VendorGameService vendorGameService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;
-    private final VendorService vendorService;
-    private final ValidationService validationService;
     private final VendorPlayerService vendorPlayerService;
 
     @Autowired
-    public BetService(ValidationService validationService,
-                      HttpService httpService,
-                      VendorService vendorService,
+    public BetService(HttpService httpService,
                       WalletService walletService,
                       GameSessionService gameSessionService,
-                      VendorGameService vendorGameService,
                       VendorLineService vendorLineService,
                       AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
-        this.validationService = validationService;
         this.httpService = httpService;
-        this.vendorService = vendorService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
-        this.vendorGameService = vendorGameService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
@@ -66,44 +60,46 @@ public class BetService {
                 throw new InvalidRequestException("Bet request must contain at least one order.");
             }
             for (OrdersDto order : betDto.getParams().getOrders()) {
+                betDto.setCurrentOrder(order);
+                betDto.getExternalTransactionId();
+                betDto.getRoundId();
+                betDto.getBetAmount();
                 walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
-            
-            BetVo betVo = new BetVo();
-            betVo.setUserId(vendorPlayer.getId());
-            betVo.setSn(betDto.getParams().getSn());
-            betVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
-            betVo.setOrderResult("1");
-            String tranId = betDto.getParams().getTranId();
-            betVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
 
-            commonVo.setId(betDto.getId());
-            commonVo.setResult(betVo);
-//        } catch (InvalidAgentApiCredentialException |
-//                 DisabledAgentPlayerException |
-//                 DisabledGameException |
-//                 InvalidRequestException |
-//                 JsonProcessingException |
-//                 TransactionStillProcessingException |
-//                 InsufficientBalanceException |
-//                 DisabledVendorLineException e) {
-//            //set Vo
-//            vo.setErrorResponse(ResponseCodes.INVALID_DATA);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (AuthenticationException |
-//                 InvalidPlayerException |
-//                 VendorCurrencyNotSupportException |
-//                 CurrencyNotSupportedException |
-//                 GameNotSupportedException e) {
-//
-//            vo.setErrorResponse(ResponseCodes.INVALID_SESSION);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (BetResultIdempotentViolationException e) {
-//
-//            vo.setSuccessResponse(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
-//            httpService.logError(httpRequestLog, e);
+            ResultVo resultVo = new ResultVo();
+            resultVo.setUserId(vendorPlayer.getId());
+            resultVo.setSn(betDto.getParams().getSn());
+            resultVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
+            resultVo.setOrderResult("1");
+            String tranId = betDto.getParams().getTranId();
+            resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
+
+            commonVo.setSuccessResponse(betDto.getId(), resultVo);
+
+        } catch (InsufficientBalanceException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
+                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidRequestException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidPlayerException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (AuthenticationException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -117,6 +113,18 @@ public class BetService {
     private void doValidation(BetDto betDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(betDto);
+
+        ParamsDto paramsDto = betDto.getParams();
+        if (paramsDto != null) {
+            ValidationUtils.validateRequest(paramsDto);
+
+            List<OrdersDto> ordersList = paramsDto.getOrders();
+            if (ordersList != null) {
+                for (OrdersDto order : ordersList) {
+                    ValidationUtils.validateRequest(order);
+                }
+            }
+        }
 
     }
 
@@ -136,8 +144,8 @@ public class BetService {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, betDto.getParams().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptLoginMd5Key(betDto.getParams().getRandom(), snCode,
-                gameSession.getVendorPlayerUsername(), secretKey);
+        String validateSign = VendorService.encryptBetMd5Key(betDto.getParams().getRandom(), snCode,
+                gameSession.getVendorPlayerUsername(), String.valueOf(betDto.getParams().getAmount()), secretKey);
         ValidationUtils.isEquals(validateSign, betDto.getParams().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active

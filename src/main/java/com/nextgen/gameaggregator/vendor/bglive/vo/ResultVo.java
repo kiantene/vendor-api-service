@@ -1,12 +1,11 @@
-package com.nextgen.gameaggregator.vendor.bglive.api.bet;
+package com.nextgen.gameaggregator.vendor.bglive.vo;
 
-import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class BetVo extends CommonVo {
+public class ResultVo {
     private Long userId;
     private String sn;
     private BigDecimal amount;

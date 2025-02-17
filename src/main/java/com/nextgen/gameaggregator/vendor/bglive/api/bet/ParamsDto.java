@@ -44,7 +44,7 @@ public class ParamsDto {
     @Digits(integer = 20, fraction = 8)
     @JacksonXmlProperty(localName = "amount")
     private BigDecimal amount;
-
+    
     @JsonProperty("orders")
     private List<OrdersDto> orders;
 
