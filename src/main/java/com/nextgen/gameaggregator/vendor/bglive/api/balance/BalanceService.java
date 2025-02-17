@@ -64,8 +64,7 @@ public class BalanceService {
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            commonVo.setId(balanceDto.getId());
-            commonVo.setResult(getWalletBalance);
+            commonVo.setSuccessResponse(balanceDto.getId(), getWalletBalance);
 
         } catch (InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
