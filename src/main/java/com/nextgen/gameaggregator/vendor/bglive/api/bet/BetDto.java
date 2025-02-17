@@ -21,9 +21,12 @@ public class BetDto implements BetResultData {
     @JsonProperty("params")
     private ParamsDto params;
 
+    @JsonProperty("orders")
+    private OrdersDto currentOrder;
+
     @Override
     public String getExternalTransactionId() {
-        return params.getOrders() != null && !params.getOrders().isEmpty() ? params.getOrders().get(0).getOrderId() : null;
+        return currentOrder != null ? currentOrder.getOrderId() : null;
     }
 
     @Override
@@ -33,17 +36,19 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return params.getOrders() != null && !params.getOrders().isEmpty() ? params.getOrders().get(0).getIssueId() : null;
+        return currentOrder != null ? currentOrder.getIssueId() : null;
     }
 
     @Override
     public String getGameId() {
-        return params.getOrders() != null && !params.getOrders().isEmpty() ? params.getOrders().get(0).getGameId() : null;
+        return currentOrder != null ? currentOrder.getGameId() : null;
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return params.getOrders() != null && !params.getOrders().isEmpty() ? params.getOrders().get(0).getAmount() : BigDecimal.ZERO;
+        return currentOrder != null && currentOrder.getAmount() != null
+                ? currentOrder.getAmount().abs()
+                : BigDecimal.ZERO;
     }
 
     @Override

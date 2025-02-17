@@ -58,6 +58,21 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public static String encryptBetMd5Key(String random, String snCode, String loginId, String amount, String secretCode) throws InvalidFormatException {
+        try {
+            String combined = random + snCode + loginId + amount + secretCode;
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(combined.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new InvalidFormatException("Encrypt MD5 Fail");
+        }
+    }
+
     public static String generateSecretCode(String password) throws InvalidFormatException {
         try {
             MessageDigest sha1Digest = MessageDigest.getInstance("SHA-1");
