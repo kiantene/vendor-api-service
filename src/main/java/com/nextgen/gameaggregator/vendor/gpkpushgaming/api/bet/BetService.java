@@ -94,7 +94,7 @@ public class BetService {
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             // check the code value to define it is deducted or gain money
-            money = betDto.getCode().equals(BetType.POINTIN) ? (betDto.getMoney().multiply(BigDecimal.valueOf(-1.00))) : betDto.getMoney();
+            money = betDto.getCode().equals(BetType.POINTIN) ? (betDto.getMoney().negate()) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
             betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
