@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -37,17 +35,16 @@ public class GeneralAction {
     }
 
     @PostMapping
-    public Map<String, Object> action(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         CommonVo commonVo = new CommonVo();
 
-        Map<String, Object> x = null;
         try {
             String body = httpRequestLog.getRequestBody();
             ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
             // Handle the action and return the resulting value
-            x = this.actionHandling(actionDto, traceId, httpRequestLog);
+            commonVo = this.actionHandling(actionDto, traceId, httpRequestLog);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
@@ -60,10 +57,10 @@ public class GeneralAction {
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
-        return x;
+        return commonVo;
     }
 
-    private Map<String, Object> actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
 
 //        return switch (actionDto.getMethod()) {
 //            case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
@@ -74,7 +71,7 @@ public class GeneralAction {
 //        };
         return switch (actionDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
-//            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
+            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
         };
     }
