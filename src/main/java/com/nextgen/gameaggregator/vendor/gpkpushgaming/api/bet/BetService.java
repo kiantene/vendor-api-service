@@ -61,7 +61,6 @@ public class BetService {
         BetDataVo betDataVo = new BetDataVo();
         BigDecimal balance = null;
         GameSession gameSession = new GameSession();
-        String gameCode = null;
         BigDecimal money = null;
 
 

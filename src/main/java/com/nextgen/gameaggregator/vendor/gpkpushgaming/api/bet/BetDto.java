@@ -34,7 +34,7 @@ public class BetDto extends ActionDto implements BetResultData {
     private BigDecimal money;
 
     @NotBlank
-    @Size(min = 10, max = 10)
+    @Size(min = 10, max = 13)
     @Pattern(regexp = "\\d+")
     private String timestamp;
 
@@ -129,7 +129,7 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public BigDecimal getWinAmount() {
         if (this.getCode().equals(BetType.POINTOUT)) {
-            return this.getMoney().abs();
+            return this.getMoney();
         }
         return null;
     }
@@ -146,13 +146,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Long betTime = null;
-        //pushgaming
-        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            betTime = Long.parseLong(this.timestamp) * 1000;
-        }
-
-        return betTime;
+        return Long.parseLong(this.timestamp) * 1000;
     }
 
     @Override
@@ -162,14 +156,8 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        Long settledTime = null;
 
-        //pushgaming
-        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            settledTime = Long.parseLong(this.timestamp) * 1000;
-        }
-
-        return settledTime;
+        return Long.parseLong(this.timestamp) * 1000;
     }
 
     @Override
