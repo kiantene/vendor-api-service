@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.kypoker.api.constant;
+package com.nextgen.gameaggregator.vendor.kypoker.constant;
 
 public class Platforms {
 

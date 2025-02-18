@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.constant;
 public class Actions {
 
     // Vendor To GA
-    public static final String GET_BALANCE = "balance";
+    public static final String LOGIN = "0";
     public static final String BET = "bet";
     public static final String SETTLE = "win";
     public static final String REFUND = "refund";

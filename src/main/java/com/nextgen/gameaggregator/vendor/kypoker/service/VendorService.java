@@ -47,7 +47,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String MD5(String sourceStr) {
+    public static String MD5Encrypt(String sourceStr) {
         String result = "";
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
