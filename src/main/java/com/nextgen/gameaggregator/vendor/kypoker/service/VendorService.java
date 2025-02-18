@@ -30,6 +30,7 @@ public class VendorService extends BaseVendorService {
         return URLEncoder.encode(base64, "UTF-8");//URL加密
     }
 
+
     public static String AESDecrypt(String value,String key,boolean isDecodeURL) throws Exception {
         try {
             byte[] raw = key.getBytes("UTF-8");

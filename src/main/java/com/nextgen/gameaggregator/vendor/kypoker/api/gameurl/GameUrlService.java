@@ -52,7 +52,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         encryptParam.add("s", Actions.LOGIN);
         encryptParam.add("account", gameSession.getVendorPlayerUsername());
         encryptParam.add("orderid", AgentId+TimeStamp+gameSession.getVendorPlayerUsername());
-        encryptParam.add("account", gameSession.getIpAddress());
+        encryptParam.add("ip", "103.22.180.95");
         encryptParam.add("lineCode", String.valueOf(gameSession.getVendorLineId()));
         encryptParam.add("KindId", String.valueOf(gameSession.getVendorGameCode()));
         encryptParam.add("currency", String.valueOf(gameSession.getVendorCurrencyCode()));
