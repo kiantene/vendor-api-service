@@ -36,7 +36,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return currentOrder != null ? currentOrder.getIssueId() : null;
+        return getExternalTransactionId();
     }
 
     @Override
