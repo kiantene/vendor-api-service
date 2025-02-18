@@ -36,7 +36,7 @@ public class BetDto extends CommonDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return currentOrder != null ? currentOrder.getGameId() : null;
+        return null;
     }
 
     @Override
