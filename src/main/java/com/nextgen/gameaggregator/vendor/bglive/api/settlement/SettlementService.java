@@ -4,10 +4,11 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
@@ -16,6 +17,8 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -26,55 +29,60 @@ public class SettlementService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorPlayerService vendorPlayerService;
+    private final VendorService vendorService;
 
     @Autowired
     public SettlementService(HttpService httpService,
                              WalletService walletService,
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
-                             AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+                             AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, VendorService vendorService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
+        this.vendorService = vendorService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
         try {
             String body = httpRequestLog.getRequestBody();
-            SettleDto betDto = HttpService.convertJsonToDto(body, SettleDto.class);
+            SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             // Handle the action and return the resulting value
-            this.doValidation(betDto);
+            this.doValidation(settleDto);
 
-//            String vendorPlayerLoginId = betDto.getId();
-//            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
-//            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-            // 4. Verify remaining parameters (Verify against database values)
-//            this.doVerification(betDto, gameSession);
-//
-//            if (betDto.getParams().getOrders() == null || betDto.getParams().getOrders().isEmpty()) {
-//                throw new InvalidRequestException("Bet request must contain at least one order.");
-//            }
-//            for (OrdersDto order : betDto.getParams().getOrders()) {
-//                betDto.setCurrentOrder(order);
-//                betDto.getExternalTransactionId();
-//                betDto.getRoundId();
-//                betDto.getBetAmount();
-//                walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-//            }
-//
+            String vendorPlayerLoginId = settleDto.getParams().getLoginId();
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+
+            this.doVerification(settleDto, gameSession);
+
+            if (settleDto.getParams().getOrders() == null || settleDto.getParams().getOrders().isEmpty()) {
+                throw new InvalidRequestException("Bet request must contain at least one order.");
+            }
+            for (OrdersDto order : settleDto.getParams().getOrders()) {
+                settleDto.setCurrentOrder(order);
+                settleDto.getExternalTransactionId();
+                settleDto.getRoundId();
+                settleDto.getBetAmount();
+                ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(),
+                        settleDto.getJackpotAmount(), false);
+                walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService,
+                        httpRequestLog);
+            }
+
             ResultVo resultVo = new ResultVo();
-//            resultVo.setUserId(vendorPlayer.getId());
-//            resultVo.setSn(betDto.getParams().getSn());
-//            resultVo.setAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
-//            resultVo.setOrderResult("1");
-//            String tranId = betDto.getParams().getTranId();
-//            resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
+            resultVo.setUserId(vendorPlayer.getId());
+            resultVo.setSn(settleDto.getParams().getSn());
+            resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
+            resultVo.setOrderResult("1");
+            String tranId = settleDto.getParams().getTranId();
+            resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
 
-            commonVo.setSuccessResponse(betDto.getId(), resultVo);
+            commonVo.setSuccessResponse(settleDto.getId(), resultVo);
 
 //        } catch (InsufficientBalanceException e) {
 //            //set Vo
@@ -109,25 +117,25 @@ public class SettlementService {
         return commonVo;
     }
 
-    private void doValidation(SettleDto betDto) throws InvalidRequestException {
+    private void doValidation(SettleDto settleDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(betDto);
+        ValidationUtils.validateRequest(settleDto);
 
-//        ParamsDto paramsDto = betDto.getParams();
-//        if (paramsDto != null) {
-//            ValidationUtils.validateRequest(paramsDto);
-//
-//            List<OrdersDto> ordersList = paramsDto.getOrders();
-//            if (ordersList != null) {
-//                for (OrdersDto order : ordersList) {
-//                    ValidationUtils.validateRequest(order);
-//                }
-//            }
-//        }
+        ParamsDto paramsDto = settleDto.getParams();
+        if (paramsDto != null) {
+            ValidationUtils.validateRequest(paramsDto);
+
+            List<OrdersDto> ordersList = paramsDto.getOrders();
+            if (ordersList != null) {
+                for (OrdersDto order : ordersList) {
+                    ValidationUtils.validateRequest(order);
+                }
+            }
+        }
 
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(SettleDto settleDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             InvalidVendorLineException,
@@ -141,11 +149,11 @@ public class SettlementService {
         String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
         String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(snCode, betDto.getParams().getSn(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(snCode, settleDto.getParams().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptBetMd5Key(betDto.getParams().getRandom(), snCode,
-                gameSession.getVendorPlayerUsername(), String.valueOf(betDto.getParams().getAmount()), secretKey);
-        ValidationUtils.isEquals(validateSign, betDto.getParams().getSign(), AuthenticationException::new);
+        String validateSign = VendorService.encryptBetMd5Key(settleDto.getParams().getRandom(), snCode,
+                gameSession.getVendorPlayerUsername(), String.valueOf(settleDto.getParams().getAmount()), secretKey);
+        ValidationUtils.isEquals(validateSign, settleDto.getParams().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
