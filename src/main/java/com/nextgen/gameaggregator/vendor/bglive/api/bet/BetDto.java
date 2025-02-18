@@ -4,22 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetResultData {
-    @NotBlank
-    @Size(max = 255)
-    @JsonProperty("id")
-    private String id;
+public class BetDto extends CommonDto implements BetResultData {
 
     @JsonProperty("params")
-    private ParamsDto params;
+    private ParamsDto paramsDto;
 
     @JsonProperty("orders")
     private OrdersDto currentOrder;

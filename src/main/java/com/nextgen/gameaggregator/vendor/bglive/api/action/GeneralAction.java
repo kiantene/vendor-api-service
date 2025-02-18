@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.bglive.api.settlement.SettlementService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +46,9 @@ public class GeneralAction {
 
         try {
             String body = httpRequestLog.getRequestBody();
-            ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
+            CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
-            commonVo = this.actionHandling(actionDto, traceId, httpRequestLog);
+            commonVo = this.actionHandling(commonDto, traceId, httpRequestLog);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
@@ -63,8 +64,8 @@ public class GeneralAction {
         return commonVo;
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
-        return switch (actionDto.getMethod()) {
+    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
+        return switch (commonDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
             case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);

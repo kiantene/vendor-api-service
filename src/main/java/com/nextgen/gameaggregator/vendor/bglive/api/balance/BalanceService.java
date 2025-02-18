@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class BalanceService {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
-    
+
     @Autowired
     public BalanceService(HttpService httpService,
                           VendorLineService vendorLineService,
@@ -49,21 +50,21 @@ public class BalanceService {
 
         try {
             String body = httpRequestLog.getRequestBody();
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
-            this.doValidation(balanceDto);
+            this.doValidation(commonDto);
 
-            String vendorPlayerLoginId = balanceDto.getParams().getLoginId();
+            String vendorPlayerLoginId = commonDto.getCommonParamsDto().getLoginId();
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(commonDto, gameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            commonVo.setSuccessResponse(balanceDto.getId(), getWalletBalance);
+            commonVo.setSuccessResponse(commonDto.getId(), getWalletBalance);
 
         } catch (InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
@@ -87,13 +88,13 @@ public class BalanceService {
     }
 
 
-    private void doValidation(BalanceDto balanceDto) throws InvalidRequestException {
+    private void doValidation(CommonDto commonDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(balanceDto);
+        ValidationUtils.validateRequest(commonDto);
 
     }
 
-    private void doVerification(BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(CommonDto commonDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             InvalidVendorLineException,
@@ -107,11 +108,11 @@ public class BalanceService {
         String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
         String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(snCode, balanceDto.getParams().getSn(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(snCode, commonDto.getCommonParamsDto().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptLoginMd5Key(balanceDto.getParams().getRandom(), snCode,
+        String validateSign = VendorService.encryptLoginMd5Key(commonDto.getCommonParamsDto().getRandom(), snCode,
                 gameSession.getVendorPlayerUsername(), secretKey);
-        ValidationUtils.isEquals(validateSign, balanceDto.getParams().getSign(), AuthenticationException::new);
+        ValidationUtils.isEquals(validateSign, commonDto.getCommonParamsDto().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

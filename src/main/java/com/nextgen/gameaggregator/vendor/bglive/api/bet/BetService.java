@@ -52,16 +52,16 @@ public class BetService {
             // Handle the action and return the resulting value
             this.doValidation(betDto);
 
-            String vendorPlayerLoginId = betDto.getParams().getLoginId();
+            String vendorPlayerLoginId = betDto.getCommonParamsDto().getLoginId();
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
-            if (betDto.getParams().getOrders() == null || betDto.getParams().getOrders().isEmpty()) {
+            if (betDto.getParamsDto().getOrders() == null || betDto.getParamsDto().getOrders().isEmpty()) {
                 throw new InvalidRequestException("Bet request must contain at least one order.");
             }
-            for (OrdersDto order : betDto.getParams().getOrders()) {
+            for (OrdersDto order : betDto.getParamsDto().getOrders()) {
                 betDto.setCurrentOrder(order);
                 betDto.getExternalTransactionId();
                 betDto.getRoundId();
@@ -76,10 +76,10 @@ public class BetService {
 
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(vendorPlayer.getId());
-            resultVo.setSn(betDto.getParams().getSn());
+            resultVo.setSn(betDto.getCommonParamsDto().getSn());
             resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
-            String tranId = betDto.getParams().getTranId();
+            String tranId = betDto.getParamsDto().getTranId();
             resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
             commonVo.setSuccessResponse(betDto.getId(), resultVo);
 
@@ -120,7 +120,7 @@ public class BetService {
         // General validation
         ValidationUtils.validateRequest(betDto);
 
-        ParamsDto paramsDto = betDto.getParams();
+        ParamsDto paramsDto = betDto.getParamsDto();
         if (paramsDto != null) {
             ValidationUtils.validateRequest(paramsDto);
 
@@ -148,11 +148,11 @@ public class BetService {
         String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
         String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(snCode, betDto.getParams().getSn(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(snCode, betDto.getCommonParamsDto().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptBetMd5Key(betDto.getParams().getRandom(), snCode,
-                gameSession.getVendorPlayerUsername(), String.valueOf(betDto.getParams().getAmount()), secretKey);
-        ValidationUtils.isEquals(validateSign, betDto.getParams().getSign(), AuthenticationException::new);
+        String validateSign = VendorService.encryptBetMd5Key(betDto.getCommonParamsDto().getRandom(), snCode,
+                gameSession.getVendorPlayerUsername(), String.valueOf(betDto.getParamsDto().getAmount()), secretKey);
+        ValidationUtils.isEquals(validateSign, betDto.getCommonParamsDto().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

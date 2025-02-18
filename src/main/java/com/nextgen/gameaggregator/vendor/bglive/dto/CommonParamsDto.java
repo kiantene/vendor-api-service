@@ -8,17 +8,25 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CommonDto {
-
-    @NotBlank
-    @JsonProperty("method")
-    private String method;
+public class CommonParamsDto {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("id")
-    private String id;
+    @JsonProperty("random")
+    private String random;
 
-    @JsonProperty("params")
-    private CommonParamsDto commonParamsDto;
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("sign")
+    private String sign;
+
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("loginId")
+    private String loginId;
+
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("sn")
+    private String sn;
 }
