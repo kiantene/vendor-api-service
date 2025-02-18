@@ -83,4 +83,12 @@ public class VendorService extends BaseVendorService {
             throw new InvalidFormatException("SHA-1 algorithm not found");
         }
     }
+
+    public static String getGameCode(String input) throws InvalidFormatException {
+        if (input != null && input.length() >= 5) {
+            return input.substring(2, 5);
+        } else {
+            throw new InvalidFormatException("Get game code error");
+        }
+    }
 }

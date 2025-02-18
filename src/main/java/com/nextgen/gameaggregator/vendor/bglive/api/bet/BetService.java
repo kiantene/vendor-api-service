@@ -27,19 +27,21 @@ public class BetService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorPlayerService vendorPlayerService;
+    private final VendorService vendorService;
 
     @Autowired
     public BetService(HttpService httpService,
                       WalletService walletService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
-                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, VendorService vendorService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
+        this.vendorService = vendorService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
@@ -64,6 +66,11 @@ public class BetService {
                 betDto.getExternalTransactionId();
                 betDto.getRoundId();
                 betDto.getBetAmount();
+                String gameCode = VendorService.getGameCode(order.getIssueId());
+                if (!(gameCode).equals(gameSession.getVendorGameCode())) {
+                    vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
+                }
+
                 walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 
