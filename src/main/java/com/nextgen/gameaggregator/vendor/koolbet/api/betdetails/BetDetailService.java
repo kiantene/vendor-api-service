@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
-import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
 import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +36,6 @@ public class BetDetailService implements BetDetailUrl {
                                IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
 
-        return new com.nextgen.gameaggregator.vendor.koolbet.api.betdetails.BetDetailUrlVo();
+        return new BetDetailUrlVo();
     }
 }

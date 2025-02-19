@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
@@ -35,7 +34,7 @@ public class TokenAction {
     private final WalletService walletService;
 
     @Autowired
-    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService) {
+    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;

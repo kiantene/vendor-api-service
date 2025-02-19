@@ -22,9 +22,6 @@ import java.util.Map;
 @Slf4j
 public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
-    private String agentId;
-    private String apiToken;
-
     public GameUrlService() {
         super(KBGameUrlVo.class);
         this.setHttpMethod(HttpMethod.GET);
@@ -37,8 +34,8 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
-        this.agentId = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_ID));
-        this.apiToken = ValidationUtils.validateCredential(credentials.get(Credentials.API_TOKEN));
+        String agentId = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_ID));
+        String apiToken = ValidationUtils.validateCredential(credentials.get(Credentials.API_TOKEN));
 
         //Construct Param
         Map<String, String> params = new LinkedHashMap<>();
@@ -47,7 +44,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         params.put("Lang", gameSession.getVendorLanguageCode());
 
         //Encrypt param before sending
-        String key = VendorService.generateKey(params, this.agentId, this.apiToken);
+        String key = VendorService.generateKey(params, agentId, apiToken);
 
         //setup form data
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -56,7 +53,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         formData.add("Lang", gameSession.getVendorLanguageCode());
         formData.add("HomeUrl", gameSession.getLobbyUrl());
         formData.add("Platform", gameSession.getVendorPlatformCode());
-        formData.add("AgentId", this.agentId);
+        formData.add("AgentId", agentId);
         formData.add("Key", key);
 
         return formData;
