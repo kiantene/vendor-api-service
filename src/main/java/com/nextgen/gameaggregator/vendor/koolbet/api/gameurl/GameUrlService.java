@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.koolbet.constant.Languages;
 import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
@@ -39,6 +38,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         this.setHttpMethod(HttpMethod.GET);
         this.setContentType(MediaType.APPLICATION_JSON);
         this.setCredentialApiUrl(Credentials.API_URL);
+        this.setGameUrl(EndPoints.GAME_URL);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("Token", gameSession.getToken());
         formData.add("GameId", gameSession.getVendorGameCode());
-        formData.add("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
+        formData.add("Lang", gameSession.getVendorLanguageCode());
         formData.add("HomeUrl", gameSession.getLobbyUrl());
         formData.add("Platform", gameSession.getVendorPlatformCode());
         formData.add("AgentId", this.agentId);
