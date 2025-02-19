@@ -91,4 +91,12 @@ public class VendorService extends BaseVendorService {
             throw new InvalidFormatException("Get game code error");
         }
     }
+
+    public static boolean isDoublePlay(long playId) {
+        String hexPlayId = Long.toHexString(playId);
+        char lastChar = hexPlayId.charAt(hexPlayId.length() - 1);
+        int lastDigit = Character.digit(lastChar, 16);
+        return lastDigit == 2 || lastDigit == 8 || lastDigit == 0;
+    }
+
 }
