@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.cancelSessionBet;
+package com.nextgen.gameaggregator.vendor.koolbet.api.cancelsessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;

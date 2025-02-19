@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.cancelSessionBet;
+package com.nextgen.gameaggregator.vendor.koolbet.api.cancelsessionbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;

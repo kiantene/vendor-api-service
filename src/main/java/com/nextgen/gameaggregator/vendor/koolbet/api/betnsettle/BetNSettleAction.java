@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.betNsettle;
+package com.nextgen.gameaggregator.vendor.koolbet.api.betnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -85,10 +84,6 @@ public class BetNSettleAction {
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(balance.doubleValue());
 
-            if (gameSession.getVendorPlayerUsername().equals("1e8yw13563hf")) {
-                TimeUnit.SECONDS.sleep(31);
-            }
-
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
@@ -105,11 +100,10 @@ public class BetNSettleAction {
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
-                httpService.logError(httpRequestLog, e);
             } else {
                 responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
-                httpService.logError(httpRequestLog, e);
             }
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |

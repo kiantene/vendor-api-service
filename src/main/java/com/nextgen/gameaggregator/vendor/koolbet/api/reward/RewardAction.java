@@ -73,10 +73,8 @@ public class RewardAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(rewardDto, gameSession);
 
-            //make a ResultType for reward as bet win
-            ResultType resultType = ResultType.BET_WIN;
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, rewardDto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, rewardDto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.REWARD_SUCCESS);
@@ -118,8 +116,6 @@ public class RewardAction {
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betNSettleDto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betNSettleDto.getGame()), GameNotSupportedException::new);
-        //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
     }
 
 }

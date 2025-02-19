@@ -12,8 +12,8 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Languages;
 import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
-@Getter
 public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
     private String launchUrl;
@@ -37,6 +36,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
     public GameUrlService() {
         super(KBGameUrlVo.class);
         this.setAutoMapResponse(false);
+        this.setHttpMethod(HttpMethod.GET);
         this.setContentType(MediaType.APPLICATION_JSON);
         this.setCredentialApiUrl(Credentials.API_URL);
     }
@@ -53,10 +53,10 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("Token", gameSession.getToken());
         params.put("GameId", gameSession.getVendorGameCode());
-        params.put("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
+        params.put("Lang", gameSession.getVendorLanguageCode());
 
         //Encrypt param before sending
-        String key = VendorService.generateKey(params, credentials.get(Credentials.AGENT_ID), credentials.get(Credentials.API_TOKEN));
+        String key = VendorService.generateKey(params, this.agentId, this.apiToken);
 
         //setup form data
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -65,7 +65,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         formData.add("Lang", Languages.getLanguageCode(gameSession.getVendorLanguageCode()));
         formData.add("HomeUrl", gameSession.getLobbyUrl());
         formData.add("Platform", gameSession.getVendorPlatformCode());
-        formData.add("AgentId", credentials.get(Credentials.AGENT_ID));
+        formData.add("AgentId", this.agentId);
         formData.add("Key", key);
 
         return formData;
@@ -78,7 +78,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-        ResponseEntity<String> response = this.doGet(this.getLaunchUrl(), EndPoints.GAME_URL, formData, isTimeout);
+        ResponseEntity<String> response = this.doGet(this.launchUrl, EndPoints.GAME_URL, formData, isTimeout);
 
         this.validateResponse(response, isTimeout, httpRequestLog, KBGameUrlVo.class, gameSession);
 

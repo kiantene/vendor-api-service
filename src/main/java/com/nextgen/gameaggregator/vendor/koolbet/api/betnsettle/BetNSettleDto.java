@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.betNsettle;
+package com.nextgen.gameaggregator.vendor.koolbet.api.betnsettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;

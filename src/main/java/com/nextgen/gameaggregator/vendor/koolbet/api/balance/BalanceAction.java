@@ -2,7 +2,8 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -32,14 +33,11 @@ public class BalanceAction {
 
     private final WalletService walletService;
 
-    private final VendorLineService vendorLineService;
-
     @Autowired
     public BalanceAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.vendorLineService = vendorLineService;
     }
 
     @PostMapping(path = EndPoints.BALANCE)
@@ -62,9 +60,6 @@ public class BalanceAction {
 
             //get rawGameSession by token id
             GameSession gameSession = gameSessionService.verifyToken(commonDto.getToken());
-
-            //Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, commonDto, gameSession);
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -91,17 +86,5 @@ public class BalanceAction {
     private void doValidation(CommonDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-    }
-
-    private void doVerification(HttpRequestLog request, CommonDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
-
-//        //Verify received agent code is the same from credential
-//        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-//        ValidationUtils.isEquals(agentCode, dto.token(), NoAvailableLineException::new);
-//
-//        //Verify received hash
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-
     }
 }
