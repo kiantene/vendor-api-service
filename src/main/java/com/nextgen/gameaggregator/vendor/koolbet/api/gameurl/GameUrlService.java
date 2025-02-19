@@ -27,7 +27,6 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
     public GameUrlService() {
         super(KBGameUrlVo.class);
-        this.setAutoMapResponse(false);
         this.setHttpMethod(HttpMethod.GET);
         this.setContentType(MediaType.APPLICATION_JSON);
         this.setCredentialApiUrl(Credentials.API_URL);
@@ -37,7 +36,7 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
-        
+
         this.agentId = ValidationUtils.validateCredential(credentials.get(Credentials.AGENT_ID));
         this.apiToken = ValidationUtils.validateCredential(credentials.get(Credentials.API_TOKEN));
 
