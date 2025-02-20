@@ -54,25 +54,11 @@ public class SettlementService {
             // Handle the action and return the resulting value
             this.doValidation(settleDto);
 
-            String vendorPlayerLoginId = settleDto.getParams().getLoginId();
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-
+            VendorPlayer vendorPlayer = getVendorPlayer(settleDto);
+            GameSession gameSession = getGameSession(vendorPlayer);
             this.doVerification(settleDto, gameSession);
 
-            if (settleDto.getParams().getOrders() == null || settleDto.getParams().getOrders().isEmpty()) {
-                throw new InvalidRequestException("Bet request must contain at least one order.");
-            }
-            for (OrdersDto order : settleDto.getParams().getOrders()) {
-                settleDto.setCurrentOrder(order);
-                settleDto.getExternalTransactionId();
-                settleDto.getRoundId();
-                settleDto.getBetAmount();
-                ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(),
-                        settleDto.getJackpotAmount(), false);
-                walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService,
-                        httpRequestLog);
-            }
+            processSettleOrders(settleDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(vendorPlayer.getId());
@@ -126,10 +112,11 @@ public class SettlementService {
             ValidationUtils.validateRequest(paramsDto);
 
             List<OrdersDto> ordersList = paramsDto.getOrders();
-            if (ordersList != null) {
-                for (OrdersDto order : ordersList) {
-                    ValidationUtils.validateRequest(order);
-                }
+            if (ordersList == null || ordersList.isEmpty()) {
+                throw new InvalidRequestException("Settle request must contain at least one order.");
+            }
+            for (OrdersDto order : ordersList) {
+                ValidationUtils.validateRequest(order);
             }
         }
     }
@@ -158,5 +145,37 @@ public class SettlementService {
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    }
+
+    private VendorPlayer getVendorPlayer(SettleDto settleDto) throws InvalidPlayerException {
+        String vendorPlayerLoginId = settleDto.getParams().getLoginId();
+        return vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
+    }
+
+    private GameSession getGameSession(VendorPlayer vendorPlayer) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+    }
+
+    private ResultType calculateResultType(SettleDto settleDto) {
+        return vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(),
+                settleDto.getJackpotAmount(), false);
+    }
+
+    private void processSettleOrders(SettleDto settleDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            BetResultIdempotentViolationException,
+            MergedBetDataIntegrityException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            BetNotFoundException,
+            InvalidOperatorResponseException,
+            InternalServerTimeoutRetryException {
+
+        for (OrdersDto order : settleDto.getParams().getOrders()) {
+            settleDto.setCurrentOrder(order);
+            ResultType resultType = calculateResultType(settleDto);
+            walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+        }
     }
 }

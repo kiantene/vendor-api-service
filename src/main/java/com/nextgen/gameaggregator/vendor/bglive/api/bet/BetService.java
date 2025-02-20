@@ -111,15 +111,15 @@ public class BetService {
             ValidationUtils.validateRequest(paramsDto);
 
             List<OrdersDto> ordersList = paramsDto.getOrders();
-            if (ordersList != null) {
-                for (OrdersDto order : ordersList) {
-                    ValidationUtils.validateRequest(order);
-                }
+            if (ordersList == null || ordersList.isEmpty()) {
+                throw new InvalidRequestException("Bet request must contain at least one order.");
+            }
+            for (OrdersDto order : ordersList) {
+                ValidationUtils.validateRequest(order);
             }
         }
-
     }
-
+    
     private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
