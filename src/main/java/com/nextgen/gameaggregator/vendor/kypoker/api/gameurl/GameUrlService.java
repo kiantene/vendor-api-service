@@ -20,6 +20,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URLEncoder;
 import java.util.Map;
 
 @Service
@@ -51,8 +52,8 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         MultiValueMap<String, String> encryptParam = new LinkedMultiValueMap<>();
         encryptParam.add("s", Actions.LOGIN);
         encryptParam.add("account", gameSession.getVendorPlayerUsername());
-        encryptParam.add("orderid", AgentId+TimeStamp+gameSession.getVendorPlayerUsername());
-        encryptParam.add("ip", "103.22.180.95");
+        encryptParam.add("orderid", AgentId + TimeStamp + gameSession.getVendorPlayerUsername());
+        encryptParam.add("ip", gameSession.getIpAddress());
         encryptParam.add("lineCode", String.valueOf(gameSession.getVendorLineId()));
         encryptParam.add("KindId", String.valueOf(gameSession.getVendorGameCode()));
         encryptParam.add("currency", String.valueOf(gameSession.getVendorCurrencyCode()));
@@ -64,17 +65,19 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
                 .toString()
                 .replaceFirst("^\\?", ""); // Remove leading "?"
 
+        String encodedParam;
         try {
-            Param = VendorService.AESEncrypt(queryString, AesKey);
+            Param = VendorService.aesEncrypt(queryString, AesKey);
+            encodedParam = URLEncoder.encode(Param, "UTF-8");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         MultiValueMap<String, String> param = new LinkedMultiValueMap<>();
         param.add("agent", AgentId);
-        param.add("timestamp", String.valueOf(System.currentTimeMillis()));
-        param.add("param", Param);
-        param.add("key", VendorService.MD5Encrypt(AgentId+TimeStamp+Md5Key));
+        param.add("timestamp", TimeStamp);
+        param.add("param", encodedParam);
+        param.add("key", VendorService.MD5Encrypt(AgentId + TimeStamp + Md5Key));
 
         return param;
     }
