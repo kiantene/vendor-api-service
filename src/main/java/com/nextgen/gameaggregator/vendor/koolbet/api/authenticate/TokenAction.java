@@ -2,11 +2,8 @@ package com.nextgen.gameaggregator.vendor.koolbet.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
@@ -28,16 +25,20 @@ import java.math.RoundingMode;
 public class TokenAction {
 
     private final HttpService httpService;
-
     private final GameSessionService gameSessionService;
-
     private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
 
     @Autowired
-    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService) {
+    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
     }
 
 
@@ -61,6 +62,9 @@ public class TokenAction {
 
             //get rawGameSession by token id
             GameSession gameSession = gameSessionService.verifyToken(commonDto.getToken());
+
+            //Verify game session
+            this.doVerification(gameSession);
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -86,5 +90,16 @@ public class TokenAction {
     private void doValidation(CommonDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }
