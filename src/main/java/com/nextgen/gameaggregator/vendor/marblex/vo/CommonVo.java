@@ -2,17 +2,23 @@ package com.nextgen.gameaggregator.vendor.marblex.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CommonVo {
+public class CommonVo implements HttpResponse {
     @JsonProperty("TraceID")
     private String traceId;
     @JsonProperty("StatusCode")
     private Integer statusCode;
     @JsonProperty("Data")
     private CommonDataVo data;
+
+    @Override
+    public boolean hasError() {
+        return statusCode!=10001;
+    }
 }
