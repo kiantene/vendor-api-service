@@ -65,6 +65,8 @@ public class DebitAction {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
 
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
+
             // Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
 
@@ -147,11 +149,7 @@ public class DebitAction {
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidRequestException,
-            GameNotSupportedException,
             InvalidSignatureException {
-
-        // 1. Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorGameCode()), String.valueOf(debitDto.getGameId()), GameNotSupportedException::new);
 
         // 2. Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
