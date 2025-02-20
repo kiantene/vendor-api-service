@@ -42,14 +42,14 @@ public class SettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return currentOrder != null && currentOrder.getAmount() != null
+        return currentOrder != null && currentOrder.getOrderAmount() != null
                 ? currentOrder.getAmount().abs()
                 : BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return currentOrder != null ? currentOrder.getAmount() : null;
+        return currentOrder != null ? currentOrder.getAmount() : BigDecimal.ZERO;
     }
 
     @Override
