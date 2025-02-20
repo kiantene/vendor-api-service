@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class GeneralAction {
 
     private final HttpService httpService;
@@ -31,7 +29,8 @@ public class GeneralAction {
 
 
     @Autowired
-    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, SettlementService settlementService) {
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService,
+                         SettlementService settlementService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
@@ -51,11 +50,15 @@ public class GeneralAction {
             commonVo = this.actionHandling(commonDto, traceId, httpRequestLog);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code, ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
+                    ResponseCodes.SYSTEM_ERROR.message,
+                    ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code, ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message,
+                    ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
 
         } finally {
@@ -64,7 +67,8 @@ public class GeneralAction {
         return commonVo;
     }
 
-    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
+    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog)
+            throws InvalidRequestException {
         return switch (commonDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);

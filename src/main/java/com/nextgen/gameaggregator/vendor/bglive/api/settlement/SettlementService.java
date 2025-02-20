@@ -34,7 +34,9 @@ public class SettlementService {
                              WalletService walletService,
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
-                             AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, VendorService vendorService) {
+                             AgentPlayerService agentPlayerService,
+                             VendorPlayerService vendorPlayerService,
+                             VendorService vendorService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -130,7 +132,6 @@ public class SettlementService {
                 }
             }
         }
-
     }
 
     private void doVerification(SettleDto settleDto, GameSession gameSession) throws AuthenticationException,

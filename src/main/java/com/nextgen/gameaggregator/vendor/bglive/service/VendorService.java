@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
-@Slf4j
 @Getter
 @Setter
 public class VendorService extends BaseVendorService {
@@ -39,7 +37,7 @@ public class VendorService extends BaseVendorService {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new InvalidFormatException("Encrypt MD5 Fail");
+            throw new InvalidFormatException("Encrypt create user MD5 Fail");
         }
     }
 
@@ -54,7 +52,7 @@ public class VendorService extends BaseVendorService {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new InvalidFormatException("Encrypt MD5 Fail");
+            throw new InvalidFormatException("Encrypt login MD5 Fail");
         }
     }
 
@@ -69,7 +67,7 @@ public class VendorService extends BaseVendorService {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new InvalidFormatException("Encrypt MD5 Fail");
+            throw new InvalidFormatException("Encrypt bet MD5 Fail");
         }
     }
 

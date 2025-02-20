@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +19,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
-@Slf4j
 public class BetService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
@@ -35,7 +33,9 @@ public class BetService {
                       WalletService walletService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
-                      AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, VendorService vendorService) {
+                      AgentPlayerService agentPlayerService,
+                      VendorPlayerService vendorPlayerService,
+                      VendorService vendorService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -156,7 +156,11 @@ public class BetService {
     }
 
     //loop betdto's order
-    private void processOrders(BetDto betDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+    private void processOrders(BetDto betDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog)
+            throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException,
+            TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+
         for (OrdersDto order : betDto.getParamsDto().getOrders()) {
             betDto.setCurrentOrder(order);
             String gameCode = VendorService.getGameCode(order.getIssueId());
