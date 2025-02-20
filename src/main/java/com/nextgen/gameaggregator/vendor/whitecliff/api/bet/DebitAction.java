@@ -34,23 +34,22 @@ public class DebitAction {
     private final ValidationService validationService;
     private final VendorLineService vendorLineService;
     private final SettledBetService settledBetService;
+    private final VendorService vendorService;
 
     @Autowired
-    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService, VendorService vendorService1) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        VendorService vendorService = new VendorService(gameSessionService);
-
-
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
 
