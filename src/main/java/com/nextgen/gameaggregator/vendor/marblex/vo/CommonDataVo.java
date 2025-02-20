@@ -5,14 +5,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CommonVo {
-    @JsonProperty("TraceID")
-    private String traceId;
-    @JsonProperty("StatusCode")
-    private Integer statusCode;
-    @JsonProperty("Data")
-    private CommonDataVo data;
+public class CommonDataVo {
+    @JsonProperty("Balance")
+    private BigDecimal balance;
+    @JsonProperty("Currency")
+    private String currency;
 }
