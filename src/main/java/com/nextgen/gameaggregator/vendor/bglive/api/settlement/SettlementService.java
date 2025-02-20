@@ -14,14 +14,12 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@Slf4j
 public class SettlementService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
@@ -84,29 +82,29 @@ public class SettlementService {
 
             commonVo.setSuccessResponse(settleDto.getId(), resultVo);
 
-//        } catch (InsufficientBalanceException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
-//                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (InvalidRequestException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-//                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (InvalidPlayerException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-//                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (AuthenticationException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-//                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
+                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidRequestException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidPlayerException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (AuthenticationException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
