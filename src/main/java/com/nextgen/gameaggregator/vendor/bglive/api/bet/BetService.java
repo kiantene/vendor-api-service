@@ -53,34 +53,12 @@ public class BetService {
             // Handle the action and return the resulting value
             this.doValidation(betDto);
 
-            String vendorPlayerLoginId = betDto.getParamsDto().getLoginId();
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-            // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, gameSession);
+            VendorPlayer vendorPlayer = getVendorPlayer(betDto);
+            GameSession gameSession = getGameSession(vendorPlayer);
 
-            if (betDto.getParamsDto().getOrders() == null || betDto.getParamsDto().getOrders().isEmpty()) {
-                throw new InvalidRequestException("Bet request must contain at least one order.");
-            }
-            for (OrdersDto order : betDto.getParamsDto().getOrders()) {
-                betDto.setCurrentOrder(order);
-                betDto.getExternalTransactionId();
-                betDto.getRoundId();
-                String gameCode = VendorService.getGameCode(order.getIssueId());
-                if (!(gameCode).equals(gameSession.getVendorGameCode())) {
-                    vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
-                }
-                if (gameSession.getVendorGameCode().equals("A27") || gameSession.getVendorGameCode().equals("B07")) {
-                    boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(order.getPlayId()));
-                    if (isDoublePlay) {
-                        BigDecimal doublePlayAmount = betDto.getBetAmount().multiply(BigDecimal.valueOf(5));
-                        betDto.getCurrentOrder().setAmount(doublePlayAmount);
-                    }
-                } else {
-                    betDto.getBetAmount();
-                }
-                walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-            }
+            this.doVerification(betDto, gameSession);
+            //process bet
+            processOrders(betDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(vendorPlayer.getId());
@@ -166,5 +144,35 @@ public class BetService {
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    }
+
+    private VendorPlayer getVendorPlayer(BetDto betDto) throws InvalidPlayerException {
+        String vendorPlayerLoginId = betDto.getParamsDto().getLoginId();
+        return vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
+    }
+
+    private GameSession getGameSession(VendorPlayer vendorPlayer) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+    }
+
+    //loop betdto's order
+    private void processOrders(BetDto betDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+        for (OrdersDto order : betDto.getParamsDto().getOrders()) {
+            betDto.setCurrentOrder(order);
+            String gameCode = VendorService.getGameCode(order.getIssueId());
+
+            if (!gameCode.equals(gameSession.getVendorGameCode())) {
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
+            }
+
+            if (gameSession.getVendorGameCode().equals("A27") || gameSession.getVendorGameCode().equals("B07")) {
+                boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(order.getPlayId()));
+                if (isDoublePlay) {
+                    BigDecimal doublePlayAmount = betDto.getBetAmount().multiply(BigDecimal.valueOf(5));
+                    betDto.getCurrentOrder().setAmount(doublePlayAmount);
+                }
+            }
+            walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+        }
     }
 }
