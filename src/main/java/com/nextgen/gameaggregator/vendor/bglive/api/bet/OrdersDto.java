@@ -27,6 +27,11 @@ public class OrdersDto {
 
     @NotBlank
     @Size(max = 255)
+    @JsonProperty("playId")
+    private String playId;
+
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("issueId")
     private String issueId;
 

@@ -5,17 +5,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@EqualsAndHashCode(callSuper = true)
 public class BetDto extends CommonDto implements BetResultData {
 
     @JsonProperty("params")
     private ParamsDto paramsDto;
-
     @JsonProperty("orders")
     private OrdersDto currentOrder;
 

@@ -7,13 +7,17 @@ import com.nextgen.gameaggregator.vendor.bglive.dto.CommonParamsDto;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@EqualsAndHashCode(callSuper = true)
 public class ParamsDto extends CommonParamsDto {
 
     @Size(max = 255)

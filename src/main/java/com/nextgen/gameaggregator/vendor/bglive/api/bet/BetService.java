@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -65,12 +66,19 @@ public class BetService {
                 betDto.setCurrentOrder(order);
                 betDto.getExternalTransactionId();
                 betDto.getRoundId();
-                betDto.getBetAmount();
                 String gameCode = VendorService.getGameCode(order.getIssueId());
                 if (!(gameCode).equals(gameSession.getVendorGameCode())) {
                     vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
                 }
-
+                if (gameSession.getVendorGameCode().equals("A27") || gameSession.getVendorGameCode().equals("B07")) {
+                    boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(order.getPlayId()));
+                    if (isDoublePlay) {
+                        BigDecimal doublePlayAmount = betDto.getBetAmount().multiply(BigDecimal.valueOf(5));
+                        betDto.getCurrentOrder().setAmount(doublePlayAmount);
+                    }
+                } else {
+                    betDto.getBetAmount();
+                }
                 walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 

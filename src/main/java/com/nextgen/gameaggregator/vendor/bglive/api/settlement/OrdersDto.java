@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -27,11 +24,18 @@ public class OrdersDto {
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
+    @DecimalMin(value = "0.0")
     @JacksonXmlProperty(localName = "amount")
     private BigDecimal amount;
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
+    @JacksonXmlProperty(localName = "orderAmount")
+    private BigDecimal orderAmount;
+
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
+    @DecimalMin(value = "0.0")
     @JacksonXmlProperty(localName = "validAmount")
     private BigDecimal validAmount;
 }
