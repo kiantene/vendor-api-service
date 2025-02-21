@@ -1,9 +1,10 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.betdetails;
 
+import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
 import lombok.Data;
 
 @Data
-public class BetDetailUrlVo implements com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo {
+public class KoolbetBetDetailUrlVo implements BetDetailUrlVo {
     private String url = "";
 
     @Override

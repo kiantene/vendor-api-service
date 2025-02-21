@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -13,7 +15,7 @@ public class CommonVo implements HttpResponse {
     private String message;
     private String username;
     private String currency;
-    private Double balance;
+    private BigDecimal balance;
 
     public CommonVo() {
         setResponseCode(ResponseCode.SUCCESS);

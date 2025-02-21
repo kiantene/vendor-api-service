@@ -10,18 +10,15 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class TokenAction {
 
     private final HttpService httpService;
@@ -32,7 +29,9 @@ public class TokenAction {
     private final VendorGameService vendorGameService;
 
     @Autowired
-    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService) {
+    public TokenAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
+                       VendorLineService vendorLineService, AgentPlayerService agentPlayerService,
+                       VendorGameService vendorGameService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -71,7 +70,7 @@ public class TokenAction {
 
             //return double balance and success code
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            responseVo.setBalance(balance);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
         } catch (AuthenticationException e) {
@@ -92,7 +91,8 @@ public class TokenAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(GameSession gameSession) throws DisabledVendorLineException,
+            DisabledAgentPlayerException, DisabledGameException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 

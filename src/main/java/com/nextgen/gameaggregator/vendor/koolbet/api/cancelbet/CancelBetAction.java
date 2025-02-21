@@ -14,18 +14,15 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class CancelBetAction {
 
     private final HttpService httpService;
@@ -85,7 +82,7 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_SUCCESS);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            responseVo.setBalance(balance);
 
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_ROUND_NOT_FOUND);

@@ -8,18 +8,15 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
 
     public GameUrlService() {
@@ -38,10 +35,10 @@ public class GameUrlService extends BaseGameUrlService<KBGameUrlVo> {
         String apiToken = ValidationUtils.validateCredential(credentials.get(Credentials.API_TOKEN));
 
         //Construct Param
-        Map<String, String> params = new LinkedHashMap<>();
-        params.put("Token", gameSession.getToken());
-        params.put("GameId", gameSession.getVendorGameCode());
-        params.put("Lang", gameSession.getVendorLanguageCode());
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("Token", gameSession.getToken());
+        params.add("GameId", gameSession.getVendorGameCode());
+        params.add("Lang", gameSession.getVendorLanguageCode());
 
         //Encrypt param before sending
         String key = VendorService.generateKey(params, agentId, apiToken);

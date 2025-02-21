@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class CancelSessionBetAction {
 
     private final HttpService httpService;
@@ -85,7 +83,7 @@ public class CancelSessionBetAction {
             responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_SUCCESS);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance.doubleValue());
+            responseVo.setBalance(balance);
 
         } catch (BetResultIdempotentViolationException e) {
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {

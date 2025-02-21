@@ -18,7 +18,6 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +27,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class SessionBetNSettleAction {
 
     private final HttpService httpService;
@@ -81,7 +79,7 @@ public class SessionBetNSettleAction {
                 case Formats.SESSION_BET_TYPE_BET -> {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetNSettleDto,
                             body, httpRequestLog);
-                    responseVo.setBalance(betEvent.getLastBalance().doubleValue());
+                    responseVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
                     //make a ResultType for bet and settle process indicator
@@ -90,7 +88,7 @@ public class SessionBetNSettleAction {
 
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetNSettleDto,
                             resultType, vendorService, httpRequestLog);
-                    responseVo.setBalance(balance.doubleValue());
+                    responseVo.setBalance(balance);
                 }
                 default -> throw new InvalidRequestException();
             }

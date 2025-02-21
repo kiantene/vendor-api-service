@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
@@ -16,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,8 +24,7 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
-public class RewardAction {
+public class RewardActionKIV {
 
     private final HttpService httpService;
 
@@ -37,16 +34,13 @@ public class RewardAction {
 
     private final VendorService vendorService;
 
-    private final ValidationService validationService;
-
     @Autowired
-    public RewardAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                        VendorService vendorService, ValidationService validationService) {
+    public RewardActionKIV(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
+                           VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-        this.validationService = validationService;
     }
 
     @PostMapping(path = EndPoints.REWARD)
@@ -62,7 +56,7 @@ public class RewardAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into rewardDto
-            RewardDto rewardDto = HttpService.convertJsonToDto(body, RewardDto.class);
+            RewardDtoKIV rewardDto = HttpService.convertJsonToDto(body, RewardDtoKIV.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(rewardDto);
@@ -74,13 +68,14 @@ public class RewardAction {
             this.doVerification(rewardDto, gameSession);
 
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, rewardDto, ResultType.BET_WIN, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, rewardDto, ResultType.BET_WIN,
+                    vendorService, httpRequestLog);
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.REWARD_SUCCESS);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance.doubleValue());
+            responseVo.setBalance(balance);
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.REWARD_TOKEN_EXPIRED);
@@ -104,12 +99,12 @@ public class RewardAction {
         return responseVo;
     }
 
-    private void doValidation(RewardDto dto) throws InvalidRequestException {
+    private void doValidation(RewardDtoKIV dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RewardDto betNSettleDto, GameSession gameSession) throws
+    private void doVerification(RewardDtoKIV betNSettleDto, GameSession gameSession) throws
             AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException, DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 

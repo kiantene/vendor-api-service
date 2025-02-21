@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
-public class RewardDto extends CommonDto implements BetResultData {
+public class RewardDtoKIV extends CommonDto implements BetResultData {
 
 
     @NotBlank

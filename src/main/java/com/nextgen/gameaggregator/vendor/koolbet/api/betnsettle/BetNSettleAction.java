@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +25,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class BetNSettleAction {
 
     private final HttpService httpService;
@@ -74,19 +72,17 @@ public class BetNSettleAction {
             this.doVerification(betNSettleDto, gameSession);
 
             //make a ResultType for bet and settle process indicator
-            ResultType resultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
+            ResultType resultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(),
+                    betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType,
+                    vendorService, httpRequestLog);
 
             //Set Response Data
             responseVo.setResponseCode(ResponseCode.BET_SUCCESS);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance.doubleValue());
-
-        } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
-            httpService.logError(httpRequestLog, transactionStillProcessingException);
+            responseVo.setBalance(balance);
 
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_ACCEPTED);

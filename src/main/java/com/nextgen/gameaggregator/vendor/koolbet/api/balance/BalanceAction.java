@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +19,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class BalanceAction {
 
     private final HttpService httpService;
@@ -31,11 +29,13 @@ public class BalanceAction {
     private final VendorGameService vendorGameService;
 
     @Autowired
-    public BalanceAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorLineService vendorLineService, VendorLineService vendorLineService1, AgentPlayerService agentPlayerService, VendorGameService vendorGameService) {
+    public BalanceAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
+                         VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService, VendorGameService vendorGameService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.vendorLineService = vendorLineService1;
+        this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
     }
@@ -69,7 +69,7 @@ public class BalanceAction {
 
             //return double balance and success code
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setBalance(balance.doubleValue());
+            responseVo.setBalance(balance);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
@@ -91,7 +91,8 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(GameSession gameSession) throws DisabledVendorLineException,
+            DisabledAgentPlayerException, DisabledGameException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
