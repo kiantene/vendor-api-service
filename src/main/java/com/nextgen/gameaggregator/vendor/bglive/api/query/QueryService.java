@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -46,26 +47,9 @@ public class QueryService {
             QueryDto queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
+            List<QueryVo> orderStatusList = processOrders(queryDto, httpRequestLog);
 
-
-            //Check bet record available from settle and unsettle table
-//            this.checkBetAvailable(gameSession, queryDto.getQueryRequestDto());
-//            VendorPlayer vendorPlayer = getVendorPlayer(betDto);
-//            GameSession gameSession = getGameSession(vendorPlayer);
-//
-//            this.doVerification(betDto, gameSession);
-//            //process bet
-//            processOrders(betDto, gameSession, traceId, httpRequestLog);
-//
-//            ResultVo resultVo = new ResultVo();
-//            resultVo.setUserId(vendorPlayer.getId());
-//            resultVo.setSn(betDto.getParamsDto().getSn());
-//            resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
-//            resultVo.setOrderResult("1");
-//            String tranId = betDto.getParamsDto().getTranId();
-//            resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
-//            commonVo.setSuccessResponse(betDto.getId(), resultVo);
-
+            commonVo.setSuccessResponse(httpRequestLog.getId(), orderStatusList);
 //        } catch (InsufficientBalanceException e) {
 //            //set Vo
 //            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
@@ -117,14 +101,30 @@ public class QueryService {
         }
     }
 
-//    private void checkBetAvailable(GameSession gameSession, QueryDto queryDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
-//
+    private void checkBetAvailable(OrdersMapDto ordersMapDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+
 //        // settle bet Idempotent Check
 //        vendorService.settledBetIdempotentCheck(gameSession, queryDto.getInitialDebitTransferId(), queryRequestDto.getGameInstanceId());
-//
-//        // unsettle bet Idempotent Check
-//        vendorService.unsettledBetIdempotentCheck(gameSession, queryDto.getTransferId(), queryRequestDto.getGameInstanceId());
-//
-//    }
 
+        // unsettle bet Idempotent Check
+        vendorService.unsettledBetIdempotentCheck(ordersMapDto.getOrderId());
+
+    }
+
+    private List<QueryVo> processOrders(QueryDto queryDto, HttpRequestLog httpRequestLog)
+            throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException,
+            TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+
+        List<QueryVo> orderStatusList = new ArrayList<>();
+
+        for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
+            queryDto.setCurrentMapOrder(ordersMapDto);
+
+            //Check bet record available from settle and unsettle table
+            this.checkBetAvailable(ordersMapDto);
+//            orderStatusList.add(new QueryVo(ordersMapDto.getOrderId(), status));
+        }
+        return orderStatusList;
+    }
 }

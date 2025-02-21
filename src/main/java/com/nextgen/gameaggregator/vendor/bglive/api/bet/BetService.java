@@ -58,7 +58,7 @@ public class BetService {
             processOrders(betDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
-            resultVo.setUserId(betDto.getId());
+            resultVo.setUserId(gameSession.getVendorPlayerId());
             resultVo.setSn(betDto.getParamsDto().getSn());
             resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");

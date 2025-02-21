@@ -12,7 +12,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.SettledBetService;
-import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetCachingService;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,15 +29,15 @@ import java.util.Base64;
 public class VendorService extends BaseVendorService {
 
     private GameSessionService gameSessionService;
-    private UnsettledBetService unsettledBetService;
+    private UnsettledBetCachingService unsettledBetCachingService;
     private SettledBetService settledBetService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
-                         UnsettledBetService unsettledBetService,
+                         UnsettledBetCachingService unsettledBetCachingService,
                          SettledBetService settledBetService) {
         this.gameSessionService = gameSessionService;
-        this.unsettledBetService = unsettledBetService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
         this.settledBetService = settledBetService;
     }
 
@@ -113,17 +113,15 @@ public class VendorService extends BaseVendorService {
     }
 
 
-    public void unsettledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
+    public void unsettledBetIdempotentCheck(String roundId)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
-        Integer vendorGameId = gameSession.getVendorGameId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
         UnsettledBet unsettledBet = null;
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            unsettledBet = UnsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
             Integer operatorStatus = unsettledBet.getOperatorStatus();
 
             // throw idempotent exception if status is processing or success

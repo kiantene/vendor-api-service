@@ -58,7 +58,7 @@ public class SettlementService {
             processSettleOrders(settleDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
-            resultVo.setUserId(settleDto.getId());
+            resultVo.setUserId(gameSession.getVendorPlayerId());
             resultVo.setSn(settleDto.getParamsDto().getSn());
             resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
