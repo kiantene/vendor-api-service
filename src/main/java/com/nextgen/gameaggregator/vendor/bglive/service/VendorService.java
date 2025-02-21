@@ -112,7 +112,6 @@ public class VendorService extends BaseVendorService {
         return lastDigit == 2 || lastDigit == 8 || lastDigit == 0;
     }
 
-
     public void unsettledBetIdempotentCheck(String roundId)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
@@ -121,7 +120,7 @@ public class VendorService extends BaseVendorService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            unsettledBet = UnsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
+            unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
             Integer operatorStatus = unsettledBet.getOperatorStatus();
 
             // throw idempotent exception if status is processing or success
