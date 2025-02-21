@@ -3,8 +3,6 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -54,18 +52,17 @@ public class SettlementService {
             // Handle the action and return the resulting value
             this.doValidation(settleDto);
 
-            VendorPlayer vendorPlayer = getVendorPlayer(settleDto);
-            GameSession gameSession = getGameSession(vendorPlayer);
+            GameSession gameSession = getGameSession(settleDto);
             this.doVerification(settleDto, gameSession);
 
             processSettleOrders(settleDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
-            resultVo.setUserId(vendorPlayer.getId());
-            resultVo.setSn(settleDto.getParams().getSn());
+            resultVo.setUserId(settleDto.getId());
+            resultVo.setSn(settleDto.getParamsDto().getSn());
             resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
-            String tranId = settleDto.getParams().getTranId();
+            String tranId = settleDto.getParamsDto().getTranId();
             resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
 
             commonVo.setSuccessResponse(settleDto.getId(), resultVo);
@@ -107,7 +104,7 @@ public class SettlementService {
         // General validation
         ValidationUtils.validateRequest(settleDto);
 
-        ParamsDto paramsDto = settleDto.getParams();
+        ParamsDto paramsDto = settleDto.getParamsDto();
         if (paramsDto != null) {
             ValidationUtils.validateRequest(paramsDto);
 
@@ -124,22 +121,18 @@ public class SettlementService {
     private void doVerification(SettleDto settleDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            InvalidVendorLineException,
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidFormatException {
 
-        // FindVendorLine
-        VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
-        Integer vendorLineId = vendorLine.getId();
-        String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
-        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
+        String snCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SN_CODE);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(snCode, settleDto.getParams().getSn(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(snCode, settleDto.getParamsDto().getSn(), InvalidPlayerException::new);
 
-        String validateSign = VendorService.encryptBetMd5Key(settleDto.getParams().getRandom(), snCode,
-                gameSession.getVendorPlayerUsername(), String.valueOf(settleDto.getParams().getAmount()), secretKey);
-        ValidationUtils.isEquals(validateSign, settleDto.getParams().getSign(), AuthenticationException::new);
+        String validateSign = VendorService.encryptBetMd5Key(settleDto.getParamsDto().getRandom(), snCode,
+                gameSession.getVendorPlayerUsername(), String.valueOf(settleDto.getParamsDto().getAmount()), secretKey);
+        ValidationUtils.isEquals(validateSign, settleDto.getParamsDto().getSign(), AuthenticationException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -147,13 +140,8 @@ public class SettlementService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private VendorPlayer getVendorPlayer(SettleDto settleDto) throws InvalidPlayerException {
-        String vendorPlayerLoginId = settleDto.getParams().getLoginId();
-        return vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
-    }
-
-    private GameSession getGameSession(VendorPlayer vendorPlayer) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+    private GameSession getGameSession(SettleDto settleDto) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getParamsDto().getLoginId());
     }
 
     private ResultType calculateResultType(SettleDto settleDto) {
@@ -172,7 +160,7 @@ public class SettlementService {
             InvalidOperatorResponseException,
             InternalServerTimeoutRetryException {
 
-        for (OrdersDto order : settleDto.getParams().getOrders()) {
+        for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
             settleDto.setCurrentOrder(order);
             ResultType resultType = calculateResultType(settleDto);
             walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);

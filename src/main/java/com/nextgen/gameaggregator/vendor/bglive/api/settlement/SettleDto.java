@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 public class SettleDto extends CommonDto implements BetResultData {
 
     @JsonProperty("params")
-    private ParamsDto params;
+    private ParamsDto paramsDto;
 
     @JsonProperty("orders")
     private OrdersDto currentOrder;

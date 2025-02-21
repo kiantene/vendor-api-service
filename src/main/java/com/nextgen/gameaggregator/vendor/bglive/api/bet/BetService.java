@@ -2,8 +2,6 @@ package com.nextgen.gameaggregator.vendor.bglive.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -53,15 +51,14 @@ public class BetService {
             // Handle the action and return the resulting value
             this.doValidation(betDto);
 
-            VendorPlayer vendorPlayer = getVendorPlayer(betDto);
-            GameSession gameSession = getGameSession(vendorPlayer);
+            GameSession gameSession = getGameSession(betDto);
 
             this.doVerification(betDto, gameSession);
             //process bet
             processOrders(betDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
-            resultVo.setUserId(vendorPlayer.getId());
+            resultVo.setUserId(betDto.getId());
             resultVo.setSn(betDto.getParamsDto().getSn());
             resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
             resultVo.setOrderResult("1");
@@ -119,20 +116,16 @@ public class BetService {
             }
         }
     }
-    
+
     private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            InvalidVendorLineException,
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidFormatException {
 
-        // FindVendorLine
-        VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
-        Integer vendorLineId = vendorLine.getId();
-        String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
-        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
+        String snCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SN_CODE);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, betDto.getParamsDto().getSn(), InvalidPlayerException::new);
 
@@ -146,13 +139,8 @@ public class BetService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private VendorPlayer getVendorPlayer(BetDto betDto) throws InvalidPlayerException {
-        String vendorPlayerLoginId = betDto.getParamsDto().getLoginId();
-        return vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
-    }
-
-    private GameSession getGameSession(VendorPlayer vendorPlayer) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+    private GameSession getGameSession(BetDto betDto) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getParamsDto().getLoginId());
     }
 
     //loop betdto's order

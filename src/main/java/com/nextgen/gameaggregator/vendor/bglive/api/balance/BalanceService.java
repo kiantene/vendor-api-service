@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.bglive.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -95,16 +94,12 @@ public class BalanceService {
     private void doVerification(CommonDto commonDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            InvalidVendorLineException,
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidFormatException {
 
-        // FindVendorLine
-        VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
-        Integer vendorLineId = vendorLine.getId();
-        String snCode = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SN_CODE);
-        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_KEY);
+        String snCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SN_CODE);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(snCode, commonDto.getCommonParamsDto().getSn(), InvalidPlayerException::new);
 

@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Data
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class ResultVo {
-    private Long userId;
+    private String userId;
     private String sn;
     private BigDecimal availableAmount;
     private String tranId;

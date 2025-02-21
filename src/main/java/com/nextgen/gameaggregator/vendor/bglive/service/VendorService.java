@@ -1,9 +1,18 @@
 package com.nextgen.gameaggregator.vendor.bglive.service;
 
 
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +29,16 @@ import java.util.Base64;
 public class VendorService extends BaseVendorService {
 
     private GameSessionService gameSessionService;
+    private UnsettledBetService unsettledBetService;
+    private SettledBetService settledBetService;
 
     @Autowired
-    public VendorService(GameSessionService gameSessionService) {
+    public VendorService(GameSessionService gameSessionService,
+                         UnsettledBetService unsettledBetService,
+                         SettledBetService settledBetService) {
         this.gameSessionService = gameSessionService;
+        this.unsettledBetService = unsettledBetService;
+        this.settledBetService = settledBetService;
     }
 
     public static String encryptCreateUserMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
@@ -95,6 +110,66 @@ public class VendorService extends BaseVendorService {
         char lastChar = hexPlayId.charAt(hexPlayId.length() - 1);
         int lastDigit = Character.digit(lastChar, 16);
         return lastDigit == 2 || lastDigit == 8 || lastDigit == 0;
+    }
+
+
+    public void unsettledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        UnsettledBet unsettledBet = null;
+        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        try {
+            unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            Integer operatorStatus = unsettledBet.getOperatorStatus();
+
+            // throw idempotent exception if status is processing or success
+            if (operatorStatus.equals(operatorStatusProcessing)) {
+                throw new TransactionStillProcessingException();
+
+            } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                throw new BetResultIdempotentViolationException(unsettledBet);
+
+            } else { // when bet result found and operator status is error, throw transaction still processing
+                throw new TransactionStillProcessingException();
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            //no action
+        }
+    }
+
+    public void settledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
+            throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+
+        Integer vendorId = gameSession.getVendorId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        SettledBet settledBet = null;
+        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        try {
+            // Add retry to find settled bet, because DNC request (debit & credit) and Query request very frequently
+            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+            if (settledBet != null) { // duplicate request found in settled_bet
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                // throw idempotent exception if status is processing or success
+                if (operatorStatus.equals(operatorStatusProcessing)) {
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else { // when bet result found and operator status is error
+                    //no action
+                }
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            //no action
+        }
     }
 
 }
