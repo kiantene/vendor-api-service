@@ -43,7 +43,7 @@ public class BalanceService {
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getPlayerId());
 
-            vendorService.doVerification(commonDto, gameSession);
+            vendorService.doVerification(commonDto, gameSession, false);
 
             BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
 
