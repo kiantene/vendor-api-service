@@ -52,7 +52,7 @@ public class BetService {
 
             vendorService.doDataMapper(walletRequest, betDto);
 
-            vendorService.doVerification(betDto, gameSession);
+            vendorService.doVerification(betDto, gameSession, true);
 
             walletRequest = sportWalletService.placeBet(walletRequest);
 
