@@ -11,9 +11,9 @@ public class CommonDto {
 
     @NotBlank
     @Size(max = 255)
-    public String reqId;
+    private String reqId;
 
     @NotBlank
     @Size(max = 255)
-    public String token;
+    private String token;
 }

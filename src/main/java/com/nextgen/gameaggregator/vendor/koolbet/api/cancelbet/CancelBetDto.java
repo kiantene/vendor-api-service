@@ -14,7 +14,7 @@ import java.math.BigInteger;
 public class CancelBetDto implements RollbackData {
     @NotBlank
     @Size(max = 255)
-    public String reqId;
+    private String reqId;
 
     @NotBlank
     @Size(max = 5)

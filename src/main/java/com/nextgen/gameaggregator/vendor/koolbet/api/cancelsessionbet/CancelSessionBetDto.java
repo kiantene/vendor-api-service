@@ -15,7 +15,7 @@ public class CancelSessionBetDto implements RollbackData {
 
     @NotBlank
     @Size(max = 255)
-    public String reqId;
+    private String reqId;
 
     @NotBlank
     @Size(max = 5)

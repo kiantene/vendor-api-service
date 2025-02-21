@@ -9,11 +9,11 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
-    Integer errorCode;
-    String message;
-    String username;
-    String currency;
-    Double balance;
+    private Integer errorCode;
+    private String message;
+    private String username;
+    private String currency;
+    private Double balance;
 
     public CommonVo() {
         setResponseCode(ResponseCode.SUCCESS);
