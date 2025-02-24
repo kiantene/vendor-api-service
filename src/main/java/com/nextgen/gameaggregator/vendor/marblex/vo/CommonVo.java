@@ -16,7 +16,7 @@ public class CommonVo implements HttpResponse {
     @JsonProperty("TraceID")
     private String traceId;
     @JsonProperty("StatusCode")
-    private Integer statusCode = StatusCode.UNKNOWN_ERROR;
+    private Integer statusCode;
     @JsonProperty("Data")
     private CommonDataVo data;
 

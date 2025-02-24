@@ -65,14 +65,19 @@ public class VendorService extends BaseVendorService {
     }
 
     public void doDataMapper(WalletRequest walletRequest, BetDto betDto) {
+        walletRequest.setExternalTransactionId(betDto.getExternalTransactionId());
         walletRequest.setVendorBetId(betDto.getVendorBetId());
         walletRequest.setRoundId(betDto.getRoundId());
+        walletRequest.setVendorPlayerUsername(betDto.getVendorPlayerUsername());
         walletRequest.setBetAmount(betDto.getBetAmount());
         walletRequest.setNewBetAmount(betDto.getBetAmount());
         walletRequest.setEffectiveTurnover(betDto.getBetAmount());
         walletRequest.setVendorBetTime(betDto.getVendorBetTime());
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
+
+        walletRequest.setWinAmount(new BigDecimal(1000));
+        walletRequest.setVendorSettleTime(betDto.getVendorBetTime());
     }
 
 }
