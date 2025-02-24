@@ -155,8 +155,9 @@ public class SettlementService {
             TransactionStillProcessingException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            InternalServerTimeoutRetryException {
+            InternalServerTimeoutRetryException, InterruptedException {
 
+        Thread.sleep(31000);
         for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
             settleDto.setCurrentOrder(order);
             ResultType resultType = calculateResultType(settleDto);

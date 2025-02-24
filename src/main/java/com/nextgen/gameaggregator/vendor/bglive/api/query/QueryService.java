@@ -41,7 +41,7 @@ public class QueryService {
 
             List<QueryVo> orderStatusList = processOrders(queryDto);
 
-            commonVo.setSuccessResponse(httpRequestLog.getId(), orderStatusList);
+            commonVo.setSuccessResponse(queryDto.getId(), orderStatusList);
 
         } catch (InvalidRequestException e) {
             //set Vo
