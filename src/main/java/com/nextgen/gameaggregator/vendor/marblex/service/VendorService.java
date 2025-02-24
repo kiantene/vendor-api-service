@@ -2,16 +2,15 @@ package com.nextgen.gameaggregator.vendor.marblex.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +22,7 @@ public class VendorService extends BaseVendorService {
     public final AgentPlayerService agentPlayerService;
     public final VendorGameService vendorGameService;
     public final ValidationService validationService;
+    private final ModelMapper modelMapper = new ModelMapper();
 
     @Autowired
     public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, ValidationService validationService) {
@@ -64,20 +64,7 @@ public class VendorService extends BaseVendorService {
 
     }
 
-    public void doDataMapper(WalletRequest walletRequest, BetDto betDto) {
-        walletRequest.setExternalTransactionId(betDto.getExternalTransactionId());
-        walletRequest.setVendorBetId(betDto.getVendorBetId());
-        walletRequest.setRoundId(betDto.getRoundId());
-        walletRequest.setVendorPlayerUsername(betDto.getVendorPlayerUsername());
-        walletRequest.setBetAmount(betDto.getBetAmount());
-        walletRequest.setNewBetAmount(betDto.getBetAmount());
-        walletRequest.setEffectiveTurnover(betDto.getBetAmount());
-        walletRequest.setVendorBetTime(betDto.getVendorBetTime());
-        walletRequest.setBetType(BetType.NORMAL_BET.code);
-        walletRequest.setBetStatus(BetStatus.UNSETTLED);
-
-        walletRequest.setWinAmount(new BigDecimal(1000));
-        walletRequest.setVendorSettleTime(betDto.getVendorBetTime());
+    public void doDataMapper(WalletRequest walletRequest, SportBetResultData sportBetResultData) {
+        modelMapper.map(sportBetResultData, walletRequest);
     }
-
 }
