@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,11 +57,12 @@ public class BetService {
 
             walletRequest = sportWalletService.placeBet(walletRequest);
 
-            walletRequest = sportWalletService.confirmBet(walletRequest);
+            //walletRequest = sportWalletService.confirmBet(walletRequest);
 
             commonVo = vendorService.mapToSuccess(betDto, walletRequest.getBalanceAfter());
 
         } catch (Exception exception){
+            commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog,exception);
         } finally {
             commonVo.setTraceId(betDto.getTraceId());

@@ -1,46 +1,66 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.util.DateTimeConverter;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends CommonDto implements SportBetResultData {
+    @JsonProperty("RoundID")
+    private String roundId;
+
+    @JsonProperty("GameCode")
+    private String gameCode;
+
+    @JsonProperty("BetAmount")
+    private BigDecimal betAmount;
+
+    @JsonProperty("JanusTransactionID")
+    private String janusTransactionId;
+
+    @JsonProperty("TransactionTime")
+    private String transactionTime;
+
     @Override
     public String getExternalTransactionId() {
-        return null;
+        return this.janusTransactionId;
     }
 
     @Override
     public String getVendorBetId() {
-        return null;
+        return this.janusTransactionId;
     }
 
     @Override
     public String getRoundId() {
-        return null;
+        return this.roundId;
     }
 
     @Override
     public String getGameId() {
-        return null;
+        return this.gameCode;
     }
 
     @Override
     public String getVendorPlayerUsername() {
-        return null;
+        return this.getPlayerId();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return this.betAmount;
     }
 
     @Override
@@ -65,7 +85,7 @@ public class BetDto extends CommonDto implements SportBetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
     }
 
     @Override
@@ -80,11 +100,11 @@ public class BetDto extends CommonDto implements SportBetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        return BetStatus.UNSETTLED;
     }
 
     @Override
     public Integer getBetType() {
-        return null;
+        return BetType.NORMAL_BET.code;
     }
 }

@@ -2,10 +2,12 @@ package com.nextgen.gameaggregator.vendor.marblex.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
@@ -49,7 +51,18 @@ public class BalanceService {
 
             commonVo = vendorService.mapToSuccess(commonDto, balance);
 
+        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException |
+                 InvalidAgentApiCredentialException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidRequestException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidOperatorResponseException exception) {
+            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
         } catch (Exception exception){
+            commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog,exception);
         } finally {
             commonVo.setTraceId(commonDto.getTraceId());
