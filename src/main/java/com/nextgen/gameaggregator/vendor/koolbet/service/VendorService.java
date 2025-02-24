@@ -10,23 +10,21 @@ import org.springframework.util.MultiValueMap;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
 
 
 @Service
 public class VendorService extends BaseVendorService {
 
     public static String generateKey(MultiValueMap<String, String> params, String agentId, String agentKey) {
-        try {
+        String dayText = getDate();
+        String paramText = buildParamText(params, agentId);
+        String authKey = md5(dayText + agentId + agentKey);
+        String md5Result = md5(paramText + authKey);
 
-            String dayText = ZonedDateTime.now(ZoneId.of("UTC-4"))
-                    .format(DateTimeFormatter.ofPattern("yyMMd"));
+        // Generate final key
+        return generateRandomText() + md5Result + generateRandomText();
 
-            // Generate final key
-            return generateRandomText() + md5(buildParamText(params, agentId) + md5(dayText + agentId + agentKey))
-                    + generateRandomText();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static String md5(String input) {
@@ -37,17 +35,27 @@ public class VendorService extends BaseVendorService {
         return RandomStringUtils.randomAlphanumeric(Formats.RANDOM_STRING_LENGTH);
     }
 
+    private static String getDate() {
+        return ZonedDateTime.now(ZoneId.of(Formats.TIME_ZONE))
+                .format(DateTimeFormatter.ofPattern(Formats.DATE_FORMAT));
+    }
+
     private static String buildParamText(MultiValueMap<String, String> params, String agentId) {
-        StringBuilder paramText = new StringBuilder();
 
-        for (String key : params.keySet()) {
-            String value = params.get(key).get(0);
-            paramText.append(key);
-            paramText.append("=");
-            paramText.append(value);
-            paramText.append("&");
-        }
 
-        return paramText.append("AgentId=").append(agentId).toString();
+        return params.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().get(0))
+                .collect(Collectors.joining("&", "", "AgentId=" + agentId));
+//        StringBuilder paramText = new StringBuilder();
+//
+//        for (String key : params.keySet()) {
+//            String value = params.get(key).get(0);
+//            paramText.append(key);
+//            paramText.append("=");
+//            paramText.append(value);
+//            paramText.append("&");
+//        }
+//
+//        return paramText.append("AgentId=").append(agentId).toString();
+//    }
     }
 }
