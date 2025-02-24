@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -8,6 +9,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OrdersMapDto {
     @NotBlank
     @Size(max = 255)
@@ -17,5 +19,5 @@ public class OrdersMapDto {
     @NotBlank
     @Size(max = 255)
     @JsonProperty("loginId")
-    private String loginId;
+    private String orderLoginId;
 }

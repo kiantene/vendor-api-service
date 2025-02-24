@@ -14,6 +14,6 @@ import lombok.Setter;
 public class QueryDto extends CommonDto {
     @JsonProperty("params")
     private ParamsDto paramsDto;
-    @JsonProperty("orders")
+    @JsonProperty("orderMap")
     private OrdersMapDto currentMapOrder;
 }

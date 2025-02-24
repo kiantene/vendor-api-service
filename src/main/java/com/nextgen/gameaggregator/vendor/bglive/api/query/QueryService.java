@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
@@ -19,28 +17,17 @@ import java.util.List;
 
 @Service
 public class QueryService {
-    private final AgentPlayerService agentPlayerService;
-    private final VendorLineService vendorLineService;
+
     private final GameSessionService gameSessionService;
-    private final WalletService walletService;
     private final HttpService httpService;
-    private final VendorPlayerService vendorPlayerService;
     private final VendorService vendorService;
 
     @Autowired
     public QueryService(HttpService httpService,
-                        WalletService walletService,
                         GameSessionService gameSessionService,
-                        VendorLineService vendorLineService,
-                        AgentPlayerService agentPlayerService,
-                        VendorPlayerService vendorPlayerService,
                         VendorService vendorService) {
         this.httpService = httpService;
-        this.walletService = walletService;
         this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
-        this.agentPlayerService = agentPlayerService;
-        this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
     }
 
@@ -52,15 +39,9 @@ public class QueryService {
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
 
-            GameSession gameSession = getGameSession(queryDto);
-            List<QueryVo> orderStatusList = processOrders(queryDto, gameSession);
+            List<QueryVo> orderStatusList = processOrders(queryDto);
 
             commonVo.setSuccessResponse(httpRequestLog.getId(), orderStatusList);
-//        } catch (InsufficientBalanceException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
-//                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
-//            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidRequestException e) {
             //set Vo
@@ -68,17 +49,11 @@ public class QueryService {
                     ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
 
-//        } catch (InvalidPlayerException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-//                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
 
-//        } catch (AuthenticationException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-//                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -107,34 +82,41 @@ public class QueryService {
         }
     }
 
-    private void checkBetAvailable(GameSession gameSession, OrdersMapDto ordersMapDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+    private Integer checkBetAvailable(GameSession gameSession, OrdersMapDto ordersMapDto) throws
+            TransactionStillProcessingException,
+            BetResultIdempotentViolationException,
+            BetNotFoundException {
 
+        Integer status;
         String orderId = ordersMapDto.getOrderId();
-//        // settle bet Idempotent Check
-        vendorService.settledBetIdempotentCheck(gameSession, orderId, orderId);
 
-        // unsettle bet Idempotent Check
-        vendorService.unsettledBetIdempotentCheck(orderId);
-
+        // settle bet Idempotent Check
+        try {
+            status = vendorService.settledBetIdempotentCheck(gameSession, orderId);
+        } catch (BetNotFoundException e) {
+            status = vendorService.unsettledBetIdempotentCheck(orderId);
+            return status;
+        }
+        return status;
     }
 
-    private List<QueryVo> processOrders(QueryDto queryDto, GameSession gameSession)
+    private List<QueryVo> processOrders(QueryDto queryDto)
             throws BetResultIdempotentViolationException,
-            TransactionStillProcessingException {
+            TransactionStillProcessingException, AuthenticationException, BetNotFoundException {
 
         List<QueryVo> orderStatusList = new ArrayList<>();
 
         for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
             queryDto.setCurrentMapOrder(ordersMapDto);
-
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(ordersMapDto.getOrderLoginId());
             //Check bet record available from settle and unsettle table
-            this.checkBetAvailable(gameSession, ordersMapDto);
-//            orderStatusList.add(new QueryVo(ordersMapDto.getOrderId(), status));
+            Integer status = checkBetAvailable(gameSession, ordersMapDto);
+
+            QueryVo queryVo = new QueryVo();
+            queryVo.setOrderId(ordersMapDto.getOrderId());
+            queryVo.setStatus(status);
+            orderStatusList.add(queryVo);
         }
         return orderStatusList;
-    }
-
-    private GameSession getGameSession(QueryDto queryDto) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(queryDto.getParamsDto().getLoginId());
     }
 }

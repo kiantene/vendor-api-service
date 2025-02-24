@@ -5,9 +5,11 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class QueryStatus {
 
-    public static final Integer UNSETTLE_BET = 0;
-    public static final Integer NORMAL_SETTLE = 1;
-    public static final Integer SETTLE_ERROR = 2;
-    public static final Integer GAME_INTERRUPT = 4;
-    public static final Integer ADMIN_INTERRUPT = 8;
+    public static final Integer NO_BET = 0;
+    public static final Integer UNSETTLE_BET = 1;
+    public static final Integer SETTLE_WIN = 2;
+    public static final Integer SETTLE_TIE = 3;
+    public static final Integer SETTLE_LOSE = 4;
+    public static final Integer CANCEL_USER = 5;
+    public static final Integer CANCEL_SETTLE = 7;
 }
