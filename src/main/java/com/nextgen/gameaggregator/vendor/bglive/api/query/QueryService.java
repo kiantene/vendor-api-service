@@ -1,7 +1,11 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -40,14 +44,16 @@ public class QueryService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo query(HttpRequestLog httpRequestLog, String traceId) {
+    public CommonVo query(HttpRequestLog httpRequestLog) {
         CommonVo commonVo = new CommonVo();
         try {
             String body = httpRequestLog.getRequestBody();
             QueryDto queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
-            List<QueryVo> orderStatusList = processOrders(queryDto, httpRequestLog);
+
+            GameSession gameSession = getGameSession(queryDto);
+            List<QueryVo> orderStatusList = processOrders(queryDto, gameSession);
 
             commonVo.setSuccessResponse(httpRequestLog.getId(), orderStatusList);
 //        } catch (InsufficientBalanceException e) {
@@ -101,20 +107,20 @@ public class QueryService {
         }
     }
 
-    private void checkBetAvailable(OrdersMapDto ordersMapDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+    private void checkBetAvailable(GameSession gameSession, OrdersMapDto ordersMapDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
+        String orderId = ordersMapDto.getOrderId();
 //        // settle bet Idempotent Check
-//        vendorService.settledBetIdempotentCheck(gameSession, queryDto.getInitialDebitTransferId(), queryRequestDto.getGameInstanceId());
+        vendorService.settledBetIdempotentCheck(gameSession, orderId, orderId);
 
         // unsettle bet Idempotent Check
-        vendorService.unsettledBetIdempotentCheck(ordersMapDto.getOrderId());
+        vendorService.unsettledBetIdempotentCheck(orderId);
 
     }
 
-    private List<QueryVo> processOrders(QueryDto queryDto, HttpRequestLog httpRequestLog)
-            throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException,
-            VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException,
-            TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+    private List<QueryVo> processOrders(QueryDto queryDto, GameSession gameSession)
+            throws BetResultIdempotentViolationException,
+            TransactionStillProcessingException {
 
         List<QueryVo> orderStatusList = new ArrayList<>();
 
@@ -122,9 +128,13 @@ public class QueryService {
             queryDto.setCurrentMapOrder(ordersMapDto);
 
             //Check bet record available from settle and unsettle table
-            this.checkBetAvailable(ordersMapDto);
+            this.checkBetAvailable(gameSession, ordersMapDto);
 //            orderStatusList.add(new QueryVo(ordersMapDto.getOrderId(), status));
         }
         return orderStatusList;
+    }
+
+    private GameSession getGameSession(QueryDto queryDto) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(queryDto.getParamsDto().getLoginId());
     }
 }

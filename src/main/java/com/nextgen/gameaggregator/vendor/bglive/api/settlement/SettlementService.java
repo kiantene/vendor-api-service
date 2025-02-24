@@ -24,7 +24,6 @@ public class SettlementService {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;
-    private final VendorPlayerService vendorPlayerService;
     private final VendorService vendorService;
 
     @Autowired
@@ -33,14 +32,12 @@ public class SettlementService {
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
                              AgentPlayerService agentPlayerService,
-                             VendorPlayerService vendorPlayerService,
                              VendorService vendorService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
-        this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
     }
 
