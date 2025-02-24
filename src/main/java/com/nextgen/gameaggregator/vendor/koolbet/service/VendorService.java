@@ -42,20 +42,8 @@ public class VendorService extends BaseVendorService {
 
     private static String buildParamText(MultiValueMap<String, String> params, String agentId) {
 
-
         return params.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().get(0))
-                .collect(Collectors.joining("&", "", "AgentId=" + agentId));
-//        StringBuilder paramText = new StringBuilder();
-//
-//        for (String key : params.keySet()) {
-//            String value = params.get(key).get(0);
-//            paramText.append(key);
-//            paramText.append("=");
-//            paramText.append(value);
-//            paramText.append("&");
-//        }
-//
-//        return paramText.append("AgentId=").append(agentId).toString();
-//    }
+                .collect(Collectors.joining("&")) + "&AgentId=" + agentId;
+
     }
 }
