@@ -100,12 +100,12 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.bRoundid;
+        return this.dealid;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.bRoundid;
+        return this.dealid;
     }
 
     @Override
