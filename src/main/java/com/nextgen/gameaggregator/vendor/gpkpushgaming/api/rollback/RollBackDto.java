@@ -62,7 +62,7 @@ public class RollBackDto extends ActionDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.dealid;
+        return this.roundid;
     }
 
     @Override
