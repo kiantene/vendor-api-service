@@ -83,7 +83,7 @@ public class BetService {
                 balance = betEvent.getLastBalance();
             } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
                 //SETTLE
-                ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(),betDto.getWinAmount(),betDto.getJackpotAmount(),false)
+                ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
             }
 
