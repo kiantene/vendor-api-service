@@ -65,7 +65,7 @@ public class BetDto extends CommonDto implements SportBetResultData {
 
     @Override
     public BigDecimal getNewBetAmount() {
-        return null;
+        return this.betAmount;
     }
 
     @Override

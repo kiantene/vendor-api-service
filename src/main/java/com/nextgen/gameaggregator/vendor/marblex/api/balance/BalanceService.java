@@ -49,7 +49,7 @@ public class BalanceService {
 
             BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
 
-            commonVo = vendorService.mapToSuccess(commonDto, balance);
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), balance);
 
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException |
                  InvalidAgentApiCredentialException exception) {

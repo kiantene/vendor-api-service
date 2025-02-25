@@ -59,7 +59,7 @@ public class BetService {
 
             //walletRequest = sportWalletService.confirmBet(walletRequest);
 
-            commonVo = vendorService.mapToSuccess(betDto, walletRequest.getBalanceAfter());
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
         } catch (Exception exception){
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);

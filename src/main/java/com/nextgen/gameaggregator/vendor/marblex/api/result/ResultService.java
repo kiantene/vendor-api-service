@@ -57,7 +57,7 @@ public class ResultService {
 
             walletRequest = sportWalletService.settle(walletRequest);
 
-            commonVo = vendorService.mapToSuccess(resultDto, walletRequest.getBalanceAfter());
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
         } catch (Exception exception){
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);

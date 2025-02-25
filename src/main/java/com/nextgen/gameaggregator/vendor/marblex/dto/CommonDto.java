@@ -15,7 +15,4 @@ public class CommonDto {
     @NotBlank
     @JsonProperty("PlayerID")
     private String playerId;
-    @NotBlank
-    @JsonProperty("Currency")
-    private String currency;
 }

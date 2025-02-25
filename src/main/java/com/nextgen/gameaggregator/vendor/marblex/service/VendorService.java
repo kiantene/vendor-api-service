@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +21,6 @@ public class VendorService extends BaseVendorService {
     public final AgentPlayerService agentPlayerService;
     public final VendorGameService vendorGameService;
     public final ValidationService validationService;
-    private final ModelMapper modelMapper = new ModelMapper();
 
     @Autowired
     public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, ValidationService validationService) {
@@ -32,12 +30,12 @@ public class VendorService extends BaseVendorService {
         this.validationService = validationService;
     }
 
-    public CommonVo mapToSuccess(CommonDto commonDto, BigDecimal balance) {
+    public CommonVo mapToSuccess(String currency, BigDecimal balance) {
         return new CommonVo()
-                .setStatusCode(StatusCode.SUCCESS)  // 直接使用 StatusCode.SUCCESS
+                .setStatusCode(StatusCode.SUCCESS)
                 .setData(new CommonDataVo()
                         .setBalance(balance)
-                        .setCurrency(commonDto.getCurrency()));
+                        .setCurrency(currency));
     }
 
     public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidCurrencyException, AuthenticationException {
@@ -58,13 +56,21 @@ public class VendorService extends BaseVendorService {
 
         // Verify player name from dto is equal
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
-
-        // Verify currency code from dto is equal
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidCurrencyException::new);
-
     }
 
     public void doDataMapper(WalletRequest walletRequest, SportBetResultData sportBetResultData) {
-        modelMapper.map(sportBetResultData, walletRequest);
+        walletRequest.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
+        walletRequest.setVendorBetId(sportBetResultData.getVendorBetId());
+        walletRequest.setRoundId(sportBetResultData.getRoundId());
+        walletRequest.setVendorPlayerUsername(sportBetResultData.getVendorPlayerUsername());
+        walletRequest.setBetAmount(sportBetResultData.getBetAmount());
+        walletRequest.setNewBetAmount(sportBetResultData.getBetAmount());
+        walletRequest.setWinAmount(sportBetResultData.getWinAmount());
+        walletRequest.setWinLoss(sportBetResultData.getWinLoss());
+        walletRequest.setEffectiveTurnover(sportBetResultData.getBetAmount());
+        walletRequest.setVendorBetTime(sportBetResultData.getVendorBetTime());
+        walletRequest.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
+        walletRequest.setBetType(sportBetResultData.getBetType());
+        walletRequest.setBetStatus(sportBetResultData.getBetStatus());
     }
 }
