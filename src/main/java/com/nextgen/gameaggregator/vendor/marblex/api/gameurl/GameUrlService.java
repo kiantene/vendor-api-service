@@ -43,6 +43,7 @@ public class GameUrlService extends BaseGameUrlService<VendorGameUrlVo> {
         formData.add("Currency", gameSession.getVendorCurrencyCode());
         formData.add("Language", gameSession.getVendorLanguageCode());
         formData.add("GameCode", gameSession.getVendorGameCode());
+        formData.add("MerchantID", "");
         return formData;
     }
 
