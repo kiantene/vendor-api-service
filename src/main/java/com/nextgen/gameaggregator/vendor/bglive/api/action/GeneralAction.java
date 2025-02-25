@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.bglive.api.query.QueryService;
 import com.nextgen.gameaggregator.vendor.bglive.api.settlement.SettlementService;
+import com.nextgen.gameaggregator.vendor.bglive.api.transfer.TransferService;
 import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
@@ -28,16 +29,18 @@ public class GeneralAction {
     private final BetService betService;
     private final SettlementService settlementService;
     private final QueryService queryService;
+    private final TransferService transferService;
 
 
     @Autowired
     public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService,
-                         SettlementService settlementService, QueryService queryService) {
+                         SettlementService settlementService, QueryService queryService, TransferService transferService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
         this.settlementService = settlementService;
         this.queryService = queryService;
+        this.transferService = transferService;
     }
 
     @PostMapping
@@ -77,6 +80,7 @@ public class GeneralAction {
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
             case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
             case "open.operator.order.status" -> queryService.query(httpRequestLog);
+            case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog, traceId);
             default -> throw new InvalidRequestException();
         };
     }
