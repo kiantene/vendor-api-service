@@ -78,10 +78,12 @@ public class BetService {
 
             //pushgaming
             if (betDto.getFinished() == null) {
+                //BET
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                 balance = betEvent.getLastBalance();
             } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
-                ResultType updatedResultType = getResultType(betDto);
+                //SETTLE
+                ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(),betDto.getWinAmount(),betDto.getJackpotAmount(),false)
                 balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
             }
 
