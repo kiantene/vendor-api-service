@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.gameurl;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -10,7 +10,7 @@ public class DataVo {
     @NotBlank(message = "url can not be blank")
     private String link;
 
-    @SerializedName("session_id")
+    @JsonProperty("session_id")
     private String sessionId;
 
 }
