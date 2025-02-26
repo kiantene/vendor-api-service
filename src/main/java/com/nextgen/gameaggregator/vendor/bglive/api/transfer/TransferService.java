@@ -7,7 +7,10 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -23,7 +26,6 @@ public class TransferService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
-    private final WalletService walletService;
     private final HttpService httpService;
     private final com.nextgen.gameaggregator.vendor.bglive.service.VendorService vendorService;
     private final WalletRequestService walletRequestService;
@@ -31,13 +33,13 @@ public class TransferService {
 
     @Autowired
     public TransferService(HttpService httpService,
-                           WalletService walletService,
                            GameSessionService gameSessionService,
                            VendorLineService vendorLineService,
                            AgentPlayerService agentPlayerService,
-                           VendorService vendorService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
+                           VendorService vendorService,
+                           WalletRequestService walletRequestService,
+                           OperatorWalletService operatorWalletService) {
         this.httpService = httpService;
-        this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -46,46 +48,44 @@ public class TransferService {
         this.operatorWalletService = operatorWalletService;
     }
 
-    public CommonVo transfer(HttpRequestLog httpRequestLog, String traceId) {
+    public CommonVo transfer(HttpRequestLog httpRequestLog) {
         CommonVo commonVo = new CommonVo();
         try {
 
             String body = httpRequestLog.getRequestBody();
             TransferDto transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
             WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-            // Handle the action and return the resulting value
             this.doValidation(transferDto);
-
             GameSession gameSession = getGameSession(transferDto);
             this.doVerification(transferDto, gameSession);
 
-            walletRequest = processTransferInOut(transferDto, walletRequest, gameSession, traceId, httpRequestLog);
+            walletRequest = processTransferInOut(transferDto, walletRequest, gameSession);
 
             commonVo.setSuccessResponse(transferDto.getId(), walletRequest.getBalanceAfter());
-//
-//        } catch (InsufficientBalanceException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
-//                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (InvalidRequestException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-//                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (InvalidPlayerException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-//                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (AuthenticationException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-//                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
+
+        } catch (InsufficientBalanceException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
+                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidRequestException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidPlayerException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (AuthenticationException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -132,7 +132,9 @@ public class TransferService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private WalletRequest processTransferInOut(TransferDto transferDto, WalletRequest walletRequest, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
+    private WalletRequest processTransferInOut(TransferDto transferDto,
+                                               WalletRequest walletRequest,
+                                               GameSession gameSession) throws
             VendorCurrencyNotSupportException,
             InsufficientBalanceException,
             InvalidOperatorResponseException,
@@ -160,8 +162,6 @@ public class TransferService {
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(transferDto.getVendorBetId());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        //walletRequest.setAction("debit");
-//        walletRequest.setTakeAll(0);
         BigDecimal amount = transferDto.getBetAmount().abs();
         walletRequest.setTransferAmount(amount);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
@@ -177,13 +177,10 @@ public class TransferService {
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(transferDto.getVendorBetId());
-        //walletRequest.setAction("credit");
         walletRequest.setTakeAll(0);
-
         BigDecimal amount = transferDto.getBetAmount().abs();
-
         walletRequest.setTransferAmount(amount);
-        walletRequest.setBetAmount(null);
+        walletRequest.setBetAmount(amount);
 
         ResultType resultType = vendorService.calculateResultType(null, amount, transferDto.getJackpotAmount(), false);
 

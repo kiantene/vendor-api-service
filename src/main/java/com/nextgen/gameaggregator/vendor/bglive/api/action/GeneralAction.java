@@ -80,7 +80,7 @@ public class GeneralAction {
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
             case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
             case "open.operator.order.status" -> queryService.query(httpRequestLog);
-            case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog, traceId);
+            case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog);
             default -> throw new InvalidRequestException();
         };
     }
