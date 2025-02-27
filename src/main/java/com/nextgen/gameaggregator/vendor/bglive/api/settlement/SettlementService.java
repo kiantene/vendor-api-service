@@ -1,13 +1,17 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
@@ -15,6 +19,7 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -25,6 +30,8 @@ public class SettlementService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final WalletRequestService walletRequestService;
+    private final OperatorWalletService operatorWalletService;
 
     @Autowired
     public SettlementService(HttpService httpService,
@@ -32,18 +39,21 @@ public class SettlementService {
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
                              AgentPlayerService agentPlayerService,
-                             VendorService vendorService) {
+                             VendorService vendorService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
+        this.walletRequestService = walletRequestService;
+        this.operatorWalletService = operatorWalletService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
         try {
+            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             // Handle the action and return the resulting value
@@ -52,7 +62,7 @@ public class SettlementService {
             GameSession gameSession = getGameSession(settleDto);
             this.doVerification(settleDto, gameSession);
 
-            processSettleOrders(settleDto, gameSession, traceId, httpRequestLog);
+            processSettleOrders(walletRequest, settleDto, gameSession, traceId, httpRequestLog);
 
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(gameSession.getVendorPlayerId());
@@ -146,7 +156,7 @@ public class SettlementService {
                 settleDto.getJackpotAmount(), false);
     }
 
-    private void processSettleOrders(SettleDto settleDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
+    private void processSettleOrders(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidAgentApiCredentialException,
             VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException,
@@ -155,13 +165,50 @@ public class SettlementService {
             TransactionStillProcessingException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            InternalServerTimeoutRetryException, InterruptedException {
+            InternalServerTimeoutRetryException,
+            InternalServerException,
+            BetNotAllowedException {
 
-        Thread.sleep(31000);
+//        Thread.sleep(31000);
         for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
             settleDto.setCurrentOrder(order);
-            ResultType resultType = calculateResultType(settleDto);
-            walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+            boolean isBullBullGame = order.getGameId().equals(GameCode.BULL_BULL);
+            if (isBullBullGame) {
+                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+                operatorWalletService.betCredit(currentWalletRequest);
+                break;
+            } else {
+                ResultType resultType = calculateResultType(settleDto);
+                walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+            }
         }
     }
+
+    private void dataCreditMapper(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession) {
+
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        walletRequest.setExternalTransactionId(settleDto.getRoundId());
+        walletRequest.setRoundId(settleDto.getRoundId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(settleDto.getVendorBetId());
+        walletRequest.setTakeAll(0);
+        BigDecimal amount = settleDto.getParamsDto().getAmount().abs();
+        walletRequest.setTransferAmount(amount);
+        walletRequest.setBetAmount(amount);
+
+        ResultType resultType = vendorService.calculateResultType(null, amount, settleDto.getJackpotAmount(),
+                false);
+
+        walletRequest.setWinAmount(amount);
+        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setJackpotAmount(settleDto.getJackpotAmount());
+        walletRequest.setResultType(resultType.code);
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setVendorSettleTime(System.currentTimeMillis());
+    }
+
 }

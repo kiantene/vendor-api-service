@@ -27,7 +27,7 @@ public class TransferService {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
-    private final com.nextgen.gameaggregator.vendor.bglive.service.VendorService vendorService;
+    private final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
 
