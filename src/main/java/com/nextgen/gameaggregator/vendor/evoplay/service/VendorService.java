@@ -1,12 +1,17 @@
 package com.nextgen.gameaggregator.vendor.evoplay.service;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.evoplay.api.gameurl.GameUrlDto;
+import com.nextgen.gameaggregator.vendor.evoplay.api.gameurl.SettingsDto;
+import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -115,7 +120,7 @@ public class VendorService extends BaseVendorService {
         originalMap.clear();
         originalMap.putAll(rearrangedMap);
     }
-    
+
     public static Long generateTimestamp() {
         return Instant.now().toEpochMilli();
     }
@@ -124,6 +129,27 @@ public class VendorService extends BaseVendorService {
 //    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
 //        return betInfo.getEffectiveTurnover();
 //    }
+
+    @NotNull
+    public static GameUrlDto getGameUrlDto(GameSession gameSession, String projId) {
+        SettingsDto settings = new SettingsDto();
+        settings.setUser_id(gameSession.getVendorPlayerUsername());
+        settings.setExit_url(gameSession.getLobbyUrl());
+        settings.setLanguage(gameSession.getVendorLanguageCode());
+        settings.setHttps(Formats.SETTINGS_HTTPS);
+
+        GameUrlDto gameUrlDto = new GameUrlDto();
+        gameUrlDto.setProject(projId);
+        gameUrlDto.setVersion(Formats.VERSION);
+        gameUrlDto.setToken(gameSession.getToken());
+        gameUrlDto.setGame(gameSession.getVendorGameCode());
+        gameUrlDto.setSettings(settings);
+        gameUrlDto.setDenomination(Formats.DENOMINATION);
+        gameUrlDto.setCurrency(gameSession.getVendorCurrencyCode());
+        gameUrlDto.setReturn_url_info(Formats.RETURN_URL_INFO);
+        gameUrlDto.setCallback_version(Formats.CALLBACK_VERSION);
+        return gameUrlDto;
+    }
 
     public ResultType calculateResultType(BetStatus betStatus, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
 

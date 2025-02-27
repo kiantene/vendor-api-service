@@ -119,6 +119,7 @@ public class BetService {
             try {
                 // Verify session
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
+                
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getUser()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, gameCode);
