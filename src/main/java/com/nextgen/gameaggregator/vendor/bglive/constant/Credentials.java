@@ -15,4 +15,6 @@ public class Credentials {
 
     public static final String SN_CODE = "sn_code";
 
+    public static final String NIU_GAME_CODE = "niuGameCode";
+
 }

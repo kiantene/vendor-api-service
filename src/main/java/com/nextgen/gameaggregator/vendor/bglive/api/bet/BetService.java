@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -144,7 +145,10 @@ public class BetService {
     private void processOrders(BetDto betDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog)
             throws InvalidFormatException, GameNotSupportedException, InvalidAgentApiCredentialException,
             VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException,
-            TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException {
+            TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, CredentialNotFoundException {
+
+        String niuGameCodeList = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.NIU_GAME_CODE);
+        boolean isNiuGameCode = this.checkGameCodeNiuNiu(niuGameCodeList, gameSession.getVendorGameCode());
 
         for (OrdersDto order : betDto.getParamsDto().getOrders()) {
             betDto.setCurrentOrder(order);
@@ -154,7 +158,7 @@ public class BetService {
                 vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
             }
 
-            if (gameSession.getVendorGameCode().equals("A27") || gameSession.getVendorGameCode().equals("B07")) {
+            if (isNiuGameCode) {
                 boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(order.getPlayId()));
                 if (isDoublePlay) {
                     BigDecimal doublePlayAmount = betDto.getBetAmount().multiply(BigDecimal.valueOf(5));
@@ -163,5 +167,17 @@ public class BetService {
             }
             walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
         }
+    }
+
+    private boolean checkGameCodeNiuNiu(String categoryCodeList, String gameCode) {
+        if (categoryCodeList != null && !categoryCodeList.isBlank()) {
+            String[] elements = StringUtils.tokenizeToStringArray(categoryCodeList.trim(), ",");
+            for (String element : elements) {
+                if (element.equals(gameCode)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
