@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.rollback;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -90,19 +93,6 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-
-        } catch (BetNotFoundException | BetRefundIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.ERROR.code);
-
-//            vo.setCodeMsg(ResponseCodes.SUCCESS.code);
-//
-//            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-//            dataVo.setMoney(rollBackDto.getMoney());
-//            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
-//            dataVo.setDealid(rollBackDto.getDealid());
-//
-//            vo.setData(dataVo);
 
         } catch (Exception e) {
             // this error code is for trigger retry(vendor will thread this transaction as cancel)

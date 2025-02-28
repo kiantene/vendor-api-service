@@ -15,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,8 +31,6 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final HttpService httpService;
-    private final AutowireCapableBeanFactory autowireCapableBeanFactory;
-    private final VendorGameCodeService vendorGameCodeService;
     private final VendorService vendorService;
 
     @Autowired
@@ -42,16 +39,13 @@ public class BetService {
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      AutowireCapableBeanFactory autowireCapableBeanFactory,
-                      VendorGameCodeService vendorGameCodeService, VendorService vendorService) {
+                      VendorService vendorService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.httpService = httpService;
-        this.autowireCapableBeanFactory = autowireCapableBeanFactory;
-        this.vendorGameCodeService = vendorGameCodeService;
         this.vendorService = vendorService;
     }
 
@@ -151,38 +145,6 @@ public class BetService {
         // check platform id
         if (!PlatformType.getPlatformTypeList().contains(dto.getPlatform())) {
             throw new InvalidRequestException();
-        }
-    }
-
-    private ResultType getResultType(BetDto dto) {
-        if (isFinishedBet(dto)) {
-            return handleFinishedBet(dto);
-        } else {
-            return handleUnfinishedBet(dto);
-        }
-    }
-
-    private boolean isFinishedBet(BetDto dto) {
-        return dto.getFinished() != null && dto.getFinished().equals(BetType.FINISHED);
-    }
-
-    private ResultType handleFinishedBet(BetDto dto) {
-        if (dto.getCode().equals(BetType.POINTIN)) {
-            // If did not lose all money or exactly lose
-            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
-        } else {
-            // It means exactly win
-            return ResultType.WIN;
-        }
-    }
-
-    private ResultType handleUnfinishedBet(BetDto dto) {
-        if (dto.getBetinfo().compareTo(BigDecimal.ZERO) > 0) {
-            // First round of bonus game, bet amount (did not lose all money or exactly lose)
-            return (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
-        } else {
-            // Middle of bonus game (betinfo value is zero, so just check for the money value)
-            return dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
         }
     }
 
