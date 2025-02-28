@@ -34,10 +34,11 @@ public class BetDto extends ActionDto implements BetResultData {
     private BigDecimal money;
 
     @NotBlank
-    @Size(min = 10, max = 13)
+    @Size(max = 10)
     @Pattern(regexp = "\\d+")
     private String timestamp;
 
+    @NotBlank
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String dealid;
 
