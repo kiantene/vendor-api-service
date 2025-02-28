@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -41,13 +42,16 @@ public class BetService {
 
         CommonVo commonVo = new CommonVo();
         BetDto betDto = new BetDto();
+        GameSession gameSession = new GameSession();
 
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
             ValidationUtils.validateRequest(betDto);
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
+
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
 
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
@@ -57,10 +61,20 @@ public class BetService {
 
             walletRequest = sportWalletService.placeBet(walletRequest);
 
-            //walletRequest = sportWalletService.confirmBet(walletRequest);
-
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
+        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidRequestException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidOperatorResponseException exception) {
+            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+        } catch (BetResultIdempotentViolationException exception){
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
+            httpService.logError(httpRequestLog,exception);
         } catch (Exception exception){
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog,exception);
