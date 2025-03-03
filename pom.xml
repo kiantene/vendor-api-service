@@ -218,11 +218,11 @@
         </repository>
         <repository>
             <id>gitlab-maven-sas</id>
-            <url>https://stealthtitans.site/api/v4/projects/10/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/10/packages/maven</url>
         </repository>
         <repository>
             <id>gitlab-maven-core</id>
-            <url>https://stealthtitans.site/api/v4/projects/71/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/71/packages/maven</url>
         </repository>
     </repositories>
 
