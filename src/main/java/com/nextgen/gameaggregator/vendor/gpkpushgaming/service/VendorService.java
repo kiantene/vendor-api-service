@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -26,7 +25,6 @@ public class VendorService extends BaseVendorService {
     private final VendorGameCodeService vendorGameCodeService;
     private boolean settledByBet = false;
 
-    @Autowired
     public VendorService(VendorGameCodeService vendorGameCodeService) {
         this.vendorGameCodeService = vendorGameCodeService;
     }

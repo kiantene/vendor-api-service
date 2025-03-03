@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,8 +26,7 @@ public class BalanceService {
     private final HttpService httpService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
-
-    @Autowired
+    
     public BalanceService(GameSessionService gameSessionService,
                           VendorLineService vendorLineService,
                           WalletService walletService,
@@ -36,7 +34,6 @@ public class BalanceService {
                           AgentPlayerService agentPlayerService,
                           VendorGameService vendorGameService) {
         this.gameSessionService = gameSessionService;
-
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.httpService = httpService;

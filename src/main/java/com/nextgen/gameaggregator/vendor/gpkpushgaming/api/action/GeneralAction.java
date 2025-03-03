@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,12 +28,10 @@ public class GeneralAction {
     private final BetService betService;
     private final RollBackService rollBackService;
 
-    @Autowired
     public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, RollBackService rollBackService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
-
         this.rollBackService = rollBackService;
     }
 
@@ -57,7 +54,7 @@ public class GeneralAction {
 
             vo = this.actionHandling(actionDto, traceId, httpRequestLog);
 
-        } catch (InvalidRequestException e) {
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR.code);
         } finally {

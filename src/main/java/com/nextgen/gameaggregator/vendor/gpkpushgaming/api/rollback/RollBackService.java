@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,14 +32,12 @@ public class RollBackService {
     private final HttpService httpService;
     private final VendorService vendorService;
 
-    @Autowired
     public RollBackService(GameSessionService gameSessionService,
                            VendorLineService vendorLineService,
                            WalletService walletService,
                            HttpService httpService,
                            VendorService vendorService) {
         this.gameSessionService = gameSessionService;
-
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.httpService = httpService;

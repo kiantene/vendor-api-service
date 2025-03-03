@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,7 +32,6 @@ public class BetService {
     private final HttpService httpService;
     private final VendorService vendorService;
 
-    @Autowired
     public BetService(GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       WalletService walletService,
@@ -53,7 +51,7 @@ public class BetService {
         CommonVo vo = new CommonVo();
         BetDto betDto = new BetDto();
         BetDataVo betDataVo = new BetDataVo();
-        BigDecimal balance = null;
+        BigDecimal balance = BigDecimal.ZERO;
         GameSession gameSession = new GameSession();
         BigDecimal money;
 
