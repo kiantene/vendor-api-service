@@ -206,11 +206,13 @@ public class WalletBetResultAction {
                     // WIN, LOSE, END resultType will be force success.
                     shouldForceSuccess = true;
 
-                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
+                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))
+                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
                     // BET_WIN resultType will be force success, but only apply to certain vendors
                     shouldForceSuccess = true;
 
-                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))) {
+                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))
+                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
                     // BET_WIN resultType will be force success, but only apply to certain vendors
                     shouldForceSuccess = true;
 
