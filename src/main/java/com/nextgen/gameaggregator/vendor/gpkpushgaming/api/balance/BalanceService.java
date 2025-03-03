@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @Slf4j
@@ -44,12 +45,12 @@ public class BalanceService {
     }
 
     public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
-        BalanceDto balanceDto = new BalanceDto();
+        BalanceDto balanceDto;
         CommonVo vo = new CommonVo();
         BalanceDataVo dataVo = new BalanceDataVo();
 
         try {
-            balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), BalanceDto.class);
+            balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8), BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);

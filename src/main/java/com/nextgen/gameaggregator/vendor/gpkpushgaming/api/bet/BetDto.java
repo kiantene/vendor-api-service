@@ -6,17 +6,19 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.BetType;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 
-@Data
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
 
@@ -83,7 +85,7 @@ public class BetDto extends ActionDto implements BetResultData {
     public void setBetId(String query) {
         try {
             // Decode the URL-encoded query string
-            String decodedQuery = URLDecoder.decode(query, "UTF-8");
+            String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
 
             // Define the pattern to match the betid value
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("betid=\\[\"([^\"]+)\"\\]");
@@ -173,19 +175,15 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        BetStatus status = null;
-
-        //pushgaming
-        if (this.platform.equals(PlatformType.PUSHGAMING) || this.platform.equals(PlatformType.PUSHGAMINGLATAM)) {
-            if (this.finished != null && this.finished.equals(BetType.FINISHED)) {
-                status = BetStatus.SETTLED;
-            } else {
-                if (this.code.equals(BetType.POINTIN)) {
-                    status = BetStatus.UNSETTLED;
-                    return status;
-                }
-                status = BetStatus.SETTLED;
+        BetStatus status;
+        if (this.finished != null && this.finished.equals(BetType.FINISHED)) {
+            status = BetStatus.SETTLED;
+        } else {
+            if (this.code.equals(BetType.POINTIN)) {
+                status = BetStatus.UNSETTLED;
+                return status;
             }
+            status = BetStatus.SETTLED;
         }
         return status;
     }

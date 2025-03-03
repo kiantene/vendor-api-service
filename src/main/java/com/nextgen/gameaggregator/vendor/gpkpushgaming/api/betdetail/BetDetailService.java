@@ -22,8 +22,8 @@ public class BetDetailService implements BetDetailUrl {
     }
 
     @Override
-    public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
+    public PGBetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-        return new BetDetailUrlVo();
+        return new PGBetDetailUrlVo();
     }
 }

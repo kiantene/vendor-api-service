@@ -1,11 +1,13 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet;
 
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.DataVo;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 public class BetDataVo extends DataVo {
     private BigDecimal money;
 

@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -38,9 +37,6 @@ public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
     String apiToken = "api_token";
     String platform = "platform";
     String timestamp = "timestamp";
-
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     public GameUrlService() {
         super(PGGameUrlVo.class);

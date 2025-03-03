@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.betdetail;
 import lombok.Data;
 
 @Data
-public class BetDetailUrlVo implements com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo {
+public class PGBetDetailUrlVo implements com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo {
 
     private String url = "";
 

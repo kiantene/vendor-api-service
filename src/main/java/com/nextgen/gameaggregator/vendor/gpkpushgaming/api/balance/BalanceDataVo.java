@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.balance;
 
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.DataVo;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class BalanceDataVo extends DataVo {
     private String user;
 

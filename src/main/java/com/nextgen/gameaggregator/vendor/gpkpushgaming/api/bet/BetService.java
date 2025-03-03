@@ -55,7 +55,7 @@ public class BetService {
         BetDataVo betDataVo = new BetDataVo();
         BigDecimal balance = null;
         GameSession gameSession = new GameSession();
-        BigDecimal money = null;
+        BigDecimal money;
 
 
         try {

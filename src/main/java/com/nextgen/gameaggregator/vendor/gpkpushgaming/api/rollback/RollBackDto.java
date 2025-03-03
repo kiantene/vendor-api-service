@@ -6,11 +6,13 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RollBackDto extends ActionDto implements RollbackData {
     @NotBlank

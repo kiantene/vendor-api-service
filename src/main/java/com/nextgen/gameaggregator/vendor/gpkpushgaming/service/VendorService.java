@@ -56,7 +56,7 @@ public class VendorService extends BaseVendorService {
 
     public static String trimGameCode(String gameCode) {
 
-        String trimmedGameCode = null;
+        String trimmedGameCode;
 
         // check if game code contain _stg (ignore case-sensitive)
         if (gameCode.toLowerCase().contains("_stg")) {

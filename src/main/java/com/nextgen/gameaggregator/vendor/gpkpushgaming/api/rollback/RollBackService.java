@@ -52,9 +52,9 @@ public class RollBackService {
         CommonVo vo = new CommonVo();
         RollBackDataVo dataVo = new RollBackDataVo();
 
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
 
-        GameSession gameSession = null;
+        GameSession gameSession;
 
         try {
             // Retrieve request body in original string format
