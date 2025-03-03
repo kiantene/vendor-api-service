@@ -29,8 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AgentTestCaseStepUpdateAction {
 
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
     @Autowired
     RequestService requestService;
     @Autowired
@@ -47,7 +45,7 @@ public class AgentTestCaseStepUpdateAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         OperatorResponseVo responseVo = new OperatorResponseVo<>();
 
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
                 String body = httpRequestLog.getRequestBody();
                 AgentTestCaseStepUpdateDto dto = HttpService.convertJsonToDto(body, AgentTestCaseStepUpdateDto.class);

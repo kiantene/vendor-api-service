@@ -30,9 +30,6 @@ import java.util.Map;
 @Slf4j
 public class SportSettleAction {
 
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
-
     @Autowired
     RequestService requestService;
     @Autowired
@@ -48,7 +45,7 @@ public class SportSettleAction {
     public ResponseResultVo<Object> walletSportResettle(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseResultVo<Object> responseResultVo = new ResponseResultVo<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
                 // Retrieve request body in original string format and convert into dto
                 SportSettleDto dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), SportSettleDto.class);
