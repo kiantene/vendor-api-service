@@ -26,7 +26,7 @@ public class PingService {
             CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
             this.doValidation(commonDto);
-            String time = String.valueOf(System.currentTimeMillis());
+            Long time = System.currentTimeMillis();
             commonVo.setSuccessResponse(commonDto.getId(), time);
 
 
@@ -35,7 +35,7 @@ public class PingService {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
                     ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
-            
+
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
                     ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
