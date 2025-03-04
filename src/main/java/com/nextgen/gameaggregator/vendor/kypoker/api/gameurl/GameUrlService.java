@@ -55,7 +55,8 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         encryptParam.add("orderid", AgentId + TimeStamp + gameSession.getVendorPlayerUsername());
         encryptParam.add("ip", gameSession.getIpAddress());
         encryptParam.add("lineCode", String.valueOf(gameSession.getVendorLineId()));
-        encryptParam.add("KindId", String.valueOf(gameSession.getVendorGameCode()));
+        encryptParam.add("KindID", "1370");
+        encryptParam.add("Money", "1000");
         encryptParam.add("currency", String.valueOf(gameSession.getVendorCurrencyCode()));
 
         String queryString = UriComponentsBuilder.fromPath("")
@@ -68,7 +69,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         String encodedParam;
         try {
             Param = VendorService.aesEncrypt(queryString, AesKey);
-            encodedParam = URLEncoder.encode(Param, "UTF-8");
+            encodedParam = Param;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
