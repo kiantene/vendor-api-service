@@ -104,14 +104,14 @@ public class GeneralAction {
 
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto) {
         CommonVo vo = new CommonVo();
-        switch (actionDto.getS()) {
-            case Actions.BALANCE -> vo = balanceService.balance(body, traceId, httpRequestLog);
-            case Actions.BET -> vo = betService.bet(body, traceId, httpRequestLog);
-            case Actions.SETTLE -> vo = settleService.settle(body, traceId, httpRequestLog);
-            case Actions.CANCEL -> vo = cancelService.refund(body, traceId, httpRequestLog);
-
-            default -> vo.setErrorCode(ResponseCodes.INTERNAL_ERROR);
-        }
+//        switch (actionDto.getS()) {
+//            case Actions.BALANCE -> vo = balanceService.balance(body, traceId, httpRequestLog);
+//            case Actions.BET -> vo = betService.bet(body, traceId, httpRequestLog);
+//            case Actions.SETTLE -> vo = settleService.settle(body, traceId, httpRequestLog);
+//            case Actions.CANCEL -> vo = cancelService.refund(body, traceId, httpRequestLog);
+//
+//            default -> vo.setErrorCode(ResponseCodes.INTERNAL_ERROR);
+//        }
 
         return vo;
     }

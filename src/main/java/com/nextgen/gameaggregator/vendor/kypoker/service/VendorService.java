@@ -1,24 +1,20 @@
 package com.nextgen.gameaggregator.vendor.kypoker.service;
 
-
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleDto;
 import lombok.Data;
 import org.bouncycastle.util.encoders.Base64;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Arrays;
-
 
 @Data
 @Service
@@ -28,7 +24,7 @@ public class VendorService extends BaseVendorService {
         try {
             java.util.Base64.Encoder encoder = java.util.Base64.getEncoder();
             SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS7Padding");
             cipher.init(Cipher.ENCRYPT_MODE, keySpec);
             return encoder.encodeToString(cipher.doFinal(dataString.getBytes("UTF-8")));
         } catch (Exception exception) {
@@ -77,6 +73,18 @@ public class VendorService extends BaseVendorService {
             e.printStackTrace();
         }
         return result;
+    }
+
+    private ResultType getResultType(SettleDto dto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        if (dto.getWinAmount().compareTo(zero) > 0 || dto.getJackpotAmount().compareTo(zero) > 0) {
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 
 }

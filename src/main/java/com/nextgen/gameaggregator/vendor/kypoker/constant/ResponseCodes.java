@@ -6,5 +6,7 @@ public class ResponseCodes {
     public static final String INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS";
     public static final Integer SUCCESS = 0;
     public static final Integer GET_BET = 1001;
+    public static final Integer RETURN_BALANCE = 1003;
+
 
 }
