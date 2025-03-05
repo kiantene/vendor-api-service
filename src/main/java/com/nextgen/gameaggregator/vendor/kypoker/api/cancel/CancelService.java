@@ -1,0 +1,104 @@
+package com.nextgen.gameaggregator.vendor.kypoker.api.cancel;
+
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
+
+import java.math.BigDecimal;
+
+public class CancelService {
+
+    private final GameService gameService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final GameSessionService gameSessionService;
+    private final VendorService vendorService;
+
+    public CancelService(GameService gameService,
+                         WalletService walletService,
+                         ValidationService validationService,
+                         GameSessionService gameSessionService,
+                         VendorService vendorService) {
+        this.gameService = gameService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.gameSessionService = gameSessionService;
+        this.vendorService = vendorService;
+    }
+
+    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog) {
+        // Construct VO
+        CommonVo vo = new CommonVo();
+
+        BigDecimal balance = null;
+
+        try {
+            // Convert original request body into dto
+            CancelDto cancelDto = HttpService.convertJsonToDto(actionDto, CancelDto.class);
+
+            // 1. Validate request parameters from vendor (Non-database related)
+            this.doValidation(cancelDto);
+
+            // 2. Verify session token
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelDto.getAccount()); //token check
+            } catch (AuthenticationException authenticationException) { //if expired
+                gameSession = gameSessionService.generateNewSessionToken(cancelDto.getAccount()); //generate new token
+                gameSessionService.updateByVendorCurrencyCode(gameSession, cancelDto.getCurrency());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
+
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(cancelDto, gameSession);
+
+            // 4. Send refund to Operator
+            balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+
+            CancelVo d = new CancelVo();
+
+            d.setCode(ResponseCodes.SUCCESS);
+            d.setStatus(1);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+
+        } catch (Exception e){
+            CancelVo d = new CancelVo();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
+            d.setStatus(2);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+        }
+
+        return vo;
+    }
+
+    private void doValidation(CancelDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(CancelDto dto, GameSession gameSession) throws DisabledVendorLineException,
+            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
+            InvalidPlayerException, AuthenticationException {
+
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getAccount());
+
+        // Verify vendor gameCode, currency and platform
+        String[] parts = gameSession.getVendorGameCode().split("_");
+        int mType = Integer.parseInt(parts[1]);
+        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+    }
+}

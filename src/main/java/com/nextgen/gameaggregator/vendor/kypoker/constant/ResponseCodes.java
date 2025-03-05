@@ -7,6 +7,8 @@ public class ResponseCodes {
     public static final Integer SUCCESS = 0;
     public static final Integer GET_BET = 1001;
     public static final Integer RETURN_BALANCE = 1003;
+    public static final Integer CANCEL = 1004;
+
 
 
 }
