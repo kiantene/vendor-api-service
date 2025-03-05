@@ -56,7 +56,7 @@ public class GeneralAction {
             String body = httpRequestLog.getRequestBody();
             CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
-            commonVo = this.actionHandling(commonDto, traceId, httpRequestLog);
+            commonVo = this.actionHandling(commonDto, traceId, httpRequestLog, request);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -76,11 +76,11 @@ public class GeneralAction {
         return commonVo;
     }
 
-    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog)
+    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest)
             throws InvalidRequestException {
         return switch (commonDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
-            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
+            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, httpServletRequest);
             case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
             case "open.operator.order.status" -> queryService.query(httpRequestLog);
             case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog);
