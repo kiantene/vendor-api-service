@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.116</version>
+    <version>1.1.118</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-02-05T07:57:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-03-05T08:02:46Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
@@ -152,6 +152,10 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
             <version>${modelmapper.version}</version>
@@ -198,6 +202,12 @@
             <artifactId>s3</artifactId>
             <version>2.20.1</version> <!-- Specify the correct version -->
         </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>3.1.6</version>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -218,11 +228,11 @@
         </repository>
         <repository>
             <id>gitlab-maven-sas</id>
-            <url>https://stealthtitans.site/api/v4/projects/10/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/10/packages/maven</url>
         </repository>
         <repository>
             <id>gitlab-maven-core</id>
-            <url>https://stealthtitans.site/api/v4/projects/71/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/71/packages/maven</url>
         </repository>
     </repositories>
 

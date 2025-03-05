@@ -23,8 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.API_VERIFY_PATH)
 @Slf4j
 public class AgentInfoAction {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -41,7 +39,7 @@ public class AgentInfoAction {
         AgentInfoVo<Object> agentInfoVo = new AgentInfoVo<>();
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
                 // Retrieve request body in original string format and convert into dto
                 String body = httpRequestLog.getRequestBody();

@@ -63,8 +63,7 @@ public class CreditAction {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
             creditDto = HttpService.convertQueryStringToDto(body, CreditDto.class);
-
-            creditDto.convertStringToJsonObject(creditDto.getMessage());
+            creditDto.setMessageDto(creditDto.getMessage());
 
             this.doValidation(creditDto);
 
@@ -140,6 +139,9 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getMessageDto());
         ValidationUtils.validateRequest(dto.getMessageDto().getBetInfo());
+        if (dto.getMessageDto().getBetInfo().getWinAmount() == null) {
+            throw new InvalidRequestException();
+        }
     }
 
     private void doVerification(CreditDto dto, GameSession gameSession, String oriRequest) throws

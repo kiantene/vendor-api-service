@@ -14,8 +14,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Configuration
 public class ClickHouseDataSourceConfig {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -56,7 +54,7 @@ public class ClickHouseDataSourceConfig {
         config.setIdleTimeout(idleTimeout);  // Set the maximum amount of time (in milliseconds) that a connection is allowed to sit idle in the pool
         config.setPoolName("ClickHouseHikariCP");
 
-        if (!requestService.isTestEnvironment(profilesActive)) {
+        if (!requestService.isTestEnvironment()) {
             // Set SSL properties
             config.addDataSourceProperty("ssl", "true");
             config.addDataSourceProperty("sslmode", "strict");  // Adjust this as necessary
