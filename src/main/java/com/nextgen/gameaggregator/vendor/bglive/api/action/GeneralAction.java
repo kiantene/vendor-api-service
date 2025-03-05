@@ -81,7 +81,7 @@ public class GeneralAction {
         return switch (commonDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
             case "open.operator.order.transfer" -> betService.bet(httpRequestLog, httpServletRequest);
-            case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
+            case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, httpServletRequest);
             case "open.operator.order.status" -> queryService.query(httpRequestLog);
             case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog);
             case "open.operator.ping" -> pingService.ping(httpRequestLog);

@@ -44,17 +44,17 @@ public class OrdersDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return orderId;
+        return this.orderId;
     }
 
     @Override
     public String getVendorBetId() {
-        return getExternalTransactionId();
+        return this.getExternalTransactionId();
     }
 
     @Override
     public String getRoundId() {
-        return getExternalTransactionId();
+        return this.getExternalTransactionId();
     }
 
     @Override

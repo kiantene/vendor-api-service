@@ -133,6 +133,7 @@ public class BetService {
                 //insert to collection for rollback all bet
                 this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
             }
+            httpService.end(httpRequestLog, new CommonVo());
         }
         return commonVo;
     }

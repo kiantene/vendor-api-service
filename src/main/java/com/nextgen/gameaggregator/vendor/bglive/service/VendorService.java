@@ -184,4 +184,16 @@ public class VendorService extends BaseVendorService {
         return null;
     }
 
+    public void processMultipleDataResponse(List<CompletableFuture<BigDecimal>> balances) {
+
+        // set every completable future 5 sec timeout, if timeout then return null
+        List<CompletableFuture<BigDecimal>> betsWithTimeout = balances.stream()
+                .map(bet -> bet.orTimeout(5L, TimeUnit.SECONDS)
+                        .exceptionally(ex -> null))  // 如果超时，返回 null
+                .toList();
+
+        // use allOf to wait all CompletableFuture complete
+        CompletableFuture<Void> allBets = CompletableFuture.allOf(betsWithTimeout.toArray(new CompletableFuture[0]));
+        allBets.join();  // 等待所有任务完成
+    }
 }
