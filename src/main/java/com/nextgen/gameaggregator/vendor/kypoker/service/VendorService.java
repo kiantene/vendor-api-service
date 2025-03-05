@@ -6,19 +6,28 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleDto;
 import lombok.Data;
 import org.bouncycastle.util.encoders.Base64;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
 @Service
@@ -41,7 +50,7 @@ public class VendorService extends BaseVendorService {
             String base64 = java.util.Base64.getEncoder().encodeToString(encrypted);
 
             // URL encoding
-            return URLEncoder.encode(base64, "UTF-8");
+            return base64;
         }catch (Exception exception) {
             throw new InvalidEncryptionException();
         }
@@ -101,5 +110,6 @@ public class VendorService extends BaseVendorService {
 
         return resultType;
     }
+
 
 }
