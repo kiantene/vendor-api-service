@@ -1,13 +1,10 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.bet;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.core.WalletRequest;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -36,8 +33,6 @@ public class BetService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final WalletRequestService walletRequestService;
-    private final OperatorWalletService operatorWalletService;
     private final BetActionLogService betActionLogService;
 
     public BetService(HttpService httpService,
@@ -45,15 +40,14 @@ public class BetService {
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       AgentPlayerService agentPlayerService,
-                      VendorService vendorService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService, BetActionLogService betActionLogService) {
+                      VendorService vendorService,
+                      BetActionLogService betActionLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
-        this.walletRequestService = walletRequestService;
-        this.operatorWalletService = operatorWalletService;
         this.betActionLogService = betActionLogService;
     }
 
@@ -64,7 +58,6 @@ public class BetService {
         GameSession gameSession = null;
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
         try {
-            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
             // Handle the action and return the resulting value
@@ -221,23 +214,10 @@ public class BetService {
                 generalRollbackDto.setRollbackId(ordersDto.getExternalTransactionId());
                 generalRollbackDto.setVendorSettledTime(null);
                 generalRollbackDto.setRoundId(ordersDto.getRoundId());
-                betActionLogService.create(new Gson().toJson(generalRollbackDto), ordersDto.getRoundId(), ordersDto.getVendorBetId(), ordersDto.getExternalTransactionId(), gameSession, 1, null);
+                betActionLogService.create(new Gson().toJson(generalRollbackDto), ordersDto.getRoundId(),
+                        ordersDto.getVendorBetId(), ordersDto.getExternalTransactionId(), gameSession, 1,
+                        null);
             }
         });
     }
-
-//    private void dataDebitMapper(WalletRequest walletRequest, BetDto betDto, GameSession gameSession) {
-//
-//        walletRequestService.updateByGameSession(walletRequest, gameSession);
-//        walletRequest.setExternalTransactionId(betDto.getRoundId());
-//        walletRequest.setRoundId(betDto.getRoundId());
-//        walletRequest.setVendorGameCode(betDto.getGameId());
-//        walletRequest.setTimestamp(System.currentTimeMillis());
-//        walletRequest.setToken(gameSession.getToken());
-//        walletRequest.setVendorBetId(betDto.getVendorBetId());
-//        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-//        BigDecimal amount = betDto.getParamsDto().getAmount().abs();
-//        walletRequest.setTransferAmount(amount);
-//        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-//    }
 }
