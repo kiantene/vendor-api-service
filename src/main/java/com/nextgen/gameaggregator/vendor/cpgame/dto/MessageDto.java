@@ -1,23 +1,29 @@
-package com.nextgen.gameaggregator.vendor.cpgame.api.credit;
+package com.nextgen.gameaggregator.vendor.cpgame.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonMessageDto;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MessageDto extends CommonMessageDto {
+public class MessageDto {
 
-    @NotBlank
+    @NotNull
+    @JsonProperty("sub_uid")
+    private Integer subUid;
+
+    @JsonProperty("bet_id")
+    @Size(max = 255)
+    private String betId;
+
     @JsonProperty("game_id")
     @Size(max = 255)
     private String gameId;
 
-    @NotNull
     @JsonProperty("bet_info")
     private BetInfoDto betInfo;
 }

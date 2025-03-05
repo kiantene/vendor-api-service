@@ -66,8 +66,7 @@ public class BetAction {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
             betDto = HttpService.convertQueryStringToDto(body, BetDto.class);
-
-            betDto.convertStringToJsonObject(betDto.getMessage());
+            betDto.setMessageDto(betDto.getMessage());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -162,6 +161,10 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getMessageDto());
         ValidationUtils.validateRequest(dto.getMessageDto().getBetInfo());
+        if (dto.getMessageDto().getBetInfo().getBetAmount() == null
+                || dto.getMessageDto().getBetInfo().getWinAmount() == null) {
+            throw new InvalidRequestException();
+        }
     }
 
     private void doVerification(BetDto dto, GameSession gameSession, String oriRequest)
