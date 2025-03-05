@@ -82,7 +82,7 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return this.wagersTime;
+        return this.wagersTime * 1000;
     }
 
     @Override
@@ -92,7 +92,7 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return this.wagersTime;
+        return this.wagersTime * 1000;
     }
 
     @Override

@@ -98,7 +98,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return this.wagersTime;
+        return this.wagersTime * 1000;
     }
 
     @Override
@@ -108,7 +108,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return type == Formats.SESSION_BET_TYPE_BET ? null : this.wagersTime;
+        return type == Formats.SESSION_BET_TYPE_BET ? null : this.wagersTime * 1000;
     }
 
     @Override
