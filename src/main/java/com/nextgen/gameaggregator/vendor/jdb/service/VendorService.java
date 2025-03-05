@@ -3,9 +3,12 @@ package com.nextgen.gameaggregator.vendor.jdb.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonParseException;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.exception.InvalidDateException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleDto;
@@ -94,5 +97,14 @@ public class VendorService extends BaseVendorService {
         }
 
         return settledBet;
+    }
+
+    public String getCredentialWithKey(VendorLine vendorLine, String key) throws InvalidVendorLineException {
+        return vendorLine.getCredentials()
+                .stream()
+                .filter(vendorLineCredential -> vendorLineCredential.getName().equals(key))
+                .map(VendorLineCredential::getValue)
+                .findFirst()
+                .orElseThrow(InvalidVendorLineException::new);
     }
 }
