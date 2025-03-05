@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -41,7 +40,6 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final BetActionLogService betActionLogService;
 
-    @Autowired
     public BetService(HttpService httpService,
                       WalletService walletService,
                       GameSessionService gameSessionService,
@@ -71,14 +69,13 @@ public class BetService {
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
             // Handle the action and return the resulting value
             this.doValidation(betDto);
-            gameSession = getGameSession(betDto);
+            gameSession = getGameSession(betDto.getParamsDto().getLoginId());
 
             this.doVerification(betDto, gameSession);
             //process bet
-//            processOrders(walletRequest, betDto, gameSession, traceId, httpRequestLog);
             List<CompletableFuture<ResultVo>> resultVoList = new LinkedList<>();
             for (OrdersDto order : betDto.getParamsDto().getOrders()) {
-                GameSession orderGameSession = getGameSession(betDto);
+                GameSession orderGameSession = getGameSession(betDto.getParamsDto().getLoginId());
                 CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(() -> processData(order, httpServletRequest, body, orderGameSession), executor);
                 resultVoList.add(resultVo);
             }
@@ -180,8 +177,8 @@ public class BetService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private GameSession getGameSession(BetDto betDto) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getParamsDto().getLoginId());
+    private GameSession getGameSession(String loginId) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
     private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body, GameSession gameSession) {
@@ -197,19 +194,13 @@ public class BetService {
             if (!gameCode.equals(gameSession.getVendorGameCode())) {
                 vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
             }
-            
             // Process Result
             BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
             resultVo = new ResultVo(betEvent.getLastBalance(), httpRequestLog.getOperatorTimestamp());
-        } catch (InvalidRequestException e) {
-            httpService.logError(httpRequestLog, e);
+
         } catch (BetResultIdempotentViolationException e) {
             resultVo = new ResultVo(e.getBalance(), httpRequestLog.getOperatorTimestamp());
             httpService.logError(httpRequestLog, e);
-
-//        } catch (InsufficientBalanceException e) {
-//            balanceVo = new BalanceVo(BigDecimal.ONE.negate(), httpRequestLog.getOperatorTimestamp());
-//            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             // do nothing, return null
             httpService.logError(httpRequestLog, e);

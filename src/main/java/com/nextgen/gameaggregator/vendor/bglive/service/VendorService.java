@@ -122,15 +122,14 @@ public class VendorService extends BaseVendorService {
         // set every completable future 5 sec timeout, if timeout then return null
         List<CompletableFuture<ResultVo>> betsWithTimeout = resultVoList.stream()
                 .map(bet -> bet.orTimeout(5L, TimeUnit.SECONDS)
-                        .exceptionally(ex -> null))  // 如果超时，返回 null
+                        .exceptionally(ex -> null))
                 .toList();
 
         // use allOf to wait all CompletableFuture complete
         CompletableFuture<Void> allBets = CompletableFuture.allOf(betsWithTimeout.toArray(new CompletableFuture[0]));
-        allBets.join();  // 等待所有任务完成
+        allBets.join();
 
         // collect all result（include null）
-
         return betsWithTimeout.stream()
                 .map(CompletableFuture::join)  // get every CompletableFuture result
                 .collect(Collectors.toList());
