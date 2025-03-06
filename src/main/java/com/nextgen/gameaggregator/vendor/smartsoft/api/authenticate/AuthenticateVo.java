@@ -12,5 +12,4 @@ public class AuthenticateVo extends ResponseVo {
     private String clientExternalKey;
     private String currencyCode;
     private String portalName;
-
 }

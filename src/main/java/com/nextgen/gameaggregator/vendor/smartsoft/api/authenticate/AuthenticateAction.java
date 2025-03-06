@@ -3,13 +3,15 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.authenticate;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,16 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class AuthenticateAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+
+    public AuthenticateAction(HttpService httpService, GameSessionService gameSessionService, VendorLineService vendorLineService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+    }
 
     @PostMapping(path = EndPoints.SESSION)
     public AuthenticateVo authenticate(HttpServletRequest request) {
@@ -48,12 +49,17 @@ public class AuthenticateAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
+            String portalName = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_NAME);
             // 5. Set response data
+            responseVo.setSessionId(gameSession.getTraceId());
+            responseVo.setUserName(gameSession.getVendorPlayerUsername());
+            responseVo.setClientExternalKey(gameSession.getToken());
+            responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
+            responseVo.setPortalName(portalName);
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
-
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
