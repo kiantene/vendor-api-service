@@ -8,5 +8,8 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateDto {
     @NotBlank
+    private String signature;
+
+    @NotBlank
     private String token;
 }

@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -37,13 +39,13 @@ public class AuthenticateAction {
     public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         AuthenticateVo responseVo = new AuthenticateVo();
+        String signature = request.getHeader("X-Signature");
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
-
-            String header = httpRequestLog.getId();
+            dto.setSignature(signature);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -52,9 +54,10 @@ public class AuthenticateAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
+            this.doVerification(dto, gameSession, body);
 
             String portalName = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_NAME);
+
             // 5. Set response data
             responseVo.setSessionId(gameSession.getTraceId());
             responseVo.setUserName(gameSession.getVendorPlayerUsername());
@@ -75,22 +78,12 @@ public class AuthenticateAction {
     private void doValidation(AuthenticateDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-
     }
 
-    private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException {
-        // Verify received vendor player username is the same from game session
-//        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
-//        // Verify vendor line is active
-//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-//        // Verify agent player is active
-//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-//        // Verify vendor game is active
-//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-//        // Verify operator ID
-//        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException {
+        // Verify received signature
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        ValidationUtils.isEquals(vendorService.signatureGenerator(secretKey, "POST", body), dto.getSignature(), AuthenticationException::new);
     }
 
 }
