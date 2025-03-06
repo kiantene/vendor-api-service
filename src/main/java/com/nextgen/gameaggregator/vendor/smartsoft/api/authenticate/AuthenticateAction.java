@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.smartsoft.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,11 +24,13 @@ public class AuthenticateAction {
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
 
-    public AuthenticateAction(HttpService httpService, GameSessionService gameSessionService, VendorLineService vendorLineService) {
+    public AuthenticateAction(HttpService httpService, GameSessionService gameSessionService, VendorLineService vendorLineService, VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.SESSION)
@@ -39,6 +42,8 @@ public class AuthenticateAction {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
+
+            String header = httpRequestLog.getId();
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -70,6 +75,8 @@ public class AuthenticateAction {
     private void doValidation(AuthenticateDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+
     }
 
     private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException,

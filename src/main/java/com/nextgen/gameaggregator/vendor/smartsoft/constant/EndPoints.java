@@ -5,7 +5,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EndPoints {
 
-    public static final String PATH = "/api/v1/ssg";
+    public static final String PATH = "/api/v1/smartsoft";
 
     public static final String SESSION = "/ActivateSession";
 
