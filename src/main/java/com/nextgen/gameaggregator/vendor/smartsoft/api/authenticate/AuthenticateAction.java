@@ -59,10 +59,10 @@ public class AuthenticateAction {
             String portalName = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_NAME);
 
             // 5. Set response data
-            responseVo.setSessionId(gameSession.getTraceId());
+            responseVo.setSessionId(gameSession.getToken());
             responseVo.setUserName(gameSession.getVendorPlayerUsername());
-            responseVo.setClientExternalKey(gameSession.getToken());
-            responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
+            responseVo.setClientExternalKey(gameSession.getVendorPlayerId().toString());
+            responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setPortalName(portalName);
 
         } catch (Exception exception) { // any other exception encountered
