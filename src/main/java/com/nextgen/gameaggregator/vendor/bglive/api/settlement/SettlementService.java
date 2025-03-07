@@ -63,7 +63,7 @@ public class SettlementService {
         CommonVo commonVo = new CommonVo();
         ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
         try {
-            Thread.sleep(5000);
+            Thread.sleep(50000);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             this.doValidation(settleDto);
