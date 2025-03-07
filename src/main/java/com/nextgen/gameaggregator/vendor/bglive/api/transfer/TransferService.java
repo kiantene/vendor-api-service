@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,7 +30,6 @@ public class TransferService {
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
 
-    @Autowired
     public TransferService(HttpService httpService,
                            GameSessionService gameSessionService,
                            VendorLineService vendorLineService,
@@ -56,7 +54,7 @@ public class TransferService {
             TransferDto transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
             WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             this.doValidation(transferDto);
-            GameSession gameSession = getGameSession(transferDto);
+            GameSession gameSession = getGameSession(transferDto.getParamsDto().getLoginId());
             this.doVerification(transferDto, gameSession);
 
             walletRequest = processTransferInOut(transferDto, walletRequest, gameSession);
@@ -96,8 +94,8 @@ public class TransferService {
         return commonVo;
     }
 
-    private GameSession getGameSession(TransferDto transferDto) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(transferDto.getParamsDto().getLoginId());
+    private GameSession getGameSession(String loginId) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
     private void doValidation(TransferDto transferDto) throws InvalidRequestException {

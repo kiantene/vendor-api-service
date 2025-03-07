@@ -18,7 +18,6 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,7 +39,6 @@ public class SettlementService {
     private final BetActionLogService betActionLogService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    @Autowired
     public SettlementService(HttpService httpService,
                              WalletService walletService,
                              GameSessionService gameSessionService,

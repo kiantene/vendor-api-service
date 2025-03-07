@@ -7,14 +7,12 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PingService {
     private final HttpService httpService;
 
-    @Autowired
     public PingService(HttpService httpService) {
         this.httpService = httpService;
     }

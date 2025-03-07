@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,7 +24,6 @@ public class BalanceService {
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
 
-    @Autowired
     public BalanceService(HttpService httpService,
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
@@ -50,9 +48,8 @@ public class BalanceService {
             CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
             this.doValidation(commonDto);
-
-            String vendorPlayerLoginId = commonDto.getCommonParamsDto().getLoginId();
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerLoginId);
+            
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(commonDto.getCommonParamsDto().getLoginId());
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, gameSession);
