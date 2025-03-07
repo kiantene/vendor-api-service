@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
@@ -9,6 +10,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
+import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
@@ -17,6 +19,7 @@ import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -76,28 +79,30 @@ public class SettlementService {
             this.doVerification(settleDto, gameSession);
 
 //            processSettleOrders(walletRequest, settleDto, gameSession, traceId, httpRequestLog);
-            List<CompletableFuture<BigDecimal>> balanceList = new LinkedList<>();
+            List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
             for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
-                CompletableFuture<BigDecimal> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(), order, request, gameSession), executor);
+                CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(), order, request, gameSession), executor);
                 balanceList.add(balance);
             }
-            vendorService.processMultipleDataResponse(balanceList);
-
+            BigDecimal balance = vendorService.checkResponseAndReturnBalance(balanceList);
+            if (balance == null) {
+                throw new BetResultNotFoundException("Have Transaction Failed");
+            }
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(gameSession.getVendorPlayerId());
             resultVo.setSn(settleDto.getParamsDto().getSn());
-            resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
+            resultVo.setAvailableAmount(balance);
             resultVo.setOrderResult("1");
             String tranId = settleDto.getParamsDto().getTranId();
             resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
 
             commonVo.setSuccessResponse(settleDto.getId(), resultVo);
 
-//        } catch (InsufficientBalanceException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
-//                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
-//            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
+                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
+            httpService.logError(httpRequestLog, e);
 
 //        } catch (InvalidRequestException e) {
 //            //set Vo
@@ -122,6 +127,9 @@ public class SettlementService {
                     ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
+        } finally {
+            // close executor
+            executor.shutdown();
         }
         return commonVo;
     }
@@ -204,12 +212,13 @@ public class SettlementService {
 //        }
 //    }
 
-    private BigDecimal processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
+    private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         String traceId = httpRequestLog.getId();
         BigDecimal balance = BigDecimal.ZERO;
         boolean isRequestExists = false;
+        ResultType resultType = null;
         ResultVo resultVo = null;
         try {
             this.doValidation(ordersDto);
@@ -222,14 +231,20 @@ public class SettlementService {
                 throw new TransactionStillProcessingException();
             }
             // Process Result
-            ResultType resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(), ordersDto.getJackpotAmount(), false);
+            resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(), ordersDto.getJackpotAmount(), false);
             balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService, httpRequestLog);
 
+            resultVo = new ResultVo(balance, httpRequestLog.getOperatorTimestamp());
+        } catch (InsufficientBalanceException |
+                 InvalidRequestException |
+                 TransactionStillProcessingException e) {
+            httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
-            resultVo = new ResultVo(e.getBalance(), httpRequestLog.getOperatorTimestamp());
+            resultVo = new ResultVo(e.getBalance(), System.currentTimeMillis());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             // do nothing, return null
+            this.prepareSettleBet(ordersDto, gameSession, resultType);
             httpService.logError(httpRequestLog, e);
         } finally {
             if (!isRequestExists) {
@@ -238,7 +253,14 @@ public class SettlementService {
             }
             httpService.end(httpRequestLog, new CommonVo());
         }
-        return balance;
+        return resultVo;
+    }
+
+    private void prepareSettleBet(OrdersDto ordersDto, GameSession gameSession, ResultType resultType) {
+        THREAD_POOL.submit(() -> {
+            GeneralSettleDto generalSettleDto = new ModelMapper().map(ordersDto, GeneralSettleDto.class);
+            betActionLogService.create(new Gson().toJson(generalSettleDto), generalSettleDto.getRoundId(), generalSettleDto.getVendorBetId(), generalSettleDto.getExternalTransactionId(), gameSession, 2, resultType);
+        });
     }
 
 

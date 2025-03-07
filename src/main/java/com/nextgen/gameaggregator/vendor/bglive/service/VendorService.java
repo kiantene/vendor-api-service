@@ -163,37 +163,82 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+//    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+//        List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
+//
+//        for (ResultVo resultVo : resultList) {
+//            if (resultVo == null) {
+//                return null;
+//            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
+//                throw new InsufficientBalanceException();
+//            }
+//        }
+//        ResultVo lastestBalanceVo = resultList.stream()
+//                .filter(Objects::nonNull)
+//                .max(Comparator.comparing(ResultVo::getTimestamp))
+//                .orElse(null);
+//
+//        if (lastestBalanceVo != null) {
+//            return lastestBalanceVo.getAvailableAmount();
+//        }
+//        return null;
+//    }
+
+
     public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
 
+        boolean hasValidResult = false;
+
         for (ResultVo resultVo : resultList) {
             if (resultVo == null) {
-                return null;
-            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
+                continue; // 继续循环，忽略 null
+            }
+            hasValidResult = true; // 只要有一个不是 null，就标记为 true
+
+            if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new InsufficientBalanceException();
             }
         }
-        ResultVo lastestBalanceVo = resultList.stream()
-                .filter(Objects::nonNull)
-                .max(Comparator.comparing(ResultVo::getTimestamp))
-                .orElse(null);
 
-        if (lastestBalanceVo != null) {
-            return lastestBalanceVo.getAvailableAmount();
+        // 如果全部都是 null，抛出异常
+        if (!hasValidResult) {
+            throw new RuntimeException("All results are null");
         }
-        return null;
+
+        // 获取最新的（最大时间戳）的 ResultVo
+        return resultList.stream()
+                .filter(Objects::nonNull) // 过滤掉 null
+                .max(Comparator.comparing(ResultVo::getTimestamp))
+                .map(ResultVo::getAvailableAmount) // 直接获取 availableAmount
+                .orElse(null);
     }
 
-    public void processMultipleDataResponse(List<CompletableFuture<BigDecimal>> balances) {
-
-        // set every completable future 5 sec timeout, if timeout then return null
-        List<CompletableFuture<BigDecimal>> betsWithTimeout = balances.stream()
-                .map(bet -> bet.orTimeout(5L, TimeUnit.SECONDS)
-                        .exceptionally(ex -> null))  // 如果超时，返回 null
-                .toList();
-
-        // use allOf to wait all CompletableFuture complete
-        CompletableFuture<Void> allBets = CompletableFuture.allOf(betsWithTimeout.toArray(new CompletableFuture[0]));
-        allBets.join();  // 等待所有任务完成
-    }
+//
+//    public BigDecimal checkResponseAndReturnBalances(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+//        List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
+//
+//        ResultVo lastestBalanceVo = resultList.stream()
+//                .filter(Objects::nonNull)
+//                .max(Comparator.comparing(ResultVo::getTimestamp))
+//                .orElse(null);
+//
+//        if (lastestBalanceVo != null) {
+//            return lastestBalanceVo.getAvailableAmount();
+//        }
+//        return null;
+//    }
+//
+//    public void processMultipleDataResponse(List<CompletableFuture<BigDecimal>> balances) {
+//
+//        // set every completable future 5 sec timeout, if timeout then return null
+//        List<CompletableFuture<BigDecimal>> betsWithTimeout = balances.stream()
+//                .map(bet -> bet.orTimeout(5L, TimeUnit.SECONDS)
+//                        .exceptionally(ex -> null))  // 如果超时，返回 null
+//                .toList();
+//
+//        // use allOf to wait all CompletableFuture complete
+//        CompletableFuture<Void> allBets = CompletableFuture.allOf(betsWithTimeout.toArray(new CompletableFuture[0]));
+//        allBets.join();  // 等待所有任务完成
+//    }
 }
