@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service("bgliveVendorService")
 @Getter
@@ -110,29 +109,17 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static boolean isDoublePlay(long playId) {
-        String hexPlayId = Long.toHexString(playId);
-        char lastChar = hexPlayId.charAt(hexPlayId.length() - 1);
-        int lastDigit = Character.digit(lastChar, 16);
-        return lastDigit == 2 || lastDigit == 8 || lastDigit == 0;
-    }
-
-    public static List<ResultVo> processMultipleDataResponds(List<CompletableFuture<ResultVo>> resultVoList) {
-
-        // set every completable future 5 sec timeout, if timeout then return null
-        List<CompletableFuture<ResultVo>> betsWithTimeout = resultVoList.stream()
-                .map(bet -> bet.orTimeout(5L, TimeUnit.SECONDS)
+    public static <T> List<T> processMultipleDataResponds(List<CompletableFuture<T>> futureList) {
+        List<CompletableFuture<T>> futuresWithTimeout = futureList.stream()
+                .map(future -> future.orTimeout(5L, TimeUnit.SECONDS)
                         .exceptionally(ex -> null))
                 .toList();
 
-        // use allOf to wait all CompletableFuture complete
-        CompletableFuture<Void> allBets = CompletableFuture.allOf(betsWithTimeout.toArray(new CompletableFuture[0]));
-        allBets.join();
+        CompletableFuture.allOf(futuresWithTimeout.toArray(new CompletableFuture[0])).join();
 
-        // collect all result（include null）
-        return betsWithTimeout.stream()
-                .map(CompletableFuture::join)  // get every CompletableFuture result
-                .collect(Collectors.toList());
+        return futuresWithTimeout.stream()
+                .map(CompletableFuture::join)
+                .toList();
     }
 
     public Integer unsettledBetIdempotentCheck(String roundId)
@@ -162,8 +149,8 @@ public class VendorService extends BaseVendorService {
             return QueryStatus.SETTLE_TIE;
         }
     }
-    
-    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
+
+    public BigDecimal checkSettleResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
             InsufficientBalanceException,
             BetNotFoundException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
@@ -192,4 +179,25 @@ public class VendorService extends BaseVendorService {
                 .orElse(null);
     }
 
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+        List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
+
+        for (ResultVo resultVo : resultList) {
+            if (resultVo == null) {
+                return null;
+            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new InsufficientBalanceException();
+            }
+        }
+        // Find the latest process bet event
+        ResultVo resultVo = resultList.stream()
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(ResultVo::getTimestamp))
+                .orElse(null);
+
+        if (resultVo != null) {
+            return resultVo.getAvailableAmount();
+        }
+        return null;
+    }
 }

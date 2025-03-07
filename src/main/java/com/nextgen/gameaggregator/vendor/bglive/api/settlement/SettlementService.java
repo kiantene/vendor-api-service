@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
@@ -29,8 +30,7 @@ import java.util.concurrent.Executors;
 
 @Service
 public class SettlementService {
-    private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -61,12 +61,13 @@ public class SettlementService {
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
         CommonVo commonVo = new CommonVo();
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
         try {
+            Thread.sleep(5000);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             this.doValidation(settleDto);
-            GameSession gameSession = getGameSession(settleDto.getParamsDto().getLoginId());
+            GameSession gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
             this.doVerification(settleDto, gameSession);
 
             List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
@@ -74,7 +75,7 @@ public class SettlementService {
                 CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(), order, request, gameSession), executor);
                 balanceList.add(balance);
             }
-            BigDecimal balance = vendorService.checkResponseAndReturnBalance(balanceList);
+            BigDecimal balance = vendorService.checkSettleResponseAndReturnBalance(balanceList);
             if (balance == null) {
                 throw new BetResultNotFoundException("Have Transaction Failed");
             }

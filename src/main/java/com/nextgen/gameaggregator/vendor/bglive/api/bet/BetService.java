@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
@@ -25,8 +26,7 @@ import java.util.concurrent.Executors;
 
 @Service
 public class BetService {
-    private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -56,14 +56,13 @@ public class BetService {
         boolean processFailed = false;
         BetDto betDto = null;
         GameSession gameSession = null;
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
         try {
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
             // Handle the action and return the resulting value
             this.doValidation(betDto);
-            gameSession = getGameSession(betDto.getParamsDto().getLoginId());
-
+            gameSession = this.getGameSession(betDto.getParamsDto().getLoginId());
             this.doVerification(betDto, gameSession);
             //process bet
             List<CompletableFuture<ResultVo>> resultVoList = new LinkedList<>();

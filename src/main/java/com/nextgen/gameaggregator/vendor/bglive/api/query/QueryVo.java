@@ -8,4 +8,9 @@ import lombok.Setter;
 public class QueryVo {
     private String orderId;
     private int status;
+
+    public QueryVo(String orderId, Integer status) {
+        this.orderId = orderId;
+        this.status = status;
+    }
 }
