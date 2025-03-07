@@ -3,13 +3,10 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
-import com.nextgen.gameaggregator.core.WalletRequest;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -40,8 +37,6 @@ public class SettlementService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final WalletRequestService walletRequestService;
-    private final OperatorWalletService operatorWalletService;
     private final BetActionLogService betActionLogService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
@@ -51,34 +46,29 @@ public class SettlementService {
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
                              AgentPlayerService agentPlayerService,
-                             VendorService vendorService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService, BetActionLogService betActionLogService, RequestIdempotentLogService requestIdempotentLogService) {
+                             VendorService vendorService,
+                             BetActionLogService betActionLogService,
+                             RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
-        this.walletRequestService = walletRequestService;
-        this.operatorWalletService = operatorWalletService;
         this.betActionLogService = betActionLogService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
         CommonVo commonVo = new CommonVo();
-        String traceId = httpRequestLog.getId();
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
         try {
-            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
-            // Handle the action and return the resulting value
             this.doValidation(settleDto);
-
             GameSession gameSession = getGameSession(settleDto.getParamsDto().getLoginId());
             this.doVerification(settleDto, gameSession);
 
-//            processSettleOrders(walletRequest, settleDto, gameSession, traceId, httpRequestLog);
             List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
             for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
                 CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(), order, request, gameSession), executor);
@@ -104,23 +94,23 @@ public class SettlementService {
                     ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
             httpService.logError(httpRequestLog, e);
 
-//        } catch (InvalidRequestException e) {
-//            //set Vo
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-//                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (InvalidPlayerException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-//                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
-//
-//        } catch (AuthenticationException e) {
-//
-//            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-//                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
-//            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException e) {
+            //set Vo
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidPlayerException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (AuthenticationException e) {
+
+            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -183,40 +173,11 @@ public class SettlementService {
         return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
-//    private ResultType calculateResultType(OrdersDto ordersDto) {
-//        return vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(),
-//                settleDto.getJackpotAmount(), false);
-//    }
-
-//    private void processSettleOrders(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
-//            InvalidAgentApiCredentialException,
-//            VendorCurrencyNotSupportException,
-//            BetResultIdempotentViolationException,
-//            MergedBetDataIntegrityException,
-//            InsufficientBalanceException,
-//            TransactionStillProcessingException,
-//            BetNotFoundException,
-//            InvalidOperatorResponseException,
-//            InternalServerTimeoutRetryException,
-//            InternalServerException,
-//            BetNotAllowedException {
-//
-////        Thread.sleep(31000);
-//        for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
-//            settleDto.setCurrentOrder(order);
-//            boolean isBullBullGame = order.getGameId().equals(GameCode.BULL_BULL);
-//
-//            ResultType resultType = calculateResultType(order.getValidAmount(), order.getAmount(), order.getJackpotAmount(), false);
-//            walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
-//
-//        }
-//    }
-
     private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         String traceId = httpRequestLog.getId();
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
         boolean isRequestExists = false;
         ResultType resultType = null;
         ResultVo resultVo = null;
@@ -262,32 +223,4 @@ public class SettlementService {
             betActionLogService.create(new Gson().toJson(generalSettleDto), generalSettleDto.getRoundId(), generalSettleDto.getVendorBetId(), generalSettleDto.getExternalTransactionId(), gameSession, 2, resultType);
         });
     }
-
-
-//    private void dataCreditMapper(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession) {
-//
-//        walletRequestService.updateByGameSession(walletRequest, gameSession);
-//        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-//        walletRequest.setExternalTransactionId(settleDto.getRoundId());
-//        walletRequest.setRoundId(settleDto.getRoundId());
-//        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-//        walletRequest.setTimestamp(System.currentTimeMillis());
-//        walletRequest.setToken(gameSession.getToken());
-//        walletRequest.setVendorBetId(settleDto.getVendorBetId());
-//        walletRequest.setTakeAll(0);
-//        BigDecimal amount = settleDto.getParamsDto().getAmount().abs();
-//        walletRequest.setTransferAmount(amount);
-//        walletRequest.setBetAmount(amount);
-//
-//        ResultType resultType = vendorService.calculateResultType(null, amount, settleDto.getJackpotAmount(),
-//                false);
-//
-//        walletRequest.setWinAmount(amount);
-//        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
-//        walletRequest.setJackpotAmount(settleDto.getJackpotAmount());
-//        walletRequest.setResultType(resultType.code);
-//        walletRequest.setVendorBetTime(System.currentTimeMillis());
-//        walletRequest.setVendorSettleTime(System.currentTimeMillis());
-//    }
-
 }
