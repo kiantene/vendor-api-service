@@ -70,7 +70,7 @@ public class BalanceAction {
             balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
 
             // convert message value to json object
-            balanceDto.convertStringToJsonObject(balanceDto.getMessage());
+            balanceDto.setMessageDto(balanceDto.getMessage());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);

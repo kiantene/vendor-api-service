@@ -37,14 +37,12 @@ public class BetHistoryController {
     BetRefundLogRepository betRefundLogRepository;
     @Autowired
     VendorPlayerRepository vendorPlayerRepository;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     //for QA use to test get bet history detail
     @PostMapping(path = "/details")
     public ResponseEntity<DetailsVo> details(@RequestBody ObjectNode json) {
         DetailsVo detailsVo = new DetailsVo();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
             List<BetHistory> betHistoryList = betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
@@ -70,7 +68,7 @@ public class BetHistoryController {
     @PostMapping(path = "/detail")
     public ResponseEntity<Detailvo> detail(@RequestBody ObjectNode json) {
         Detailvo detailvo = new Detailvo();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
             List<BetHistory> betHistoryList = betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(

@@ -1,14 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -18,13 +16,22 @@ import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
-import com.nextgen.gameaggregator.vendor.jdb.constant.*;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -49,6 +56,8 @@ public class GeneralAction {
     private SettleService settleService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.ACTION + "/{id}")
     public CommonVo action(HttpServletRequest request, @PathVariable String id) {
@@ -70,10 +79,12 @@ public class GeneralAction {
 
             // Get the first vendor line id from list
             Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.JDB_ID, id);
+            VendorLine vendorLine = vendorLineService.getVendorLineById(vendorLineId);
+            Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
 
             // Get the key and iv value with vendorLineId
-            String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
-            String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.IV);
+            String key = vendorService.getCredentialWithKey(vendorLine, Credentials.KEY);
+            String iv = vendorService.getCredentialWithKey(vendorLine, Credentials.IV);
 
             // Decrypt the 'X' field in the VendorRequestDto object using the key and iv values obtained earlier.
             String params = VendorService.decrypt(commonDto.getX(), key, iv);
@@ -91,17 +102,22 @@ public class GeneralAction {
             actionDto.setHttpRequestLog(httpRequestLog);
 
             // Handle the action and return the resulting value
-            vo = this.actionHandling(actionDto, traceId, httpRequestLog);
-        
+            vo = this.actionHandling(actionDto, traceId, httpRequestLog, request, vendorLine);
+
         } catch (CredentialNotFoundException credentialNotFoundException) {
+            httpService.logError(httpRequestLog, credentialNotFoundException);
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidDecryptionException invalidDecryptionException) {
+            httpService.logError(httpRequestLog, invalidDecryptionException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } finally {
             httpService.end(httpRequestLog, vo);
@@ -110,20 +126,22 @@ public class GeneralAction {
         return vo;
     }
 
-    private void doValidation(ActionDto dto) throws InvalidRequestException{
+    private void doValidation(ActionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog, HttpServletRequest request, VendorLine vendorLine) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
-            case Actions.CANCEL_BET_AND_SETTLE -> vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);
-            case Actions.GET_BALANCE -> vo = balanceService.balance(actionDto, traceId);
-            case Actions.BET_AND_SETTLE -> vo = betNSettleService.betNSettle(actionDto, traceId);
-            case Actions.BET -> vo = betService.bet(actionDto, traceId);
-            case Actions.SETTLE -> vo = settleService.settle(actionDto, traceId);
-            case Actions.CANCEL_BET -> vo = cancelBetService.cancelBet(actionDto, traceId);
+            case Actions.CANCEL_BET_AND_SETTLE ->
+                    vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId, httpRequestLog);
+            case Actions.GET_BALANCE ->
+                    vo = balanceService.balance(actionDto, traceId, httpRequestLog, request, vendorLine);
+            case Actions.BET_AND_SETTLE -> vo = betNSettleService.betNSettle(actionDto, traceId, httpRequestLog);
+            case Actions.BET -> vo = betService.bet(actionDto, traceId, httpRequestLog);
+            case Actions.SETTLE -> vo = settleService.settle(actionDto, traceId, httpRequestLog);
+            case Actions.CANCEL_BET -> vo = cancelBetService.cancelBet(actionDto, traceId, httpRequestLog);
             default -> vo.setErrorResponseCode(ResponseCode.INVALID_ACTION);
         }
 

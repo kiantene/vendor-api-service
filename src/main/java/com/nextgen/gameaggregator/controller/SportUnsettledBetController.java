@@ -30,13 +30,11 @@ public class SportUnsettledBetController {
     UnsettledBetMariaDBRepository unsettledBetMariaDBRepository;
     @Autowired
     VendorPlayerRepository vendorPlayerRepository;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @PostMapping(path = "/details")
     public ResponseEntity<DetailVo> detail(@RequestBody ObjectNode json) {
         DetailVo detailVo = new DetailVo();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
             List<SportUnsettledBetMariaDB> sportUnsettledBetMariaDBList = unsettledBetMariaDBRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(

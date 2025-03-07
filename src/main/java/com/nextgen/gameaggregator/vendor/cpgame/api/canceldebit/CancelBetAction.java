@@ -62,8 +62,7 @@ public class CancelBetAction {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
             cancelbetDto = HttpService.convertQueryStringToDto(body, CancelBetDto.class);
-
-            cancelbetDto.convertStringToJsonObject(cancelbetDto.getMessage());
+            cancelbetDto.setMessageDto(cancelbetDto.getMessage());
 
             // Validate the commonDto object
             this.doValidation(cancelbetDto);

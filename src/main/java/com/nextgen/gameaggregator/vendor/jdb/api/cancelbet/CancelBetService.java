@@ -2,18 +2,15 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,16 +18,26 @@ import java.util.Map;
 
 @Service
 public class CancelBetService {
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameService gameService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final HttpService httpService;
 
-    public CommonVo cancelBet(ActionDto actionDto, String traceId) {
+    public CancelBetService(GameServiceImpl gameService,
+                            GameSessionService gameSessionService,
+                            WalletService walletService,
+                            VendorService vendorService,
+                            HttpService httpService) {
+
+        this.gameService = gameService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+        this.httpService = httpService;
+    }
+
+    public CommonVo cancelBet(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -46,7 +53,7 @@ public class CancelBetService {
             // 2. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelBetDto.getUid()); //token check
+                gameSession = gameService.getGameSessionByUsername(cancelBetDto.getUid()); //token check
             } catch (AuthenticationException authenticationException) { //if expired
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyCode(gameSession, cancelBetDto.getCurrency());
@@ -65,12 +72,15 @@ public class CancelBetService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetRefundIdempotentViolationException | RecordNotFoundException successException) {
+            httpService.logError(httpRequestLog, successException);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
                 vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
@@ -85,6 +95,7 @@ public class CancelBetService {
 
             }
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null) {
                 String violation = invalidRequestException.getValidation()
                         .entrySet().stream().findFirst().map(Map.Entry::getValue).orElse(ResponseCode.INVALID_REQUEST_PARAMETER);
@@ -95,13 +106,16 @@ public class CancelBetService {
 
             }
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException |
                  DisabledGameException exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
                 //if found the bet in settled status
                 vo.setErrorResponseCode(ResponseCode.CANNOT_CANCEL);
@@ -113,6 +127,7 @@ public class CancelBetService {
 
             }
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         }
