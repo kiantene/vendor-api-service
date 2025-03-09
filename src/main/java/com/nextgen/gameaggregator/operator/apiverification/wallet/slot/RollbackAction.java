@@ -28,8 +28,6 @@ import java.util.Map;
 @RequestMapping(path = EndPoints.API_VERIFY_PATH)
 @Slf4j
 public class RollbackAction {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -46,7 +44,7 @@ public class RollbackAction {
     public ResponseResultVo<Object> walletBetResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseResultVo<Object> responseResultVo = new ResponseResultVo<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
                 // Retrieve request body in original string format and convert into dto
                 WalletRollbackDto dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), WalletRollbackDto.class);
