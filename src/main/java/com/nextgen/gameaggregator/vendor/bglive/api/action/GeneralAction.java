@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.bglive.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bglive.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.bglive.api.ping.PingService;
 import com.nextgen.gameaggregator.vendor.bglive.api.query.QueryService;
 import com.nextgen.gameaggregator.vendor.bglive.api.settlement.SettlementService;
 import com.nextgen.gameaggregator.vendor.bglive.api.transfer.TransferService;
@@ -30,17 +31,19 @@ public class GeneralAction {
     private final SettlementService settlementService;
     private final QueryService queryService;
     private final TransferService transferService;
+    private final PingService pingService;
 
 
     @Autowired
     public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService,
-                         SettlementService settlementService, QueryService queryService, TransferService transferService) {
+                         SettlementService settlementService, QueryService queryService, TransferService transferService, PingService pingService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
         this.settlementService = settlementService;
         this.queryService = queryService;
         this.transferService = transferService;
+        this.pingService = pingService;
     }
 
     @PostMapping
@@ -53,7 +56,7 @@ public class GeneralAction {
             String body = httpRequestLog.getRequestBody();
             CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
-            commonVo = this.actionHandling(commonDto, traceId, httpRequestLog);
+            commonVo = this.actionHandling(commonDto, traceId, httpRequestLog, request);
 
         } catch (JsonProcessingException | InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
@@ -73,14 +76,15 @@ public class GeneralAction {
         return commonVo;
     }
 
-    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog)
+    private CommonVo actionHandling(CommonDto commonDto, String traceId, HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest)
             throws InvalidRequestException {
         return switch (commonDto.getMethod()) {
             case "open.operator.user.balance" -> balanceService.balance(httpRequestLog, traceId);
-            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, traceId);
-            case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, traceId);
-            case "open.operator.order.status" -> queryService.query(httpRequestLog);
+            case "open.operator.order.transfer" -> betService.bet(httpRequestLog, httpServletRequest);
+            case "open.operator.calc.transfer" -> settlementService.settle(httpRequestLog, httpServletRequest);
+            case "open.operator.order.status" -> queryService.query(httpRequestLog, httpServletRequest);
             case "open.operator.user.transfer" -> transferService.transfer(httpRequestLog);
+            case "open.operator.ping" -> pingService.ping(httpRequestLog);
             default -> throw new InvalidRequestException();
         };
     }

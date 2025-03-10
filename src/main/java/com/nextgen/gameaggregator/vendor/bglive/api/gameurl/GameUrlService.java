@@ -52,23 +52,20 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         String apiUrl = credentials.getOrDefault(Credentials.API_URL, "");
         String agentPass = credentials.getOrDefault(Credentials.AGENT_PASS, "");
         String secretCode;
-        try {
-            secretCode = VendorService.generateSecretCode(agentPass);
-        } catch (InvalidFormatException e) {
-            throw new InvalidVendorResponseException("Failed to generate secret code: " + e);
-        }
-        try {
-            this.createAccount(gameSession, credentials, httpRequestLog);
-        } catch (Exception e) {
-            throw new InvalidVendorResponseException("Failed to create account  : " + e);
-        }
         String uuid = UUID.randomUUID().toString();
         String digest;
+
         try {
+            secretCode = VendorService.generateSecretCode(agentPass);
+            this.createAccount(gameSession, credentials, httpRequestLog);
             digest = VendorService.encryptLoginMd5Key(uuid, snCode, gameSession.getVendorPlayerUsername(), secretCode);
         } catch (InvalidFormatException e) {
-            throw new InvalidVendorResponseException("MD5 Encryption Failed" + e);
+            throw new InvalidVendorResponseException("Invalid format in process: " + e.getMessage());
+        } catch (JsonProcessingException e) {
+            throw new InvalidVendorResponseException("JSON Processing error: " + e.getMessage());
         }
+
+
         Map<String, Object> params = new HashMap<>();
         params.put("random", uuid);
         params.put("sn", snCode);
@@ -97,7 +94,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
                     return Mono.error(e);
                 })
                 .block();
-        
+
         this.validateResponse(response, isTimeout, httpRequestLog, BgLiveGameUrlVo.class, gameSession);
         if (response == null || response.getBody() == null) {
             throw new InvalidVendorResponseException("Get Game Url Failed");
@@ -169,10 +166,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
 
         BgLiveGameUrlVo responseVo = objectMapper.readValue(response.getBody(), BgLiveGameUrlVo.class);
 
-        if (responseVo.isSuccess()) {
-            return;
-        }
-        if (responseVo.getError() != null && "2206".equals(responseVo.getError().getCode())) {
+        if (responseVo.isSuccess() || (responseVo.getError() != null && "2206".equals(responseVo.getError().getCode()))) {
             return;
         }
         throw new InvalidVendorResponseException("Failed to Create Account : " + response.getBody());

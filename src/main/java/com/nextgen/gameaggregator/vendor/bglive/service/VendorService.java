@@ -5,12 +5,11 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.SettledBetService;
-import com.nextgen.gameaggregator.service.UnsettledBetCachingService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bglive.constant.QueryStatus;
+import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +20,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-@Service
+@Service("bgliveVendorService")
 @Getter
 @Setter
 public class VendorService extends BaseVendorService {
@@ -30,6 +34,7 @@ public class VendorService extends BaseVendorService {
     private GameSessionService gameSessionService;
     private UnsettledBetCachingService unsettledBetCachingService;
     private SettledBetService settledBetService;
+    private BetNotFoundLogService betNotFoundLogService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
@@ -104,11 +109,17 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static boolean isDoublePlay(long playId) {
-        String hexPlayId = Long.toHexString(playId);
-        char lastChar = hexPlayId.charAt(hexPlayId.length() - 1);
-        int lastDigit = Character.digit(lastChar, 16);
-        return lastDigit == 2 || lastDigit == 8 || lastDigit == 0;
+    public static <T> List<T> processMultipleDataResponds(List<CompletableFuture<T>> futureList) {
+        List<CompletableFuture<T>> futuresWithTimeout = futureList.stream()
+                .map(future -> future.orTimeout(5L, TimeUnit.SECONDS)
+                        .exceptionally(ex -> null))
+                .toList();
+
+        CompletableFuture.allOf(futuresWithTimeout.toArray(new CompletableFuture[0])).join();
+
+        return futuresWithTimeout.stream()
+                .map(CompletableFuture::join)
+                .toList();
     }
 
     public Integer unsettledBetIdempotentCheck(String roundId)
@@ -137,5 +148,56 @@ public class VendorService extends BaseVendorService {
         } else {
             return QueryStatus.SETTLE_TIE;
         }
+    }
+
+    public BigDecimal checkSettleResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
+            InsufficientBalanceException,
+            BetNotFoundException {
+        List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
+
+        boolean hasValidResult = false;
+
+        for (ResultVo resultVo : resultList) {
+            if (resultVo == null) {
+                continue;
+            }
+            hasValidResult = true;
+
+            if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new InsufficientBalanceException();
+            }
+        }
+
+        if (!hasValidResult) {
+            throw new BetNotFoundException("All results are null");
+        }
+        //get latest timestamp
+        return resultList.stream()
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(ResultVo::getTimestamp))
+                .map(ResultVo::getAvailableAmount)
+                .orElse(null);
+    }
+
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+        List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
+
+        for (ResultVo resultVo : resultList) {
+            if (resultVo == null) {
+                return null;
+            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new InsufficientBalanceException();
+            }
+        }
+        // Find the latest process bet event
+        ResultVo resultVo = resultList.stream()
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(ResultVo::getTimestamp))
+                .orElse(null);
+
+        if (resultVo != null) {
+            return resultVo.getAvailableAmount();
+        }
+        return null;
     }
 }

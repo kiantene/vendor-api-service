@@ -1,47 +1,37 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.credit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CreditDto extends CommonDto implements BetResultData {
 
-    @NotNull
-    private MessageDto messageDto;
-
-    public void convertStringToJsonObject(String message) throws JsonProcessingException {
-        MessageDto subDto = HttpService.convertJsonToDto(message, MessageDto.class);
-
-        setMessageDto(subDto);
-    }
-
     @Override
     public String getExternalTransactionId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getRoundId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getGameId() {
-        return this.messageDto.getGameId();
+        return super.getMessageDto().getGameId();
     }
 
     @Override
@@ -51,7 +41,7 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.messageDto.getBetInfo().getWinAmount();
+        return super.getMessageDto().getBetInfo().getWinAmount();
     }
 
     @Override

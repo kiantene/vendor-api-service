@@ -11,6 +11,7 @@ public class CommonVo implements HttpResponse {
     private String jsonrpc = "2.0";
     private ErrorVo error;
     private Object result;
+    
 
     public void setErrorResponse(String id, Integer code, String message, String reason) {
         this.id = id;

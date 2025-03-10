@@ -1,63 +1,86 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 
 
+import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class SettlementService {
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final BetActionLogService betActionLogService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    @Autowired
     public SettlementService(HttpService httpService,
                              WalletService walletService,
                              GameSessionService gameSessionService,
                              VendorLineService vendorLineService,
                              AgentPlayerService agentPlayerService,
-                             VendorService vendorService) {
+                             VendorService vendorService,
+                             BetActionLogService betActionLogService,
+                             RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
+        this.betActionLogService = betActionLogService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
+    public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
         CommonVo commonVo = new CommonVo();
+        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
         try {
+            Thread.sleep(10000);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
-            // Handle the action and return the resulting value
             this.doValidation(settleDto);
-
-            GameSession gameSession = getGameSession(settleDto);
+            GameSession gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
             this.doVerification(settleDto, gameSession);
 
-            processSettleOrders(settleDto, gameSession, traceId, httpRequestLog);
-
+            List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
+            for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
+                CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(), order, request, gameSession), executor);
+                balanceList.add(balance);
+            }
+            BigDecimal balance = vendorService.checkSettleResponseAndReturnBalance(balanceList);
+            if (balance == null) {
+                throw new BetResultNotFoundException("Have Transaction Failed");
+            }
             ResultVo resultVo = new ResultVo();
             resultVo.setUserId(gameSession.getVendorPlayerId());
             resultVo.setSn(settleDto.getParamsDto().getSn());
-            resultVo.setAvailableAmount(walletService.getBalance(traceId, gameSession, httpRequestLog));
+            resultVo.setAvailableAmount(balance);
             resultVo.setOrderResult("1");
             String tranId = settleDto.getParamsDto().getTranId();
             resultVo.setTranId((tranId == null || tranId.trim().isEmpty()) ? null : tranId);
@@ -93,6 +116,9 @@ public class SettlementService {
                     ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
+        } finally {
+            // close executor
+            executor.shutdown();
         }
         return commonVo;
     }
@@ -113,6 +139,11 @@ public class SettlementService {
                 ValidationUtils.validateRequest(order);
             }
         }
+    }
+
+    private void doValidation(OrdersDto ordersDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(ordersDto);
     }
 
     private void doVerification(SettleDto settleDto, GameSession gameSession) throws AuthenticationException,
@@ -137,31 +168,58 @@ public class SettlementService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private GameSession getGameSession(SettleDto settleDto) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getParamsDto().getLoginId());
+    private GameSession getGameSession(String loginId) throws AuthenticationException {
+        return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
-    private ResultType calculateResultType(SettleDto settleDto) {
-        return vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(),
-                settleDto.getJackpotAmount(), false);
-    }
+    private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
-    private void processSettleOrders(SettleDto settleDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
-            InvalidAgentApiCredentialException,
-            VendorCurrencyNotSupportException,
-            BetResultIdempotentViolationException,
-            MergedBetDataIntegrityException,
-            InsufficientBalanceException,
-            TransactionStillProcessingException,
-            BetNotFoundException,
-            InvalidOperatorResponseException,
-            InternalServerTimeoutRetryException, InterruptedException {
+        HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
+        String traceId = httpRequestLog.getId();
+        BigDecimal balance;
+        boolean isRequestExists = false;
+        ResultType resultType = null;
+        ResultVo resultVo = null;
+        try {
+            this.doValidation(ordersDto);
 
-        Thread.sleep(31000);
-        for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
-            settleDto.setCurrentOrder(order);
-            ResultType resultType = calculateResultType(settleDto);
-            walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+            // Request idempotent checking for this transaction
+            if (requestIdempotentLogService.checkExists(ordersDto, paramsDto.getLoginId()) == null) {
+                requestIdempotentLogService.create(ordersDto, paramsDto.getLoginId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+            // Process Result
+            resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(), ordersDto.getJackpotAmount(), false);
+            balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService, httpRequestLog);
+
+            resultVo = new ResultVo(balance, httpRequestLog.getOperatorTimestamp());
+        } catch (InsufficientBalanceException |
+                 InvalidRequestException |
+                 TransactionStillProcessingException e) {
+            httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            resultVo = new ResultVo(e.getBalance(), System.currentTimeMillis());
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            // do nothing, return null
+            this.prepareSettleBet(ordersDto, gameSession, resultType);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            if (!isRequestExists) {
+                // first request (not request exist) will delete log after process finish.
+                requestIdempotentLogService.delete(ordersDto, paramsDto.getLoginId());
+            }
+            httpService.end(httpRequestLog, new CommonVo());
         }
+        return resultVo;
+    }
+
+    private void prepareSettleBet(OrdersDto ordersDto, GameSession gameSession, ResultType resultType) {
+        THREAD_POOL.submit(() -> {
+            GeneralSettleDto generalSettleDto = new ModelMapper().map(ordersDto, GeneralSettleDto.class);
+            betActionLogService.create(new Gson().toJson(generalSettleDto), generalSettleDto.getRoundId(), generalSettleDto.getVendorBetId(), generalSettleDto.getExternalTransactionId(), gameSession, 2, resultType);
+        });
     }
 }

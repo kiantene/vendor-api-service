@@ -2,27 +2,32 @@ package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class QueryService {
-
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;
 
-    @Autowired
     public QueryService(HttpService httpService,
                         GameSessionService gameSessionService,
                         VendorService vendorService) {
@@ -31,17 +36,22 @@ public class QueryService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo query(HttpRequestLog httpRequestLog) {
+    public CommonVo query(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
         CommonVo commonVo = new CommonVo();
+        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
         try {
             String body = httpRequestLog.getRequestBody();
             QueryDto queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
-
-            List<QueryVo> orderStatusList = processOrders(queryDto);
-
-            commonVo.setSuccessResponse(queryDto.getId(), orderStatusList);
+            List<CompletableFuture<QueryVo>> queryVoList = new LinkedList<>();
+            for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
+                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(ordersMapDto.getOrderLoginId());
+                CompletableFuture<QueryVo> queryVo = CompletableFuture.supplyAsync(() -> processData(ordersMapDto, httpServletRequest, gameSession), executor);
+                queryVoList.add(queryVo);
+            }
+            List<QueryVo> queryList = processAndValidateQueryResponses(queryVoList);
+            commonVo.setSuccessResponse(queryDto.getId(), queryList);
 
         } catch (InvalidRequestException e) {
             //set Vo
@@ -82,9 +92,12 @@ public class QueryService {
         }
     }
 
+    private void doValidation(OrdersMapDto ordersMapDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(ordersMapDto);
+    }
+
     private Integer checkBetAvailable(GameSession gameSession, OrdersMapDto ordersMapDto) throws
-            TransactionStillProcessingException,
-            BetResultIdempotentViolationException,
             BetNotFoundException {
 
         Integer status;
@@ -100,23 +113,30 @@ public class QueryService {
         return status;
     }
 
-    private List<QueryVo> processOrders(QueryDto queryDto)
-            throws BetResultIdempotentViolationException,
-            TransactionStillProcessingException, AuthenticationException, BetNotFoundException {
+    private QueryVo processData(OrdersMapDto ordersMapDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
-        List<QueryVo> orderStatusList = new ArrayList<>();
+        HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
+        QueryVo queryVo = null;
+        try {
+            doValidation(ordersMapDto);
 
-        for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
-            queryDto.setCurrentMapOrder(ordersMapDto);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(ordersMapDto.getOrderLoginId());
-            //Check bet record available from settle and unsettle table
             Integer status = checkBetAvailable(gameSession, ordersMapDto);
 
-            QueryVo queryVo = new QueryVo();
-            queryVo.setOrderId(ordersMapDto.getOrderId());
-            queryVo.setStatus(status);
-            orderStatusList.add(queryVo);
+            queryVo = new QueryVo(ordersMapDto.getOrderId(), status);
+
+        } catch (Exception e) {
+            // do nothing, return null
+            httpService.logError(httpRequestLog, e);
         }
-        return orderStatusList;
+        return queryVo;
+    }
+
+    private List<QueryVo> processAndValidateQueryResponses(List<CompletableFuture<QueryVo>> queryVoList) throws BetNotFoundException {
+        List<QueryVo> queryList = VendorService.processMultipleDataResponds(queryVoList);
+
+        if (queryList.contains(null)) {
+            throw new BetNotFoundException("Some query responses are null");
+        }
+        return queryList;
     }
 }

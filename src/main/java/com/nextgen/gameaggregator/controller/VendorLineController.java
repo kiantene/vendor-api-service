@@ -22,8 +22,6 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "vendorLine/")
 public class VendorLineController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -40,7 +38,7 @@ public class VendorLineController {
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorLine vendorLine = vendorLineRepository.findById(Integer.parseInt(json.get("id").toString())).orElse(null);
             controllerServices.clearVendorLines();
 
@@ -81,7 +79,7 @@ public class VendorLineController {
     @PostMapping(path = "/agentVendorLineStatus")
     public ResponseEntity<Map<String, String>> agentVendorLineStatus(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorLineId(
                     Integer.parseInt(json.get("agentId").toString()), Integer.parseInt(json.get("vendorLineId").toString()));
 
