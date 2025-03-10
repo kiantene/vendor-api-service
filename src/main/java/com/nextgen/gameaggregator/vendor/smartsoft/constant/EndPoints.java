@@ -7,6 +7,8 @@ public class EndPoints {
 
     public static final String PATH = "/api/v1/smartsoft";
 
+    public static final String LAUNCH_GAME = "/GameLauncher/Loader.aspx";
+
     public static final String SESSION = "/ActivateSession";
 
     public static final String BALANCE = "/GetBalance";

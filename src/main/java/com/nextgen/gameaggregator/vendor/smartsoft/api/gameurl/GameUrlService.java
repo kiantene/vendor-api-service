@@ -1,30 +1,43 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.gameurl;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class GameUrlService extends BaseGameUrlService<SSGameUrlVo> {
 
-    protected GameUrlService(Class<SSGameUrlVo> responseVoClass) {
-        super(responseVoClass);
+    private String portalName;
+
+    public GameUrlService() {
+        super(SSGameUrlVo.class);
+        this.setAutoMapResponse(false);
     }
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
-        String portalName = ValidationUtils.validateCredential(credentials.get(Credentials.PORTAL_NAME));
+        this.portalName = ValidationUtils.validateCredential(credentials.get(Credentials.PORTAL_NAME));
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        //formData.add("GameName", gameSession.getG);
+        formData.add("GameName", gameSession.getVendorGameCode());
         formData.add("Token", gameSession.getToken());
         formData.add("ReturnUrl", gameSession.getLobbyUrl());
         formData.add("Lang", gameSession.getLanguage());
@@ -33,28 +46,31 @@ public class GameUrlService extends BaseGameUrlService<SSGameUrlVo> {
         return formData;
     }
 
-//    @Override
-//    public SSGameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials,
-//                                    GameSession gameSession, HttpRequestLog httpRequestLog)
-//            throws InvalidVendorResponseException, TimeoutException {
-//        AtomicBoolean isTimeout = new AtomicBoolean(false);
-//
-//        HttpHeaders httpHeaders = this.getHeaders(new HttpHeaders(), formData, credentials, gameSession);
-//
-//        URI urlScheme = UriComponentsBuilder.fromUriString(this.getLaunchUrl())
-//                .queryParams(formData)
-//                .build()
-//                .encode()
-//                .toUri();
-//
-//        // Trigger doPost to get game url function by calling vendor api
-//        ResponseEntity<String> response = this.doGET(this.getLaunchUrl(), urlScheme.toString(), httpHeaders, formData, isTimeout);
-//
-//        this.validateResponse(response, isTimeout, httpRequestLog, SSGameUrlVo.class, gameSession);
-//        SSGameUrlVo responseVo = new Gson().fromJson(response.getBody(), SSGameUrlVo.class);
-//
-//        httpRequestLog.setUrl(responseVo.getGameUrl());
-//
-//        return responseVo;
-//    }
+    @Override
+    public SSGameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials,
+                                    GameSession gameSession, HttpRequestLog httpRequestLog)
+            throws InvalidVendorResponseException, InvalidVendorLineException, TimeoutException {
+        //construct API address
+        String launchUrl = Optional.of(credentials.get(Credentials.API_URL))
+                .orElseThrow(InvalidVendorLineException::new);
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
+
+        URI urlScheme = UriComponentsBuilder.fromUriString(launchUrl)
+                .path(EndPoints.LAUNCH_GAME)
+                .queryParams(formData)
+                .build()
+                .encode()
+                .toUri();
+
+        // Trigger doPost to get game url function by calling vendor api
+        ResponseEntity<String> response = this.doGet(launchUrl, EndPoints.LAUNCH_GAME, formData, isTimeout);
+
+        this.validateResponse(response, isTimeout, httpRequestLog, SSGameUrlVo.class, gameSession);
+
+        SSGameUrlVo responseVo = new Gson().fromJson(response.getBody(), SSGameUrlVo.class);
+
+        httpRequestLog.setUrl(responseVo.getGameUrl());
+
+        return responseVo;
+    }
 }
