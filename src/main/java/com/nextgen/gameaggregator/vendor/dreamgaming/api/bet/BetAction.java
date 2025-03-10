@@ -79,7 +79,7 @@ public class BetAction {
                     balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-                    if (betDto.getMember().getUsername().equals("rollback111") || betDto.getMember().getUsername().equalsIgnoreCase("1e8z0mgwikvv")) {
+                    if (betDto.getMember().getUsername().equals("rollback111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unelv")) {
                         Thread.sleep(5000); // Sleep for 5 seconds
                         throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
                     }
@@ -89,7 +89,7 @@ public class BetAction {
                     break;
 
                 case TransferType.PAYOUT:
-                    if (betDto.getMember().getUsername().equals("settle111") || betDto.getMember().getUsername().equalsIgnoreCase("1e8z0mgvw76v")) {
+                    if (betDto.getMember().getUsername().equals("settle111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unemv")) {
                         Thread.sleep(5000); // Sleep for 5 seconds
                         throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
                     }
@@ -104,7 +104,7 @@ public class BetAction {
 
                 case TransferType.APPEND:
                     //QA Test
-                    if (betDto.getMember().getUsername().equals("resettle111") || betDto.getMember().getUsername().equalsIgnoreCase("1e8z0mgvw78v")) {
+                    if (betDto.getMember().getUsername().equals("resettle111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unenv")) {
                         Thread.sleep(5000); // Sleep for 5 seconds
                         throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
                     }
