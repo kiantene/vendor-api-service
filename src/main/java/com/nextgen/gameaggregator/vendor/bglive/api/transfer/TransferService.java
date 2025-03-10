@@ -57,7 +57,7 @@ public class TransferService {
             GameSession gameSession = getGameSession(transferDto.getParamsDto().getLoginId());
             this.doVerification(transferDto, gameSession);
 
-            walletRequest = processTransferInOut(transferDto, walletRequest, gameSession);
+            walletRequest = this.processTransferInOut(transferDto, walletRequest, gameSession);
 
             commonVo.setSuccessResponse(transferDto.getId(), walletRequest.getBalanceAfter());
 
