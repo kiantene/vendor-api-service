@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -11,5 +12,6 @@ public class AuthenticateDto {
     private String signature;
 
     @NotBlank
+    @JsonProperty("Token")
     private String token;
 }
