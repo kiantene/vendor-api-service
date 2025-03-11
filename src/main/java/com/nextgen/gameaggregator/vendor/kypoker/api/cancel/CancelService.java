@@ -31,7 +31,7 @@ public class CancelService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog) throws AuthenticationException {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -46,15 +46,7 @@ public class CancelService {
 
             // 2. Verify session token
             GameSession gameSession;
-            try {
-                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelDto.getAccount()); //token check
-            } catch (AuthenticationException authenticationException) { //if expired
-                gameSession = gameSessionService.generateNewSessionToken(cancelDto.getAccount()); //generate new token
-                gameSessionService.updateByVendorCurrencyCode(gameSession, cancelDto.getCurrency());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelDto.getAccount()); //token check
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
