@@ -59,7 +59,6 @@ public class AuthenticateAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + allHeaders);
             AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
             dto.setSignature(signature);
 
@@ -80,6 +79,8 @@ public class AuthenticateAction {
             responseVo.setClientExternalKey(gameSession.getVendorPlayerId().toString());
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setPortalName(portalName);
+
+            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + allHeaders);
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
