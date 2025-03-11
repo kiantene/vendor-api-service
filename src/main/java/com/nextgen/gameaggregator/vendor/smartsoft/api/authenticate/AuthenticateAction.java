@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -19,20 +18,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Enumeration;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class AuthenticateAction {
     private final HttpService httpService;
-    private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
 
-    public AuthenticateAction(HttpService httpService, GameSessionService gameSessionService, VendorLineService vendorLineService, VendorService vendorService) {
+    public AuthenticateAction(HttpService httpService, VendorLineService vendorLineService, VendorService vendorService) {
         this.httpService = httpService;
-        this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
     }
@@ -42,19 +37,6 @@ public class AuthenticateAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         AuthenticateVo responseVo = new AuthenticateVo();
         String signature = request.getHeader("X-Signature");
-        Enumeration<String> headerNames = request.getHeaderNames();
-        StringBuilder headersString = new StringBuilder();
-
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            headersString.append(headerName)
-                    .append(": ")
-                    .append(headerValue)
-                    .append("\n");
-        }
-
-        String allHeaders = headersString.toString();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -80,7 +62,7 @@ public class AuthenticateAction {
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setPortalName(portalName);
 
-            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + allHeaders);
+            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -99,7 +81,7 @@ public class AuthenticateAction {
 
     private void doVerification(AuthenticateDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) throws AuthenticationException, CredentialNotFoundException {        // Verify received signature
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(vendorService.signatureGenerator(secretKey, httpRequestLog.getMethod(), httpRequestLog.getRequestBody()), dto.getSignature(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, httpRequestLog.getMethod(), httpRequestLog.getRequestBody()), dto.getSignature(), AuthenticationException::new);
     }
 
 }
