@@ -11,10 +11,7 @@ import com.nextgen.gameaggregator.vendor.kypoker.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.cancel.CancelService;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.Actions;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
 import com.nextgen.gameaggregator.vendor.kypoker.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
@@ -47,7 +44,8 @@ public class GeneralAction {
     public GeneralAction(HttpService httpService,
                          BalanceService balanceService,
                          BetService betService,
-                         SettleService settleService, CancelService cancelService,
+                         SettleService settleService,
+                         CancelService cancelService,
                          VendorLineService vendorLineService,
                          ValidationService validationService,
                          GameSessionService gameSessionService) {
@@ -94,6 +92,7 @@ public class GeneralAction {
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
+            vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto);
 
@@ -115,17 +114,21 @@ public class GeneralAction {
 
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto) throws AuthenticationException {
         CommonVo vo = new CommonVo();
-        switch (actionDto.getS()) {
-            case Actions.BALANCE -> vo = balanceService.balance(body, traceId, httpRequestLog);
-            case Actions.BET -> vo = betService.bet(body, traceId, httpRequestLog);
-            case Actions.SETTLE -> vo = settleService.settle(body, traceId, httpRequestLog);
-            case Actions.CANCEL -> vo = cancelService.cancel(body, traceId, httpRequestLog);
 
-            default -> vo.sets(ResponseCodes.INTERNAL_ERROR);
+        if (Actions.BALANCE.equals(actionDto.getS())) {
+            vo = balanceService.balance(body, traceId, httpRequestLog);
+        } else if (Actions.BET.equals(actionDto.getS())) {
+            vo = betService.bet(body, traceId, httpRequestLog);
+        } else if (Actions.SETTLE.equals(actionDto.getS())) {
+            vo = settleService.settle(body, traceId, httpRequestLog);
+        } else if (Actions.CANCEL.equals(actionDto.getS())) {
+            vo = cancelService.cancel(body, traceId, httpRequestLog);
+        } else {
+            if (vo.d == null) {
+                vo.d.setCode(ResponseCodes.INTERNAL_ERROR);
+            }
         }
-
         return vo;
     }
-
 
 }
