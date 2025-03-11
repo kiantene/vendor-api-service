@@ -79,20 +79,11 @@ public class BetAction {
                     balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-                    if (betDto.getMember().getUsername().equals("rollback111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unelv")) {
-                        Thread.sleep(5000); // Sleep for 5 seconds
-                        throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
-                    }
-
                     vo.getMember().setAmount(betDto.getBetAmount().abs().negate());
                     vo.getMember().setBalance(balance);
                     break;
 
                 case TransferType.PAYOUT:
-                    if (betDto.getMember().getUsername().equals("settle111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unemv")) {
-                        Thread.sleep(5000); // Sleep for 5 seconds
-                        throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
-                    }
                     //Settle
                     balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
@@ -103,11 +94,6 @@ public class BetAction {
                     break;
 
                 case TransferType.APPEND:
-                    //QA Test
-                    if (betDto.getMember().getUsername().equals("resettle111") || betDto.getMember().getUsername().equalsIgnoreCase("i38f8unenv")) {
-                        Thread.sleep(5000); // Sleep for 5 seconds
-                        throw new InvalidOperatorResponseException("Simulated timeout exception for QA testing.");
-                    }
                     //APPEND
                     AppendDto appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
                     appendDto.setDetailDto(HttpService.convertJsonToDto(VendorService.removeLeadingZero(appendDto.getDetail()), DetailDto.class));
