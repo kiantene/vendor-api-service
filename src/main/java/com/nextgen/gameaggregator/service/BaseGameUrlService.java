@@ -18,9 +18,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -139,27 +137,16 @@ public abstract class BaseGameUrlService<T extends GameUrlVo> implements GameUrl
                 .block();
     }
 
-    public static String convertToQueryString(MultiValueMap<String, String> formData) {
-        StringBuilder queryString = new StringBuilder();
-
-        // Iterate through the formData and build the query string
-        for (String key : formData.keySet()) {
-            for (String value : formData.get(key)) {
-                if (queryString.length() > 0) {
-                    queryString.append("&");
-                }
-                queryString.append(key).append("=").append(value);
-            }
-        }
-
-        return queryString.toString();
-    }
-
     protected ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
 
-        String tempUri = baseUrl+"?"+convertToQueryString(formData);
+        URI getUri = UriComponentsBuilder.fromUriString(baseUrl)
+                .path(uri)
+                .queryParams(formData)
+                .build()
+                .encode()
+                .toUri();
 
-        return WebClient.create().get().uri(tempUri)
+        return WebClient.create().get().uri(getUri)
                 .retrieve()
                 .toEntity(String.class)
                 .retry(RETRY_COUNT)
