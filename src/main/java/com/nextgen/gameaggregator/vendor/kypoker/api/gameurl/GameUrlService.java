@@ -16,15 +16,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
@@ -53,23 +60,14 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         String aesString;
 
         MultiValueMap<String, String> encryptParam = new LinkedMultiValueMap<>();
-//        encryptParam.add("s", Actions.LOGIN);
-//        encryptParam.add("account", gameSession.getVendorPlayerUsername());
-//        encryptParam.add("orderid", AgentId + TimeStamp + gameSession.getVendorPlayerUsername());
-//        encryptParam.add("ip", gameSession.getIpAddress());
-//        encryptParam.add("lineCode", String.valueOf(gameSession.getVendorLineId()));
-//        encryptParam.add("KindID", gameSession.getVendorGameCode());
-//        encryptParam.add("Money", "0");
-//        encryptParam.add("currency", String.valueOf(gameSession.getVendorCurrencyCode()));
-
         encryptParam.add("s", Actions.LOGIN);
-        encryptParam.add("account", "1e8zws52t4rb");
+        encryptParam.add("account", gameSession.getVendorPlayerUsername());
+        encryptParam.add("orderid", AgentId + TimeStamp + gameSession.getVendorPlayerUsername());
+        encryptParam.add("ip", gameSession.getIpAddress());
+        encryptParam.add("lineCode", String.valueOf(gameSession.getVendorLineId()));
+        encryptParam.add("KindID", gameSession.getVendorGameCode());
         encryptParam.add("money", "0");
-        encryptParam.add("orderid", "80015917411463410001e8zws52t4rb");
-        encryptParam.add("ip", "192.228.180.86");
-        encryptParam.add("lineCode", "10338");
-        encryptParam.add("KindID", "1370");
-        encryptParam.add("currency", "CNY");
+        encryptParam.add("currency", String.valueOf(gameSession.getVendorCurrencyCode()));
 
         String queryString = UriComponentsBuilder.fromPath("")
                 .queryParams(encryptParam)
@@ -81,23 +79,39 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         String encodedParam;
         try {
             aesString = VendorService.aesEncrypt(queryString, AesKey);
-            //encodedParam =  URLEncoder.encode(aesString, "UTF-8");
+            encodedParam =  URLEncoder.encode(aesString, "UTF-8");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         MultiValueMap<String, String> param = new LinkedMultiValueMap<>();
-//        param.add("agent", AgentId);
-//        param.add("timestamp", TimeStamp);
-//        param.add("param", aesString);
-//        param.add("key", VendorService.MD5Encrypt(AgentId+TimeStamp+Md5Key));
+        param.add("agent", AgentId);
+        param.add("timestamp", TimeStamp);
+        param.add("param", encodedParam);
+        param.add("key", VendorService.MD5Encrypt(AgentId+TimeStamp+Md5Key));
 
-        param.add("agent", "800159");
-        param.add("timestamp", "1741146341000");
-        param.add("param", aesString);
-        param.add("key", "a56db211c29461f58daa2d606055dc61");
 
         return param;
+    }
+    @Override
+    protected ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
+
+        URI getUri = UriComponentsBuilder.fromUriString(baseUrl)
+                .path(uri)
+                .queryParams(formData)
+                .build(true)  // 确保 queryParams 不会再次编码
+                .toUri();
+
+        return WebClient.create().get().uri(getUri)
+                .retrieve()
+                .toEntity(String.class)
+                .retry(RETRY_COUNT)
+                .timeout(Duration.ofMillis(TIMEOUT))
+                .onErrorResume(TimeoutException.class, e -> {
+                    isTimeout.set(true);
+                    return Mono.error(e);
+                })
+                .block();
     }
 
 }

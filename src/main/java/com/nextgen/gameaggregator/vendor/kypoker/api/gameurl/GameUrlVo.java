@@ -7,12 +7,18 @@ import lombok.Data;
 @Data
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
 
-    private String url;
+    private dObject d;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Data
+    private class dObject{
+        private String url;
+    }
 
     @Override
     public String getGameUrl() {
 
-        return url;
+        return this.d.getUrl();
 
     }
 }
