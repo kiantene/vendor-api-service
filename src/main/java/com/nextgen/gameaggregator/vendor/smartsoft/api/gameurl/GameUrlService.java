@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.gameurl;
 
-import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -55,7 +54,7 @@ public class GameUrlService extends BaseGameUrlService<SSGameUrlVo> {
                 .orElseThrow(InvalidVendorLineException::new);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-        URI urlScheme = UriComponentsBuilder.fromUriString(launchUrl)
+        URI url = UriComponentsBuilder.fromUriString(launchUrl)
                 .path(EndPoints.LAUNCH_GAME)
                 .queryParams(formData)
                 .build()
@@ -67,8 +66,9 @@ public class GameUrlService extends BaseGameUrlService<SSGameUrlVo> {
 
         this.validateResponse(response, isTimeout, httpRequestLog, SSGameUrlVo.class, gameSession);
 
-        SSGameUrlVo responseVo = new Gson().fromJson(response.getBody(), SSGameUrlVo.class);
+        SSGameUrlVo responseVo = new SSGameUrlVo();
 
+        responseVo.setGameUrl(url.toString());
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
         return responseVo;
