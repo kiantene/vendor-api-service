@@ -4,14 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.SettledBetService;
-import com.nextgen.gameaggregator.service.UnsettledBetService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
@@ -23,7 +19,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -41,6 +36,8 @@ public class ReleaseAction {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @PostMapping(path = EndPoints.RELEASE)
     public String release(HttpServletRequest request) {
@@ -61,8 +58,16 @@ public class ReleaseAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(releaseDto);
 
-            // Get game session or verify Token
-            gameSession = vendorService.getGameSession(releaseDto);
+            // Get game session by vendorPlayerUsername or verify Token
+            try {
+                gameSession = vendorService.getGameSessionV2(releaseDto.getExternalGameSessionId(), releaseDto.getExternalId());
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(releaseDto.getExternalId());
+                gameSessionService.updateByVendorGameCode(gameSession, releaseDto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, releaseDto);
@@ -79,10 +84,7 @@ public class ReleaseAction {
                  GameNotSupportedException |
                  CredentialNotFoundException |
                  JsonProcessingException |
-                 InvalidRequestException |
-                 NoSuchMethodException |
-                 InvocationTargetException |
-                 IllegalAccessException internalErrorException) {
+                 InvalidRequestException internalErrorException) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -180,18 +182,15 @@ public class ReleaseAction {
             return walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } else {
-            // Check if bet record has been settled before
-            this.verifySettledBet(releaseDto, gameSession);
-
-            // Get unsettle bet's vendor bet id
-            String vendorBetId = this.getUnsettleBetId(releaseDto, gameSession);
+            // Check is unsettle bet exist
+            List<UnsettledBet> unsettledBet = this.checkUnsettledBetListExist(releaseDto, gameSession);
 
             // Get result type: (WIN / LOSE / END) or (BET_WIN / BET_LOSE)
-            ResultType resultType = this.getResultType(vendorBetId, releaseDto);
+            // Use the first unsettled vendor bet id to do result type checking
+            ResultType resultType = this.getResultType(unsettledBet.get(0).getVendorBetId(), releaseDto);
 
             // Process Bet Result
             return walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
-
         }
 
     }
@@ -209,22 +208,11 @@ public class ReleaseAction {
         }
     }
 
-    private String getUnsettleBetId(ReleaseDto dto, GameSession gameSession) {
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+    private List<UnsettledBet> checkUnsettledBetListExist(ReleaseDto dto, GameSession gameSession) throws BetNotFoundException {
 
-        if (unsettledBetList.isEmpty()) {
-            return null;
-        }
-
-        return unsettledBetList.get(0).getVendorBetId();
+        return unsettledBetService.getByRoundIdRetry(dto.getRoundId(),
+                Integer.parseInt(dto.getGameId()), gameSession.getVendorPlayerId());
     }
 
-    private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
-        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
-
-        if (!settledBetList.isEmpty() && settledBetList.get(0).getOperatorStatus().equals(1)) {
-            throw new BetResultIdempotentViolationException(settledBetList.get(0));
-        }
-    }
 
 }

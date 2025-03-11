@@ -7,8 +7,8 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playngo.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +33,10 @@ public class VendorService extends BaseVendorService {
     private WalletService walletService;
     @Autowired
     private HttpService httpService;
+
+    public static Long getTimestamp() {
+        return Instant.now().toEpochMilli();
+    }
 
     public void verifyVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
@@ -61,6 +65,21 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public GameSession getGameSessionV2(String token, String vendorPlayerusername) throws AuthenticationException {
+        GameSession gameSession;
+
+        if (token == null) {
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerusername);
+            if (gameSession == null) {
+                throw new AuthenticationException();
+            }
+        } else {
+            gameSession = gameSessionService.verifyToken(token);
+        }
+
+        return gameSession;
+    }
+
     public <T> GameSession getGameSession(T dto)
             throws
             AuthenticationException,
@@ -74,7 +93,7 @@ public class VendorService extends BaseVendorService {
         Method getExternalGameSessionIdMethod = dto.getClass().getMethod("getExternalGameSessionId");
         String externalGameSessionId = (String) getExternalGameSessionIdMethod.invoke(dto);
 
-        if(externalGameSessionId == null || externalGameSessionId.isEmpty()) {
+        if (externalGameSessionId == null || externalGameSessionId.isEmpty()) {
             Method getExternalId = dto.getClass().getMethod("getExternalId");
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername((String) getExternalId.invoke(dto));
 
@@ -120,10 +139,6 @@ public class VendorService extends BaseVendorService {
             vo.setStatusCode(ResponseCodes.INTERNAL);
         }
         vo.setResponseXMLFormat(voXml);
-    }
-
-    public static Long getTimestamp() {
-        return Instant.now().toEpochMilli();
     }
 
 }
