@@ -8,6 +8,9 @@ import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.cancel.CancelService;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Actions;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
@@ -33,6 +36,9 @@ public class GeneralAction {
     @Autowired
     private final HttpService httpService;
     private final BalanceService balanceService;
+    private final BetService betService;
+    private final SettleService settleService;
+    private final CancelService cancelService;
     private final VendorLineService vendorLineService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
@@ -40,17 +46,22 @@ public class GeneralAction {
 
     public GeneralAction(HttpService httpService,
                          BalanceService balanceService,
+                         BetService betService,
+                         SettleService settleService, CancelService cancelService,
                          VendorLineService vendorLineService,
                          ValidationService validationService,
                          GameSessionService gameSessionService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
+        this.betService = betService;
+        this.settleService = settleService;
+        this.cancelService = cancelService;
         this.vendorLineService = vendorLineService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
     }
 
-    @PostMapping(path = EndPoints.LAUNCH_GAME + "/{id}")
+    @PostMapping(path = "/{id}" + EndPoints.LAUNCH_GAME )
     public CommonVo action(HttpServletRequest request, @PathVariable String id) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -102,16 +113,16 @@ public class GeneralAction {
 
     }
 
-    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto) {
+    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto) throws AuthenticationException {
         CommonVo vo = new CommonVo();
-//        switch (actionDto.getS()) {
-//            case Actions.BALANCE -> vo = balanceService.balance(body, traceId, httpRequestLog);
-//            case Actions.BET -> vo = betService.bet(body, traceId, httpRequestLog);
-//            case Actions.SETTLE -> vo = settleService.settle(body, traceId, httpRequestLog);
-//            case Actions.CANCEL -> vo = cancelService.refund(body, traceId, httpRequestLog);
-//
-//            default -> vo.setErrorCode(ResponseCodes.INTERNAL_ERROR);
-//        }
+        switch (actionDto.getS()) {
+            case Actions.BALANCE -> vo = balanceService.balance(body, traceId, httpRequestLog);
+            case Actions.BET -> vo = betService.bet(body, traceId, httpRequestLog);
+            case Actions.SETTLE -> vo = settleService.settle(body, traceId, httpRequestLog);
+            case Actions.CANCEL -> vo = cancelService.cancel(body, traceId, httpRequestLog);
+
+            default -> vo.sets(ResponseCodes.INTERNAL_ERROR);
+        }
 
         return vo;
     }
