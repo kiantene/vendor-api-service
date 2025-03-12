@@ -59,7 +59,7 @@ public class GeneralAction {
         this.gameSessionService = gameSessionService;
     }
 
-    @PostMapping(path = "/{id}" )
+    @PostMapping(path = "/{id}" + EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request, @PathVariable String id) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
