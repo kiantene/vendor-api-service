@@ -59,8 +59,8 @@ public class GeneralAction {
         this.gameSessionService = gameSessionService;
     }
 
-    @PostMapping(path = "/{id}" + EndPoints.ACTION)
-    public CommonVo action(HttpServletRequest request, @PathVariable String id) {
+    @PostMapping(EndPoints.ACTION)
+    public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
@@ -78,7 +78,7 @@ public class GeneralAction {
             // Validate request parameters (Non-database related)
             ValidationUtils.validateRequest(commonDto);
 
-            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.KYP_ID, id);
+            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.AGENT_ID, commonDto.getAgent());
 
             String aesKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
 
