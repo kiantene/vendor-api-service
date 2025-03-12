@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.smartsoft.constant.Headers;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.smartsoft.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +37,7 @@ public class AuthenticateAction {
     public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         AuthenticateVo responseVo = new AuthenticateVo();
-        String signature = request.getHeader("X-Signature");
+        String signature = request.getHeader(Headers.REQUEST_SIGNATURE);
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -64,7 +65,7 @@ public class AuthenticateAction {
 
             httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
 
-        } catch (Exception exception) { // any other exception encountered
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
         } finally {

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
@@ -9,19 +8,16 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseVo implements HttpResponse {
-    private Integer error;
-    private String message;
-
-    @JsonIgnore
-    private ResponseCode responseCode;
+    private Integer errorCode;
+    private String errorMessage;
 
     public void setResponseCode(ResponseCode responseCode) {
-        this.responseCode = responseCode;
-        this.error = responseCode.code;
+        this.errorCode = responseCode.code;
+        this.errorMessage = responseCode.message;
     }
 
     @Override
     public boolean hasError() {
-        return !this.responseCode.equals(ResponseCode.SUCCESS);
+        return this.errorCode != 0;
     }
 }

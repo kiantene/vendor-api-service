@@ -7,9 +7,13 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.smartsoft.constant.Headers;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.smartsoft.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -42,25 +46,23 @@ public class BalanceAction {
     }
 
     @PostMapping(path = EndPoints.BALANCE)
-    public BalanceVo getBalance(HttpServletRequest request) {
+    public ResponseEntity<BalanceVo> getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         BalanceVo balanceVo = new BalanceVo();
+        HttpHeaders headers = new HttpHeaders();
         String body = httpRequestLog.getRequestBody();
-        String signature = request.getHeader("X-Signature");
-        String sessionId = request.getHeader("X-SessionId");
-        String userName = request.getHeader("X-UserName");
-        String clientExternalKey = request.getHeader("X-ClientExternalKey");
+        HttpStatus status = HttpStatus.OK;
 
         try {
             BalanceDto balanceDto = new BalanceDto();
-            balanceDto.setSignature(signature);
-            balanceDto.setSessionId(sessionId);
-            balanceDto.setUserName(userName);
-            balanceDto.setClientExternalKey(clientExternalKey);
+            balanceDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
+            balanceDto.setSessionId(request.getHeader(Headers.SESSION_ID));
+            balanceDto.setUserName(request.getHeader(Headers.USER_NAME));
+            balanceDto.setClientExternalKey(request.getHeader(Headers.CLIENT_EXTERNAL_KEY));
 
             // Get GameSession with username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(userName);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUserName());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -77,11 +79,13 @@ public class BalanceAction {
             balanceVo.setAmount(balance);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            balanceVo.setResponseCode(ResponseCode.FAIL);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
+            headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
         } finally {
             httpService.end(httpRequestLog, balanceVo);
         }
-        return balanceVo;
+        return new ResponseEntity<>(balanceVo, headers, status);
     }
 
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
