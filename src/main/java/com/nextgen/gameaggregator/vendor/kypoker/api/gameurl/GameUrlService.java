@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.gameurl;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
@@ -25,9 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
