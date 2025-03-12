@@ -55,12 +55,10 @@ public class VendorService extends BaseVendorService {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
             headersString.append(headerName)
-                    .append(": ")
+                    .append(":")
                     .append(headerValue)
                     .append("\n");
         }
         return headersString.toString();
     }
-
-
 }

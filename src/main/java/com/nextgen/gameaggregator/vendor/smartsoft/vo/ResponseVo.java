@@ -15,10 +15,6 @@ public class ResponseVo implements HttpResponse {
     @JsonIgnore
     private ResponseCode responseCode;
 
-    public ResponseVo() {
-        this.setResponseCode(ResponseCode.SUCCESS);
-    }
-
     public void setResponseCode(ResponseCode responseCode) {
         this.responseCode = responseCode;
         this.error = responseCode.code;
