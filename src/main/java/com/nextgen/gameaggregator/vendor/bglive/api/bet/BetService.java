@@ -1,32 +1,40 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.bet;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
+import com.nextgen.gameaggregator.scheduler.betaction.GeneralDebitRollbackDto;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Service
 public class BetService {
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
+    private static final ConcurrentLinkedQueue<String> errorOrderIds = new ConcurrentLinkedQueue<>();
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -34,6 +42,8 @@ public class BetService {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final BetActionLogService betActionLogService;
+    private final WalletRequestService walletRequestService;
+    private final OperatorWalletService operatorWalletService;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -41,7 +51,9 @@ public class BetService {
                       VendorLineService vendorLineService,
                       AgentPlayerService agentPlayerService,
                       VendorService vendorService,
-                      BetActionLogService betActionLogService) {
+                      BetActionLogService betActionLogService,
+                      WalletRequestService walletRequestService,
+                      OperatorWalletService operatorWalletService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -49,6 +61,8 @@ public class BetService {
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
         this.betActionLogService = betActionLogService;
+        this.walletRequestService = walletRequestService;
+        this.operatorWalletService = operatorWalletService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -123,9 +137,15 @@ public class BetService {
             // Failed then rollback all transaction
             if (processFailed) {
                 //insert to collection for rollback all bet
-                this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
+                boolean isBullBullGame = betDto.getParamsDto().getOrders().stream().anyMatch(o -> GameCode.BULL_BULL.equals(o.getGameId()));
+
+                if (isBullBullGame) {
+                    this.prepareDebitRollback(betDto.getParamsDto().getOrders(), betDto, gameSession);
+                } else {
+                    this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
+                }
+                httpService.end(httpRequestLog, new CommonVo());
             }
-            httpService.end(httpRequestLog, new CommonVo());
         }
         return commonVo;
     }
@@ -178,24 +198,37 @@ public class BetService {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         String traceId = httpRequestLog.getId();
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         ResultVo resultVo = null;
         try {
             this.doValidation(ordersDto);
 
             // Verify session token
+
             String gameCode = VendorService.getGameCode(ordersDto.getIssueId());
             if (!gameCode.equals(gameSession.getVendorGameCode())) {
                 vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
             }
-            // Process Result
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
-            resultVo = new ResultVo(betEvent.getLastBalance(), httpRequestLog.getOperatorTimestamp());
+            boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
+            if (isBullBullGame) {
+                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
+                walletRequest = operatorWalletService.betDebit(currentWalletRequest);
+                resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
+            } else {
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
+                resultVo = new ResultVo(betEvent.getLastBalance(), httpRequestLog.getOperatorTimestamp());
+            }
+
 
         } catch (BetResultIdempotentViolationException e) {
             resultVo = new ResultVo(e.getBalance(), httpRequestLog.getOperatorTimestamp());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             // do nothing, return null
+            if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
+                errorOrderIds.add(ordersDto.getExternalTransactionId());
+            }
             httpService.logError(httpRequestLog, e);
         }
         return resultVo;
@@ -217,6 +250,48 @@ public class BetService {
                 betActionLogService.create(new Gson().toJson(generalRollbackDto), ordersDto.getRoundId(),
                         ordersDto.getVendorBetId(), ordersDto.getExternalTransactionId(), gameSession, 1,
                         null);
+            }
+        });
+    }
+
+    private void dataDebitMapper(WalletRequest walletRequest, OrdersDto ordersDto, GameSession gameSession) {
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setExternalTransactionId(ordersDto.getExternalTransactionId());
+        walletRequest.setRoundId(ordersDto.getRoundId());
+        walletRequest.setVendorGameCode(ordersDto.getGameId());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(ordersDto.getVendorBetId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        BigDecimal amount = ordersDto.getAmount().abs();
+        walletRequest.setTransferAmount(amount);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+    }
+
+    private void prepareDebitRollback(List<OrdersDto> ordersDtoList, BetDto betDto, GameSession gameSession) {
+        THREAD_POOL.submit(() -> {
+            for (OrdersDto ordersDto : ordersDtoList) {
+                if (errorOrderIds.contains(ordersDto.getExternalTransactionId())) {
+                    errorOrderIds.remove(ordersDto.getExternalTransactionId());
+                    continue;
+                }
+                System.out.print("amount" + ordersDto.getJackpotAmount());
+                GeneralDebitRollbackDto generalDebitRollbackDto = new ModelMapper().map(ordersDto, GeneralDebitRollbackDto.class);
+//                generalDebitRollbackDto.setTakeAll(0);
+//                generalDebitRollbackDto.setTransferAmount(ordersDto.getAmount().abs());
+//                generalDebitRollbackDto.setVendorPlayerUsername(betDto.getParamsDto().getLoginId());
+//                generalDebitRollbackDto.setTimestamp(System.currentTimeMillis());
+//                generalDebitRollbackDto.setToken(gameSession.getToken());
+//                generalDebitRollbackDto.setVendorGameCode(gameSession.getVendorGameCode());
+//                generalDebitRollbackDto.setEffectiveTurnover(ordersDto.getEffectiveTurnover());
+//                generalDebitRollbackDto.setWinAmount(ordersDto.getWinAmount());
+//                generalDebitRollbackDto.setVendorSettleTime(System.currentTimeMillis());
+//                generalDebitRollbackDto.setJackpotAmount(ordersDto.getJackpotAmount());
+
+                betActionLogService.create(new Gson().toJson(generalDebitRollbackDto), generalDebitRollbackDto.getRoundId(),
+                        generalDebitRollbackDto.getVendorBetId(), generalDebitRollbackDto.getExternalTransactionId(), gameSession, 3,
+                        null);
+
             }
         });
     }
