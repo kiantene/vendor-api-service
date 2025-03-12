@@ -4,4 +4,5 @@ public class Credentials {
     public static final String GAME_DOMAIN = "gameDomain";
     public static final String MERCHANT_CODE = "merchantCode";
     public static final String API_INTERFACE = "apiInterface";
+    public static final String VENDOR_API_URL = "vendorApiUrl";
 }

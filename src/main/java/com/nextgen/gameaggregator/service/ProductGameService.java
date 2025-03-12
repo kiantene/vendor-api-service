@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 
 public interface ProductGameService {
 
-    ProductGame getByCode(String code) throws GameNotSupportedException, DisabledGameException;
-    void verifyProductGameDeactivated(Integer productGameId, Integer agentId, Integer masterAgentId, Integer houseId) throws DisabledGameException;
+    ProductGame getByCode(String code);
+    boolean isGameDeactivated(Integer productGameId, Integer agentId, Integer masterAgentId, Integer houseId);
+    void checkGameStatus(ProductGame productGame) throws GameNotSupportedException, DisabledGameException;
 }
