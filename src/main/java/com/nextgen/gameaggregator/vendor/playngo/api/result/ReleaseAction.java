@@ -110,10 +110,6 @@ public class ReleaseAction {
             releaseVo.setReal(betResultIdempotentViolationException.getBalance());
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            releaseVo.setStatusCode(ResponseCodes.INTERNAL);
-            httpService.logError(httpRequestLog, betNotFoundException);
-
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
@@ -183,11 +179,11 @@ public class ReleaseAction {
 
         } else {
             // Check is unsettle bet exist
-            List<UnsettledBet> unsettledBet = this.checkUnsettledBetListExist(releaseDto, gameSession);
+            String unsettledBetId = this.checkUnsettledBetListExist(releaseDto, gameSession);
 
             // Get result type: (WIN / LOSE / END) or (BET_WIN / BET_LOSE)
             // Use the first unsettled vendor bet id to do result type checking
-            ResultType resultType = this.getResultType(unsettledBet.get(0).getVendorBetId(), releaseDto);
+            ResultType resultType = this.getResultType(unsettledBetId, releaseDto);
 
             // Process Bet Result
             return walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
@@ -196,7 +192,7 @@ public class ReleaseAction {
     }
 
     private ResultType getResultType(String vendorBetId, ReleaseDto dto) {
-        boolean isBet = vendorBetId == null;
+        boolean isBet = vendorBetId == null || vendorBetId.isEmpty();
         this.setVendorBetId(vendorBetId, dto);
 
         return vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
@@ -208,10 +204,20 @@ public class ReleaseAction {
         }
     }
 
-    private List<UnsettledBet> checkUnsettledBetListExist(ReleaseDto dto, GameSession gameSession) throws BetNotFoundException {
+    private String checkUnsettledBetListExist(ReleaseDto dto, GameSession gameSession) {
+        List<UnsettledBet> unsettledBetList;
 
-        return unsettledBetService.getByRoundIdRetry(dto.getRoundId(),
-                Integer.parseInt(dto.getGameId()), gameSession.getVendorPlayerId());
+        try {
+            unsettledBetList = unsettledBetService.getByRoundIdRetry(dto.getRoundId(),
+                    Integer.parseInt(dto.getGameId()), gameSession.getVendorPlayerId());
+            if (unsettledBetList.isEmpty()) {
+                return null;
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            return null;
+        }
+
+        return unsettledBetList.get(0).getVendorBetId();
     }
 
 
