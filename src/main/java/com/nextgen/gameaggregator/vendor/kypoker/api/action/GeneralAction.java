@@ -67,10 +67,10 @@ public class GeneralAction {
         // Construct VO
         CommonVo vo = new CommonVo();
 
-
         try {
             // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
+            String body = request.getQueryString();
+            httpRequestLog.setRequestBody(body);
 
             // Convert original request body into dto
             CommonDto commonDto = HttpService.convertQueryStringToDto(body, CommonDto.class);
