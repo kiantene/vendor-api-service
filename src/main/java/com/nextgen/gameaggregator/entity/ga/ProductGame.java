@@ -9,7 +9,7 @@ import lombok.Data;
 @Entity
 @Table(name = "product_games")
 public class ProductGame {
-	
+
     @Id
     private Integer id;
     private Integer productId;
@@ -19,10 +19,16 @@ public class ProductGame {
     private Integer isPremiumGame;
     private Boolean requireDebit;
     private Double defaultCharges;
+    private String vendorGameCode;
+    private Integer vendorGameId;
+    private Integer vendorId;
     private Integer status;
     private Long createById;
     private String createByUsertype;
     private String createByIp;
     private Long createDate;
 
+    public boolean isLaunchByProductGame() {
+        return this.createById == 10;
+    }
 }

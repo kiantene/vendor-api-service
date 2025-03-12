@@ -22,58 +22,40 @@ import java.util.UUID;
 public class GameUrlAction {
     public static final String REQUEST_TYPE = "GameUrl";
     private final HttpService httpService;
-    private final AgentService agentService;
-    private final AgentProductService agentProductService;
     private final ValidationService validationService;
     private final CurrencyService currencyService;
     private final GameUrlService gameUrlService;
     private final VendorLineService vendorLineService;
-    private final ProductVendorLineService productVendorLineService;
     private final GameSessionService gameSessionService;
-    private final VendorService vendorService;
     private final LanguageService languageService;
     private final VendorGameService vendorGameService;
-    private final VendorGameCodeService vendorGameCodeService;
     private final ProductGameService productGameService;
     private final LoggingService loggingService;
-    private final VendorGameDeactivatedService vendorGameDeactivatedService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
 
     @Autowired
     public GameUrlAction(HttpService httpService,
-                         AgentService agentService,
-                         AgentProductService agentProductService,
                          ValidationService validationService,
                          CurrencyService currencyService,
                          GameUrlService gameUrlService,
                          VendorLineService vendorLineService,
-                         ProductVendorLineService productVendorLineService,
                          GameSessionService gameSessionService,
-                         VendorService vendorService,
                          LanguageService languageService,
                          VendorGameService vendorGameService,
-                         VendorGameCodeService vendorGameCodeService,
                          ProductGameService productGameService,
                          LoggingService loggingService,
-                         VendorGameDeactivatedService vendorGameDeactivatedService,
                          WarehouseBetHistoryService warehouseBetHistoryService) {
 
         this.httpService = httpService;
-        this.agentService = agentService;
-        this.agentProductService = agentProductService;
         this.validationService = validationService;
         this.currencyService = currencyService;
         this.gameUrlService = gameUrlService;
         this.vendorLineService = vendorLineService;
-        this.productVendorLineService = productVendorLineService;
         this.gameSessionService = gameSessionService;
-        this.vendorService = vendorService;
         this.languageService = languageService;
         this.vendorGameService = vendorGameService;
-        this.vendorGameCodeService = vendorGameCodeService;
         this.productGameService = productGameService;
         this.loggingService = loggingService;
-        this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.warehouseBetHistoryService = warehouseBetHistoryService;
     }
 
@@ -93,7 +75,6 @@ public class GameUrlAction {
             GameLaunchDto gameLaunchDto = this.doValidation(dto, apiKey, signature, httpRequestLog);
             Integer agentId = gameLaunchDto.getAgentId();
             Integer currencyId = gameLaunchDto.getCurrencyId();
-            Agent agent = agentService.get(agentId);
 
             // 8. Check if game is supported
             loggingService.logStart();
@@ -101,101 +82,33 @@ public class GameUrlAction {
             gameLaunchDto.setVendorGameId(vendorGame.getId());
             loggingService.logProcessTime("gameUrl ｜ vendorGameService.checkGameSupported", traceId);
 
-            boolean isLaunchByProductGame = vendorGame.getCreateById() == 10;
-            Integer vendorId = vendorGame.getVendorId();
-            Integer gameCategoryId = vendorGame.getGameCategoryId();
-            VendorLine vendorLine = null;
-            Integer platformId = gameLaunchDto.getPlatformId();
-            String gameCode = "";
-
-            gameLaunchDto.setVendorId(vendorId);
-            gameLaunchDto.setGameCategoryId(gameCategoryId);
+            boolean isLaunchByProductGame = vendorGame.isLaunchByProductGame();
             gameLaunchDto.setIsLaunchByProductGame(isLaunchByProductGame);
 
             if (isLaunchByProductGame) {
-
                 ProductGame productGame = productGameService.getByCode(dto.getGameCode());
-                Integer productId = productGame.getProductId();
-                Integer productGameId = productGame.getId();
-                gameCategoryId = productGame.getGameCategoryId();
-                gameLaunchDto.setProductId(productId);
-                gameLaunchDto.setProductGameId(productGameId);
-                gameLaunchDto.setVendorId(vendorId);
-                gameLaunchDto.setGameCategoryId(gameCategoryId);
-
-                AgentProductDetail agentProductDetail = agentProductService.getProductAgentVendorLine(productId, gameCategoryId, currencyId, agentId);
-                Integer vendorLineId = agentProductDetail.getVendorLineId();
-                boolean shouldFindPriorityVendorLine = agentProductDetail.getVendorLineId() == null;
-
-                if (shouldFindPriorityVendorLine) {
-                    ProductVendorLine productVendorLine = productVendorLineService.getHighestPriorityLine(productId, gameCategoryId, currencyId);
-
-                    vendorId = productVendorLine.getVendorId();
-                    vendorLineId = productVendorLine.getVendorLineId();
-                    vendorLine = vendorLineService.getVendorLineById(vendorLineId);
-
-                    gameLaunchDto.setVendorLineId(productVendorLine.getVendorLineId());
-                } else {
-                    gameLaunchDto.setVendorLineId(vendorLineId);
-                    vendorLine = vendorLineService.getVendorLineById(vendorLineId);
-                    vendorId = vendorLine.getVendorId();
-                }
-
-                VendorGameCode vendorGameCode = vendorGameCodeService.getByProductGame(productGameId, vendorId, platformId, gameLaunchDto.getLanguageId());
-                productGameService.verifyProductGameDeactivated(productGameId, agentId, gameLaunchDto.getMasterAgentId(), gameLaunchDto.getHouseId());
-                gameCode = vendorGameCode.getOpenGameCode();
+                productGameService.checkGameStatus(productGame);
+                gameLaunchDto = gameUrlService.launchByProductGame(gameLaunchDto, productGame);
 
             } else {
-                gameLaunchDto.setOpenGameCode(vendorGame.getVendorGameCode());
-                gameLaunchDto.setVendorGameId(vendorGame.getId());
-
-                // 9 Check if game details is supported (platform, language, currency)
-                loggingService.logStart();
-                VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(gameLaunchDto);
-                loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkGameDetailSupported", traceId);
-                gameCode = vendorGameCode.getOpenGameCode();
-
-                // Check if is game deactivated (agent, masterAgent, house level)
-                loggingService.logStart();
-                vendorGameDeactivatedService.checkGameSupported(agent, vendorGame.getId());
-                loggingService.logProcessTime("gameUrl ｜ vendorGameDeactivatedService.checkGameSupported", traceId);
-
-                // 10. Retrieve vendor line credentials by category
-                loggingService.logStart();
-                vendorLine = vendorLineService.findAgentVendorLine(agentId, vendorId, currencyId, gameCategoryId);
-                loggingService.logProcessTime("gameUrl ｜ vendorLineService.findAgentVendorLine", traceId);
+                gameLaunchDto = gameUrlService.launchByVendorGame(gameLaunchDto, vendorGame);
             }
 
-            gameLaunchDto.setOpenGameCode(gameCode);
+            String gameCode = gameLaunchDto.getOpenGameCode();
+            Integer vendorId = gameLaunchDto.getVendorId();
             httpRequestLog.setVendorId(vendorId);
+            VendorLine vendorLine = gameLaunchDto.getVendorLine();
 
-            // 11. get vendor line credential
-            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
+            gameLaunchDto = gameUrlService.populateVendorParams(gameLaunchDto);
 
-            // 12. check if vendor language supported
+            // Check if Agent player account exists
             loggingService.logStart();
-            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorId, gameLaunchDto.getLanguageId());
-            loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorLanguageCode", traceId);
-
-            // 13. check if vendor currency supported
-            loggingService.logStart();
-            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorId, currencyId);
-            loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
-
-            // 14. check if vendor platform supported
-            loggingService.logStart();
-            Vendor vendor = vendorService.getById(vendorId);
-            String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendor.getClassName(), platformId);
-            loggingService.logProcessTime("gameUrl ｜ gameUrlService.getVendorPlatformCode", traceId);
-
-            // 15. Check if Agent player account exists
-            loggingService.logStart();
-            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(agent, dto.getUsername());
+            AgentPlayer agentPlayer = gameUrlService.getOrCreateAgentPlayer(agentId, dto.getUsername());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentPlayer", traceId);
             gameLaunchDto.setAgentPlayerId(agentPlayer.getId());
             gameLaunchDto.setAgentPlayerUsername(agentPlayer.getUsername());
 
-            // 16. Check if Vendor player account exists
+            // Check if Vendor player account exists
             loggingService.logStart();
             VendorPlayer vendorPlayer = gameUrlService.checkVendorPlayer(agentPlayer, vendorLine, currencyId);
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkVendorPlayer", traceId);
@@ -207,14 +120,17 @@ public class GameUrlAction {
             // gameLaunchDto.setProductCode(vendor.getProduct().getCode());
 
             String gameSessionToken = UUID.randomUUID().toString();
-            GameSession gameSession = gameSessionService.create(gameSessionToken, dto, gameLaunchDto, vendorCurrency, vendorLanguageCode, vendorPlatformCode);
+            GameSession gameSession = gameSessionService.create(gameSessionToken, dto, gameLaunchDto);
 
             // setGameSessionInfo
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
             httpRequestLog.setGameToken(gameSession.getToken());
 
-            // 16. Request game url from vendor
+            // get vendor line credential
+            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
+
+            // Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog);
             warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currencyId);
             responseVo.setData(gameUrlData);
@@ -299,10 +215,6 @@ public class GameUrlAction {
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
             httpService.logError(httpRequestLog, invalidVendorResponseException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
-
-        } catch (ProductAccessDeniedException productAccessDeniedException) {
-            httpService.logError(httpRequestLog, productAccessDeniedException);
-            responseVo.setResponseCode(ResponseCodes.Status.SC_PRODUCT_ACCESS_DENIED);
 
         } catch (ProductCombinationNotSupportedException productCombinationNotSupportedException) {
             httpService.logError(httpRequestLog, productCombinationNotSupportedException);
