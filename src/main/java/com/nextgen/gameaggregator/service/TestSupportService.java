@@ -6,9 +6,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class TestSupportService {
 
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
-
     @Value("${testing.stub-prefix:load}")
     private String usernamePrefix;
 
@@ -25,9 +22,10 @@ public class TestSupportService {
         return false;
     }
 
+    //For later refactor
     public Boolean shouldSkipOperatorCall(String username) {
         if (isTestEnvironment()) {
-            return username.toLowerCase().startsWith(usernamePrefix.toLowerCase()) || Boolean.TRUE.equals(useStub);
+            return username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
         }
         return false;
     }
