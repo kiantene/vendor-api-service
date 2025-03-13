@@ -15,15 +15,13 @@ import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
 import com.nextgen.gameaggregator.vendor.kypoker.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -109,22 +107,26 @@ public class GeneralAction {
         return vo;
     }
 
-    private void doVerification(CommonDto dto,String encryptedMd5) throws InvalidRequestException {
+    private void doVerification(CommonDto dto,String encryptedMd5)
+            throws InvalidRequestException
+    {
         ValidationUtils.isEquals(dto.getKey(), encryptedMd5);
 
     }
 
-    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString) throws AuthenticationException {
+    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString)
+            throws AuthenticationException
+    {
         CommonVo vo = new CommonVo();
 
         if (Actions.BALANCE.equals(actionDto.getS())) {
             vo = balanceService.balance(body, traceId, httpRequestLog, decryptedString);
         } else if (Actions.BET.equals(actionDto.getS())) {
-            vo = betService.bet(body, traceId, httpRequestLog);
+            vo = betService.bet(body, traceId, httpRequestLog, decryptedString);
         } else if (Actions.SETTLE.equals(actionDto.getS())) {
-            vo = settleService.settle(body, traceId, httpRequestLog);
+            vo = settleService.settle(body, traceId, httpRequestLog, decryptedString);
         } else if (Actions.CANCEL.equals(actionDto.getS())) {
-            vo = cancelService.cancel(body, traceId, httpRequestLog);
+            vo = cancelService.cancel(body, traceId, httpRequestLog, decryptedString);
         } else {
             if (vo.d == null) {
                 vo.d.setCode(ResponseCodes.INTERNAL_ERROR);

@@ -34,7 +34,7 @@ public class SettleService {
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
     }
-    public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
 

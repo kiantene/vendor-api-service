@@ -34,7 +34,7 @@ public class CancelService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog) throws AuthenticationException {
+    public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) throws AuthenticationException {
         // Construct VO
         CommonVo vo = new CommonVo();
 

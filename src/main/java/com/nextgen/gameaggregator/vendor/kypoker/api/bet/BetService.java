@@ -34,7 +34,7 @@ public class BetService {
         this.gameSessionService = gameSessionService;
     }
 
-    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
 

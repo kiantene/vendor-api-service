@@ -5,8 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cg.api.record.Balance;
-import com.nextgen.gameaggregator.vendor.kypoker.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.*;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
@@ -24,7 +22,8 @@ public class BalanceService {
 
     public BalanceService(GameServiceImpl gameService,
                           WalletService walletService,
-                          ValidationService validationService, GameSessionService service, GameSessionService gameSessionService) {
+                          ValidationService validationService,
+                          GameSessionService gameSessionService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
@@ -85,8 +84,14 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, InvalidRequestException {
+    private void doVerification(BalanceDto dto, GameSession gameSession)
+            throws InvalidPlayerException,
+            DisabledAgentPlayerException,
+            DisabledVendorLineException,
+            DisabledGameException,
+            AuthenticationException,
+            InvalidRequestException
+    {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount());
