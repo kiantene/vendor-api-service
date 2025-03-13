@@ -26,4 +26,8 @@ public class VendorGame extends BaseEntity {
     private Integer status;
 
     private Boolean requireDebit;
+
+    public boolean isLaunchByProductGame() {
+        return this.createById == 10;
+    }
 }

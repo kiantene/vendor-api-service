@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import lombok.Data;
 
 @Data
@@ -15,8 +16,11 @@ public class GameLaunchDto {
     private Integer gameCategoryId;
     private Integer currencyId;
     private String currencyCode;
+    private String vendorCurrencyCode;
     private Integer platformId;
+    private String vendorPlatformCode;
     private Integer languageId;
+    private String vendorLanguageCode;
     private Integer vendorId;
     private Integer vendorGameId;
     private Long agentPlayerId;
@@ -25,5 +29,6 @@ public class GameLaunchDto {
     private String vendorPlayerUsername;
     private String openGameCode;
     private Integer vendorLineId;
+    private VendorLine vendorLine;
     private Boolean isLaunchByProductGame;
 }
