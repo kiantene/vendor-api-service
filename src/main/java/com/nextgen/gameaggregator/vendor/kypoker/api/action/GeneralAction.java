@@ -64,7 +64,6 @@ public class GeneralAction {
 
         // Construct VO
         CommonVo vo = new CommonVo();
-        httpService.end(httpRequestLog, vo);
 
         try {
             // Retrieve request body in original string format
