@@ -127,6 +127,8 @@ public class QueryService {
         } catch (Exception e) {
             // do nothing, return null
             httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, new CommonVo());
         }
         return queryVo;
     }
