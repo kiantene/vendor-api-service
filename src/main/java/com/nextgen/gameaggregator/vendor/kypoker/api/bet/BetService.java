@@ -13,10 +13,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Service
-@Slf4j
 public class BetService {
 
     private final GameService gameService;
