@@ -128,7 +128,7 @@ public class GameUrlAction {
             httpRequestLog.setGameToken(gameSession.getToken());
 
             // get vendor line credential
-            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
+            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
             // Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog);

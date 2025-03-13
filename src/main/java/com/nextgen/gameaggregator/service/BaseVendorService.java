@@ -3,14 +3,13 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.BetPreprocess;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public abstract class BaseVendorService {
     @Getter
@@ -20,7 +19,7 @@ public abstract class BaseVendorService {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private GameCategoryService gameCategoryService;
+    private VendorLineService vendorLineService;
 
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
@@ -101,5 +100,10 @@ public abstract class BaseVendorService {
 
     public List<UnsettledBet> getVendorClassFileUnsettledBetList() {
         return Collections.emptyList();
+    }
+
+    public String getCredentialWithKey(VendorLine vendorLine, String key) throws InvalidVendorLineException {
+        Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
+        return Optional.ofNullable(lineCredentials.get(key)).orElseThrow(InvalidVendorLineException::new);
     }
 }

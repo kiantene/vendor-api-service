@@ -171,7 +171,7 @@ public class GameUrlService {
         }
     }
 
-    @CachePut(value = "AgentPlayers", key = "{#agentId, #username}", cacheManager = "cacheManager")
+    @Cacheable(value = "AgentPlayers", key = "{#agentId, #username}", cacheManager = "cacheManager")
     public AgentPlayer getOrCreateAgentPlayer(Integer agentId, String username) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
         if (agentPlayer == null) {
@@ -185,7 +185,7 @@ public class GameUrlService {
         return agentPlayer;
     }
 
-    @CachePut(value = "VendorPlayers", key = "{#agentPlayer.id, #vendorLine.id, #currencyId}", cacheManager = "cacheManager")
+    @Cacheable(value = "VendorPlayers", key = "{#agentPlayer.id, #vendorLine.id, #currencyId}", cacheManager = "cacheManager")
     public VendorPlayer checkVendorPlayer(AgentPlayer agentPlayer, VendorLine vendorLine, Integer currencyId) throws DisabledAgentPlayerException {
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
                 currencyId);

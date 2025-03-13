@@ -16,4 +16,6 @@ public interface VendorLineCredentialRepository extends JpaRepository<VendorLine
 
     @Query(value = "SELECT vlc.vendor_line_id FROM vendor_line_credentials vlc WHERE vlc.name = :name AND vlc.value = :value AND vlc.status = :status", nativeQuery = true)
     List<Integer> findVendorLineIdByNameAndValueAndStatus(@Param("name") String name, @Param("value") String value, @Param("status") Integer status);
+
+    List<VendorLineCredential> findByVendorLineIdAndStatus(Integer vendorLineId, Integer status);
 }

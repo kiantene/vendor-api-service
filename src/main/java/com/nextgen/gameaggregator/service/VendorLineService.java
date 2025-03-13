@@ -103,10 +103,10 @@ public class VendorLineService {
         return Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
     }
 
-    public Map<String, String> toCredentialMap(VendorLine vendorLine) {
-        return vendorLine.getCredentials().stream()
-                .filter(v -> v.getStatus().equals(Status.ACTIVE.code))
-                .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
+    @Cacheable(value = "VendorLineCredentials", key = "#vendorLineId", cacheManager = "cacheManager")
+    public Map<String, String> toCredentialMap(Integer vendorLineId) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findByVendorLineIdAndStatus(vendorLineId, Status.ACTIVE.code);
+        return credentials.stream().collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
     // deprecated, thrown exceptions will not be cached, use getVendorLine/checkStatus to separate cacheable and exceptions
