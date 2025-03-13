@@ -15,7 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import javax.security.auth.login.CredentialException;
 import java.math.BigDecimal;
@@ -45,7 +45,7 @@ public class BalanceAction {
         this.vendorService = vendorService;
     }
 
-    @PostMapping(path = EndPoints.BALANCE)
+    @GetMapping(path = EndPoints.BALANCE)
     public ResponseEntity<BalanceVo> getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
