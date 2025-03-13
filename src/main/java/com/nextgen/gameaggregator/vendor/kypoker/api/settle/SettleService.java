@@ -40,7 +40,7 @@ public class SettleService {
 
         try {
             // Convert original request body into dto
-            SettleDto settleDto = HttpService.convertJsonToDto(actionDto, SettleDto.class);
+            SettleDto settleDto = HttpService.convertJsonToDto(decryptedParam, SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);

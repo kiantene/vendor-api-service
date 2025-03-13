@@ -40,7 +40,7 @@ public class BetService {
 
         try {
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertJsonToDto(actionDto, BetDto.class);
+            BetDto betDto = HttpService.convertJsonToDto(decryptedParam, BetDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);

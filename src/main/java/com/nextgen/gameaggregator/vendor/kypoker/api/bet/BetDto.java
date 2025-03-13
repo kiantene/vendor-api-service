@@ -17,7 +17,7 @@ public class BetDto implements BetResultData {
 
     private String gameNo;
 
-    private Integer gameId;
+    private String gameId;
 
     private Integer kindId;
 
