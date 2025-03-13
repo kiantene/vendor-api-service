@@ -23,7 +23,7 @@ public class BalanceDto {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
-    @JsonProperty("DESKey")
-    private String desKey;
+    @JsonProperty("s")
+    private String s;
 
 }

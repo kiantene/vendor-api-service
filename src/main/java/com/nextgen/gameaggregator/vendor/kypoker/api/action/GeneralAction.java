@@ -84,7 +84,7 @@ public class GeneralAction {
 
             String md5Key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.MD5_KEY);
 
-            String decryptedBody = VendorService.AESDecrypt(body, aesKey, true);
+            String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
             String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
 
@@ -92,9 +92,11 @@ public class GeneralAction {
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
+            httpRequestLog.setRequestBody(body + "Decrypted Param : " + decryptedBody);
+
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
-            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto);
+            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody);
 
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -112,11 +114,11 @@ public class GeneralAction {
 
     }
 
-    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto) throws AuthenticationException {
+    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString) throws AuthenticationException {
         CommonVo vo = new CommonVo();
 
         if (Actions.BALANCE.equals(actionDto.getS())) {
-            vo = balanceService.balance(body, traceId, httpRequestLog);
+            vo = balanceService.balance(body, traceId, httpRequestLog, decryptedString);
         } else if (Actions.BET.equals(actionDto.getS())) {
             vo = betService.bet(body, traceId, httpRequestLog);
         } else if (Actions.SETTLE.equals(actionDto.getS())) {

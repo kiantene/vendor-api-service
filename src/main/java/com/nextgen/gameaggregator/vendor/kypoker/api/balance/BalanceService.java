@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cg.api.record.Balance;
+import com.nextgen.gameaggregator.vendor.kypoker.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.*;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
@@ -30,13 +32,13 @@ public class BalanceService {
         this.gameSessionService = gameSessionService;
     }
 
-    public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
         try {
             // Convert original request body into dto
-            BalanceDto balanceDto = HttpService.convertQueryStringToDto(actionDto, BalanceDto.class);
+            BalanceDto balanceDto = HttpService.convertQueryStringToDto(decryptedParam, BalanceDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto, traceId);
@@ -61,8 +63,16 @@ public class BalanceService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
+        } catch(InvalidPlayerException invalidPlayerException){
+            dObject d = new dObject();
+            d.setCode(10);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+
         } catch (Exception e){
             dObject d = new dObject();
+            d.setCode(5);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
