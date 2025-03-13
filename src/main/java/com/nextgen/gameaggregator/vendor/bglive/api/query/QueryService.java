@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
@@ -116,6 +117,7 @@ public class QueryService {
     private QueryVo processData(OrdersMapDto ordersMapDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
+        httpRequestLog.setRequestBody(new Gson().toJson(ordersMapDto));
         QueryVo queryVo = null;
         try {
             doValidation(ordersMapDto);
