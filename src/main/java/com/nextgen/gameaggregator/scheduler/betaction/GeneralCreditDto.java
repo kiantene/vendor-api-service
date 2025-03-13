@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class GeneralDebitRollbackDto {
+public class GeneralCreditDto {
 
     private String vendorPlayerUsername;
     private String externalTransactionId;

@@ -1,13 +1,17 @@
 package com.nextgen.gameaggregator.vendor.bglive.service;
 
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.vendor.bglive.api.settlement.OrdersDto;
 import com.nextgen.gameaggregator.vendor.bglive.constant.QueryStatus;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import lombok.Getter;
@@ -31,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 @Setter
 public class VendorService extends BaseVendorService {
 
+    private final WalletRequestService walletRequestService;
+    private final BetActionLogService betActionLogService;
     private GameSessionService gameSessionService;
     private UnsettledBetCachingService unsettledBetCachingService;
     private SettledBetService settledBetService;
@@ -39,10 +45,12 @@ public class VendorService extends BaseVendorService {
     @Autowired
     public VendorService(GameSessionService gameSessionService,
                          UnsettledBetCachingService unsettledBetCachingService,
-                         SettledBetService settledBetService) {
+                         SettledBetService settledBetService, WalletRequestService walletRequestService, BetActionLogService betActionLogService) {
         this.gameSessionService = gameSessionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.settledBetService = settledBetService;
+        this.walletRequestService = walletRequestService;
+        this.betActionLogService = betActionLogService;
     }
 
     public static String encryptCreateUserMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
@@ -186,7 +194,7 @@ public class VendorService extends BaseVendorService {
                 .orElse(null);
     }
 
-    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList, Boolean processFailed) throws InsufficientBalanceException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
 
         for (ResultVo resultVo : resultList) {
@@ -207,4 +215,44 @@ public class VendorService extends BaseVendorService {
         }
         return null;
     }
+
+    public void dataDebitMapper(WalletRequest walletRequest, com.nextgen.gameaggregator.vendor.bglive.api.bet.OrdersDto ordersDto, GameSession gameSession) {
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setExternalTransactionId(ordersDto.getExternalTransactionId());
+        walletRequest.setRoundId(ordersDto.getRoundId());
+        walletRequest.setVendorGameCode(ordersDto.getGameId());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(ordersDto.getVendorBetId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        BigDecimal amount = ordersDto.getAmount().abs();
+        walletRequest.setTransferAmount(amount);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+    }
+
+    public void dataCreditMapper(WalletRequest walletRequest, OrdersDto ordersDto, GameSession gameSession) {
+
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        walletRequest.setExternalTransactionId(ordersDto.getRoundId());
+        walletRequest.setRoundId(ordersDto.getRoundId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(ordersDto.getVendorBetId());
+        walletRequest.setTakeAll(0);
+        BigDecimal amount = ordersDto.getAmount().abs();
+        walletRequest.setTransferAmount(amount);
+        walletRequest.setBetAmount(amount);
+        ResultType resultType = this.calculateResultType(null, amount, ordersDto.getJackpotAmount(),
+                false);
+        walletRequest.setWinAmount(amount);
+        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setJackpotAmount(ordersDto.getJackpotAmount());
+        walletRequest.setResultType(resultType.code);
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setVendorSettleTime(System.currentTimeMillis());
+    }
+
+
 }

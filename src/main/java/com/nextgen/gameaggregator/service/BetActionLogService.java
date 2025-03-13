@@ -109,21 +109,21 @@ public class BetActionLogService {
                 this.processRollback(betActionLog, currentTime);
             } else if (betActionLog.getAction() == 2) {
                 this.processBetResult(betActionLog, currentTime);
-            } else if (betActionLog.getAction() == 3)
-                this.processDebitRollback(betActionLog, currentTime);
-            else {
+            } else if (betActionLog.getAction() == 3) {
+                this.processCredit(betActionLog, currentTime);
+            } else {
                 this.processAdjustment(betActionLog, currentTime);
             }
         });
     }
 
-    public void processDebitRollback(RawBetActionLog betActionLog, Long currentTime) {
+    public void processCredit(RawBetActionLog betActionLog, Long currentTime) {
         GameSession gameSession;
         HttpRequestLog httpRequestLog = httpService.startBetActionRequest(betActionLog);
         httpRequestLog.setRequestBody(new Gson().toJson(betActionLog));
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         try {
-            GeneralDebitRollbackDto generalDebitRollbackDto = new Gson().fromJson(betActionLog.getProcessData(), GeneralDebitRollbackDto.class);
+            GeneralCreditDto generalCreditDto = new Gson().fromJson(betActionLog.getProcessData(), GeneralCreditDto.class);
 
             try {
                 gameSession = gameSessionService.verifyToken(betActionLog.getToken());
@@ -134,7 +134,7 @@ public class BetActionLogService {
                 gameSession.setVendorToken(betActionLog.getToken());
             }
             WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-            dataCreditMapper(currentWalletRequest, generalDebitRollbackDto, gameSession);
+            dataCreditMapper(currentWalletRequest, generalCreditDto, gameSession);
             operatorWalletService.betCredit(currentWalletRequest);
         } catch (Exception e) {
             betActionLog.setRetryCounter(betActionLog.getRetryCounter() + 1);
@@ -188,7 +188,7 @@ public class BetActionLogService {
         }
     }
 
-    private void dataCreditMapper(WalletRequest walletRequest, GeneralDebitRollbackDto generalRollbackDto, GameSession gameSession) {
+    private void dataCreditMapper(WalletRequest walletRequest, GeneralCreditDto generalRollbackDto, GameSession gameSession) {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(generalRollbackDto.getVendorPlayerUsername());
         walletRequest.setExternalTransactionId(generalRollbackDto.getExternalTransactionId());
