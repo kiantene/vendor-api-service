@@ -146,7 +146,6 @@ public class BetService {
                 } else {
                     this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
                 }
-                httpService.end(httpRequestLog, new CommonVo());
             }
         }
         return commonVo;
@@ -236,6 +235,8 @@ public class BetService {
                 errorOrderIds.add(ordersDto.getExternalTransactionId());
             }
             httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, new CommonVo());
         }
         return resultVo;
     }
@@ -245,6 +246,7 @@ public class BetService {
         ValidationUtils.validateRequest(ordersDto);
     }
 
+    //process bet win lose
     private void prepareRollback(List<OrdersDto> ordersDtoList, GameSession gameSession) {
         THREAD_POOL.submit(() -> {
             for (OrdersDto ordersDto : ordersDtoList) {
@@ -259,6 +261,7 @@ public class BetService {
         });
     }
 
+    // process credit
     private void prepareDebitRollback(List<OrdersDto> ordersDtoList, BetDto betDto, GameSession gameSession) {
         THREAD_POOL.submit(() -> {
             for (OrdersDto ordersDto : ordersDtoList) {
