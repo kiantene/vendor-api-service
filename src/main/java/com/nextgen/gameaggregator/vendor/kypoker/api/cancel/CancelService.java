@@ -67,8 +67,13 @@ public class CancelService {
 
         } catch (Exception e){
             CancelVo d = new CancelVo();
-            d.setCode(ResponseCodes.INTERNAL_ERROR);
-            d.setStatus(2);
+//            d.setCode(ResponseCodes.INTERNAL_ERROR);
+//            d.setStatus(2);
+//            vo.setM(EndPoints.LAUNCH_GAME);
+//            vo.setS(ResponseCodes.CANCEL);
+//            vo.setD(d);
+            d.setCode(ResponseCodes.SUCCESS);
+            d.setStatus(1);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);

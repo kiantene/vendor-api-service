@@ -96,18 +96,13 @@ public class GeneralAction {
             // Handle the action and return the resulting value
             httpService.end(httpRequestLog, vo);
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody);
-            httpService.end(httpRequestLog, vo);
-
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
-            httpService.end(httpRequestLog, vo);
-
         }
         finally {
             httpService.end(httpRequestLog, vo);
         }
-        httpService.end(httpRequestLog, vo);
         return vo;
     }
 
