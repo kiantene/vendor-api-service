@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import org.springframework.cache.annotation.Cacheable;
@@ -34,26 +35,26 @@ public class VendorGameCodeService {
     @Cacheable(value = "VendorGameCode", key = "{#gameCode, #languageId, #platformId, #vendorId}", cacheManager = "cacheManager")
     public VendorGameCode getByBetGameCode(String gameCode, Integer languageId, Integer platformId, Integer vendorId) throws GameNotSupportedException {
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameCode, languageId, platformId, vendorId);
-
-        if (vendorGameCode == null) throw new GameNotSupportedException();
-
-        if (vendorGameCode.getStatus().equals(Status.INACTIVE.code)) {
-            throw new GameNotSupportedException();
-        }
+        this.checkGameStatus(vendorGameCode);
 
         return vendorGameCode;
     }
 
+    // will be removed once migrated to ProductGame
+    @Cacheable(value = "VendorGameCode", key = "{#vendorGameId, #platformId, #languageId}", cacheManager = "cacheManager")
+    public VendorGameCode getByVendorGame(Integer vendorGameId, Integer platformId, Integer languageId) {
+        return vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(vendorGameId, platformId, languageId);
+    }
+
     @Cacheable(value = "ProductVendorGameCode", key = "{#productGameId, #vendorId, #platformId, #languageId}", cacheManager = "cacheManager")
-    public VendorGameCode getByProductGame(Integer productGameId, Integer vendorId, Integer platformId, Integer languageId) throws GameNotSupportedException {
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByProductGameIdAndVendorIdAndPlatformIdAndLanguageId(productGameId, vendorId, platformId, languageId);
+    public VendorGameCode getByProductGame(Integer productGameId, Integer vendorId, Integer platformId, Integer languageId) {
+        return vendorGameCodeRepository.findByProductGameIdAndVendorIdAndPlatformIdAndLanguageId(productGameId, vendorId, platformId, languageId);
+    }
 
+    public void checkGameStatus(VendorGameCode vendorGameCode) throws GameNotSupportedException {
         if (vendorGameCode == null) throw new GameNotSupportedException();
-
         if (vendorGameCode.getStatus().equals(Status.INACTIVE.code)) {
             throw new GameNotSupportedException();
         }
-
-        return vendorGameCode;
     }
 }

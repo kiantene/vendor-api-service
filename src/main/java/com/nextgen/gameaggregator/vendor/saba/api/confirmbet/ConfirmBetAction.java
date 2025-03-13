@@ -63,8 +63,9 @@ public class ConfirmBetAction {
             vo.setBalance(walletRequest.getBalanceAfter());
 
         } catch (BetResultIdempotentViolationException e) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
-            walletRequest.setErrorMessage(e.getMessage());
+            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setBalance(walletRequest.getBalanceAfter());
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);

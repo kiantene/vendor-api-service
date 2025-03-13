@@ -71,11 +71,19 @@ public class CreditAction {
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
 
             // using vendorPlayerId to find gameSession details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
-
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(vendorPlayer.getUsername()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(creditDto, gameSession, body);
+            this.doVerification(creditDto, gameSession.getVendorLineId(), body);
 
             ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
 
@@ -144,14 +152,14 @@ public class CreditAction {
         }
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession, String oriRequest) throws
+    private void doVerification(CreditDto dto, Integer vendorLineId, String oriRequest) throws
             CredentialNotFoundException, InvalidSignatureException {
 
-        String appId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.app_id);
+        String appId = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.app_id);
         ValidationUtils.isEquals(appId, dto.getAppid(), CredentialNotFoundException::new);
 
         // Verify signature
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret_key);
+        String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.secret_key);
         VendorService.verifyHash(oriRequest, dto.getToken(), secretKey);
 
     }
