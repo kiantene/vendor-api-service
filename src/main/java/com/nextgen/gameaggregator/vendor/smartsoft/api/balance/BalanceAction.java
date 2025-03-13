@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.security.auth.login.CredentialException;
 import java.math.BigDecimal;
 
 @RestController
@@ -96,7 +95,7 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, InvalidRequestException, CredentialNotFoundException, CredentialException {
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, InvalidRequestException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 

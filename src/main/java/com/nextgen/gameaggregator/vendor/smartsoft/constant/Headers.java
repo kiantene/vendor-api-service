@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.constant;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class Headers {
     public static final String REQUEST_SIGNATURE = "X-Signature";
     public static final String SESSION_ID = "X-SessionId";
