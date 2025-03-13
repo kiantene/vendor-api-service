@@ -90,7 +90,7 @@ public class BetService {
 
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");
-        int mType = Integer.parseInt(parts[1]);
+        int mType = Integer.parseInt(parts[0]);
         ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
