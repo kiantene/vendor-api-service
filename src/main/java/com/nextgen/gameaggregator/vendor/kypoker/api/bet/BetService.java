@@ -54,7 +54,7 @@ public class BetService {
             // 4.3 Process Bet Request
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
 
-            BetVo d = new BetVo();
+            dObject d = new dObject();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());

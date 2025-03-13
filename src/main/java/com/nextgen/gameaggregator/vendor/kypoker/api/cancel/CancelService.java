@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.kypoker.vo.dObject;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -55,7 +56,7 @@ public class CancelService {
             // 4. Send refund to Operator
             balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
-            CancelVo d = new CancelVo();
+            dObject d = new dObject();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setStatus(1);
@@ -64,14 +65,9 @@ public class CancelService {
             vo.setD(d);
 
         } catch (Exception e){
-            CancelVo d = new CancelVo();
-//            d.setCode(ResponseCodes.INTERNAL_ERROR);
-//            d.setStatus(2);
-//            vo.setM(EndPoints.LAUNCH_GAME);
-//            vo.setS(ResponseCodes.CANCEL);
-//            vo.setD(d);
-            d.setCode(ResponseCodes.SUCCESS);
-            d.setStatus(1);
+            dObject d = new dObject();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
+            d.setStatus(2);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
