@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.Language;
 import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendorDTO;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -19,14 +20,13 @@ import com.nextgen.gameaggregator.service.LanguageService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
@@ -47,9 +47,9 @@ public class GameVendorAction {
     private GameUrlService gameUrlService;
 
     @PostMapping(path = "vendors")
-    public OperatorResponseVo<List<IGameVendor>> list(HttpServletRequest request) {
+    public OperatorResponseVo<List<IGameVendorDTO>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo<List<IGameVendor>> responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo<List<IGameVendorDTO>> responseVo = new OperatorResponseVo<>();
         try {
 
             // Retrieve request body in original string format and convert into dto
@@ -83,7 +83,7 @@ public class GameVendorAction {
                 vendorList = vendorService.findAgentSupportedVendors(language, apiCredential.getAgent(), currency);
             }
 
-            responseVo.setData(vendorList);
+            responseVo.setData(vendorList.stream().map(IGameVendorDTO::fromEntity).toList());
 
 
         } catch (IllegalArgumentException illegalArgumentException) {
