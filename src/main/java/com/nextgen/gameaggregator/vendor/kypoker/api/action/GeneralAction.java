@@ -90,7 +90,7 @@ public class GeneralAction {
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
-            httpRequestLog.setRequestBody(body + "Decrypted Param : " + decryptedBody);
+            //httpRequestLog.setRequestBody(body + "Decrypted Param : " + decryptedBody);
 
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
