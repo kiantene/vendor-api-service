@@ -64,11 +64,12 @@ public class GeneralAction {
 
         // Construct VO
         CommonVo vo = new CommonVo();
+        httpService.end(httpRequestLog, vo);
 
         try {
             // Retrieve request body in original string format
             String body = request.getQueryString();
-            //httpRequestLog.setRequestBody(body);
+            httpRequestLog.setRequestBody(body);
 
             // Convert original request body into dto
             CommonDto commonDto = HttpService.convertQueryStringToDto(body, CommonDto.class);
@@ -84,7 +85,7 @@ public class GeneralAction {
 
             String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
-            //httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
+            httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
 
             String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
 
@@ -95,16 +96,18 @@ public class GeneralAction {
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody);
+            httpService.end(httpRequestLog, vo);
 
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
+            httpService.end(httpRequestLog, vo);
+
         }
         finally {
-            httpRequestLog.setRequestBody("hard code test log");
             httpService.end(httpRequestLog, vo);
         }
-
+        httpService.end(httpRequestLog, vo);
         return vo;
     }
 
