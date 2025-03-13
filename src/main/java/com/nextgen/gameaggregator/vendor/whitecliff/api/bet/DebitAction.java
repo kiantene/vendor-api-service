@@ -34,6 +34,7 @@ public class DebitAction {
     private final ValidationService validationService;
     private final VendorLineService vendorLineService;
     private final SettledBetService settledBetService;
+    private final VendorService vendorService;
 
     @Autowired
     public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
@@ -43,14 +44,12 @@ public class DebitAction {
         this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        VendorService vendorService = new VendorService(gameSessionService);
-
-
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
 
@@ -65,11 +64,13 @@ public class DebitAction {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
 
+            // Check game category to set game code
+            debitDto.setGameCategory(gameSession.getGameCategoryId());
+
             // Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
 
-            // Check game category to set game code
-            debitDto.setGameCategory(gameSession.getGameCategoryId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             this.doVerification(debitDto, gameSession, secretKey);
 
@@ -147,11 +148,7 @@ public class DebitAction {
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidRequestException,
-            GameNotSupportedException,
             InvalidSignatureException {
-
-        // 1. Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorGameCode()), String.valueOf(debitDto.getGameId()), GameNotSupportedException::new);
 
         // 2. Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

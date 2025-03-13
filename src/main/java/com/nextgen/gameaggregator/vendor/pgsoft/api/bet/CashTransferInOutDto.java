@@ -147,12 +147,12 @@ public class CashTransferInOutDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return this.updatedTime;
+        return System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.updatedTime;
+        return System.currentTimeMillis();
     }
 
     @Override
