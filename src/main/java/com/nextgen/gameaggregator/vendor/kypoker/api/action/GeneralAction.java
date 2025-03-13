@@ -92,9 +92,11 @@ public class GeneralAction {
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
+            actionDto.setHttpRequestLog(httpRequestLog);
+
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
-            httpService.end(httpRequestLog, vo);
+            //httpService.end(httpRequestLog, vo);
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody);
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
