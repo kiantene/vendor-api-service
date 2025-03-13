@@ -198,6 +198,7 @@ public class BetService {
     private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
+        httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
         String traceId = httpRequestLog.getId();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         ResultVo resultVo = null;

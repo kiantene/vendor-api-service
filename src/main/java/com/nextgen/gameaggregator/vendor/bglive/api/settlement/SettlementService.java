@@ -184,6 +184,7 @@ public class SettlementService {
     private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
+        httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         String traceId = httpRequestLog.getId();
         BigDecimal balance;
