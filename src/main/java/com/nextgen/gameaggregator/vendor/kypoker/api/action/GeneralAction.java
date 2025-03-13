@@ -84,13 +84,13 @@ public class GeneralAction {
 
             String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
+            httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
+
             String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
 
             doVerification(commonDto,encryptedMd5);
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
-
-            //httpRequestLog.setRequestBody(body + "Decrypted Param : " + decryptedBody);
 
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value

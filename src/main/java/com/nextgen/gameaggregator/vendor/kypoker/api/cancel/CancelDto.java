@@ -16,7 +16,7 @@ public class CancelDto implements RollbackData {
 
     private String gameNo;
 
-    private Integer gameId;
+    private String gameId;
 
     private Integer kindId;
 

@@ -42,7 +42,7 @@ public class CancelService {
 
         try {
             // Convert original request body into dto
-            CancelDto cancelDto = HttpService.convertJsonToDto(actionDto, CancelDto.class);
+            CancelDto cancelDto = HttpService.convertQueryStringToDto(decryptedParam, CancelDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelDto);
@@ -91,8 +91,8 @@ public class CancelService {
 
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");
-        int mType = Integer.parseInt(parts[1]);
-        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        int mType = Integer.parseInt(parts[0]);
+        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getKindId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
