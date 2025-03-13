@@ -57,6 +57,9 @@ public class VerifySessionAction {
             // 2. Verify session token - Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            // Check if game session is terminated
+            gameSessionService.checkGameSessionTerminated(gameSession.getStatus());
+
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
@@ -97,10 +100,10 @@ public class VerifySessionAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
             httpService.logError(httpRequestLog, gameNotSupportedException);
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (GameTerminatedException | AuthenticationException gameException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
-            httpService.logError(httpRequestLog, authenticationException);
+            httpService.logError(httpRequestLog, gameException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);

@@ -1,0 +1,190 @@
+package com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.BetType;
+import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
+import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
+import jakarta.validation.constraints.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+
+@Getter
+@Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class BetDto extends ActionDto implements BetResultData {
+
+    @NotBlank
+    @JsonProperty("api_token")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String apiToken;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String user;
+
+    @NotNull
+    @PositiveOrZero
+    private BigDecimal money;
+
+    @NotBlank
+    @Size(max = 10)
+    @Pattern(regexp = "\\d+")
+    private String timestamp;
+
+    @NotBlank
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String dealid;
+
+    @NotBlank
+    @Pattern(regexp = "[12]")
+    private String code;
+
+    @NotBlank
+    @JsonProperty("roundid")
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String bRoundid;
+
+    @Pattern(regexp = "[01]")
+    private String finished;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String gameinfo;
+
+    @PositiveOrZero
+    private BigDecimal betinfo;
+
+    @NotBlank
+    @Pattern(regexp = "\\d+")
+    private String platform;
+
+    @Pattern(regexp = "[01]")
+    private String istips;
+
+    @JsonProperty("root_roundid")
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String rootRoundid;
+
+    @JsonProperty("root_dealid")
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String rootDealid;
+
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String betid;
+
+    // method for 7mojo while handle settled request
+    public void setBetId(String query) {
+        try {
+            // Decode the URL-encoded query string
+            String decodedQuery = URLDecoder.decode(query, StandardCharsets.UTF_8);
+
+            // Define the pattern to match the betid value
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("betid=\\[\"([^\"]+)\"\\]");
+            Matcher matcher = pattern.matcher(decodedQuery);
+
+            if (matcher.find()) {
+                this.betid = matcher.group(1);
+            } else {
+                this.betid = null;
+            }
+        } catch (Exception e) {
+            this.betid = null;
+        }
+    }
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.dealid;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.dealid;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.bRoundid;
+    }
+
+    @Override
+    public String getGameId() {
+        return this.gameinfo;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        if (this.getCode().equals(BetType.POINTIN)) {
+            return this.getMoney().abs();
+        }
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        if (this.getCode().equals(BetType.POINTOUT)) {
+            return this.getMoney();
+        }
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return Long.parseLong(this.timestamp) * 1000;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return VendorService.getMilSec();
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+
+        return Long.parseLong(this.timestamp) * 1000;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        BetStatus status;
+        if (this.finished != null && this.finished.equals(BetType.FINISHED)) {
+            status = BetStatus.SETTLED;
+        } else {
+            if (this.code.equals(BetType.POINTIN)) {
+                status = BetStatus.UNSETTLED;
+                return status;
+            }
+            status = BetStatus.SETTLED;
+        }
+        return status;
+    }
+}
