@@ -64,30 +64,30 @@ public class TransferService {
         } catch (InsufficientBalanceException e) {
             //set Vo
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
-                    ResponseCodes.INSUFFICIENT_BALANCE.message, ResponseCodes.INSUFFICIENT_BALANCE.message);
+                    ResponseCodes.INSUFFICIENT_BALANCE.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidRequestException e) {
             //set Vo
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+                    ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidPlayerException e) {
 
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+                    ResponseCodes.PLAYER_INVALID.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (AuthenticationException e) {
 
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+                    ResponseCodes.AUTH_INVALID.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
-                    ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
+                    ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
         }

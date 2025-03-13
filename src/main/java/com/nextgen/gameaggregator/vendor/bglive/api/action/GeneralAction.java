@@ -60,13 +60,11 @@ public class GeneralAction {
 
         } catch (JsonProcessingException | InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
-                    ResponseCodes.SYSTEM_ERROR.message,
                     ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-                    ResponseCodes.MISSING_PARAMETERS.message,
                     ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
 

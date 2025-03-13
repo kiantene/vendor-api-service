@@ -80,12 +80,12 @@ public class OrdersDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override

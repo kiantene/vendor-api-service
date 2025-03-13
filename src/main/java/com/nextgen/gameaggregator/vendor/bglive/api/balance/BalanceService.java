@@ -48,7 +48,7 @@ public class BalanceService {
             CommonDto commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
             // Handle the action and return the resulting value
             this.doValidation(commonDto);
-            
+
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(commonDto.getCommonParamsDto().getLoginId());
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
             // 4. Verify remaining parameters (Verify against database values)
@@ -62,20 +62,20 @@ public class BalanceService {
 
         } catch (InvalidRequestException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-                    ResponseCodes.MISSING_PARAMETERS.message, ResponseCodes.MISSING_PARAMETERS.message);
+                    ResponseCodes.MISSING_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-                    ResponseCodes.AUTH_INVALID.message, ResponseCodes.AUTH_INVALID.message);
+                    ResponseCodes.AUTH_INVALID.message);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-                    ResponseCodes.PLAYER_INVALID.message, ResponseCodes.PLAYER_INVALID.message);
+                    ResponseCodes.PLAYER_INVALID.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
-                    ResponseCodes.SYSTEM_ERROR.message, ResponseCodes.SYSTEM_ERROR.message);
+                    ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
         }
         return commonVo;
