@@ -209,7 +209,7 @@ public class ReleaseAction {
 
         try {
             unsettledBetList = unsettledBetService.getByRoundIdRetry(dto.getRoundId(),
-                    Integer.parseInt(dto.getGameId()), gameSession.getVendorPlayerId());
+                    gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
             if (unsettledBetList.isEmpty()) {
                 return null;
             }
