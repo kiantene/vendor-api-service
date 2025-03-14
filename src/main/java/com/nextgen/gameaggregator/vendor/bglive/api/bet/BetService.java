@@ -14,14 +14,15 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
+import com.nextgen.gameaggregator.vendor.bglive.constant.NiuBetMagnificate;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.math.BigDecimal;
 import java.util.LinkedList;
@@ -29,12 +30,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 public class BetService {
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
     private static final ConcurrentLinkedQueue<String> errorOrderIds = new ConcurrentLinkedQueue<>();
+    private final ModelMapper modelMapper = new ModelMapper();
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
@@ -42,7 +42,6 @@ public class BetService {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final BetActionLogService betActionLogService;
-    private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
 
     public BetService(HttpService httpService,
@@ -52,7 +51,6 @@ public class BetService {
                       AgentPlayerService agentPlayerService,
                       VendorService vendorService,
                       BetActionLogService betActionLogService,
-                      WalletRequestService walletRequestService,
                       OperatorWalletService operatorWalletService) {
         this.httpService = httpService;
         this.walletService = walletService;
@@ -61,7 +59,6 @@ public class BetService {
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
         this.betActionLogService = betActionLogService;
-        this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
     }
 
@@ -69,83 +66,49 @@ public class BetService {
         CommonVo commonVo = new CommonVo();
         boolean processFailed = false;
         BetDto betDto = null;
+        ExecutorService executor = null;
         GameSession gameSession = null;
-        BigDecimal balance = null;
-        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
+        BigDecimal balance;
         try {
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            int orderCount = betDto.getParamsDto().getOrders().size();
+            executor = vendorService.createThreadPool(orderCount);
             // Handle the action and return the resulting value
             this.doValidation(betDto);
             gameSession = this.getGameSession(betDto.getParamsDto().getLoginId());
             this.doVerification(betDto, gameSession);
             //process bet
-            List<CompletableFuture<ResultVo>> resultVoList = new LinkedList<>();
-            for (OrdersDto order : betDto.getParamsDto().getOrders()) {
-                GameSession orderGameSession = getGameSession(betDto.getParamsDto().getLoginId());
-                CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(() -> processData(order, httpServletRequest, body, orderGameSession), executor);
-                resultVoList.add(resultVo);
-            }
+            List<CompletableFuture<ResultVo>> resultVoList = this.processAllOrders(betDto, httpServletRequest,
+                    body, executor);
 
-            // Get latest balance, if have fail response then return error
-
+            //check all orders balance
             balance = vendorService.checkResponseAndReturnBalance(resultVoList, processFailed);
             if (balance == null) {
                 processFailed = true;
                 throw new BetFailedException("Have Transaction Failed");
             }
-            ResultVo resultVo = new ResultVo();
-            resultVo.setUserId(gameSession.getVendorPlayerId());
-            resultVo.setSn(betDto.getParamsDto().getSn());
-            resultVo.setAvailableAmount(balance);
-            resultVo.setOrderResult("1");
-            String tranId = betDto.getParamsDto().getTranId();
-            resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
+
+            ResultVo resultVo = this.createSuccessResultVo(gameSession, betDto, balance);
             commonVo.setSuccessResponse(betDto.getId(), resultVo);
 
         } catch (InsufficientBalanceException e) {
-            //set Vo
             processFailed = true;
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
+            commonVo.setErrorResponse(httpRequestLog.getId(),
+                    ResponseCodes.INSUFFICIENT_BALANCE.code,
                     ResponseCodes.INSUFFICIENT_BALANCE.message);
             httpService.logError(httpRequestLog, e);
-
-        } catch (InvalidRequestException e) {
-            //set Vo
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.MISSING_PARAMETERS.code,
-                    ResponseCodes.MISSING_PARAMETERS.message);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (InvalidPlayerException e) {
-
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.PLAYER_INVALID.code,
-                    ResponseCodes.PLAYER_INVALID.message);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (AuthenticationException e) {
-
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.AUTH_INVALID.code,
-                    ResponseCodes.AUTH_INVALID.message);
-            httpService.logError(httpRequestLog, e);
-
         } catch (Exception e) {
-            commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.SYSTEM_ERROR.code,
-                    ResponseCodes.SYSTEM_ERROR.message);
-            httpService.logError(httpRequestLog, e);
-
+            this.handleException(e, commonVo, httpRequestLog);
         } finally {
-            // close executor
-            executor.shutdown();
-            // Failed then rollback all transaction
-            if (processFailed) {
-                //insert to collection for rollback all bet
-                boolean isBullBullGame = betDto.getParamsDto().getOrders().stream().anyMatch(o -> GameCode.BULL_BULL.equals(o.getGameId()));
+            if (executor != null) {
+                executor.shutdown();
+            }
 
-                if (isBullBullGame) {
-                    this.prepareDebitRollback(betDto.getParamsDto().getOrders(), betDto, gameSession);
-                } else {
-                    this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
-                }
+            // Rollback transactions if processing failed
+            if (processFailed) {
+                this.handleRollbackForFailedBets(betDto, gameSession);
+                httpService.end(httpRequestLog, new CommonVo());
             }
         }
         return commonVo;
@@ -195,7 +158,8 @@ public class BetService {
         return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
-    private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body, GameSession gameSession) {
+    private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body,
+                                 GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
@@ -213,6 +177,12 @@ public class BetService {
             }
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
             if (isBullBullGame) {
+                boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(ordersDto.getPlayId()));
+                if (isDoublePlay) {
+                    BigDecimal doublePlayAmount = ordersDto.getBetAmount().
+                            multiply(BigDecimal.valueOf(NiuBetMagnificate.niuBetMagnificate));
+                    ordersDto.setAmount(doublePlayAmount);
+                }
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
@@ -242,6 +212,68 @@ public class BetService {
         return resultVo;
     }
 
+    private List<CompletableFuture<ResultVo>> processAllOrders(BetDto betDto, HttpServletRequest httpServletRequest,
+                                                               String body, ExecutorService executor) throws
+            AuthenticationException {
+        List<CompletableFuture<ResultVo>> resultVoList = new LinkedList<>();
+
+        for (OrdersDto order : betDto.getParamsDto().getOrders()) {
+            GameSession orderGameSession = getGameSession(betDto.getParamsDto().getLoginId());
+            CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(
+                    () -> processData(order, httpServletRequest, body, orderGameSession),
+                    executor);
+            resultVoList.add(resultVo);
+        }
+
+        return resultVoList;
+    }
+
+    private ResultVo createSuccessResultVo(GameSession gameSession, BetDto betDto, BigDecimal balance) {
+        ResultVo resultVo = new ResultVo();
+        resultVo.setUserId(gameSession.getVendorPlayerId());
+        resultVo.setSn(betDto.getParamsDto().getSn());
+        resultVo.setAvailableAmount(balance);
+        resultVo.setOrderResult("1");
+        String tranId = betDto.getParamsDto().getTranId();
+        resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
+        return resultVo;
+    }
+
+    @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
+            AuthenticationException.class, Exception.class})
+    private void handleException(Exception e, CommonVo commonVo, HttpRequestLog httpRequestLog) {
+
+        if (e instanceof InvalidRequestException) {
+            commonVo.setErrorResponse(httpRequestLog.getId(),
+                    ResponseCodes.MISSING_PARAMETERS.code,
+                    ResponseCodes.MISSING_PARAMETERS.message);
+        } else if (e instanceof InvalidPlayerException) {
+            commonVo.setErrorResponse(httpRequestLog.getId(),
+                    ResponseCodes.PLAYER_INVALID.code,
+                    ResponseCodes.PLAYER_INVALID.message);
+        } else if (e instanceof AuthenticationException) {
+            commonVo.setErrorResponse(httpRequestLog.getId(),
+                    ResponseCodes.AUTH_INVALID.code,
+                    ResponseCodes.AUTH_INVALID.message);
+        } else {
+            commonVo.setErrorResponse(httpRequestLog.getId(),
+                    ResponseCodes.SYSTEM_ERROR.code,
+                    ResponseCodes.SYSTEM_ERROR.message);
+        }
+        httpService.logError(httpRequestLog, e);
+    }
+
+    private void handleRollbackForFailedBets(BetDto betDto, GameSession gameSession) {
+        boolean isBullBullGame = betDto.getParamsDto().getOrders().stream()
+                .anyMatch(o -> GameCode.BULL_BULL.equals(o.getGameId()));
+
+        if (isBullBullGame) {
+            this.prepareDebitRollback(betDto.getParamsDto().getOrders(), betDto, gameSession);
+        } else {
+            this.prepareRollback(betDto.getParamsDto().getOrders(), gameSession);
+        }
+    }
+
     private void doValidation(OrdersDto ordersDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(ordersDto);
@@ -249,7 +281,10 @@ public class BetService {
 
     //process bet win lose
     private void prepareRollback(List<OrdersDto> ordersDtoList, GameSession gameSession) {
-        THREAD_POOL.submit(() -> {
+        int orderCount = ordersDtoList.size();
+        ExecutorService executor = vendorService.createThreadPool(orderCount);
+
+        executor.submit(() -> {
             for (OrdersDto ordersDto : ordersDtoList) {
                 GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
                 generalRollbackDto.setRollbackId(ordersDto.getExternalTransactionId());
@@ -264,26 +299,31 @@ public class BetService {
 
     // process credit
     private void prepareDebitRollback(List<OrdersDto> ordersDtoList, BetDto betDto, GameSession gameSession) {
-        THREAD_POOL.submit(() -> {
-            for (OrdersDto ordersDto : ordersDtoList) {
-                if (errorOrderIds.contains(ordersDto.getExternalTransactionId())) {
-                    errorOrderIds.remove(ordersDto.getExternalTransactionId());
-                    continue;
-                }
-                GeneralCreditDto generalCreditDto = new ModelMapper().map(ordersDto, GeneralCreditDto.class);
-                generalCreditDto.setTakeAll(0);
-                generalCreditDto.setTransferAmount(ordersDto.getAmount().abs());
-                generalCreditDto.setVendorPlayerUsername(betDto.getParamsDto().getLoginId());
-                generalCreditDto.setTimestamp(System.currentTimeMillis());
-                generalCreditDto.setToken(gameSession.getToken());
-                generalCreditDto.setVendorGameCode(gameSession.getVendorGameCode());
-                generalCreditDto.setVendorSettleTime(System.currentTimeMillis());
-
+        int orderCount = ordersDtoList.size();
+        ExecutorService executor = vendorService.createThreadPool(orderCount);
+        for (OrdersDto ordersDto : ordersDtoList) {
+            if (errorOrderIds.contains(ordersDto.getExternalTransactionId())) {
+                errorOrderIds.remove(ordersDto.getExternalTransactionId());
+                continue;
+            }
+            executor.submit(() -> {
+                GeneralCreditDto generalCreditDto = this.mapToGeneralCreditDto(ordersDto, betDto, gameSession);
                 betActionLogService.create(new Gson().toJson(generalCreditDto), generalCreditDto.getRoundId(),
                         generalCreditDto.getVendorBetId(), generalCreditDto.getExternalTransactionId(), gameSession, 3,
                         null);
+            });
+        }
+    }
 
-            }
-        });
+    private GeneralCreditDto mapToGeneralCreditDto(OrdersDto ordersDto, BetDto betDto, GameSession gameSession) {
+        GeneralCreditDto generalCreditDto = modelMapper.map(ordersDto, GeneralCreditDto.class);
+        generalCreditDto.setTakeAll(0);
+        generalCreditDto.setTransferAmount(ordersDto.getAmount().abs());
+        generalCreditDto.setVendorPlayerUsername(betDto.getParamsDto().getLoginId());
+        generalCreditDto.setTimestamp(System.currentTimeMillis());
+        generalCreditDto.setToken(gameSession.getToken());
+        generalCreditDto.setVendorGameCode(gameSession.getVendorGameCode());
+        generalCreditDto.setVendorSettleTime(System.currentTimeMillis());
+        return generalCreditDto;
     }
 }

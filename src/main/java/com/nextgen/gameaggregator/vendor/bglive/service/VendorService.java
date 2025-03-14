@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bglive.api.settlement.OrdersDto;
 import com.nextgen.gameaggregator.vendor.bglive.constant.QueryStatus;
+import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Service("bgliveVendorService")
@@ -41,6 +44,7 @@ public class VendorService extends BaseVendorService {
     private UnsettledBetCachingService unsettledBetCachingService;
     private SettledBetService settledBetService;
     private BetNotFoundLogService betNotFoundLogService;
+    private VendorLineService vendorLineService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
@@ -215,6 +219,12 @@ public class VendorService extends BaseVendorService {
         }
         return null;
     }
+
+    public ExecutorService createThreadPool(int orderCount) {
+        int threadCount = Math.min(orderCount, ThreadSize.THREAD_SIZE);
+        return Executors.newFixedThreadPool(threadCount);
+    }
+
 
     public void dataDebitMapper(WalletRequest walletRequest, com.nextgen.gameaggregator.vendor.bglive.api.bet.OrdersDto ordersDto, GameSession gameSession) {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
