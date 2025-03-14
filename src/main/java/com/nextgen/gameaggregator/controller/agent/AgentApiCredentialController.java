@@ -21,8 +21,6 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "agentApiCredential/")
 public class AgentApiCredentialController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -36,7 +34,7 @@ public class AgentApiCredentialController {
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
             controllerServices.clearAgentApiCredentialsByApiKey();
@@ -67,7 +65,7 @@ public class AgentApiCredentialController {
     @PostMapping(path = "/callbackUrl")
     public ResponseEntity<Map<String, String>> callbackUrl(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
             controllerServices.clearAgentApiCredentialsByApiKey();

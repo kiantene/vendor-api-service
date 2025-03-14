@@ -139,9 +139,60 @@ public class ValidationService {
         try {
             loggingService.logStart();
             Agent agent = agentService.get(agentVendorLines.getAgentId());
-            vendorGameDeactivatedService.checkGameSupported(agent, gameSession.getVendorGameId());
+            // Add more values for checking
+            vendorGameDeactivatedService.checkGameSupported(agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), gameSession.getVendorGameId());
             loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameDeactivatedService.checkGameSupported(" + agent + ","
                     + vendorGameCode.getId() + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
+        } catch (AgentNotFoundException agentNotFoundException) {
+            throw new AuthenticationException("Agent Id (" + agentVendorLines.getAgentId() + ") cannot be found");
+        }
+    }
+
+
+    public void isBetAllowed(GameSession gameSession, String vendorUserName) throws
+            InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException,
+            AuthenticationException, GameTerminatedException {
+
+        //1. verify is session terminated
+        if (gameSession.getStatus().equals(0)) {
+            throw new GameTerminatedException(gameSession.getVendorGameCode());
+        }
+
+        //2. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorUserName, InvalidPlayerException::new);
+
+        //3. verify agent Vendor line
+        AgentVendorLine agentVendorLines = agentVendorLineRepository.
+                findTop1ByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(
+                        gameSession.getAgentId(), gameSession.getVendorId(), gameSession.getCurrencyId(),
+                        gameSession.getGameCategoryId(), Status.ACTIVE.code);
+
+        //vendor line not found
+        Optional.ofNullable(agentVendorLines).orElseThrow(DisabledVendorLineException::new);
+
+        //4. Verify Agent Player status
+        AgentPlayer agentPlayer = agentPlayerRepository.
+                findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
+
+        Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
+
+        //5. verify by vendor openGameCode instead, for play game with different game code token
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(gameSession.getVendorGameCode(),
+                gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code, gameSession.getVendorId());
+
+        Optional.ofNullable(vendorGameCode).orElseThrow(DisabledGameException::new);
+
+        //6.  verify vendor Game status with currency
+        VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyIdAndStatus(
+                gameSession.getVendorGameId(), gameSession.getCurrencyId(), Status.ACTIVE.code);
+
+        Optional.ofNullable(vendorGameCurrency).orElseThrow(DisabledGameException::new);
+
+        //7.  verify game deactivated status for agent, master agent and house level
+        try {
+            Agent agent = agentService.get(agentVendorLines.getAgentId());
+            vendorGameDeactivatedService.checkGameSupported(agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), gameSession.getVendorGameId());
+
         } catch (AgentNotFoundException agentNotFoundException) {
             throw new AuthenticationException("Agent Id (" + agentVendorLines.getAgentId() + ") cannot be found");
         }

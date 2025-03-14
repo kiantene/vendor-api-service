@@ -61,6 +61,12 @@ public class GameSessionService {
         return session;
     }
 
+    public void checkGameSessionTerminated(Integer status) throws GameTerminatedException {
+        if (status.equals(0)) {
+            throw new GameTerminatedException();
+        }
+    }   
+
     @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
     public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
 
@@ -93,7 +99,7 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "#gameLaunchDto.vendorPlayerId", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameLaunchDto.vendorPlayerId, #gameLaunchDto.openGameCode}", cacheManager = "cacheManager"),
     })
-    public GameSession create(String token, GameUrlDto gameUrlDto, GameLaunchDto gameLaunchDto, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode, String vendorPlatformCode) {
+    public GameSession create(String token, GameUrlDto gameUrlDto, GameLaunchDto gameLaunchDto) {
 
         GameSession entity = new GameSession();
         entity.setToken(token); // used for operator
@@ -123,11 +129,11 @@ public class GameSessionService {
         entity.setCurrencyId(gameLaunchDto.getCurrencyId());
         entity.setCurrencyCode(gameLaunchDto.getCurrencyCode());
         entity.setGameCode(gameUrlDto.getGameCode());
-        entity.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
-        entity.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
+        entity.setVendorCurrencyCode(gameLaunchDto.getVendorCurrencyCode());
+        entity.setVendorLanguageCode(gameLaunchDto.getVendorLanguageCode());
         entity.setLanguageId(gameLaunchDto.getLanguageId());
         entity.setPlatformId(gameLaunchDto.getPlatformId());
-        entity.setVendorPlatformCode(vendorPlatformCode);
+        entity.setVendorPlatformCode(gameLaunchDto.getVendorPlatformCode());
         entity.setLobbyUrl(Optional.ofNullable(gameUrlDto.getLobbyUrl()).orElse(""));
         entity.setIpAddress(Optional.ofNullable(gameUrlDto.getIpAddress()).orElse(""));
 
@@ -170,7 +176,7 @@ public class GameSessionService {
 
     }
 
-    // deprecated, use getByVendorPlayerUsername instead
+    // deprecated, use getLastGameSessionByVendorPlayerUsername instead
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
@@ -203,9 +209,18 @@ public class GameSessionService {
 
     }
 
-    public GameSession getLastGameSessionByVendorPlayerUsername(String username) {
+    @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
+    public GameSession getLastGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
-        return null;
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
+
+        if (gameSessionList.isEmpty()) {
+            throw new AuthenticationException();
+        }
+
+        return gameSessionList.stream()
+                .max(Comparator.comparingLong(GameSession::getCreateTime))
+                .get();
     }
 
     @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")

@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
+import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -48,7 +50,8 @@ public class BetResultLogService {
     }
 
     public RawBetResultLog idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
-            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException,
+            AmbiguousTimeoutException, UnambiguousTimeoutException {
 
         String externalTransactionId = betResultData.getExternalTransactionId();
         String roundId = betResultData.getRoundId();

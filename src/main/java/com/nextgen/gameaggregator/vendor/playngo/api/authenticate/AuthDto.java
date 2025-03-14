@@ -6,13 +6,14 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import javax.annotation.Nullable;
-
+@EqualsAndHashCode(callSuper = true)
 @Data
 @JacksonXmlRootElement(localName = "authenticate")
 @JsonIgnoreProperties(ignoreUnknown = true)

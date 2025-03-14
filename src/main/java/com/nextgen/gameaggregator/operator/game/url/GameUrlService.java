@@ -5,9 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.writer.*;
-import com.nextgen.gameaggregator.service.AgentService;
-import com.nextgen.gameaggregator.service.AgentServiceImpl;
-import com.nextgen.gameaggregator.service.VendorService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +19,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 @Service
@@ -29,38 +26,54 @@ import java.util.concurrent.TimeoutException;
 public class GameUrlService {
     private static final String USERTYPE = "operator-api-service";
     private final AgentService agentService;
+    private final AgentProductService agentProductService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
     private final VendorPlayerRepository vendorPlayerRepository;
-    private final VendorGameCodeRepository vendorGameCodeRepository;
     private final PlatformRepository platformRepository;
     private final VendorService vendorService;
     private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
     private final CurrencyRepository currencyRepository;
+    private final RequestService requestService;
+    private final ProductGameService productGameService;
+    private final VendorLineService vendorLineService;
+    private final VendorGameCodeService vendorGameCodeService;
+    private final VendorGameDeactivatedService vendorGameDeactivatedService;
 
+    //remove request service
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
+                          AgentProductServiceImpl agentProductService,
                           AutowireCapableBeanFactory autowireCapableBeanFactory,
                           RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
                           VendorPlayerRepository vendorPlayerRepository,
-                          VendorGameCodeRepository vendorGameCodeRepository,
                           PlatformRepository platformRepository,
                           VendorGameCurrencyRepository vendorGameCurrencyRepository,
                           CurrencyRepository currencyRepository,
-                          VendorService vendorService) {
+                          VendorService vendorService,
+                          RequestService requestService,
+                          ProductGameServiceImpl productGameService,
+                          VendorLineService vendorLineService,
+                          VendorGameCodeService vendorGameCodeService,
+                          VendorGameDeactivatedService vendorGameDeactivatedService) {
 
         this.agentService = agentService;
+        this.agentProductService = agentProductService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
         this.vendorPlayerRepository = vendorPlayerRepository;
-        this.vendorGameCodeRepository = vendorGameCodeRepository;
         this.platformRepository = platformRepository;
         this.vendorGameCurrencyRepository = vendorGameCurrencyRepository;
         this.currencyRepository = currencyRepository;
         this.vendorService = vendorService;
+        this.productGameService = productGameService;
+        this.vendorLineService = vendorLineService;
+        this.vendorGameCodeService = vendorGameCodeService;
+        this.vendorGameDeactivatedService = vendorGameDeactivatedService;
+        this.requestService = requestService;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -82,13 +95,20 @@ public class GameUrlService {
             httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
             long startTime = System.currentTimeMillis();
             httpRequestLog.setBetStart(startTime);
-            GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
 
-            if (gameUrlVo == null) throw new InvalidVendorResponseException();
+            //GA-9567 Add toggle to skip call to vendor based on player name
+            if (requestService.shouldSkipStubCall(gameSession.getAgentPlayerUsername())) {
+                gameUrlData.setGameUrl("SkipCallToVendor");
+            } else {
+                GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
 
-            //token will be replaced if vendor's token is needed to verify for action files.
+                if (gameUrlVo == null) throw new InvalidVendorResponseException();
+
+                //token will be replaced if vendor's token is needed to verify for action files.
+                gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
+            }
+
             gameUrlData.setToken(gameSession.getToken());
-            gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
 
             //TODO throw vendor maintenance exception
 
@@ -110,30 +130,6 @@ public class GameUrlService {
         Optional.ofNullable(platform).orElseThrow(InvalidPlatformException::new);
         return platform;
 
-    }
-
-    public VendorGameCode checkGameDetailSupported(GameLaunchDto gameLaunchDto)
-            throws GameNotSupportedException, GameCurrencyNotSupportException {
-
-        String openGameCode = gameLaunchDto.getOpenGameCode();
-        Integer currencyId = gameLaunchDto.getCurrencyId();
-        Integer platformId = gameLaunchDto.getPlatformId();
-        Integer languageId = gameLaunchDto.getLanguageId();
-        Integer vendorId = gameLaunchDto.getVendorId();
-        Integer vendorGameId = gameLaunchDto.getVendorGameId();
-
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(openGameCode,
-                platformId, languageId, Status.ACTIVE.code, vendorId);
-
-        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
-
-        VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGameId, currencyId);
-
-        if (vendorGameCurrency == null || vendorGameCurrency.getStatus() == 0) {
-            throw new GameCurrencyNotSupportException();
-        }
-
-        return vendorGameCode;
     }
 
     public String getVendorPlatformCode(String className, Integer platformId) throws VendorPlatformNotSupportedException {
@@ -175,11 +171,11 @@ public class GameUrlService {
         }
     }
 
-    @CachePut(value = "AgentPlayers", key = "{#agent.id, #username}", cacheManager = "cacheManager")
-    public AgentPlayer checkAgentPlayer(Agent agent, String username) throws DisabledAgentPlayerException {
-        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
+    @CachePut(value = "AgentPlayers", key = "{#agentId, #username}", cacheManager = "cacheManager")
+    public AgentPlayer getOrCreateAgentPlayer(Integer agentId, String username) throws DisabledAgentPlayerException {
+        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
         if (agentPlayer == null) {
-            agentPlayer = this.createAgentPlayer(agent.getId(), username);
+            agentPlayer = this.createAgentPlayer(agentId, username);
             agentPlayerRepository.save(agentPlayer);
         } else {
             if (agentPlayer.getStatus().equals(Status.INACTIVE.code)) {
@@ -229,27 +225,104 @@ public class GameUrlService {
         return entity;
     }
 
-    @CachePut(value = "GameSessions",
-            key = "{#agentPlayer.agentId, #agentPlayer.username, #vendorLine.id, #vendorPlayer.currencyId}", cacheManager = "cacheManager")
-    public GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
-        GameSession entity = new GameSession();
+    public GameLaunchDto launchByProductGame(GameLaunchDto gameLaunchDto, ProductGame productGame) throws
+            ProductCombinationNotSupportedException, ProductVendorLineNotFoundException,
+            InvalidVendorLineException, DisabledVendorLineException, DisabledGameException, GameNotSupportedException {
 
-        entity.setToken(UUID.randomUUID().toString()); // used for operator
-        entity.setVendorToken(entity.getToken()); // used for vendor
-        entity.setId(entity.getToken());
-        entity.setAgentId(agentPlayer.getAgentId());
-        entity.setAgentPlayerId(agentPlayer.getId());
-        entity.setAgentPlayerUsername(agentPlayer.getUsername());
-        entity.setVendorPlayerUsername(vendorPlayer.getUsername());
-        entity.setVendorPlayerId(vendorPlayer.getId());
-        entity.setVendorLineId(vendorLine.getId());
-        entity.setStatus(Status.ACTIVE.code);
-        entity.setCreateTime(System.currentTimeMillis());
-        entity.setTerminateTime(null);
-        //entity.prepareSave(0, USERTYPE);
+        Integer productGameId = productGame.getId();
+        Integer productId = productGame.getProductId();
+        Integer gameCategoryId = productGame.getGameCategoryId();
+        Integer currencyId = gameLaunchDto.getCurrencyId();
+        Integer agentId = gameLaunchDto.getAgentId();
+        Integer platformId = gameLaunchDto.getPlatformId();
 
-        return entity;
+        Integer vendorLineId = agentProductService.getProductVendorLineIdByAgent(productId, gameCategoryId, currencyId, agentId);
+        VendorLine vendorLine = vendorLineService.getVendorLine(vendorLineId);
+        vendorLineService.checkStatus(vendorLine);
+        Integer vendorId = vendorLine.getVendorId();
+
+        gameLaunchDto.setProductId(productId);
+        gameLaunchDto.setProductGameId(productGameId);
+        gameLaunchDto.setGameCategoryId(gameCategoryId);
+        gameLaunchDto.setVendorId(vendorId);
+        gameLaunchDto.setVendorLine(vendorLine);
+        gameLaunchDto.setVendorLineId(vendorLineId);
+
+        VendorGameCode vendorGameCode = vendorGameCodeService.getByProductGame(productGameId, vendorId, platformId, gameLaunchDto.getLanguageId());
+        vendorGameCodeService.checkGameStatus(vendorGameCode);
+
+        boolean gameDeactivated = productGameService.isGameDeactivated(productGameId, agentId, gameLaunchDto.getMasterAgentId(), gameLaunchDto.getHouseId());
+        if (gameDeactivated) {
+            throw new DisabledGameException();
+        }
+        gameLaunchDto.setOpenGameCode(vendorGameCode.getOpenGameCode());
+
+        return gameLaunchDto;
     }
 
+    // For backward compatibility, will be removed once all vendors are migrated to use product games
+    public GameLaunchDto launchByVendorGame(GameLaunchDto gameLaunchDto, VendorGame vendorGame) throws
+            GameNotSupportedException, GameCurrencyNotSupportException, InvalidVendorLineException,
+            DisabledVendorLineException, DisabledGameException {
 
+        Integer gameCategoryId = vendorGame.getGameCategoryId();
+        Integer currencyId = gameLaunchDto.getCurrencyId();
+        Integer agentId = gameLaunchDto.getAgentId();
+        Integer vendorId = vendorGame.getVendorId();
+        Integer platformId = gameLaunchDto.getPlatformId();
+        Integer languageId = gameLaunchDto.getLanguageId();
+        Integer vendorGameId = gameLaunchDto.getVendorGameId();
+
+        gameLaunchDto.setVendorId(vendorId);
+        gameLaunchDto.setVendorGameId(vendorGame.getId());
+        gameLaunchDto.setGameCategoryId(gameCategoryId);
+
+        VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGame(vendorGameId, platformId, languageId);
+        vendorGameCodeService.checkGameStatus(vendorGameCode);
+
+        VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGameId, currencyId);
+
+        if (vendorGameCurrency == null || vendorGameCurrency.getStatus() == 0) {
+            throw new GameCurrencyNotSupportException();
+        }
+
+        gameLaunchDto.setOpenGameCode(vendorGameCode.getOpenGameCode());
+
+        // Check if is game deactivated (agent, masterAgent, house level)
+        vendorGameDeactivatedService.checkGameSupported(gameLaunchDto.getHouseId(), gameLaunchDto.getMasterAgentId(), gameLaunchDto.getAgentId(), gameLaunchDto.getVendorGameId());
+
+        // Retrieve vendor line credentials by category
+        AgentVendorLine agentVendorLine = agentService.getActiveVendorLine(agentId, vendorId, currencyId, gameCategoryId);
+        if (agentVendorLine == null) throw new DisabledVendorLineException();
+
+        Integer vendorLineId = agentVendorLine.getVendorLineId();
+        VendorLine vendorLine = vendorLineService.getVendorLine(vendorLineId);
+        vendorLineService.checkStatus(vendorLine);
+
+        gameLaunchDto.setVendorLine(vendorLine);
+        gameLaunchDto.setVendorLineId(vendorLine.getId());
+
+        return gameLaunchDto;
+    }
+
+    public GameLaunchDto populateVendorParams(GameLaunchDto gameLaunchDto) throws
+            VendorLanguageNotSupportedException, VendorCurrencyNotSupportException, InvalidVendorException,
+            VendorPlatformNotSupportedException {
+
+        Integer vendorId = gameLaunchDto.getVendorId();
+        Integer currencyId = gameLaunchDto.getCurrencyId();
+        Integer platformId = gameLaunchDto.getPlatformId();
+
+        VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorId, gameLaunchDto.getLanguageId());
+        gameLaunchDto.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
+
+        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorId, currencyId);
+        gameLaunchDto.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+
+        Vendor vendor = vendorService.getById(vendorId);
+        String vendorPlatformCode = this.getVendorPlatformCode(vendor.getClassName(), platformId);
+        gameLaunchDto.setVendorPlatformCode(vendorPlatformCode);
+
+        return gameLaunchDto;
+    }
 }

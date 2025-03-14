@@ -103,7 +103,12 @@ public class WagerAction {
             httpService.logError(httpRequestLog, authenticationException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            if (gameSession.getVendorId() == 18) {
+                //this response is for relax gaming
+                responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+            } else {
+                responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            }
             httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (InvalidPlayerException invalidPlayerException) {

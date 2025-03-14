@@ -10,7 +10,6 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -175,5 +174,10 @@ public class GameDetailResultDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public boolean getShouldSettleByBet()  {
+        return true;
     }
 }

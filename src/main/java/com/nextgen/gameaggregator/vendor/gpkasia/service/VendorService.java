@@ -24,7 +24,6 @@ import java.util.Map;
 public class VendorService extends BaseVendorService {
 
     private final VendorGameCodeService vendorGameCodeService;
-    private boolean settledByBet = false;
 
     @Autowired
     public VendorService(VendorGameCodeService vendorGameCodeService) {
@@ -94,11 +93,5 @@ public class VendorService extends BaseVendorService {
         }
         return false;
 
-    }
-
-    @Override
-    public boolean shouldSettleByBet() {
-        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
-        return this.settledByBet;
     }
 }

@@ -34,9 +34,6 @@ public class DebitDto extends DebitCreditCancelDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        // Vendor BackOffice only use front ID
-        // e.g. (1766426e099ddd0a3aa82cba-rcj5y4fzmrmqaqtj) only ID before "-" needed
-//        return this.getGame().getId().split("-")[0];
         return this.getTransaction().getRefId();
     }
 

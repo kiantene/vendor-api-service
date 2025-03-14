@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -79,6 +80,9 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String betid;
+
+    @JsonIgnore
+    private boolean settledByBet = false;
 
     // method for 7mojo while handle settled request
     public void setBetId(String query) {
@@ -370,5 +374,10 @@ public class BetDto extends ActionDto implements BetResultData {
         }
 
         return status;
+    }
+
+    @Override
+    public boolean getShouldSettleByBet()  {
+        return this.settledByBet;
     }
 }

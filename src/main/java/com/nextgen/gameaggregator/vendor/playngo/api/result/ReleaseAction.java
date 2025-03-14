@@ -8,7 +8,10 @@ import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
@@ -110,7 +113,7 @@ public class ReleaseAction {
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
                 vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, releaseVo);
 
@@ -171,7 +174,7 @@ public class ReleaseAction {
             InsufficientBalanceException,
             TransactionStillProcessingException,
             BetNotFoundException,
-            InvalidOperatorResponseException {
+            InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         if (releaseDto.getState().equals("1") && releaseDto.getRoundId().equals("0") && releaseDto.getReal().compareTo(BigDecimal.ZERO) == 0) {
             return walletService.getBalance(traceId, gameSession, httpRequestLog);

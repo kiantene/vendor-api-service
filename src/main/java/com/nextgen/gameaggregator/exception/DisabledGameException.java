@@ -9,4 +9,3 @@ public class DisabledGameException extends Exception {
         super(message);
     }
 }
-
