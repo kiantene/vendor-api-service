@@ -6,9 +6,7 @@ import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.EnvUtils;
 import com.nextgen.gameaggregator.util.NameUtils;
-import com.nextgen.gameaggregator.util.TestingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,8 +20,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
 
 @Service
@@ -45,12 +41,6 @@ public class GameUrlService {
     private final VendorLineService vendorLineService;
     private final VendorGameCodeService vendorGameCodeService;
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
-    @Value("${is-test-env:false}")
-    private Boolean isTestEnv;
-    @Value("${testing.prefix-vendor-list:}")
-    private String envPrefixVendorList;
-    @Value("${spring.profiles.active}")
-    private String testEnv;
 
     //remove request service
     @Autowired
@@ -228,12 +218,7 @@ public class GameUrlService {
                 + NameUtils.excelColumnNameFormula(currencyId);
 
         //GA-8495 - Add env prefix to vendorPlayerUsername for testing env
-        if (isTestEnv) {
-            HashSet<Integer> envPrefixVendors = EnvUtils.getVendorHashSetFromEnv(envPrefixVendorList);
-            if (envPrefixVendors.contains(vendorId)) {
-                vendorPlayerUsername = TestingUtils.addEnvToUsername(vendorPlayerUsername, testEnv);
-            }
-        }
+        vendorPlayerUsername = testSupportService.appendEnvPrefixToVendorUsername(vendorPlayerUsername, vendorId);
 
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
