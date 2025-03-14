@@ -39,16 +39,20 @@ public class QueryService {
 
     public CommonVo query(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
         CommonVo commonVo = new CommonVo();
-        ExecutorService executor = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
+        ExecutorService executor = null;
         try {
             String body = httpRequestLog.getRequestBody();
             QueryDto queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
+            int orderCount = queryDto.getParamsDto().getOrdersMapDto().size();
+            executor = vendorService.createThreadPool(orderCount);
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
             List<CompletableFuture<QueryVo>> queryVoList = new LinkedList<>();
             for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
-                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(ordersMapDto.getOrderLoginId());
-                CompletableFuture<QueryVo> queryVo = CompletableFuture.supplyAsync(() -> processData(ordersMapDto, httpServletRequest, gameSession), executor);
+                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername
+                        (ordersMapDto.getOrderLoginId());
+                CompletableFuture<QueryVo> queryVo = CompletableFuture.supplyAsync(() ->
+                        processData(ordersMapDto, httpServletRequest, gameSession), executor);
                 queryVoList.add(queryVo);
             }
             List<QueryVo> queryList = processAndValidateQueryResponses(queryVoList);
@@ -71,6 +75,10 @@ public class QueryService {
                     ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
+        } finally {
+            if (executor != null) {
+                executor.shutdown();
+            }
         }
         return commonVo;
     }
@@ -135,7 +143,8 @@ public class QueryService {
         return queryVo;
     }
 
-    private List<QueryVo> processAndValidateQueryResponses(List<CompletableFuture<QueryVo>> queryVoList) throws BetNotFoundException {
+    private List<QueryVo> processAndValidateQueryResponses(List<CompletableFuture<QueryVo>> queryVoList) throws
+            BetNotFoundException {
         List<QueryVo> queryList = VendorService.processMultipleDataResponds(queryVoList);
 
         if (queryList.contains(null)) {
