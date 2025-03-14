@@ -40,7 +40,7 @@ public class GameUrlService {
     private final VendorService vendorService;
     private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
     private final CurrencyRepository currencyRepository;
-    private final RequestService requestService;
+    private final TestSupportService testSupportService;
     private final ProductGameService productGameService;
     private final VendorLineService vendorLineService;
     private final VendorGameCodeService vendorGameCodeService;
@@ -64,11 +64,11 @@ public class GameUrlService {
                           VendorGameCurrencyRepository vendorGameCurrencyRepository,
                           CurrencyRepository currencyRepository,
                           VendorService vendorService,
-                          RequestService requestService,
                           ProductGameServiceImpl productGameService,
                           VendorLineService vendorLineService,
                           VendorGameCodeService vendorGameCodeService,
-                          VendorGameDeactivatedService vendorGameDeactivatedService) {
+                          VendorGameDeactivatedService vendorGameDeactivatedService,
+                          TestSupportService testSupportService) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -84,7 +84,7 @@ public class GameUrlService {
         this.vendorLineService = vendorLineService;
         this.vendorGameCodeService = vendorGameCodeService;
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
-        this.requestService = requestService;
+        this.testSupportService = testSupportService;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -108,7 +108,8 @@ public class GameUrlService {
             httpRequestLog.setBetStart(startTime);
 
             //GA-9567 Add toggle to skip call to vendor based on player name
-            if (requestService.shouldSkipStubCall(gameSession.getAgentPlayerUsername())) {
+            //GA-10147 Migrate logic into testSupportService to manage test special logic better
+            if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
                 gameUrlData.setGameUrl("SkipCallToVendor");
             } else {
                 GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
