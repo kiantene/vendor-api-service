@@ -58,7 +58,4 @@ public class TestSupportService {
     public Boolean isTestEnvironment() {
         return Boolean.TRUE.equals(isTestEnvironment);
     }
-
-
-
 }
