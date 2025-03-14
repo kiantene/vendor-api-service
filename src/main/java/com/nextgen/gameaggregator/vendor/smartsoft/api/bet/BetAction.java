@@ -61,7 +61,7 @@ public class BetAction {
 
         try {
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
-
+            
             betDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
             betDto.setSessionId(request.getHeader(Headers.SESSION_ID));
             betDto.setUserName(request.getHeader(Headers.USER_NAME));

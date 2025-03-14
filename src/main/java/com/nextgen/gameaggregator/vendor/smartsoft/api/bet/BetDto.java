@@ -52,6 +52,7 @@ public class BetDto implements BetResultData {
     @JsonProperty("CurrencyCode")
     private String currencyCode;
 
+    @JsonProperty("TransactionInfo")
     private TransactionInfoDto transactionInfoDto;
 
     @Override

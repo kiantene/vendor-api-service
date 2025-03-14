@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,8 +33,7 @@ public class TransactionInfoDto {
     @JsonProperty("GameNumber")
     private String gameNumber;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotNull
     @JsonProperty("CashierTransactionId")
     private int cashierTransactionId;
 }
