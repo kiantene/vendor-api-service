@@ -35,5 +35,5 @@ public class TransactionInfoDto {
     @NotBlank
     @Size(max = 255)
     @JsonProperty("CashierTransactionId")
-    private String cashierTransactionId;
+    private int cashierTransactionId;
 }
