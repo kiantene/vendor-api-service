@@ -97,6 +97,7 @@ public class GameUrlService {
             httpRequestLog.setBetStart(startTime);
 
             //GA-9567 Add toggle to skip call to vendor based on player name
+            //GA-10147 Migrate logic into testSupportService to manage test special logic better
             if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
                 gameUrlData.setGameUrl("SkipCallToVendor");
             } else {
