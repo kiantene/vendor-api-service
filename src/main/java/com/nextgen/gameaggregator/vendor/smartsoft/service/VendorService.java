@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.smartsoft.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,19 @@ public class VendorService extends BaseVendorService {
 
     public static String signatureGenerator(String secretKey, String requestMethod, String requestPayload) {
         return md5Generator(secretKey + "|" + requestMethod + "|" + requestPayload);
+    }
+
+    public GameSession checkGameSession(String traceId, String userName) throws VendorCurrencyNotSupportException, InvalidPlayerException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(userName);
+        } catch (AuthenticationException authenticationException) {
+            gameSession = gameSessionService.generateNewSessionToken(userName);
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 
     public GameSession preCheckGameSessionToken(String token) throws AuthenticationException {
