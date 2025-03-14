@@ -94,14 +94,15 @@ public class RollBackService {
 
         } catch (BetNotFoundException | BetRefundIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
-
-            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-            dataVo.setMoney(rollBackDto.getMoney());
-            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
-            dataVo.setDealid(rollBackDto.getDealid());
-
-            vo.setData(dataVo);
+            vo.setCodeMsg(ResponseCodes.ERROR);
+//            vo.setCodeMsg(ResponseCodes.SUCCESS);
+//
+//            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+//            dataVo.setMoney(rollBackDto.getMoney());
+//            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
+//            dataVo.setDealid(rollBackDto.getDealid());
+//
+//            vo.setData(dataVo);
 
         } catch (AuthenticationException |
                  InvalidRequestException |

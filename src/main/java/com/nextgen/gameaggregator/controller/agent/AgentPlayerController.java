@@ -26,8 +26,6 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "agentPlayer/")
 public class AgentPlayerController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -47,7 +45,7 @@ public class AgentPlayerController {
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             responseMap.put("status", "Success");
             responseMap.put("username", json.get("username").toString());
             responseMap.put("status", json.get("status").toString());
@@ -87,7 +85,7 @@ public class AgentPlayerController {
     @PostMapping(path = "/gameSession")
     public ResponseEntity<Detailvo> gameSession(@RequestBody ObjectNode json) {
         Detailvo detailvo = new Detailvo();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             detailvo.setGameSession(rawGameSessionRepository.findByToken(json.get("token").asText()));
             return new ResponseEntity<>(
                     detailvo,

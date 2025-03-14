@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
+import com.nextgen.gameaggregator.constant.WalletServiceConstant;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -175,7 +176,7 @@ public class WalletService {
             betEvent = new BetEvent(unsettledBet, balance);
 
             // will insert bet info record to this topic for MG
-            if(unsettledBet.getVendorId().equals(17)) {
+            if (unsettledBet.getVendorId().equals(17)) {
                 kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
             }
 
@@ -397,7 +398,7 @@ public class WalletService {
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
             // will insert bet info record to this topic for MG
-            if(settledBet.getVendorId().equals(17)) {
+            if (settledBet.getVendorId().equals(17)) {
                 kafkaService.produceBetTransactionLog(settledBet, betResultData, gameSession.getVendorPlayerUsername());
             }
 
@@ -690,6 +691,11 @@ public class WalletService {
                         betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
                     }
 
+                    if (WalletServiceConstant.updateSettleTimeVendorList.contains(betRecord.getVendorId())) {
+                        //if it's game from habanero and MG
+                        betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
+                    }
+
                     SettledBet newSettledBet = new SettledBet(betRecord, vendorService, newTraceId);
 
                     //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
@@ -767,11 +773,11 @@ public class WalletService {
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balance);
-                    
+
                     unsettledBetService.save(unsettledBet);
 
                     // will insert bet info record to this topic for MG
-                    if(unsettledBet.getVendorId().equals(17)) {
+                    if (unsettledBet.getVendorId().equals(17)) {
                         kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
                     }
 
@@ -825,7 +831,7 @@ public class WalletService {
                     unsettledBetService.save(unsettledBet);
 
                     // will insert bet info record to this topic for MG
-                    if(unsettledBet.getVendorId().equals(17)) {
+                    if (unsettledBet.getVendorId().equals(17)) {
                         kafkaService.produceBetTransactionLog(unsettledBet, betResultData, gameSession.getVendorPlayerUsername());
                     }
 
@@ -1075,7 +1081,7 @@ public class WalletService {
             }
 
             // will insert bet info record to this topic for MG
-            if(settledBet.getVendorId().equals(17)) {
+            if (settledBet.getVendorId().equals(17)) {
                 kafkaService.produceBetTransactionLog(settledBet, null, gameSession.getVendorPlayerUsername());
             }
 

@@ -69,8 +69,7 @@ public class DebitAction {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
             debitDto = HttpService.convertQueryStringToDto(body, DebitDto.class);
-
-            debitDto.convertStringToJsonObject(debitDto.getMessage());
+            debitDto.setMessageDto(debitDto.getMessage());
 
             this.doValidation(debitDto);
 
@@ -146,6 +145,9 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getMessageDto());
         ValidationUtils.validateRequest(dto.getMessageDto().getBetInfo());
+        if (dto.getMessageDto().getBetInfo().getBetAmount() == null) {
+            throw new InvalidRequestException();
+        }
     }
 
     private void doVerification(DebitDto dto, GameSession gameSession, String oriRequest) throws

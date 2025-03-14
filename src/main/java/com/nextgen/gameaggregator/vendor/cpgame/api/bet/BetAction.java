@@ -61,12 +61,12 @@ public class BetAction {
 
         DataVo dataVo = new DataVo();
         BetDto betDto = null;
+        GameSession gameSession = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
             betDto = HttpService.convertQueryStringToDto(body, BetDto.class);
-
-            betDto.convertStringToJsonObject(betDto.getMessage());
+            betDto.setMessageDto(betDto.getMessage());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -75,7 +75,7 @@ public class BetAction {
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
 
             // using vendorPlayerId to find gameSession details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession, body);
@@ -135,8 +135,13 @@ public class BetAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
 
+            dataVo.setBalance(e.getBalance());
+            dataVo.setUpdatedMs(System.currentTimeMillis());
+            dataVo.setCurrency(gameSession.getVendorCurrencyCode());
+
+            vo.setData(dataVo);
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.BET_NOT_FOUND);
@@ -156,6 +161,10 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getMessageDto());
         ValidationUtils.validateRequest(dto.getMessageDto().getBetInfo());
+        if (dto.getMessageDto().getBetInfo().getBetAmount() == null
+                || dto.getMessageDto().getBetInfo().getWinAmount() == null) {
+            throw new InvalidRequestException();
+        }
     }
 
     private void doVerification(BetDto dto, GameSession gameSession, String oriRequest)

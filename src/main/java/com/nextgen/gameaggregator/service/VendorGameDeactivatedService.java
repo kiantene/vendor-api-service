@@ -9,15 +9,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class VendorGameDeactivatedService {
+    private final VendorGameDeactivatedRepository vendorGameDeactivatedRepository;
 
-    @Autowired
-    private VendorGameDeactivatedRepository vendorGameDeactivatedRepository;
+    public VendorGameDeactivatedService(VendorGameDeactivatedRepository vendorGameDeactivatedRepository) {
+        this.vendorGameDeactivatedRepository = vendorGameDeactivatedRepository;
+    }
 
-    public boolean checkGameSupported(Agent agent, Integer vendorGameId) throws DisabledGameException {
+    public boolean checkGameSupported(Integer houseId, Integer masterAgentId, Integer agentId, Integer vendorGameId) throws DisabledGameException {
         Integer gameNotDeletedFromVendorGameDeactivated = 0;
-        Integer sasEntityHierarchyId = 1;
-        VendorGameDeactivated vendorGameDeactivated = vendorGameDeactivatedRepository.findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(vendorGameId, agent.getId(),
-                agent.getMasterAgentId(), agent.getHouseId(), gameNotDeletedFromVendorGameDeactivated);
+
+        // TODO: refactor sql
+        VendorGameDeactivated vendorGameDeactivated = vendorGameDeactivatedRepository.findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(vendorGameId, agentId,
+                masterAgentId, houseId, gameNotDeletedFromVendorGameDeactivated);
 
         if (vendorGameDeactivated != null) {
             throw new DisabledGameException();
