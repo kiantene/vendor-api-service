@@ -308,6 +308,23 @@ public class KafkaService {
         }
     }
 
+    public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
+        try {
+            BetTransactionLog betTransactionLog;
+            if(betResultData!=null){
+                betTransactionLog = new BetTransactionLog(betInformation, betResultData);
+            }else{
+                // set back to original data
+                betTransactionLog = new BetTransactionLog(betInformation);
+            }
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_TRANSACTION_LOG, vendorPlayerUsername, betTransactionLog);
+        } catch (Exception e) {
+            log.error("BetTransactionLog: " + e.getMessage() + " -> vendorBetId = " + betInformation.getVendorBetId() + "& roundId = " + betInformation.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
     private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
         return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(betHistory.getVendorGameId(), betHistory.getVendorId(), betHistory.getGameCategoryId(),
             betHistory.getCurrencyId(), betHistory.getAgentId());

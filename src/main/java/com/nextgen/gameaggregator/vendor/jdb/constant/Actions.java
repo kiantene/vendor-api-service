@@ -13,4 +13,5 @@ public class Actions {
     // GA to Vendor
     public static final int GAME_URL = 21;
     public static final int BET_DETAIL_URL = 54;
+    public static final int TERMINATE_PLAYER = 17;
 }

@@ -120,7 +120,8 @@ public class ConfirmBetParlayAction {
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         } catch (DuplicateRequestException duplicateRequestException) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setBalance(walletRequest.getBalanceAfter());
             httpService.logError(httpRequestLog, duplicateRequestException);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 

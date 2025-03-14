@@ -34,8 +34,7 @@ public class BetCreditAction {
     AgentApiCredentialService agentApiCredentialService;
     @Autowired
     AuthenticationService authenticationService;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
+
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -45,7 +44,7 @@ public class BetCreditAction {
     public ResponseResultVo<Object> walletBetCredit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseResultVo<Object> responseResultVo = new ResponseResultVo<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
 
                 // Retrieve request body in original string format and convert into dto

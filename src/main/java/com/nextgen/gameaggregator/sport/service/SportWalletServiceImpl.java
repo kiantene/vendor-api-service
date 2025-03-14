@@ -544,6 +544,7 @@ public class SportWalletServiceImpl implements SportWalletService {
         sportSettledBet.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
         sportSettledBet.setInternalTransactionId(internalTransactionId);
         sportSettledBet.setExternalTransactionId(Objects.requireNonNullElse(sportResettleData.getExternalTransactionId(), sportSettledBet.getExternalTransactionId()));
+        sportSettledBet.setVendorSettleTime(Objects.requireNonNullElse(sportResettleData.getVendorSettleTime(), sportSettledBet.getVendorSettleTime()));
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());

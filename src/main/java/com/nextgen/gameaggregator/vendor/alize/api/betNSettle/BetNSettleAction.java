@@ -1,12 +1,5 @@
 package com.nextgen.gameaggregator.vendor.alize.api.betNSettle;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -17,9 +10,14 @@ import com.nextgen.gameaggregator.vendor.alize.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alize.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alize.service.VendorService;
 import com.nextgen.gameaggregator.vendor.alize.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -45,6 +43,7 @@ public class BetNSettleAction {
         String traceId = httpRequestLog.getId();
         String username = "";
         String vendorCurrencyCode = "";
+        GameSession gameSession = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -57,7 +56,20 @@ public class BetNSettleAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            try { //this check only verify if it's null, not status = 0
+                gameSession = gameSessionService.verifyToken(dto.getToken());
+            } catch (AuthenticationException authenticationException) { //if session expired
+                if (dto.getStake().equals(BigDecimal.ZERO)) {
+                    gameSession = gameSessionService.generateNewSessionToken(dto.getUsername()); //generate new token
+                    gameSessionService.updateByVendorGameCode(gameSession, dto.getGameCode());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
+                    gameSession.setToken(traceId);
+                    gameSession.setVendorToken(traceId);
+                } else {
+                    throw new AuthenticationException();
+                }
+            }
+
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
@@ -144,7 +156,10 @@ public class BetNSettleAction {
             throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
-        validationService.validateEligibleBet(gameSession, dto.getUsername());
+        if (dto.getStake().compareTo(BigDecimal.ZERO) > 0) {
+            validationService.validateEligibleBet(gameSession, dto.getUsername());
+        }
+
         // Verify operator ID
         ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }

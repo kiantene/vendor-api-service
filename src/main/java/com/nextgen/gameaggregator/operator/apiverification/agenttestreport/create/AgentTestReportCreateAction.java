@@ -27,8 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.API_VERIFY_PATH)
 @Slf4j
 public class AgentTestReportCreateAction {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
+
     @Autowired
     RequestService requestService;
     @Autowired
@@ -44,7 +43,7 @@ public class AgentTestReportCreateAction {
     public OperatorResponseVo detail(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         OperatorResponseVo responseVo = new OperatorResponseVo<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
                 String body = httpRequestLog.getRequestBody();
                 AgentTestReportCreateDto dto = HttpService.convertJsonToDto(body, AgentTestReportCreateDto.class);

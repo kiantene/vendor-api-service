@@ -41,6 +41,9 @@ public class RequestService {
     @Value("${testing.stub-prefix:stub}")
     private String usernamePrefix;
 
+    @Value("${is-test-env:false}")
+    private Boolean isTestEnvironment;
+
     public static <T> void validateResponse(T requestObject) throws InvalidResponseException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
@@ -281,8 +284,7 @@ public class RequestService {
         return requestLogVo;
     }
 
-    public Boolean isTestEnvironment(String profilesActive) {
-        String[] environments = {"dev", "qa", "stg"};
-        return Arrays.asList(environments).contains(profilesActive);
+    public Boolean isTestEnvironment() {
+        return Boolean.TRUE.equals(isTestEnvironment);
     }
 }

@@ -20,8 +20,6 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "vendorGame/")
 public class VendorGameController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -44,7 +42,7 @@ public class VendorGameController {
     @PostMapping(path = "status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorGame vendorGame = vendorGameRepository.findByCode(json.get("gameCode").asText());
 
 
@@ -84,7 +82,7 @@ public class VendorGameController {
     @PostMapping(path = "statusCurrency")
     public ResponseEntity<Map<String, String>> statusCurrency(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorGame vendorGame = vendorGameRepository.findByCode(json.get("gameCode").asText());
 
 
@@ -122,7 +120,7 @@ public class VendorGameController {
     @PostMapping(path = "statusLanguage")
     public ResponseEntity<Map<String, String>> statusLanguage(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             VendorGame vendorGame = vendorGameRepository.findByCode(json.get("gameCode").asText());
 
 

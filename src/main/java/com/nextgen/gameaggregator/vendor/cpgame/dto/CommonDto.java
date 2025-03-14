@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.vendor.cpgame.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.service.HttpService;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CommonDto {
     @NotBlank
@@ -21,4 +25,11 @@ public class CommonDto {
 
     @NotBlank
     private String message;
+
+    @NotNull
+    private MessageDto messageDto;
+
+    public void setMessageDto(String message) throws JsonProcessingException {
+        this.messageDto = HttpService.convertJsonToDto(message, MessageDto.class);
+    }
 }
