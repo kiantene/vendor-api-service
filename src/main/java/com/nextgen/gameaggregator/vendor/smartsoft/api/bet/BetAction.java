@@ -49,6 +49,10 @@ public class BetAction {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
+        String body = httpRequestLog.getRequestBody();
+        String method = httpRequestLog.getMethod();
+        //Add request header log
+        httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: " + vendorService.getHeaders(request));
         BetVo vo = new BetVo();
         BetDto betDto;
         GameSession gameSession;
@@ -56,7 +60,7 @@ public class BetAction {
         HttpStatus status = HttpStatus.OK;
 
         try {
-            betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
+            betDto = HttpService.convertJsonToDto(body, BetDto.class);
 
             betDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
             betDto.setSessionId(request.getHeader(Headers.SESSION_ID));
@@ -70,7 +74,7 @@ public class BetAction {
             gameSession = vendorService.checkGameSession(traceId, betDto.getUserName());
 
             // Verify parameters (Verify against database values)
-            this.doVerification(betDto, gameSession, httpRequestLog);
+            this.doVerification(betDto, gameSession, body, method);
 
             //Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
@@ -78,7 +82,6 @@ public class BetAction {
             vo.setTransactionId(betEvent.getBetInformation().getBetId());
             vo.setBalance(betEvent.getLastBalance());
 
-            httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: " + vendorService.getHeaders(request));
 
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
@@ -103,7 +106,7 @@ public class BetAction {
         ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {
+    private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {
         //validate vendor username, agent vendor line, player status, and game status
         if (dto.getTransactionType().equals("InitialBet") || dto.getTransactionType().equals("PlaceBet")) {
             validationService.validateEligibleBet(gameSession, dto.getUserName());
@@ -114,7 +117,7 @@ public class BetAction {
 
         //Verify signature
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, httpRequestLog.getMethod(), httpRequestLog.getRequestBody()), dto.getSignature(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
 
         //verify ClientExternalKey
         ValidationUtils.isEquals(gameSession.getVendorPlayerId().toString(), dto.getClientExternalKey(), AuthenticationException::new);
