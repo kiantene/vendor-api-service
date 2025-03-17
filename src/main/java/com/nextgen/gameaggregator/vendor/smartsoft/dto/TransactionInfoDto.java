@@ -23,8 +23,6 @@ public class TransactionInfoDto {
     @JsonProperty("RoundId")
     private String roundId;
 
-    @NotBlank
-    @Size(max = 255)
     @JsonProperty("BetTransactionId")
     private String betTransactionId;
 
