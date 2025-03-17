@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.smartsoft.dto;
+package com.nextgen.gameaggregator.vendor.smartsoft.api.settle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TransactionInfoDto {
+public class SettleTransactionInfoDto {
 
     @JsonProperty("Source")
     private String source;
@@ -23,6 +23,8 @@ public class TransactionInfoDto {
     @JsonProperty("RoundId")
     private String roundId;
 
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("BetTransactionId")
     private String betTransactionId;
 

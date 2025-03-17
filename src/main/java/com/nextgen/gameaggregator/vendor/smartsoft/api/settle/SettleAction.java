@@ -52,6 +52,7 @@ public class SettleAction {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         String method = httpRequestLog.getMethod();
+        BigDecimal balance = BigDecimal.ZERO;
         //Add request header log
         httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: " + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
@@ -78,9 +79,12 @@ public class SettleAction {
             this.doVerification(settleDto, gameSession, body, method);
 
             // Settle
-            ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
-
+            if (settleDto.getTransactionType().equals("CloseRound")) {
+                balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
+            } else {
+                ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
+                balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
+            }
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
@@ -104,7 +108,7 @@ public class SettleAction {
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
+        ValidationUtils.validateRequest(dto.getSettleTransactionInfoDto());
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {

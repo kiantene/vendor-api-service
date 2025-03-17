@@ -61,7 +61,7 @@ public class BetAction {
 
         try {
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
-            
+
             betDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
             betDto.setSessionId(request.getHeader(Headers.SESSION_ID));
             betDto.setUserName(request.getHeader(Headers.USER_NAME));
@@ -103,7 +103,7 @@ public class BetAction {
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
+        ValidationUtils.validateRequest(dto.getBetTransactionInfoDto());
     }
 
     private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {
