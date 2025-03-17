@@ -129,9 +129,7 @@ public class QueryService {
         QueryVo queryVo = null;
         try {
             this.doValidation(ordersMapDto);
-
             Integer status = this.checkBetAvailable(gameSession, ordersMapDto);
-
             queryVo = new QueryVo(ordersMapDto.getOrderId(), status);
 
         } catch (Exception e) {

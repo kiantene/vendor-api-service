@@ -218,7 +218,7 @@ public class BetService {
         List<CompletableFuture<ResultVo>> resultVoList = new LinkedList<>();
 
         for (OrdersDto order : betDto.getParamsDto().getOrders()) {
-            GameSession orderGameSession = getGameSession(betDto.getParamsDto().getLoginId());
+            GameSession orderGameSession = this.getGameSession(betDto.getParamsDto().getLoginId());
             CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(
                     () -> this.processData(order, httpServletRequest, body, orderGameSession),
                     executor);
