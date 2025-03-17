@@ -14,8 +14,6 @@ import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jvnet.hk2.annotations.Service;
 
-import java.math.BigDecimal;
-
 @Service
 public class ResettleService {
     public final HttpService httpService;
@@ -38,6 +36,7 @@ public class ResettleService {
         HttpRequestLog httpRequestLog = httpService.start(request);
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
+        String traceId = httpRequestLog.getId();
         CommonVo commonVo = new CommonVo();
         ResettleDto resettleDto = new ResettleDto();
         GameSession gameSession = new GameSession();
@@ -51,16 +50,13 @@ public class ResettleService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resettleDto.getGameCode(), gameSession);
 
-            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-
-            vendorService.doDataMapper(walletRequest, resettleDto);
+//            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
+//
+//            vendorService.doDataMapper(walletRequest, resettleDto);
 
             vendorService.doVerification(resettleDto, gameSession, false);
 
-            // Pass data to wallet service process adjustment
-            BigDecimal balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
-
-            walletRequest = sportWalletService.settle(walletRequest);
+            walletRequest = sportWalletService.adjustment(traceId, dto.getMessage(), httpRequestLog);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 

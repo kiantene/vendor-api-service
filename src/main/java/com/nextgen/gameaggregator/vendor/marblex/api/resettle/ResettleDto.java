@@ -44,7 +44,7 @@ public class ResettleDto extends CommonDto implements SportAdjustmentData {
 
     @Override
     public String getVendorBetId() {
-        return this.JanusResettleID;
+        return this.janusTransactionId;
     }
 
     @Override
