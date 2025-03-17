@@ -19,6 +19,7 @@ public class ActionController {
     public final BalanceService balanceService;
     public final BetService betService;
     public final ResultService resultService;
+
     @Autowired
     public ActionController(BalanceService balanceService, BetService betService, ResultService resultService) {
         this.balanceService = balanceService;
@@ -38,6 +39,21 @@ public class ActionController {
 
     @PostMapping(path = EndPoints.RESULT)
     public CommonVo result(HttpServletRequest request) {
+        return this.resultService.settleBet(request);
+    }
+
+    @PostMapping(path = EndPoints.CANCEL)
+    public CommonVo cancel(HttpServletRequest request) {
+        return this.resultService.settleBet(request);
+    }
+
+    @PostMapping(path = EndPoints.RESETTLE)
+    public CommonVo resettle(HttpServletRequest request) {
+        return this.resultService.settleBet(request);
+    }
+
+    @PostMapping(path = EndPoints.VOID)
+    public CommonVo voidBet(HttpServletRequest request) {
         return this.resultService.settleBet(request);
     }
 

@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
@@ -34,6 +35,7 @@ public class BalanceService {
 
     public CommonVo getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String authentication = request.getHeader(Formats.AUTHORIZATION);
 
         CommonVo commonVo = new CommonVo();
         CommonDto commonDto = new CommonDto();
@@ -61,12 +63,12 @@ public class BalanceService {
         } catch (InvalidOperatorResponseException exception) {
             commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-        } catch (Exception exception){
+        } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
-            httpService.logError(httpRequestLog,exception);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             commonVo.setTraceId(commonDto.getTraceId());
-            httpService.end(httpRequestLog,commonVo);
+            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }
