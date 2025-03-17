@@ -253,8 +253,8 @@ public class VendorService extends BaseVendorService {
         walletRequest.setTakeAll(0);
         BigDecimal amount = ordersDto.getAmount().abs();
         walletRequest.setTransferAmount(amount);
-        walletRequest.setBetAmount(amount);
-        ResultType resultType = this.calculateResultType(null, amount, ordersDto.getJackpotAmount(),
+        walletRequest.setBetAmount(ordersDto.getBetAmount());
+        ResultType resultType = this.calculateResultType(ordersDto.getBetAmount(), amount, ordersDto.getJackpotAmount(),
                 false);
         walletRequest.setWinAmount(amount);
         walletRequest.setEffectiveTurnover(BigDecimal.ZERO);

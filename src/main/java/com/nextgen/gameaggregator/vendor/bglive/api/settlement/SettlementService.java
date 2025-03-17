@@ -179,9 +179,7 @@ public class SettlementService {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-            // Process Result
-            resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(),
-                    ordersDto.getJackpotAmount(), false);
+
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
             if (isBullBullGame) {
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
@@ -189,6 +187,9 @@ public class SettlementService {
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
+                // Process Result
+                resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(),
+                        ordersDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService,
                         httpRequestLog);
                 resultVo = new ResultVo(balance, httpRequestLog.getOperatorTimestamp());

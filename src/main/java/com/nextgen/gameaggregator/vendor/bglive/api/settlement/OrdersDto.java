@@ -65,7 +65,7 @@ public class OrdersDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getValidAmount().abs();
+        return this.getOrderAmount().abs();
     }
 
     @Override
