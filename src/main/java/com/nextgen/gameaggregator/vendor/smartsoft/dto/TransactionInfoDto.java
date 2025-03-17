@@ -25,6 +25,11 @@ public class TransactionInfoDto {
 
     @NotBlank
     @Size(max = 255)
+    @JsonProperty("BetTransactionId")
+    private String betTransactionId;
+
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("GameName")
     private String gameName;
 
