@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -36,7 +37,6 @@ public class ResettleService {
         HttpRequestLog httpRequestLog = httpService.start(request);
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
-        String traceId = httpRequestLog.getId();
         CommonVo commonVo = new CommonVo();
         ResettleDto resettleDto = new ResettleDto();
         GameSession gameSession = new GameSession();
@@ -46,24 +46,24 @@ public class ResettleService {
 
             ValidationUtils.validateRequest(resettleDto);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resettleDto.getp());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resettleDto.getPlayerId());
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resettleDto.getGameCode(), gameSession);
 
-//            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-//
+            walletRequestService.updateByGameSession(walletRequest, gameSession);
+
 //            vendorService.doDataMapper(walletRequest, resettleDto);
 
             vendorService.doVerification(resettleDto, gameSession, false);
 
-            walletRequest = sportWalletService.adjustment(traceId, dto.getMessage(), httpRequestLog);
+            BetEvent betEvent = sportWalletService.adjustment(resettleDto.getTraceId(), resettleDto, httpRequestLog);
 
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), betEvent.getLastBalance());
 
         } catch (Exception e) {
 
         } finally {
-            commonVo.setTraceId(resultDto.getTraceId());
+            commonVo.setTraceId(resettleDto.getTraceId());
             httpService.end(httpRequestLog, commonVo);
         }
 

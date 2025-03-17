@@ -48,6 +48,11 @@ public class ResettleDto extends CommonDto implements SportAdjustmentData {
     }
 
     @Override
+    public String getRoundId() {
+        return this.roundId;
+    }
+
+    @Override
     public String getExternalTransactionId() {
         return this.janusTransactionId;
     }
