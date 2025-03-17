@@ -220,7 +220,7 @@ public class BetService {
         for (OrdersDto order : betDto.getParamsDto().getOrders()) {
             GameSession orderGameSession = getGameSession(betDto.getParamsDto().getLoginId());
             CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(
-                    () -> processData(order, httpServletRequest, body, orderGameSession),
+                    () -> this.processData(order, httpServletRequest, body, orderGameSession),
                     executor);
             resultVoList.add(resultVo);
         }

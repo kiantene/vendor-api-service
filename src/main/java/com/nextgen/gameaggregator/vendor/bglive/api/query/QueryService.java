@@ -52,10 +52,10 @@ public class QueryService {
                 GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername
                         (ordersMapDto.getOrderLoginId());
                 CompletableFuture<QueryVo> queryVo = CompletableFuture.supplyAsync(() ->
-                        processData(ordersMapDto, httpServletRequest, gameSession), executor);
+                        this.processData(ordersMapDto, httpServletRequest, gameSession), executor);
                 queryVoList.add(queryVo);
             }
-            List<QueryVo> queryList = processAndValidateQueryResponses(queryVoList);
+            List<QueryVo> queryList = this.processAndValidateQueryResponses(queryVoList);
             commonVo.setSuccessResponse(queryDto.getId(), queryList);
 
         } catch (InvalidRequestException e) {
@@ -128,9 +128,9 @@ public class QueryService {
         httpRequestLog.setRequestBody(new Gson().toJson(ordersMapDto));
         QueryVo queryVo = null;
         try {
-            doValidation(ordersMapDto);
+            this.doValidation(ordersMapDto);
 
-            Integer status = checkBetAvailable(gameSession, ordersMapDto);
+            Integer status = this.checkBetAvailable(gameSession, ordersMapDto);
 
             queryVo = new QueryVo(ordersMapDto.getOrderId(), status);
 

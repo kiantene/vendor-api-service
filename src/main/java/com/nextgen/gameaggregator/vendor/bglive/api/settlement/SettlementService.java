@@ -102,7 +102,7 @@ public class SettlementService {
                                                                GameSession gameSession, ExecutorService executor) {
         List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
         for (OrdersDto order : settleDto.getParamsDto().getOrders()) {
-            CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> processData(settleDto.getParamsDto(),
+            CompletableFuture<ResultVo> balance = CompletableFuture.supplyAsync(() -> this.processData(settleDto.getParamsDto(),
                     order, httpServletRequest, gameSession), executor);
             balanceList.add(balance);
         }
