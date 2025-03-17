@@ -108,7 +108,7 @@ public class SettleAction {
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        ValidationUtils.validateRequest(dto.getSettleTransactionInfoDto());
+        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {

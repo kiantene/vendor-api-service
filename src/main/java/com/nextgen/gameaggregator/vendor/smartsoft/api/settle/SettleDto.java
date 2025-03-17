@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.smartsoft.dto.TransactionInfoDto;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -51,7 +52,7 @@ public class SettleDto implements BetResultData {
     private String currencyCode;
 
     @JsonProperty("TransactionInfo")
-    private SettleTransactionInfoDto settleTransactionInfoDto;
+    private TransactionInfoDto transactionInfoDto;
 
     @Override
     public String getExternalTransactionId() {
@@ -65,7 +66,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.settleTransactionInfoDto.getRoundId();
+        return this.transactionInfoDto.getRoundId();
     }
 
     @Override
@@ -83,8 +84,10 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        if (this.transactionType.equals("WinAmount") || this.transactionType.equals("CloseRound")) {
+        if (this.transactionType.equals("WinAmount")) {
             return this.amount;
+        } else if (this.transactionType.equals("CloseRound")) {
+            return BigDecimal.ZERO;
         }
         return null;
     }
@@ -126,7 +129,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.transactionType.equals("WinAmount")) {
+        if (this.transactionType.equals("WinAmount") || this.transactionType.equals("CloseRound")) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;
