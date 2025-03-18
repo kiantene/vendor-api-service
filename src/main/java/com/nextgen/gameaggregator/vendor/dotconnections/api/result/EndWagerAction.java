@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -71,13 +70,14 @@ public class EndWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            gameSession = this.getGameSession(traceId, dto);
 
             // Verify data
             this.doVerification(dto, gameSession);
 
             // Process bet
-            BigDecimal balance = this.processEndRoundBet(traceId, dto, gameSession, httpRequestLog);
+            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -225,59 +225,27 @@ public class EndWagerAction {
 
     }
 
-    private BigDecimal processEndRoundBet(String traceId, EndWagerDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
-            throws
-            BetNotFoundException,
-            InvalidAgentApiCredentialException,
-            VendorCurrencyNotSupportException,
-            BetResultIdempotentViolationException,
-            MergedBetDataIntegrityException,
-            InsufficientBalanceException,
-            TransactionStillProcessingException,
-            InvalidOperatorResponseException, InternalServerTimeoutRetryException {
+    private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
 
-        /**
-         * Test Case A:
-         * wager > endWager> endWager (same)
-         * expected: BET RECORD DUPLICATE
-         * actual: BET RECORD NOT EXIST -> (bet is settled, unsettled bet record is removed. So threw bet not found exception)
-         *
-         * Test Case B:
-         * endWager (bet not found)
-         * expected: BET RECORD NOT EXIST
-         * actual: Success (balance also updated) - if remove (unsettled bet exist check)
-         *
-         * Added the settled bet check Test Case A may test.
-         * If remove (unsettled bet exist check), Test Case B will fail.
-         */
         try {
-            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            if (settledBet.getOperatorStatus().equals(1)) {
-                throw new BetResultIdempotentViolationException(settledBet);
+        } catch (AuthenticationException authenticationException) {
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+
+            if (unsettledBet == null) {
+                throw new BetNotFoundException();
+
+            } else {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
+                gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
             }
-
-        } catch (BetNotFoundException betNotFoundException) {
-            // do nothing
         }
 
-        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
-
-
-        if (unsettledBet == null) {
-            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-        } else {
-            //fix GA-8574 bug
-            //found unsettled bet and set game session game Id
-            gameSession.setVendorGameId(unsettledBet.getVendorGameId());
-        }
-
-        // Set as BET_WIN / BET_LOST because
-        // vendor's BO has wager and endWager records
-        // endWager's bet id is different from wager's bet id
-        ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
-
-        return walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
+        return gameSession;
     }
 }
