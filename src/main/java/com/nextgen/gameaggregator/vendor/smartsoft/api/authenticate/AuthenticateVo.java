@@ -2,14 +2,14 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.vendor.smartsoft.vo.ResponseVo;
+import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AuthenticateVo extends ResponseVo {
+public class AuthenticateVo implements HttpResponse {
     @JsonProperty("SessionId")
     private String sessionId;
 
@@ -24,4 +24,9 @@ public class AuthenticateVo extends ResponseVo {
 
     @JsonProperty("PortalName")
     private String portalName;
+
+    @Override
+    public boolean hasError() {
+        return false;
+    }
 }

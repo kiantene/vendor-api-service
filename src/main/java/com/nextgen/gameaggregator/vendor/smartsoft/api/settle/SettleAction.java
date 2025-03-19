@@ -4,7 +4,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
@@ -19,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.security.auth.login.CredentialException;
 import java.math.BigDecimal;
 
 @RestController
@@ -27,18 +29,15 @@ import java.math.BigDecimal;
 public class SettleAction {
     private final WalletService walletService;
     private final HttpService httpService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final SettledBetService settledBetService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
-                        ValidationService validationService,
                         VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
-        this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
@@ -79,13 +78,7 @@ public class SettleAction {
 
             // Settle
             if (settleDto.getTransactionType().equals("CloseRound")) {
-                try {
-                    settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    //settledBetService.getByVendorPlayerIdAndExternalTransactionId();
-                } catch (BetNotFoundException e) {
-                    balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-                }
+                balance = processClosedRound(settleDto, gameSession, httpRequestLog);
             } else {
                 ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
@@ -116,7 +109,7 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
-    private void doVerification(SettleDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {
+    private void doVerification(SettleDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
 
         //Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserName(), InvalidRequestException::new);
@@ -134,5 +127,16 @@ public class SettleAction {
 
         // Call the service with the duplicate log
         return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
+    }
+
+    private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
+        BigDecimal balance;
+        try {
+            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+        } catch (BetNotFoundException e) {
+            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
+        }
+        return balance;
     }
 }

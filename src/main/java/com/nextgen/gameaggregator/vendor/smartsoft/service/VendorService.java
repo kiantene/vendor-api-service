@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -17,7 +16,6 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-@Data
 public class VendorService extends BaseVendorService {
 
     private final GameSessionService gameSessionService;
@@ -48,7 +46,7 @@ public class VendorService extends BaseVendorService {
     }
 
     public GameSession preCheckGameSessionToken(String token) throws AuthenticationException {
-        GameSession gameSession = null;
+        GameSession gameSession;
         try {
             gameSession = gameSessionService.verifyVendorToken(token);
         } catch (AuthenticationException authenticationException) {

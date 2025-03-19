@@ -22,8 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.security.auth.login.CredentialException;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class BetAction {
@@ -106,7 +104,7 @@ public class BetAction {
         ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, CredentialException, InvalidRequestException {
+    private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
         //validate vendor username, agent vendor line, player status, and game status
         if (dto.getTransactionType().equals("InitialBet") || dto.getTransactionType().equals("PlaceBet")) {
             validationService.validateEligibleBet(gameSession, dto.getUserName());
