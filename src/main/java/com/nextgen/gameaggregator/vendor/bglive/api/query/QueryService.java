@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletTransactionBetHistoryService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
@@ -28,13 +29,16 @@ public class QueryService {
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     public QueryService(HttpService httpService,
                         GameSessionService gameSessionService,
-                        VendorService vendorService) {
+                        VendorService vendorService,
+                        WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public CommonVo query(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -117,7 +121,12 @@ public class QueryService {
             status = vendorService.settledBetIdempotentCheck(gameSession, orderId);
         } catch (BetNotFoundException e) {
             status = vendorService.unsettledBetIdempotentCheck(orderId);
-            return status;
+            if (status.equals(0)) {
+                status = vendorService.walletTransactionBetHistoryStatus(orderId);
+            } else {
+                return status;
+            }
+
         }
         return status;
     }

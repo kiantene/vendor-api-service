@@ -45,6 +45,7 @@ public class VendorService extends BaseVendorService {
     private SettledBetService settledBetService;
     private BetNotFoundLogService betNotFoundLogService;
     private VendorLineService vendorLineService;
+    private WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
@@ -151,6 +152,11 @@ public class VendorService extends BaseVendorService {
         } else {
             return QueryStatus.NO_BET;
         }
+    }
+
+    public Integer walletTransactionBetHistoryStatus(String roundId)
+            throws BetNotFoundException {
+        return walletTransactionBetHistoryService.findById(roundId);
     }
 
     public Integer settledBetIdempotentCheck(GameSession gameSession, String externalId)

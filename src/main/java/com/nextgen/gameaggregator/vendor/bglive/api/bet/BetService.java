@@ -43,6 +43,7 @@ public class BetService {
     private final VendorService vendorService;
     private final BetActionLogService betActionLogService;
     private final OperatorWalletService operatorWalletService;
+    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -51,7 +52,9 @@ public class BetService {
                       AgentPlayerService agentPlayerService,
                       VendorService vendorService,
                       BetActionLogService betActionLogService,
-                      OperatorWalletService operatorWalletService) {
+                      OperatorWalletService operatorWalletService,
+                      WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -60,6 +63,7 @@ public class BetService {
         this.vendorService = vendorService;
         this.betActionLogService = betActionLogService;
         this.operatorWalletService = operatorWalletService;
+        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -186,6 +190,7 @@ public class BetService {
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
+                walletTransactionBetHistoryService.create(walletRequest, gameSession);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);

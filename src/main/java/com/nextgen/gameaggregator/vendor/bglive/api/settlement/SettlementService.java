@@ -43,6 +43,7 @@ public class SettlementService {
     private final BetActionLogService betActionLogService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final OperatorWalletService operatorWalletService;
+    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -52,7 +53,8 @@ public class SettlementService {
                              VendorService vendorService,
                              BetActionLogService betActionLogService,
                              RequestIdempotentLogService requestIdempotentLogService,
-                             OperatorWalletService operatorWalletService) {
+                             OperatorWalletService operatorWalletService,
+                             WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -62,6 +64,7 @@ public class SettlementService {
         this.betActionLogService = betActionLogService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.operatorWalletService = operatorWalletService;
+        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -185,6 +188,7 @@ public class SettlementService {
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
+                walletTransactionBetHistoryService.update(walletRequest, gameSession);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
                 // Process Result
