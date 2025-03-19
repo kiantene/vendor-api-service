@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -50,15 +49,15 @@ public class ResettleService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resettleDto.getGameCode(), gameSession);
 
-            walletRequestService.updateByGameSession(walletRequest, gameSession);
+            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
-//            vendorService.doDataMapper(walletRequest, resettleDto);
+            vendorService.doDataMapper(walletRequest, resettleDto);
 
             vendorService.doVerification(resettleDto, gameSession, false);
 
-            BetEvent betEvent = sportWalletService.adjustment(resettleDto.getTraceId(), resettleDto, httpRequestLog);
+            walletRequest = sportWalletService.resettle(walletRequest);
 
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), betEvent.getLastBalance());
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
         } catch (Exception e) {
 
