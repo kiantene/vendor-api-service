@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.settle;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -80,11 +79,12 @@ public class SettleAction {
 
             // Settle
             if (settleDto.getTransactionType().equals("CloseRound")) {
-                SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                if (settledBet == null) {
+                try {
+                    settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+                    //settledBetService.getByVendorPlayerIdAndExternalTransactionId();
+                } catch (BetNotFoundException e) {
                     balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
                 }
-
             } else {
                 ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);

@@ -54,6 +54,7 @@ public class BalanceAction {
         HttpHeaders headers = new HttpHeaders();
         String body = httpRequestLog.getRequestBody();
         HttpStatus status = HttpStatus.OK;
+        httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
 
         try {
             BalanceDto balanceDto = new BalanceDto();
@@ -69,12 +70,10 @@ public class BalanceAction {
             this.doValidation(balanceDto);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession, httpRequestLog);
+            this.doVerification(balanceDto, gameSession, body, httpRequestLog.getMethod());
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
 
             balanceVo.setCurrencyCode(gameSession.getCurrencyCode());
             balanceVo.setAmount(balance);
@@ -94,7 +93,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String body, String method)
             throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, InvalidRequestException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -113,7 +112,7 @@ public class BalanceAction {
 
         //5. Verify signature
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, httpRequestLog.getMethod(), httpRequestLog.getRequestBody()), dto.getSignature(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
 
         //6. verify ClientExternalKey
         ValidationUtils.isEquals(gameSession.getVendorPlayerId().toString(), dto.getClientExternalKey(), AuthenticationException::new);

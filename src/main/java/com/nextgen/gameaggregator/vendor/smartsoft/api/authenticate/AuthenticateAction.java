@@ -15,6 +15,9 @@ import com.nextgen.gameaggregator.vendor.smartsoft.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.smartsoft.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,14 +37,17 @@ public class AuthenticateAction {
     }
 
     @PostMapping(path = EndPoints.SESSION)
-    public AuthenticateVo authenticate(HttpServletRequest request) {
+    public ResponseEntity<AuthenticateVo> authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        AuthenticateVo responseVo = new AuthenticateVo();
+        HttpHeaders headers = new HttpHeaders();
+        HttpStatus status = HttpStatus.OK;
+        String body = httpRequestLog.getRequestBody();
         String signature = request.getHeader(Headers.REQUEST_SIGNATURE);
+        AuthenticateVo responseVo = new AuthenticateVo();
+        httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
 
         try {
-            // 1. Retrieve request body in original string format and convert into dto
-            String body = httpRequestLog.getRequestBody();
+            // 1. Retrieve request body and convert into dto
             AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
             dto.setSignature(signature);
 
@@ -52,7 +58,7 @@ public class AuthenticateAction {
             GameSession gameSession = vendorService.preCheckGameSessionToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession, httpRequestLog);
+            this.doVerification(dto, gameSession, body, httpRequestLog.getMethod());
 
             String portalName = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_NAME);
 
@@ -63,16 +69,16 @@ public class AuthenticateAction {
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setPortalName(portalName);
 
-            httpRequestLog.setRequestBody("Request Body: " + body + " Request Header: " + vendorService.getHeaders(request));
-
-        } catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
-            responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+        } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
+            headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
 
-        return responseVo;
+        return new ResponseEntity<>(responseVo, headers, status);
     }
 
     private void doValidation(AuthenticateDto dto) throws InvalidRequestException {
@@ -80,9 +86,9 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) throws AuthenticationException, CredentialNotFoundException {        // Verify received signature
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException {        // Verify received signature
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, httpRequestLog.getMethod(), httpRequestLog.getRequestBody()), dto.getSignature(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
     }
 
 }
