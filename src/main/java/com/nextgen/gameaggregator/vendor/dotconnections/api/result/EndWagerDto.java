@@ -44,8 +44,6 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     public BetStatus betStatus;
 
-    public String token;
-
     @Override
     public String getExternalTransactionId() {
         return this.wagerId;

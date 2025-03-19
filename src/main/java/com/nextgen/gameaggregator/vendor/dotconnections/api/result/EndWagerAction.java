@@ -226,12 +226,13 @@ public class EndWagerAction {
     }
 
     private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException {
+
         GameSession gameSession;
 
         try {
-            gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (AuthenticationException e) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
 
             if (unsettledBet == null) {
