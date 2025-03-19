@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cg.api.bet;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cg.constant.Format;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cg.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,50 +32,58 @@ public class BetAction {
     private final WalletService walletService;
     private final VendorLineService vendorLineService;
     private final ValidationService validationService;
+    private final VendorService vendorService;
 
     @Autowired
     public BetAction(HttpService httpService,
                      GameSessionService gameSessionService,
                      WalletService walletService,
                      VendorLineService vendorLineService,
-                     ValidationService validationService) {
+                     ValidationService validationService,
+                     VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.validationService = validationService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.BET)
-    public ResponseVo transaction(HttpServletRequest request) {
+    public String transaction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         ResponseVo betVo = new ResponseVo();
+        CommonDto dto = new CommonDto();
         try {
             //convert body into dto
-            BetDto dto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BetDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
+            dto.setData(VendorService.urlDecode(dto.getData()));
 
             //basic validation
             this.doValidation(dto);
 
+            String decryptedData = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
+            httpRequestLog.setRequestBody(decryptedData);
+            BetDto betDto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
+
             //get game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAccountId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getAccountId());
 
             //basic verification
-            this.doVerification(dto, gameSession);
+            this.doVerification(betDto, gameSession);
 
             //process
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody(), httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
             //set values
-            betVo.setChannelId(dto.getChannelId());
-            betVo.setAccountId(dto.getAccountId());
+            betVo.setChannelId(betDto.getChannelId());
+            betVo.setAccountId(betDto.getAccountId());
             betVo.setBalance(betEvent.getLastBalance());
-            betVo.setCurrency(dto.getCurrency());
+            betVo.setCurrency(betDto.getCurrency());
             betVo.setErrorCode(ResponseCodes.SUCCESS);
             betVo.setReturnTime(VendorService.returnTime());
-
         } catch (InsufficientBalanceException insufficientBalanceException) {
             betVo.setErrorCode(ResponseCodes.SEAMLESS_INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, insufficientBalanceException);
@@ -102,17 +112,20 @@ public class BetAction {
             betVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            httpService.end(httpRequestLog, betVo);
+            try {
+                String jsonString = new Gson().toJson(betVo);
+                betVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, betVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
-        return betVo;
+        return betVo.getEncrypt();
     }
 
-    private void doValidation(BetDto dto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         //basic validation
         ValidationUtils.validateRequest(dto);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Format.DATE_TIME_FORMAT);
-        formatter.parse(dto.getEventTime());
 
     }
 
@@ -121,6 +134,9 @@ public class BetAction {
         ValidationUtils.isEquals(channelId, dto.getChannelId(), InvalidVendorLineException::new);
 
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Format.DATE_TIME_FORMAT);
+        formatter.parse(dto.getEventTime());
 
         //check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);

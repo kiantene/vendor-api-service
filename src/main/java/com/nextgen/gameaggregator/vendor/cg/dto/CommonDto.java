@@ -1,14 +1,19 @@
-package com.nextgen.gameaggregator.vendor.cg.api.authentication;
+package com.nextgen.gameaggregator.vendor.cg.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DataDto {
+public class CommonDto {
+
+    private String version;
+
     @NotBlank
-    @Size(max = 255)
-    String token;
+    private String channelId;
+
+    @NotBlank
+    private String data;
+
 }

@@ -1,10 +1,11 @@
 package com.nextgen.gameaggregator.vendor.cg.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import java.math.BigDecimal;
 
@@ -12,19 +13,21 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseVo implements HttpResponse {
 
-    @NotBlank
+    @JsonProperty("channelId")
     public String channelId; //"52772"
-    @NotBlank
+    @JsonProperty("accountId")
     public String accountId; //"abctesting123"
-    @NotBlank
+    @JsonProperty("balance")
     public BigDecimal balance; //1000.00
-    @NotBlank
+    @JsonProperty("currency")
     public String currency; //"USD"
-    @NotBlank
+    @JsonProperty("errorCode")
     public Integer errorCode; //0,
-    @NotBlank
+    @JsonProperty("returnTime")
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+\\d{2}:\\d{2}$")
     public String returnTime;
+    @JsonIgnore
+    public String encrypt;
 
     @Override
     public boolean hasError() {
