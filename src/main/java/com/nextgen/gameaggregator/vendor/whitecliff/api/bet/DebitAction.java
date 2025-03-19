@@ -67,10 +67,10 @@ public class DebitAction {
             // Check game category to set game code
             debitDto.setGameCategory(gameSession.getGameCategoryId());
 
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
-
             // Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
+
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             this.doVerification(debitDto, gameSession, secretKey);
 
