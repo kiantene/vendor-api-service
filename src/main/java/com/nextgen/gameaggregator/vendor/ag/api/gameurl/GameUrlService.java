@@ -22,6 +22,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -106,7 +107,7 @@ public class GameUrlService extends BaseGameUrlService<AgGameUrlVo> {
 
         try {
             this.checkAndCreateAccount(gameSession, httpRequestLog);
-            String credit = getBalance(gameSession, httpRequestLog);
+            BigDecimal credit = getBalance(gameSession, httpRequestLog);
             this.createSessionToken(credit, gameSession, httpRequestLog);
         } catch (Exception e) {
             throw new InvalidVendorResponseException("Failed to checkAndCreateAccount or getBalance or createSessionToken : " + e);
@@ -163,14 +164,15 @@ public class GameUrlService extends BaseGameUrlService<AgGameUrlVo> {
         }
     }
 
-    private void createSessionToken(String credit, GameSession gameSession, HttpRequestLog httpRequestLog)
+    private void createSessionToken(BigDecimal credit, GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException, TimeoutException, JsonProcessingException {
 
         MultiValueMap<String, String> param = new LinkedMultiValueMap<>();
         param.add("productid", this.getProductId());
         param.add("username", gameSession.getVendorPlayerUsername());
         param.add("session_token", gameSession.getToken());
-        param.add("credit", credit);
+        //vendor only accept 4 decimal
+        param.add("credit", credit.setScale(4, RoundingMode.DOWN).toString());
 
         httpRequestLog.setUrl(this.getCreateSessionUrl() + EndPoints.SESSION_TOKEN);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
@@ -184,14 +186,13 @@ public class GameUrlService extends BaseGameUrlService<AgGameUrlVo> {
         }
     }
 
-    public String getBalance(GameSession gameSession, HttpRequestLog httpRequestLog)
+    public BigDecimal getBalance(GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorLineException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         String traceId = httpRequestLog.getId();
-        String credit;
 
-        credit = walletService.getBalance(traceId, gameSession, httpRequestLog).toString();
+        BigDecimal credit = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-        if (credit == null || new BigDecimal(credit).compareTo(BigDecimal.ZERO) < 0) {
+        if (credit == null || credit.compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidVendorLineException("Balance cannot be null or negative: " + credit);
         }
         return credit;
