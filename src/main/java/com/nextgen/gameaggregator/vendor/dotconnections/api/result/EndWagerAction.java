@@ -35,6 +35,8 @@ public class EndWagerAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
+    private GameServiceImpl gameServiceImpl;
+    @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
@@ -230,7 +232,7 @@ public class EndWagerAction {
         GameSession gameSession;
 
         try {
-            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            gameSession = gameServiceImpl.getGameSessionByUsername(dto.getBrandUid());
 
         } catch (AuthenticationException e) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
