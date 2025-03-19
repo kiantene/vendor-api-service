@@ -254,7 +254,7 @@ public class CashTransferInOutAction {
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameService.getByVendorGameCodeAndVendorId(" + dto.getGameId() + "," + gameSession.getVendorId() + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
         //update session games while player is using session that is not matched with the game which played.
-        if (!vendorGame.getId().equals(gameSession.getVendorGameId())) {
+        if (vendorGame.getId() != gameSession.getVendorGameId()) {
             gameSession.setVendorGameId(vendorGame.getId());
             gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
             gameSession.setGameCode(vendorGame.getCode());
