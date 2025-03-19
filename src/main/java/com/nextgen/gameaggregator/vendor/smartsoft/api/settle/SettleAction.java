@@ -51,9 +51,9 @@ public class SettleAction {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         String method = httpRequestLog.getMethod();
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: " + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
         SettleDto settleDto;
         GameSession gameSession;
@@ -81,6 +81,7 @@ public class SettleAction {
             if (settleDto.getTransactionType().equals("CloseRound")) {
                 try {
                     settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     //settledBetService.getByVendorPlayerIdAndExternalTransactionId();
                 } catch (BetNotFoundException e) {
                     balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
@@ -126,5 +127,12 @@ public class SettleAction {
 
         //verify ClientExternalKey
         ValidationUtils.isEquals(gameSession.getVendorPlayerId().toString(), dto.getClientExternalKey(), AuthenticationException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
+
+        // Call the service with the duplicate log
+        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 }
