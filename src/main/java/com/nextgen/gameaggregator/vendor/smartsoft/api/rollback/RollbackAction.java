@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -30,17 +29,15 @@ import java.math.BigDecimal;
 public class RollbackAction {
     private final WalletService walletService;
     private final HttpService httpService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
 
     public RollbackAction(WalletService walletService,
                           HttpService httpService,
-                          ValidationService validationService,
-                          VendorService vendorService, VendorLineService vendorLineService) {
+                          VendorService vendorService,
+                          VendorLineService vendorLineService) {
         this.walletService = walletService;
         this.httpService = httpService;
-        this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
     }
