@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import jnr.ffi.annotations.In;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -31,7 +32,7 @@ public class SettleDto implements BetResultData {
 
     private Integer roomMode;
 
-    private BigDecimal betCount;
+    private Integer betCount;
 
     private BigDecimal totalBet;
 

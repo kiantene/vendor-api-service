@@ -38,7 +38,7 @@ public class SettleService {
 
         try {
             // Convert original request body into dto
-            SettleDto settleDto = HttpService.convertJsonToDto(decryptedParam, SettleDto.class);
+            SettleDto settleDto = HttpService.convertQueryStringToDto(decryptedParam, SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
@@ -61,12 +61,12 @@ public class SettleService {
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
             d.setMoney(balance);
-            //d.setRoomMode(gameSession.get);
-            d.setBetCount(1);
-            d.setTotalBet(settleDto.getBetAmount());
-            d.setValidBet(settleDto.getBetAmount());
-            d.setTotalWithdraw(balance);
-            d.setRevenue(balance);
+            d.setRoomMode(settleDto.getRoomMode());
+            d.setBetCount(settleDto.getBetCount());
+            d.setTotalBet(settleDto.getTotalBet());
+            d.setValidBet(settleDto.getValidBet());
+            d.setTotalWithdraw(settleDto.getTotalWithdraw());
+            d.setRevenue(settleDto.getRevenue());
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);
