@@ -64,12 +64,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.revenue;
+        return this.totalBet;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return null;
+        return this.revenue;
     }
 
     @Override
