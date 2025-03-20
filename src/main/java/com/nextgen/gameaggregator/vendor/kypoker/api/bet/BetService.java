@@ -57,13 +57,13 @@ public class BetService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
 
             ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
-            d.setMoney(balance);
+            d.setMoney(betEvent.getLastBalance());
             //d.setRoomMode(gameSession.get);
 
             // Construct VO

@@ -38,7 +38,7 @@ public class SettleService {
 
         try {
             // Convert original request body into dto
-            SettleDto settleDto = HttpService.convertQueryStringToDto(decryptedParam, SettleDto.class);
+            SettleDto settleDto = HttpService.convertJsonToDto(decryptedParam, SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
@@ -53,19 +53,20 @@ public class SettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.BET_WIN, vendorService, httpRequestLog);
+            ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
 
             ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
             d.setMoney(balance);
-            d.setRoomMode(settleDto.getRoomMode());
+            //d.setRoomMode(gameSession.get);
             d.setBetCount(1);
-            d.setTotalBet(settleDto.getTotalBet());
-            d.setValidBet(settleDto.getValidBet());
-            d.setTotalWithdraw(settleDto.getTotalWithdraw());
-            d.setRevenue(settleDto.getRevenue());
+            d.setTotalBet(settleDto.getBetAmount());
+            d.setValidBet(settleDto.getBetAmount());
+            d.setTotalWithdraw(balance);
+            d.setRevenue(balance);
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);
