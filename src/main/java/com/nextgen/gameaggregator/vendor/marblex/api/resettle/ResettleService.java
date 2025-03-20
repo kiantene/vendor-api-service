@@ -32,7 +32,7 @@ public class ResettleService {
         this.sportWalletService = sportWalletService;
     }
 
-    public CommonVo settleBet(HttpServletRequest request) {
+    public CommonVo resettle(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         CommonVo commonVo = new CommonVo();
