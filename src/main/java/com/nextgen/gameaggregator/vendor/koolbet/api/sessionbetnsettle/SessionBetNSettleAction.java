@@ -100,6 +100,10 @@ public class SessionBetNSettleAction {
 
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_ALREADY_ACCEPTED);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(balance);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_TOKEN_EXPIRED);

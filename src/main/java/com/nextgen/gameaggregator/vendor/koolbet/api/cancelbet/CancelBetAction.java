@@ -45,11 +45,11 @@ public class CancelBetAction {
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
-    public CommonVo rollback(HttpServletRequest request) {
+    public CommonVo rollback(HttpServletRequest request) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
 
         try {
@@ -60,8 +60,6 @@ public class CancelBetAction {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
-            GameSession gameSession;
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
             } catch (AuthenticationException authenticationException) { //if session expired
@@ -86,6 +84,10 @@ public class CancelBetAction {
 
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_ROUND_NOT_FOUND);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(balance);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  InvalidPlayerException |
@@ -95,6 +97,10 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(balance);
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
