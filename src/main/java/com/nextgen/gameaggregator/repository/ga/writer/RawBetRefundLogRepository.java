@@ -12,9 +12,6 @@ import org.springframework.stereotype.Repository;
 public interface RawBetRefundLogRepository extends CouchbaseRepository<RawBetRefundLog, String> {
 
     RawBetRefundLog findByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId);
-    
-    RawBetRefundLog findTop1ByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId);
-
 }
 
 
