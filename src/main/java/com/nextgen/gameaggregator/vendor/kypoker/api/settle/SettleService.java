@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.kypoker.vo.dObject;
+import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,7 +38,7 @@ public class SettleService {
 
         try {
             // Convert original request body into dto
-            SettleDto settleDto = HttpService.convertJsonToDto(decryptedParam, SettleDto.class);
+            SettleDto settleDto = HttpService.convertQueryStringToDto(decryptedParam, SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
@@ -53,20 +53,19 @@ public class SettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
-            ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
             d.setMoney(balance);
-            //d.setRoomMode(gameSession.get);
+            d.setRoomMode(settleDto.getRoomMode());
             d.setBetCount(1);
-            d.setTotalBet(settleDto.getBetAmount());
-            d.setValidBet(settleDto.getBetAmount());
-            d.setTotalWithdraw(balance);
-            d.setRevenue(balance);
+            d.setTotalBet(settleDto.getTotalBet());
+            d.setValidBet(settleDto.getValidBet());
+            d.setTotalWithdraw(settleDto.getTotalWithdraw());
+            d.setRevenue(settleDto.getRevenue());
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -74,7 +73,7 @@ public class SettleService {
             vo.setD(d);
 
         } catch (Exception e){
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);

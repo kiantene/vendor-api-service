@@ -1,15 +1,19 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.settle;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class SettleDto implements BetResultData {
 
-    private Integer s;
+    @JsonProperty("s")
+    private String s;
 
     private String account;
 
@@ -17,13 +21,25 @@ public class SettleDto implements BetResultData {
 
     private String gameNo;
 
-    private String gameId;
-
     private Integer kindId;
 
     private BigDecimal money;
 
     private String currency;
+
+    private String gameId;
+
+    private Integer roomMode;
+
+    private BigDecimal betCount;
+
+    private BigDecimal totalBet;
+
+    private BigDecimal validBet;
+
+    private BigDecimal totalWithdraw;
+
+    private BigDecimal revenue;
 
     @Override
     public String getExternalTransactionId() {
@@ -32,7 +48,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return "";
+        return this.orderId;
     }
 
     @Override
@@ -42,12 +58,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return String.valueOf(this.gameId);
+        return String.valueOf(this.kindId);
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.money;
+        return this.revenue;
     }
 
     @Override
@@ -57,7 +73,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.totalWithdraw;
     }
 
     @Override
@@ -92,6 +108,6 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        return BetStatus.SETTLED;
     }
 }

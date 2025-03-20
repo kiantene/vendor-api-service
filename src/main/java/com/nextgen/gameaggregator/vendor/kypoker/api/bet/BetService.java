@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.kypoker.vo.dObject;
+import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -13,6 +14,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 
+import java.math.BigDecimal;
+
 @Service
 public class BetService {
 
@@ -20,15 +23,17 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
+    private final VendorService vendorService;
 
     public BetService(GameService gameService,
                       WalletService walletService,
                       ValidationService validationService,
-                      GameSessionService gameSessionService) {
+                      GameSessionService gameSessionService, VendorService vendorService) {
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
+        this.vendorService = vendorService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
@@ -52,13 +57,13 @@ public class BetService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService, httpRequestLog);
 
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
-            d.setMoney(betEvent.getLastBalance());
+            d.setMoney(balance);
             //d.setRoomMode(gameSession.get);
 
             // Construct VO
@@ -67,7 +72,7 @@ public class BetService {
             vo.setD(d);
 
         } catch (Exception e){
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);

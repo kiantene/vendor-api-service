@@ -51,7 +51,7 @@ public class BalanceService {
             // 4. Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
@@ -63,14 +63,14 @@ public class BalanceService {
             vo.setD(d);
 
         } catch(InvalidPlayerException invalidPlayerException){
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(10);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
         } catch (Exception e){
-            dObject d = new dObject();
+            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(5);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);

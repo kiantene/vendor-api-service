@@ -9,7 +9,7 @@ public class CommonVo implements HttpResponse {
 
     private Integer s;
 
-    public dObject d;
+    public ResponseObjectDto d;
 
     @Override
     public boolean hasError() {

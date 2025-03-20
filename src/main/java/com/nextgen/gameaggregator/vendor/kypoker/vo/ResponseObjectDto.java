@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class dObject {
+public class ResponseObjectDto {
     private Integer code;
 
     private String account;
