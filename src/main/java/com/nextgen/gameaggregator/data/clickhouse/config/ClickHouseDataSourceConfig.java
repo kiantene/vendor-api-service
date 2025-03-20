@@ -15,18 +15,17 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 @Configuration
 public class ClickHouseDataSourceConfig {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ClickHouseDataSourceConfig.class);
     @Autowired
     RequestService requestService;
-    private static final Logger LOG = LoggerFactory.getLogger(ClickHouseDataSourceConfig.class);
-
     @Value("${spring.datasource.clickhouse-default.jdbc-url}")
-    private  String jdbcUrl;
+    private String jdbcUrl;
 
     @Value("${spring.datasource.clickhouse-default.username}")
-    private  String username;
+    private String username;
 
     @Value("${spring.datasource.clickhouse-default.password}")
-    private  String  password;
+    private String password;
 
     @Value("${spring.datasource.clickhouse-default.maximum-pool-size}")
     private Integer maximumPoolSize;
@@ -39,6 +38,12 @@ public class ClickHouseDataSourceConfig {
 
     @Value("${spring.datasource.clickhouse-default.idle-timeout:6000}")
     private Integer idleTimeout;
+
+    @Value("${spring.datasource.clickhouse-default.ssl}")
+    private String ssl;
+
+    @Value("${spring.datasource.clickhouse-default.sslmode}")
+    private String sslmode;
 
     @Bean
     public HikariDataSource clickHouseDataSource() {
@@ -54,11 +59,9 @@ public class ClickHouseDataSourceConfig {
         config.setIdleTimeout(idleTimeout);  // Set the maximum amount of time (in milliseconds) that a connection is allowed to sit idle in the pool
         config.setPoolName("ClickHouseHikariCP");
 
-        if (!requestService.isTestEnvironment()) {
-            // Set SSL properties
-            config.addDataSourceProperty("ssl", "true");
-            config.addDataSourceProperty("sslmode", "strict");  // Adjust this as necessary
-        }
+        // Set SSL properties
+        config.addDataSourceProperty("ssl", ssl);
+        config.addDataSourceProperty("sslmode", sslmode);  // Adjust this as necessary
 
         return new HikariDataSource(config);
     }

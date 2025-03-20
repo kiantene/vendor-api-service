@@ -361,7 +361,7 @@ public class WalletService {
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {
                 balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate);
             } else {
-                balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
+                balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
             }
 
             loggingService.logStart();
@@ -764,7 +764,7 @@ public class WalletService {
                 try {
                     // record operator processing time
                     walletBetResultData.setBalance(unsettledBet.getBalance());
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
+                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
                     BigDecimal balance = balanceVo.getData().getBalance();
 
                     rawBetResultLog.setOperatorStatus(this.operatorStatusSuccess);
@@ -824,7 +824,7 @@ public class WalletService {
                 walletBetResultData = unsettledBet;
 
                 try {
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
+                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balanceVo.getData().getBalance());
@@ -1039,7 +1039,7 @@ public class WalletService {
             fromVendorRate = vendorCurrency.getFromVendorRate();
 
             loggingService.logStart();
-            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog);
+            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog, vendorService.operatorTimeoutTiming());
             loggingService.logProcessTime("processRollback ｜ walletRollbackAction.call", traceId);
 
             //resettlement with below condition, then resettle_num need increase
