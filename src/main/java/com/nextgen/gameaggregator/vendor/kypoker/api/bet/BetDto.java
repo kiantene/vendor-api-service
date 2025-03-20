@@ -1,15 +1,19 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class BetDto implements BetResultData {
 
-    private Integer s;
+    @JsonProperty("s")
+    private String s;
 
     private String account;
 

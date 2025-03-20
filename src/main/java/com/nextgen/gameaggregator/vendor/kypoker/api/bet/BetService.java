@@ -37,7 +37,7 @@ public class BetService {
 
         try {
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertJsonToDto(decryptedParam, BetDto.class);
+            BetDto betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -91,7 +91,7 @@ public class BetService {
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");
         int mType = Integer.parseInt(parts[0]);
-        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getKindId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
