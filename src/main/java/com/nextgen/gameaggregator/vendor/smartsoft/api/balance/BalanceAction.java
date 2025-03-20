@@ -54,7 +54,7 @@ public class BalanceAction {
         HttpHeaders headers = new HttpHeaders();
         String body = httpRequestLog.getRequestBody();
         HttpStatus status = HttpStatus.OK;
-        httpRequestLog.setRequestBody("Request Body: " + body + "\n Request Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + body + "\nRequest Header: \n" + vendorService.getHeaders(request));
 
         try {
             BalanceDto balanceDto = new BalanceDto();

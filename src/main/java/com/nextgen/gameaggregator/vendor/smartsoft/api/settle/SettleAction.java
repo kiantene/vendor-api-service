@@ -52,7 +52,7 @@ public class SettleAction {
         String method = httpRequestLog.getMethod();
         BigDecimal balance;
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
         SettleDto settleDto;
         GameSession gameSession;
