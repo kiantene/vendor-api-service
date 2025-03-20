@@ -96,6 +96,6 @@ public class BetDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        return BetStatus.UNSETTLED;
     }
 }
