@@ -52,7 +52,7 @@ public class SessionBetNSettleAction {
     }
 
     @PostMapping(path = EndPoints.SESSION_BET)
-    public CommonVo bet(HttpServletRequest request) {
+    public CommonVo bet(HttpServletRequest request) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -106,10 +106,11 @@ public class SessionBetNSettleAction {
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_INSUFFICIENT_BALANCE);
-            responseVo.setBalance(BigDecimal.ZERO);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            responseVo.setBalance(balance);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            
+
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
