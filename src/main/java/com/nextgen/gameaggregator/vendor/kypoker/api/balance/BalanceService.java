@@ -59,21 +59,21 @@ public class BalanceService {
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
+            vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
         } catch(InvalidPlayerException invalidPlayerException){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(10);
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
+            vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(5);
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
+            vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
         }
         return vo;
