@@ -61,8 +61,8 @@ public class WalletTransactionBetHistoryService {
         });
     }
 
-    public Integer findById(String roundId) {
-        return rawWalletTransactionBetHistoryRepository.findById(roundId)
+    public Integer findById(String id) {
+        return rawWalletTransactionBetHistoryRepository.findById(id)
                 .map(RawWalletTransactionBetHistory::getStatus)
                 .orElse(null);
     }

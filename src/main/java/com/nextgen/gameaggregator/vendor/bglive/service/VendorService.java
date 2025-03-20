@@ -40,22 +40,23 @@ public class VendorService extends BaseVendorService {
 
     private final WalletRequestService walletRequestService;
     private final BetActionLogService betActionLogService;
+    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private GameSessionService gameSessionService;
     private UnsettledBetCachingService unsettledBetCachingService;
     private SettledBetService settledBetService;
     private BetNotFoundLogService betNotFoundLogService;
     private VendorLineService vendorLineService;
-    private WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
                          UnsettledBetCachingService unsettledBetCachingService,
-                         SettledBetService settledBetService, WalletRequestService walletRequestService, BetActionLogService betActionLogService) {
+                         SettledBetService settledBetService, WalletRequestService walletRequestService, BetActionLogService betActionLogService, WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
         this.gameSessionService = gameSessionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.settledBetService = settledBetService;
         this.walletRequestService = walletRequestService;
         this.betActionLogService = betActionLogService;
+        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public static String encryptCreateUserMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
@@ -154,9 +155,9 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public Integer walletTransactionBetHistoryStatus(String roundId)
+    public Integer walletTransactionBetHistoryStatus(String id)
             throws BetNotFoundException {
-        return walletTransactionBetHistoryService.findById(roundId);
+        return walletTransactionBetHistoryService.findById(id);
     }
 
     public Integer settledBetIdempotentCheck(GameSession gameSession, String externalId)

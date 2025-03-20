@@ -13,13 +13,11 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetActionLogRepository;
 import com.nextgen.gameaggregator.scheduler.betaction.*;
-import com.nextgen.gameaggregator.vendor.bglive.api.bet.OrdersDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -207,21 +205,7 @@ public class BetActionLogService {
         walletRequest.setVendorBetTime(generalRollbackDto.getVendorBetTime());
         walletRequest.setVendorSettleTime(generalRollbackDto.getVendorSettleTime());
     }
-
-    private void dataDebitMapper(WalletRequest walletRequest, OrdersDto ordersDto, GameSession gameSession) {
-        walletRequestService.updateByGameSession(walletRequest, gameSession);
-        walletRequest.setExternalTransactionId(ordersDto.getRoundId());
-        walletRequest.setRoundId(ordersDto.getRoundId());
-        walletRequest.setVendorGameCode(ordersDto.getGameId());
-        walletRequest.setTimestamp(System.currentTimeMillis());
-        walletRequest.setToken(gameSession.getToken());
-        walletRequest.setVendorBetId(ordersDto.getVendorBetId());
-        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        BigDecimal amount = ordersDto.getAmount().abs();
-        walletRequest.setTransferAmount(amount);
-        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-    }
-
+    
     public void processBetResult(RawBetActionLog betActionLog, Long currentTime) {
         GameSession gameSession;
         HttpRequestLog httpRequestLog = httpService.startBetActionRequest(betActionLog);
