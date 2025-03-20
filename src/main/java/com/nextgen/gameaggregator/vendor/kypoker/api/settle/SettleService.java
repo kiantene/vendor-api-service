@@ -32,7 +32,7 @@ public class SettleService {
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
     }
-    public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
+    public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -48,6 +48,8 @@ public class SettleService {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
+
+            settleDto.setTimeStamp(timeStamp);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance

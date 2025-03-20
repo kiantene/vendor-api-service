@@ -29,6 +29,8 @@ public class BetDto implements BetResultData {
 
     private String currency;
 
+    private Long timeStamp;
+
     @Override
     public String getExternalTransactionId() {
         return this.orderId;
@@ -71,7 +73,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return Long.valueOf(0);
+        return this.timeStamp;
     }
 
     @Override

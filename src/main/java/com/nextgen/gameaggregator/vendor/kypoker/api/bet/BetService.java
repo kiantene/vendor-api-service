@@ -36,7 +36,7 @@ public class BetService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
+    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -52,6 +52,8 @@ public class BetService {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
+
+            betDto.setTimeStamp(timeStamp);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance

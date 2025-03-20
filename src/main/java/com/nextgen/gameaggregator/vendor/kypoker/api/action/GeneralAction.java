@@ -97,7 +97,7 @@ public class GeneralAction {
             vo.setM(EndPoints.LAUNCH_GAME);
             // Handle the action and return the resulting value
             //httpService.end(httpRequestLog, vo);
-            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody);
+            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
@@ -115,7 +115,7 @@ public class GeneralAction {
 
     }
 
-    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString)
+    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
             throws AuthenticationException
     {
         CommonVo vo = new CommonVo();
@@ -123,11 +123,11 @@ public class GeneralAction {
         if (Actions.BALANCE.equals(actionDto.getS())) {
             vo = balanceService.balance(body, traceId, httpRequestLog, decryptedString);
         } else if (Actions.BET.equals(actionDto.getS())) {
-            vo = betService.bet(body, traceId, httpRequestLog, decryptedString);
+            vo = betService.bet(body, traceId, httpRequestLog, decryptedString, timeStamp);
         } else if (Actions.SETTLE.equals(actionDto.getS())) {
-            vo = settleService.settle(body, traceId, httpRequestLog, decryptedString);
+            vo = settleService.settle(body, traceId, httpRequestLog, decryptedString, timeStamp);
         } else if (Actions.CANCEL.equals(actionDto.getS())) {
-            vo = cancelService.cancel(body, traceId, httpRequestLog, decryptedString);
+            vo = cancelService.cancel(body, traceId, httpRequestLog, decryptedString, timeStamp);
         } else {
             if (vo.d == null) {
                 vo.d.setCode(ResponseCodes.INTERNAL_ERROR);

@@ -10,7 +10,7 @@ public class Actions {
     public static final Integer BALANCE = 1001;
     public static final Integer BET = 1002;
     public static final Integer SETTLE = 1003;
-    public static final Integer CANCEL = 1005;
+    public static final Integer CANCEL = 1004;
 
     // GA to Vendor
     public static final int GAME_URL = 21;

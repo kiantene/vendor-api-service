@@ -24,6 +24,7 @@ public class CancelDto implements RollbackData {
 
     private String currency;
 
+    private Long timeStamp;
 
     @Override
     public String getRollbackId() {
@@ -32,7 +33,7 @@ public class CancelDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return 0L;
+        return this.timeStamp;
     }
 
     @Override

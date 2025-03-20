@@ -8,6 +8,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionDto {
     Integer s;
+
     private HttpRequestLog httpRequestLog;
 
 }

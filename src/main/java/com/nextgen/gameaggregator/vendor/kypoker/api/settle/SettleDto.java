@@ -42,6 +42,8 @@ public class SettleDto implements BetResultData {
 
     private BigDecimal revenue;
 
+    private Long timeStamp;
+
     @Override
     public String getExternalTransactionId() {
         return this.orderId;
@@ -89,12 +91,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return 0L;
+        return this.timeStamp;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return 0L;
+        return this.timeStamp;
     }
 
     @Override

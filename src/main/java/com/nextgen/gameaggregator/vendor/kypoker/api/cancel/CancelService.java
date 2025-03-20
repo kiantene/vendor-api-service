@@ -33,7 +33,7 @@ public class CancelService {
         this.vendorService = vendorService;
     }
 
-    public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) throws AuthenticationException {
+    public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp) throws AuthenticationException {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -52,6 +52,8 @@ public class CancelService {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
+
+            cancelDto.setTimeStamp(timeStamp);
 
             // 4. Send refund to Operator
             balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
