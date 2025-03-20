@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +46,7 @@ public class VendorService extends BaseVendorService {
 
     public static String revertToUUID(String uuidString) throws AuthenticationException {
 
-        try{
+        try {
             StringBuilder sb = new StringBuilder(uuidString);
             sb.insert(8, "-");
             sb.insert(13, "-");

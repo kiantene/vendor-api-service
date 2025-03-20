@@ -91,10 +91,13 @@ public class TransferAction {
             //Get GameSession
             try {
                 gameSession = this.getGameSession(transferDto);
+                if (gameSession == null) { //handle if hit null session
+                    throw new AuthenticationException();
+                }
             } catch (AuthenticationException authenticationException) {
-                gameSession = gameSessionService.generateNewSessionToken(transferDto.getSubAuth().getUsername()); //generate new token
+                gameSession = gameSessionService.generateNewSessionToken(transferDto.getFundTransferRequestDto().getAccountId()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, transferDto.getBaseGame().getKeyName());
-                gameSessionService.updateByVendorCurrencyCode(gameSession, gameSession.getVendorCurrencyCode());
+                gameSessionService.updateByVendorCurrencyCode(gameSession, transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getCurrencyCode());
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }

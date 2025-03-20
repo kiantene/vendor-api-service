@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.service;
 
 import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingException;
 import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
+import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -137,7 +139,8 @@ public class SettledBetService {
     }
 
     public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
-            throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+            throws BetResultIdempotentViolationException, TransactionStillProcessingException,
+            AmbiguousTimeoutException, UnambiguousTimeoutException {
 
         Integer vendorId = gameSession.getVendorId();
         Integer vendorGameId = gameSession.getVendorGameId();

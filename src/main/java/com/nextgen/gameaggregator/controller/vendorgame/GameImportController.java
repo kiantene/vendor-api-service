@@ -39,13 +39,11 @@ public class GameImportController {
     VendorService vendorService;
     @Autowired
     GameCategoryService gameCategoryService;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @PostMapping(value = "upload", consumes = {"multipart/form-data"})
     public ResponseEntity<ImportResponse> uploadFile(@RequestParam(value = "file") MultipartFile file) {
         ImportResponse responseVo = new ImportResponse();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
 
             try {
                 String message = "";

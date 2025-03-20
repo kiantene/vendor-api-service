@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -21,19 +22,22 @@ public class CancelBetNSettleService {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final HttpService httpService;
 
     public CancelBetNSettleService(GameServiceImpl gameService,
                                    GameSessionService gameSessionService,
                                    WalletService walletService,
-                                   VendorService vendorService) {
+                                   VendorService vendorService,
+                                   HttpService httpService) {
 
         this.gameService = gameService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.httpService = httpService;
     }
 
-    public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId) {
+    public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -65,15 +69,19 @@ public class CancelBetNSettleService {
 
 
         } catch (BetNotFoundException | RecordNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, betNotFoundException);
             vo.setErrorResponseCode(ResponseCode.DATA_NOT_EXIST);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
 
         } catch (InvalidRequestException | JsonProcessingException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
                 vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
@@ -88,9 +96,11 @@ public class CancelBetNSettleService {
 
             }
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
             vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
                 //if found the bet in settled status
                 vo.setErrorResponseCode(ResponseCode.CANNOT_CANCEL);
@@ -102,6 +112,7 @@ public class CancelBetNSettleService {
 
             }
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         }

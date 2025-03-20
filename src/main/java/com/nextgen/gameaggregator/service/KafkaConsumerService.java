@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -54,7 +55,7 @@ public class KafkaConsumerService {
     private VendorPlayerService vendorPlayerService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException {
+    public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
 
         //prepare endRoundProcess Log
         Exception exception = null;
@@ -70,6 +71,9 @@ public class KafkaConsumerService {
         endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
         SettledBet settledBet = new SettledBet(endRoundSettledBet);
         settledBet.setResultType(endRoundSettledBet.getGaResultType());
+
+        //check if unsettledBet still exist, if no longer exist, throw BetNotFoundException
+        UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
 
         processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
         processEndRoundLog.setRoundId(settledBet.getRoundId());
@@ -100,14 +104,13 @@ public class KafkaConsumerService {
                 // kafkaService.produceWarehouseBetHistory
                 //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
             }
 
             //prepare delete unsettledBet
-            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
             unsettledBetService.delete(unsettledBet);
 
             //prepare and send endRound to operator
@@ -127,6 +130,107 @@ public class KafkaConsumerService {
                 //prepare and save processEndRoundLog if exception not null;
                 processEndRoundLog.setEndTime(System.currentTimeMillis());
                 RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
+            }
+        }
+    }
+
+    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V3, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void consumeEndRoundProcessV3(String message) {
+
+        //prepare endRoundProcess Log
+        Exception exception = null;
+        ObjectMapper objectMapper = new ObjectMapper();
+        EndRoundSettledBetForPatching endRoundSettledBetForPatching = null;
+        String newTraceId = UUID.randomUUID().toString();
+        HttpRequestLog httpRequestLog = httpService.startEndRoundConsumerLog();
+
+        ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
+        processEndRoundLog.setStartTime(System.currentTimeMillis());
+        processEndRoundLog.setTraceId(newTraceId);
+
+        try {
+            //prepare endRound and settleBet info
+            endRoundSettledBetForPatching = objectMapper.readValue(message, EndRoundSettledBetForPatching.class);
+            endRoundSettledBetForPatching.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            SettledBet settledBet = new SettledBet(endRoundSettledBetForPatching);
+            settledBet.setResultType(endRoundSettledBetForPatching.getGaResultType());
+
+            processEndRoundLog.setRawBody(endRoundSettledBetForPatching.getRawData());
+            processEndRoundLog.setRoundId(settledBet.getRoundId());
+            processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+
+            AgentPlayer agentPlayer = agentPlayerService.get(endRoundSettledBetForPatching.getAgentPlayerId());
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBetForPatching.getVendorPlayerId(), null);
+
+            //get is bet = sidebet
+            vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBetForPatching.getVendorGameId());
+
+            //get vendorCurrencyRate for the vendor
+            GameSession gameSession = new GameSession(endRoundSettledBetForPatching);
+            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
+
+            //update settledBet info
+            settledBetService.save(settledBet, settledBet.getRawData());
+
+            //prepare insert new betHistory data
+            BetHistory betHistory = new BetHistory(settledBet);
+            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                // process bet as normal bet and send to kafka topic_bet_history topic
+                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+                // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+                // kafkaService.produceWarehouseBetHistory
+                //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+            } else {
+                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+            }
+
+            //prepare delete unsettledBet
+            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
+            unsettledBetService.delete(unsettledBet);
+
+            //prepare and send endRound to operator
+            if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
+                this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBetForPatching, settledBet, httpRequestLog);
+            } else {
+                GeneralVo vo = new GeneralVo();
+                vo.setResponseCode(ResponseCode.SUCCESS);
+
+                httpRequestLog.setId(newTraceId);
+                httpRequestLog.setRoundId(settledBet.getRoundId());
+                httpRequestLog.setRequestBody(endRoundSettledBetForPatching.getRawData());
+                httpRequestLog.setAgentId(settledBet.getAgentId());
+                httpRequestLog.setVendorBetId(settledBet.getVendorBetId());
+                httpRequestLog.setVendorUsername(vendorPlayer.getUsername());
+                httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
+                httpRequestLog.setVendorId(settledBet.getVendorId());
+                httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
+                httpRequestLog.setGameToken(settledBet.getGameSessionToken());
+                httpRequestLog.setBetEnd(System.currentTimeMillis());
+                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
+                httpRequestLog.setOperatorStart(0L);
+                httpRequestLog.setOperatorEnd(0L);
+                httpService.end(httpRequestLog, vo);
+            }
+
+        } catch (GameNotSupportedException e) {
+            exception = e;
+
+        } catch (VendorCurrencyNotSupportException e) {
+            exception = e;
+
+        } catch (Exception e) {
+            exception = e;
+
+        } finally {
+            if (exception != null) {
+                //prepare and save processEndRoundLog if exception not null;
+                processEndRoundLog.setEndTime(System.currentTimeMillis());
+                RequestService.processEndRoundLogPatching(processEndRoundLog, exception, endRoundSettledBetForPatching);
             }
         }
     }

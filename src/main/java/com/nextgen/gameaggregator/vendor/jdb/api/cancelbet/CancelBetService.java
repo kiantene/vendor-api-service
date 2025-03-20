@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -21,19 +22,22 @@ public class CancelBetService {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final HttpService httpService;
 
     public CancelBetService(GameServiceImpl gameService,
                             GameSessionService gameSessionService,
                             WalletService walletService,
-                            VendorService vendorService) {
+                            VendorService vendorService,
+                            HttpService httpService) {
 
         this.gameService = gameService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.httpService = httpService;
     }
 
-    public CommonVo cancelBet(ActionDto actionDto, String traceId) {
+    public CommonVo cancelBet(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -68,12 +72,15 @@ public class CancelBetService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetRefundIdempotentViolationException | RecordNotFoundException successException) {
+            httpService.logError(httpRequestLog, successException);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
                 vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
@@ -88,6 +95,7 @@ public class CancelBetService {
 
             }
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null) {
                 String violation = invalidRequestException.getValidation()
                         .entrySet().stream().findFirst().map(Map.Entry::getValue).orElse(ResponseCode.INVALID_REQUEST_PARAMETER);
@@ -98,13 +106,16 @@ public class CancelBetService {
 
             }
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException |
                  DisabledGameException exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
                 //if found the bet in settled status
                 vo.setErrorResponseCode(ResponseCode.CANNOT_CANCEL);
@@ -116,6 +127,7 @@ public class CancelBetService {
 
             }
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         }
@@ -128,7 +140,7 @@ public class CancelBetService {
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
-            CurrencyNotSupportedException, DisabledGameException {
+            CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);

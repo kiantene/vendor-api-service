@@ -42,9 +42,4 @@ public class VendorService extends BaseVendorService {
     public boolean shouldRejectCancelRequest() {
         return false;
     }
-
-    @Override
-    public boolean shouldSettleByBet() {
-        return true;
-    }
 }

@@ -64,26 +64,30 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
-        // spribe
-        this.betWinVendorList.add(32);
-
-        // DB
-        this.betWinVendorList.add(55);
-
-        // spadegaming
-        this.betWinVendorList.add(7);
-        this.betLoseVendorList.add(7);
-
-        // habanero
-        this.betWinVendorList.add(19);
-        this.betLoseVendorList.add(19);
-
-        // cpg
-        this.betWinVendorList.add(48);
-        this.betLoseVendorList.add(48);
+        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75));
+        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75));
     }
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
+        String jsonApiResponse = null;
+        currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
+
+        long startTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            httpRequestLog.setAgentId(agentId);
+            jsonApiResponse = new Gson().toJson(dto);
+
+        }
+
+        responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+        betResultRetryLogService.create(jsonApiResponse, gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
+
+        return responseVo;
+    }
+
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, Integer timeoutTiming)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         WalletBalanceVo responseVo = new WalletBalanceVo();
@@ -127,7 +131,7 @@ public class WalletBetResultAction {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(timeoutTiming))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
                         return Mono.error(e);
@@ -170,6 +174,15 @@ public class WalletBetResultAction {
             //5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
+            if (dto.getBetAmount().compareTo(BigDecimal.ZERO) > 0) { //if bet amount exist in result
+                //operator check negative value
+                BigDecimal balance = responseVo.getData().getBalance();
+                boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+                if (isNegativeBalance) {
+                    throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+                }
+            } //else do nothing
+
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
@@ -193,11 +206,13 @@ public class WalletBetResultAction {
                     // WIN, LOSE, END resultType will be force success.
                     shouldForceSuccess = true;
 
-                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))) {
+                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))
+                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
                     // BET_WIN resultType will be force success, but only apply to certain vendors
                     shouldForceSuccess = true;
 
-                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))) {
+                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))
+                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
                     // BET_WIN resultType will be force success, but only apply to certain vendors
                     shouldForceSuccess = true;
 

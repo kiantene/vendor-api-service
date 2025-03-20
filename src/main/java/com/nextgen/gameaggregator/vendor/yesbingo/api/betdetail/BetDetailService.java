@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.betdetail;
 
-import com.couchbase.client.core.deps.com.google.gson.JsonObject;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;

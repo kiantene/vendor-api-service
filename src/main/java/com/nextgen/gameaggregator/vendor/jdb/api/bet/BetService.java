@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -9,25 +10,30 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class BetService {
 
     private final GameService gameService;
     private final WalletService walletService;
     private final ValidationService validationService;
+    private final HttpService httpService;
 
     public BetService(GameServiceImpl gameService,
                       WalletService walletService,
-                      ValidationService validationService) {
+                      ValidationService validationService,
+                      HttpService httpService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
+        this.httpService = httpService;
     }
 
-    public CommonVo bet(ActionDto actionDto, String traceId) {
+    public CommonVo bet(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -54,20 +60,25 @@ public class BetService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             vo.setBalance(betResultIdempotentViolationException.getBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (InsufficientBalanceException nsufficientBalanceException) {
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (InvalidAgentApiCredentialException | GameNotSupportedException | CurrencyNotSupportedException |
                  JsonProcessingException invalidValidRequestException) {
+            httpService.logError(httpRequestLog, invalidValidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
                 String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
@@ -76,15 +87,19 @@ public class BetService {
             }
 
         } catch (DisabledVendorLineException | DisabledGameException | DisabledAgentPlayerException failedException) {
+            httpService.logError(httpRequestLog, failedException);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
+            httpService.logError(httpRequestLog, cannotCancelException);
             vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
 
         } catch (InvalidPlayerException invalidPlayerException) {
+            httpService.logError(httpRequestLog, invalidPlayerException);
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 

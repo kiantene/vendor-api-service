@@ -1,12 +1,5 @@
 package com.nextgen.gameaggregator.vendor.alize.api.cancelbet;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -17,9 +10,14 @@ import com.nextgen.gameaggregator.vendor.alize.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alize.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alize.service.VendorService;
 import com.nextgen.gameaggregator.vendor.alize.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -53,7 +51,16 @@ public class CancelBetAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession;
+            try { //this check only verify if it's null, not status = 0
+                gameSession = gameSessionService.verifyToken(dto.getToken());
+            } catch (AuthenticationException authenticationException) { //if session expired
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUsername()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -74,10 +81,6 @@ public class CancelBetAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             httpService.logError(httpRequestLog, invalidRequestException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -144,7 +147,6 @@ public class CancelBetAction {
             throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
-        validationService.validateEligibleBet(gameSession, dto.getUsername());
         // Verify operator ID
         ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameService;
@@ -13,27 +14,32 @@ import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
+@Slf4j
 public class SettleService {
 
     private final GameService gameService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final HttpService httpService;
 
     public SettleService(GameServiceImpl gameService,
                          WalletService walletService,
-                         VendorService vendorService) {
+                         VendorService vendorService,
+                         HttpService httpService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.httpService = httpService;
     }
 
-    public CommonVo settle(ActionDto actionDto, String traceId) {
+    public CommonVo settle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -57,25 +63,32 @@ public class SettleService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             vo.setBalance(betResultIdempotentViolationException.getBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (BetNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
+            httpService.logError(httpRequestLog, cannotCancelException);
             vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (InvalidAgentApiCredentialException | JsonProcessingException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
                 String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
@@ -84,7 +97,7 @@ public class SettleService {
             }
 
         } catch (Exception exception) {
-
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 

@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.habanero.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
@@ -102,34 +101,6 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public void betResultIdempotentCheck(GameSession gameSession, String externalTransactionId, String roundId)
-            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
-
-        String vendorGameId = gameSession.getVendorGameId().toString();
-        String vendorPlayerId = gameSession.getVendorPlayerId().toString();
-        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
-        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-
-        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(externalTransactionId, roundId, vendorGameId, vendorPlayerId);
-
-        if (rawBetResultLog != null) {
-            Integer operatorStatus = rawBetResultLog.getOperatorStatus();
-
-            // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                throw new TransactionStillProcessingException();
-
-            } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                throw new BetResultIdempotentViolationException(rawBetResultLog);
-
-            } else { // when bet result found and operator status is error
-                //no action
-            }
-        } else { // when bet result not found
-            //no action
-        }
-    }
-
     public void settledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException {
 
@@ -159,11 +130,6 @@ public class VendorService extends BaseVendorService {
         } catch (BetNotFoundException betNotFoundException) {
             //no action
         }
-    }
-
-    @Override
-    public boolean shouldRejectCancelRequest() {
-        return false;
     }
 
 }

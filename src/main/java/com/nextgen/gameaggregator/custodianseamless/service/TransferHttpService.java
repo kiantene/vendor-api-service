@@ -1,14 +1,12 @@
 package com.nextgen.gameaggregator.custodianseamless.service;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.custodianseamless.constant.TransactionStatus;
 import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.KafkaService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -19,14 +17,10 @@ import static com.nextgen.gameaggregator.service.HttpService.THREAD_POOL;
 @Slf4j
 public class TransferHttpService {
 
-    @Value("${version}")
-    private String appVersion;
     private final HttpService httpService;
-    private final KafkaService kafkaService;
 
-    public TransferHttpService(HttpService httpService, KafkaService kafkaService) {
+    public TransferHttpService(HttpService httpService) {
         this.httpService = httpService;
-        this.kafkaService = kafkaService;
     }
 
     public TransferWalletRequestLog start(HttpServletRequest request) {
@@ -43,8 +37,6 @@ public class TransferHttpService {
                 transferWalletRequestLog.setSignature(request.getHeader("x-signature"));
             }
 
-            transferWalletRequestLog.setVer(this.appVersion);
-            transferWalletRequestLog.setServer(request.getLocalName());
             transferWalletRequestLog.setRequestBody(requestBody);
             transferWalletRequestLog.setStatus(TransactionStatus.PROCESSING.status);
 
@@ -60,12 +52,12 @@ public class TransferHttpService {
             transferWalletRequestLog.setEnd(System.currentTimeMillis());
             THREAD_POOL.submit(() -> {
                 try {
-                    String jsonResponseVo = new Gson().toJson(responseVo);
+                    String jsonResponseVo = new ObjectMapper().writeValueAsString(responseVo);
                     transferWalletRequestLog.setResponseBody(jsonResponseVo);
                     transferWalletRequestLog.setStatus(!responseVo.hasError() ?
                             TransactionStatus.SUCCESS.status : TransactionStatus.FAIL.status);
 
-                    kafkaService.produceTransferWalletRequestLog(transferWalletRequestLog);
+                    log.info(transferWalletRequestLog.toJson());
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());

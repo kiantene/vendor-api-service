@@ -29,8 +29,6 @@ import java.util.Map;
 @RequestMapping(path = EndPoints.API_VERIFY_PATH)
 @Slf4j
 public class BalanceAction {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @Autowired
     RequestService requestService;
@@ -47,7 +45,7 @@ public class BalanceAction {
     public ResponseResultVo<Object> walletBet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseResultVo<Object> responseResultVo = new ResponseResultVo<>();
-        if (requestService.isTestEnvironment(profilesActive)) {
+        if (requestService.isTestEnvironment()) {
             try {
 
                 // Retrieve request body in original string format and convert into dto

@@ -34,12 +34,12 @@ public class BetDto extends ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override
     public BigDecimal getNewBetAmount() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override
@@ -54,7 +54,7 @@ public class BetDto extends ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override

@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = true)
 public class TransferWalletRequestLog extends BaseApiLog {
 
+    public static final String LOG_GROUP = "transfer-wallet-request";
     public static final String BALANCE = "Balance";
     public static final String DEPOSIT = "Deposit";
     public static final String WITHDRAWAL = "Withdrawal";
@@ -35,6 +36,7 @@ public class TransferWalletRequestLog extends BaseApiLog {
 
     public TransferWalletRequestLog() {
         super();
+        this.setLogGroup(LOG_GROUP);
     }
 
     public void setWalletEnd(Long walletEnd) {

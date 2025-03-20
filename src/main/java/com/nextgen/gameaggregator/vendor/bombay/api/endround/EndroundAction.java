@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.bombay.api.endround;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -21,12 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class EndroundAction {
+    @Autowired
+    VendorService vendorService;
+    @Autowired
+    ValidationService validationService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -40,11 +44,9 @@ public class EndroundAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    VendorService vendorService;
-    @Autowired
-    ValidationService validationService;
-    @Autowired
     private RedissonService redissonService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     @PostMapping(path = EndPoints.END_ROUND)
     public ResponseVo credit(HttpServletRequest request) {
@@ -61,11 +63,11 @@ public class EndroundAction {
 
         RLock userLock = null;
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             // get x-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             endroundDto = HttpService.convertJsonToDto(body, EndroundDto.class);
 
@@ -73,7 +75,18 @@ public class EndroundAction {
             this.doValidation(endroundDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(endroundDto.getToken());
+            try {
+                gameSession = gameSessionService.verifyToken(endroundDto.getToken()); //token check
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(endroundDto.getGame_id(), gameSession);
+
+            } catch (AuthenticationException authenticationException) { //if expired
+                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(endroundDto.getRound());
+                gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, endroundDto.getGame_id());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(endroundDto, gameSession, header.get("x-signature"), body);
@@ -83,7 +96,7 @@ public class EndroundAction {
             userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + endroundDto.getRound());
 
             // if it is not lock meant is lose
-            if(!userLock.isLocked()){
+            if (!userLock.isLocked()) {
                 // this end-point just handle transaction with end status, so set it as result end
                 ResultType resultType = ResultType.END;
 
@@ -92,7 +105,7 @@ public class EndroundAction {
             }
 
             responseVo.setStatus(ResponseCodes.RS_OK);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
@@ -103,36 +116,36 @@ public class EndroundAction {
                         .orElse(ResponseCodes.RS_ERROR_UNKNOWN); // if there's no value, set it to the default value
                 responseVo.setStatus(violation);
             }
-        } catch(AuthenticationException e){
+        } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
-        } catch(InvalidPlayerException e){
+        } catch (InvalidPlayerException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
-        } catch(InvalidSignatureException e){
+        } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
-        } catch(BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
-        } catch(VendorCurrencyNotSupportException |
-                InsufficientBalanceException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
-                TransactionStillProcessingException |
-                DisabledGameException e){
+        } catch (VendorCurrencyNotSupportException |
+                 InsufficientBalanceException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 DisabledAgentPlayerException |
+                 MergedBetDataIntegrityException |
+                 TransactionStillProcessingException |
+                 DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } finally{
+        } finally {
             // Release the lock if we acquired it and still hold it
-            if (userLock != null && userLock.isHeldByCurrentThread()) {
-                userLock.unlock();
+            if (userLock != null) {
+                userLock.forceUnlock();
             }
 
             responseVo.setRequest_uuid(endroundDto.getRequest_uuid());
@@ -148,8 +161,6 @@ public class EndroundAction {
     }
 
     private void doVerification(EndroundDto dto, GameSession gameSession, String x_signature, String request_body) throws GameNotSupportedException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidSignatureException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
@@ -162,7 +173,7 @@ public class EndroundAction {
         Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
 
         // validateSignature not equal to true mean credential problem or this data is not from vendor
-        if(!validateSignature){
+        if (!validateSignature) {
             throw new InvalidSignatureException();
         }
     }
