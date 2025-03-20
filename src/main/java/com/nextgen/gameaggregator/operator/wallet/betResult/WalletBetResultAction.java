@@ -87,7 +87,7 @@ public class WalletBetResultAction {
         return responseVo;
     }
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, Integer timeoutTiming)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         WalletBalanceVo responseVo = new WalletBalanceVo();
@@ -131,7 +131,7 @@ public class WalletBetResultAction {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(timeoutTiming))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
                         return Mono.error(e);

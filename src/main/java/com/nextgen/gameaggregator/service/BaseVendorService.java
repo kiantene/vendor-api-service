@@ -102,4 +102,9 @@ public abstract class BaseVendorService {
     public List<UnsettledBet> getVendorClassFileUnsettledBetList() {
         return Collections.emptyList();
     }
+
+    public Integer operatorTimeoutTiming() {
+        Integer defaultTiming = 5000;
+        return defaultTiming;
+    }
 }
