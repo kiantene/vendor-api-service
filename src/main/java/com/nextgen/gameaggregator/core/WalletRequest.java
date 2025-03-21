@@ -50,6 +50,8 @@ public class WalletRequest {
     protected String newVendorBetId;
     protected String newRoundId;
     protected Boolean isPreProcessBet = false;
+    // Is Refund Info
+    protected Integer isRefund = 0;
     // Sports Bet Info
     protected BigDecimal newBetAmount;
     protected BigDecimal newWinAmount;

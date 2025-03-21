@@ -14,7 +14,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
-import com.nextgen.gameaggregator.vendor.bglive.constant.NiuBetMagnificate;
+import com.nextgen.gameaggregator.vendor.bglive.constant.NiuBetMagnification;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
@@ -87,7 +87,7 @@ public class BetService {
                     body, executor);
 
             //check all orders balance
-            balance = vendorService.checkResponseAndReturnBalance(resultVoList, processFailed);
+            balance = vendorService.checkResponseAndReturnBalance(resultVoList);
             if (balance == null) {
                 processFailed = true;
                 throw new BetFailedException("Have Transaction Failed");
@@ -162,6 +162,7 @@ public class BetService {
         return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
+    //Concurrent process orders
     private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body,
                                  GameSession gameSession) {
 
@@ -184,13 +185,14 @@ public class BetService {
                 boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(ordersDto.getPlayId()));
                 if (isDoublePlay) {
                     BigDecimal doublePlayAmount = ordersDto.getBetAmount().
-                            multiply(BigDecimal.valueOf(NiuBetMagnificate.niuBetMagnificate));
+                            multiply(BigDecimal.valueOf(NiuBetMagnification.NIU_BET_MAGNIFICATION));
                     ordersDto.setAmount(doublePlayAmount);
                 }
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
-                walletTransactionBetHistoryService.create(walletRequest, gameSession);
+                //create wallet transaction bet history
+                walletTransactionBetHistoryService.create(currentWalletRequest, gameSession);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
@@ -217,6 +219,7 @@ public class BetService {
         return resultVo;
     }
 
+    //process all orders
     private List<CompletableFuture<ResultVo>> processAllOrders(BetDto betDto, HttpServletRequest httpServletRequest,
                                                                String body, ExecutorService executor) throws
             AuthenticationException {
@@ -268,6 +271,7 @@ public class BetService {
         httpService.logError(httpRequestLog, e);
     }
 
+    //Exception figure which is bull game
     private void handleRollbackForFailedBets(BetDto betDto, GameSession gameSession) {
         boolean isBullBullGame = betDto.getParamsDto().getOrders().stream()
                 .anyMatch(o -> GameCode.BULL_BULL.equals(o.getGameId()));
@@ -320,6 +324,7 @@ public class BetService {
         }
     }
 
+    //prepare dto to rollback
     private GeneralCreditDto mapToGeneralCreditDto(OrdersDto ordersDto, BetDto betDto, GameSession gameSession) {
         GeneralCreditDto generalCreditDto = modelMapper.map(ordersDto, GeneralCreditDto.class);
         generalCreditDto.setTakeAll(0);
@@ -329,6 +334,7 @@ public class BetService {
         generalCreditDto.setToken(gameSession.getToken());
         generalCreditDto.setVendorGameCode(gameSession.getVendorGameCode());
         generalCreditDto.setVendorSettleTime(System.currentTimeMillis());
+        generalCreditDto.setIsRollBack(1);
         return generalCreditDto;
     }
 }

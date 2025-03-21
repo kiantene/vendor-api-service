@@ -4,6 +4,7 @@ package com.nextgen.gameaggregator.vendor.bglive.service;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
@@ -123,6 +124,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    // wait all concurrent threads
     public static <T> List<T> processMultipleDataResponds(List<CompletableFuture<T>> futureList) {
         List<CompletableFuture<T>> futuresWithTimeout = futureList.stream()
                 .map(future -> future.orTimeout(5L, TimeUnit.SECONDS)
@@ -155,9 +157,9 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public Integer walletTransactionBetHistoryStatus(String id)
-            throws BetNotFoundException {
-        return walletTransactionBetHistoryService.findById(id);
+    public RawWalletTransactionBetHistory getWalletTransactionBetHistory(String id) {
+
+        return walletTransactionBetHistoryService.findWalletTransactionBetHistory(id);
     }
 
     public Integer settledBetIdempotentCheck(GameSession gameSession, String externalId)
@@ -205,7 +207,7 @@ public class VendorService extends BaseVendorService {
                 .orElse(null);
     }
 
-    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList, Boolean processFailed) throws InsufficientBalanceException {
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
 
         for (ResultVo resultVo : resultList) {

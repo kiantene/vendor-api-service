@@ -37,7 +37,8 @@ public class WalletTransactionBetHistoryService {
 
     }
 
-    public void update(WalletRequest walletRequest, GameSession gameSession) {
+    //status 0 = bet fail ,1= bet sucess ,2= credit _success ,3= rollback_sucess
+    public void update(WalletRequest walletRequest) {
 
         String id = walletRequest.getRoundId();
         rawWalletTransactionBetHistoryRepository.findById(id).ifPresent(existingRecord -> {
@@ -46,25 +47,20 @@ public class WalletTransactionBetHistoryService {
             if (winLoss == null && walletRequest.getBetAmount() != null && walletRequest.getWinAmount() != null) {
                 winLoss = walletRequest.getWinAmount().subtract(walletRequest.getBetAmount());
             }
+            if (walletRequest.getIsRefund().equals(1)) {
+                existingRecord.setStatus(3);
+            } else {
+                existingRecord.setStatus(2);
+            }
             existingRecord.setWinLoss(winLoss);
             existingRecord.setWinAmount(walletRequest.getTransferAmount());
 
-            assert winLoss != null;
-            if (winLoss.compareTo(BigDecimal.ZERO) < 0) {
-                existingRecord.setStatus(4);
-            } else if (winLoss.compareTo(BigDecimal.ZERO) > 0) {
-                existingRecord.setStatus(2);
-            } else {
-                existingRecord.setStatus(3);
-            }
             rawWalletTransactionBetHistoryRepository.save(existingRecord);
         });
     }
 
-    public Integer findById(String id) {
-        return rawWalletTransactionBetHistoryRepository.findById(id)
-                .map(RawWalletTransactionBetHistory::getStatus)
-                .orElse(null);
+    public RawWalletTransactionBetHistory findWalletTransactionBetHistory(String orderId) {
+        return rawWalletTransactionBetHistoryRepository.findById(orderId).orElse(null);
     }
 }
 

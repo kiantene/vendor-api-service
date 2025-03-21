@@ -23,5 +23,6 @@ public class GeneralCreditDto {
     private Integer resultType;
     private Long vendorBetTime;
     private Long vendorSettleTime;
+    private Integer isRollBack;
 
 }

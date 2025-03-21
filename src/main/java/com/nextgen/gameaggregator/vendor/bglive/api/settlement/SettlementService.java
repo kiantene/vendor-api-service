@@ -71,7 +71,7 @@ public class SettlementService {
         CommonVo commonVo = new CommonVo();
         ExecutorService executor = null;
         try {
-//            Thread.sleep(10000);
+            Thread.sleep(10000);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             int orderCount = settleDto.getParamsDto().getOrders().size();
@@ -101,6 +101,7 @@ public class SettlementService {
         return commonVo;
     }
 
+    //process all orders
     private List<CompletableFuture<ResultVo>> processAllOrders(SettleDto settleDto, HttpServletRequest httpServletRequest,
                                                                GameSession gameSession, ExecutorService executor) {
         List<CompletableFuture<ResultVo>> balanceList = new LinkedList<>();
@@ -161,6 +162,7 @@ public class SettlementService {
         return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
+    //Concurrent process orders
     private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest,
                                  GameSession gameSession) {
 
@@ -188,7 +190,8 @@ public class SettlementService {
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
-                walletTransactionBetHistoryService.update(walletRequest, gameSession);
+                //Update walletTransaction Bet History
+                walletTransactionBetHistoryService.update(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
                 // Process Result
@@ -259,6 +262,7 @@ public class SettlementService {
         httpService.logError(httpRequestLog, e);
     }
 
+    //Process betResult retry settledto
     private void prepareSettleBet(OrdersDto ordersDto, GameSession gameSession, ResultType resultType) {
         ExecutorService executor = vendorService.createThreadPool(ThreadSize.SETTLE_THREAD_SIZE);
         executor.submit(() -> {
@@ -269,6 +273,7 @@ public class SettlementService {
         });
     }
 
+    //prepare retry credit dto
     private void prepareSettleCredit(OrdersDto ordersDto, ParamsDto paramsDto, GameSession gameSession,
                                      ResultType resultType) {
         ExecutorService executor = vendorService.createThreadPool(ThreadSize.SETTLE_THREAD_SIZE);

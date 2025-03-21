@@ -3,13 +3,14 @@ package com.nextgen.gameaggregator.vendor.bglive.api.query;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletTransactionBetHistoryService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bglive.constant.QueryStatus;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
 import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
@@ -17,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -29,16 +31,13 @@ public class QueryService {
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     public QueryService(HttpService httpService,
                         GameSessionService gameSessionService,
-                        VendorService vendorService,
-                        WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                        VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
-        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public CommonVo query(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -51,6 +50,8 @@ public class QueryService {
             executor = vendorService.createThreadPool(orderCount);
             // Handle the action and return the resulting value
             this.doValidation(queryDto);
+
+            // Concurrent process data
             List<CompletableFuture<QueryVo>> queryVoList = new LinkedList<>();
             for (OrdersMapDto ordersMapDto : queryDto.getParamsDto().getOrdersMapDto()) {
                 GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername
@@ -110,6 +111,7 @@ public class QueryService {
         ValidationUtils.validateRequest(ordersMapDto);
     }
 
+    //Check bet status
     private Integer checkBetAvailable(GameSession gameSession, OrdersMapDto ordersMapDto) throws
             BetNotFoundException {
 
@@ -121,16 +123,17 @@ public class QueryService {
             status = vendorService.settledBetIdempotentCheck(gameSession, orderId);
         } catch (BetNotFoundException e) {
             status = vendorService.unsettledBetIdempotentCheck(orderId);
-            if (status.equals(0)) {
-                status = vendorService.walletTransactionBetHistoryStatus(orderId);
+            if (status == null || status.equals(0)) {
+                RawWalletTransactionBetHistory rawWalletTransactionBetHistory = vendorService.getWalletTransactionBetHistory(orderId);
+                status = checkBetHistoryStatus(rawWalletTransactionBetHistory);
             } else {
-                return status;
+                status = QueryStatus.NO_BET;
             }
-
         }
-        return status;
+        return (status != null) ? status : QueryStatus.NO_BET;
     }
 
+    //Process Data
     private QueryVo processData(OrdersMapDto ordersMapDto, HttpServletRequest httpServletRequest, GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
@@ -150,6 +153,29 @@ public class QueryService {
         return queryVo;
     }
 
+    //Verify the status code
+    private Integer checkBetHistoryStatus(RawWalletTransactionBetHistory rawWalletTransactionBetHistory) {
+        Integer status;
+        BigDecimal winLoss = rawWalletTransactionBetHistory.getWinLoss();
+        Integer betHistoryStatus = rawWalletTransactionBetHistory.getStatus();
+
+        if (betHistoryStatus.equals(1)) {
+            status = QueryStatus.UNSETTLE_BET;
+        } else if (betHistoryStatus.equals(2)) {
+            if (winLoss.compareTo(BigDecimal.ZERO) < 0) {
+                status = QueryStatus.SETTLE_LOSE;
+            } else if (winLoss.compareTo(BigDecimal.ZERO) > 0) {
+                status = QueryStatus.SETTLE_WIN;
+            } else {
+                status = QueryStatus.SETTLE_TIE;
+            }
+        } else {
+            status = QueryStatus.NO_BET;
+        }
+        return status;
+    }
+
+    // check query list
     private List<QueryVo> processAndValidateQueryResponses(List<CompletableFuture<QueryVo>> queryVoList) throws
             BetNotFoundException {
         List<QueryVo> queryList = VendorService.processMultipleDataResponds(queryVoList);
