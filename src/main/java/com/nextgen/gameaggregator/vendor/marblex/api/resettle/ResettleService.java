@@ -13,7 +13,8 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.jvnet.hk2.annotations.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ResettleService {
@@ -23,6 +24,7 @@ public class ResettleService {
     public final VendorService vendorService;
     private final SportWalletService sportWalletService;
 
+    @Autowired
     public ResettleService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
                            VendorService vendorService, SportWalletService sportWalletService) {
         this.httpService = httpService;
