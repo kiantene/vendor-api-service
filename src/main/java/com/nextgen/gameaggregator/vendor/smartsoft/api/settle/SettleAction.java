@@ -54,7 +54,7 @@ public class SettleAction {
         //Add request header log
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
-        SettleDto settleDto;
+        SettleDto settleDto = null;
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
@@ -86,6 +86,16 @@ public class SettleAction {
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            if (settleDto.getTransactionType().equals("CloseRound")) {
+                vo.setTransactionId(httpRequestLog.getId());
+                vo.setBalance(e.getBalance());
+            } else {
+                status = HttpStatus.INTERNAL_SERVER_ERROR;
+                headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
+                headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
+            }
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -131,12 +141,12 @@ public class SettleAction {
 
     private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
         BigDecimal balance;
-        try {
-            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-        } catch (BetNotFoundException e) {
-            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-        }
+//        try {
+//            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+//            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+//        } catch (BetNotFoundException e) {
+        balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
+//        }
         return balance;
     }
 }
