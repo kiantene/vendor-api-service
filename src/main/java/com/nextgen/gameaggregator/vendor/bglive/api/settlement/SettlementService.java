@@ -71,7 +71,7 @@ public class SettlementService {
         CommonVo commonVo = new CommonVo();
         ExecutorService executor = null;
         try {
-            Thread.sleep(10000);
+//            Thread.sleep(10000);
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             int orderCount = settleDto.getParamsDto().getOrders().size();
