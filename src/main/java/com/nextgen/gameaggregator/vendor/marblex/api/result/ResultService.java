@@ -72,15 +72,15 @@ public class ResultService {
         } catch (InvalidOperatorResponseException exception) {
             commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-        } catch (BetResultIdempotentViolationException exception){
+        } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
-            httpService.logError(httpRequestLog,exception);
-        } catch (Exception exception){
+            httpService.logError(httpRequestLog, exception);
+        } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
-            httpService.logError(httpRequestLog,exception);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             commonVo.setTraceId(resultDto.getTraceId());
-            httpService.end(httpRequestLog,commonVo);
+            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }
