@@ -58,10 +58,4 @@ public class ActionController {
         return this.resettleService.resettle(request);
     }
 
-    @PostMapping(path = EndPoints.VOID)
-    public CommonVo voidBet(HttpServletRequest request) {
-        return this.resultService.settleBet(request);
-    }
-
-
 }

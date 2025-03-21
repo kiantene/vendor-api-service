@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelDto;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
@@ -40,10 +41,10 @@ public class VendorService extends BaseVendorService {
 
     public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidCurrencyException, AuthenticationException {
 
-        if(checkBet) {
+        if (checkBet) {
             // validate vendor username, agent vendor line, player status, and game status
             validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
-        }else {
+        } else {
             // Verify vendor line is active
             vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -72,5 +73,10 @@ public class VendorService extends BaseVendorService {
         walletRequest.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
         walletRequest.setBetType(sportBetResultData.getBetType());
         walletRequest.setBetStatus(sportBetResultData.getBetStatus());
+    }
+
+    public void doDataMapper(WalletRequest walletRequest, CancelDto cancelDto) {
+        walletRequest.setExternalTransactionId(cancelDto.getExternalTransactionId());
+        walletRequest.setVendorBetId(cancelDto.getVendorBetId());
     }
 }
