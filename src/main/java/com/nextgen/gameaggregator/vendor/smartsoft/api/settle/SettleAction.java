@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -31,16 +30,15 @@ public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
-    private final SettledBetService settledBetService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
-                        VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
+                        VendorService vendorService,
+                        VendorLineService vendorLineService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
-        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
@@ -86,16 +84,6 @@ public class SettleAction {
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
-        } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            if (settleDto.getTransactionType().equals("CloseRound")) {
-                vo.setTransactionId(httpRequestLog.getId());
-                vo.setBalance(e.getBalance());
-            } else {
-                status = HttpStatus.INTERNAL_SERVER_ERROR;
-                headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
-                headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
-            }
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -141,12 +129,11 @@ public class SettleAction {
 
     private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
         BigDecimal balance;
-//        try {
-//            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-//            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-//        } catch (BetNotFoundException e) {
-        balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-//        }
+        try {
+            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
+        } catch (BetNotFoundException e) {
+            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+        }
         return balance;
     }
 }
