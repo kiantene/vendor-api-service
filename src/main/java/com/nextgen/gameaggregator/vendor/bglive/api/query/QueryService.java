@@ -125,7 +125,7 @@ public class QueryService {
             status = vendorService.unsettledBetIdempotentCheck(orderId);
             if (status == null || status.equals(0)) {
                 RawWalletTransactionBetHistory rawWalletTransactionBetHistory = vendorService.getWalletTransactionBetHistory(orderId);
-                status = checkBetHistoryStatus(rawWalletTransactionBetHistory);
+                status = (rawWalletTransactionBetHistory == null) ? QueryStatus.NO_BET : checkBetHistoryStatus(rawWalletTransactionBetHistory);
             } else {
                 status = QueryStatus.NO_BET;
             }
