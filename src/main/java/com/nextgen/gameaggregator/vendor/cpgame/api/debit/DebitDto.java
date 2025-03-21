@@ -1,52 +1,42 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.debit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DebitDto extends CommonDto implements BetResultData {
 
-    @NotNull
-    private MessageDto messageDto;
-
-    public void convertStringToJsonObject(String message) throws JsonProcessingException {
-        MessageDto subDto = HttpService.convertJsonToDto(message, MessageDto.class);
-
-        setMessageDto(subDto);
-    }
-
     @Override
     public String getExternalTransactionId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getRoundId() {
-        return this.messageDto.getBetInfo().getBetId();
+        return super.getMessageDto().getBetInfo().getBetId();
     }
 
     @Override
     public String getGameId() {
-        return this.messageDto.getGameId();
+        return super.getMessageDto().getGameId();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.messageDto.getBetInfo().getBetAmount();
+        return super.getMessageDto().getBetInfo().getBetAmount();
     }
 
     @Override
@@ -61,7 +51,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.messageDto.getBetInfo().getBetAmount();
+        return super.getMessageDto().getBetInfo().getBetAmount();
     }
 
     @Override
@@ -87,7 +77,7 @@ public class DebitDto extends CommonDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         int status = 0;
-        if (this.messageDto.getBetInfo().getBetAmount().equals(BigDecimal.ZERO)) {
+        if (super.getMessageDto().getBetInfo().getBetAmount().equals(BigDecimal.ZERO)) {
             status = 1;
         }
         return status;

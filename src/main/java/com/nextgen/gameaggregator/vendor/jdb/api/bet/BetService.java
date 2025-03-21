@@ -1,10 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -12,21 +10,30 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class BetService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
+    private final GameService gameService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final HttpService httpService;
 
-    public CommonVo bet(ActionDto actionDto, String traceId) {
+    public BetService(GameServiceImpl gameService,
+                      WalletService walletService,
+                      ValidationService validationService,
+                      HttpService httpService) {
+
+        this.gameService = gameService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.httpService = httpService;
+    }
+
+    public CommonVo bet(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -38,7 +45,7 @@ public class BetService {
             this.doValidation(betDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(betDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
@@ -53,20 +60,25 @@ public class BetService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             vo.setBalance(betResultIdempotentViolationException.getBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
-            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);   
+            httpService.logError(httpRequestLog, authenticationException);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (InsufficientBalanceException nsufficientBalanceException) {
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (InvalidAgentApiCredentialException | GameNotSupportedException | CurrencyNotSupportedException | 
-            JsonProcessingException invalidValidRequestException) {
+        } catch (InvalidAgentApiCredentialException | GameNotSupportedException | CurrencyNotSupportedException |
+                 JsonProcessingException invalidValidRequestException) {
+            httpService.logError(httpRequestLog, invalidValidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
                 String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
@@ -75,15 +87,19 @@ public class BetService {
             }
 
         } catch (DisabledVendorLineException | DisabledGameException | DisabledAgentPlayerException failedException) {
+            httpService.logError(httpRequestLog, failedException);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
+            httpService.logError(httpRequestLog, cannotCancelException);
             vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
 
         } catch (InvalidPlayerException invalidPlayerException) {
+            httpService.logError(httpRequestLog, invalidPlayerException);
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 
@@ -91,8 +107,8 @@ public class BetService {
     }
 
     private void doValidation(BetDto dto) throws InvalidRequestException {
-       // General validation
-       ValidationUtils.validateRequest(dto);
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws DisabledVendorLineException,

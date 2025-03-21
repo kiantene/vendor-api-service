@@ -61,7 +61,7 @@ public class UnsettleAction {
             vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetResultIdempotentViolationException e) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {

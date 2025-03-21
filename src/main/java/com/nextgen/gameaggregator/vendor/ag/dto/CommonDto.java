@@ -27,9 +27,9 @@ public class CommonDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.recordDto.getTransactionID();
+        return this.recordDto.getBillNo();
     }
-    
+
     @Override
     public String getRoundId() {
         return this.recordDto.getRoundId();

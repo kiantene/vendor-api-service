@@ -61,8 +61,7 @@ public class RollbackAction {
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8);
             rollBackDto = HttpService.convertQueryStringToDto(body, RollBackDto.class);
-
-            rollBackDto.convertStringToJsonObject(rollBackDto.getMessage());
+            rollBackDto.setMessageDto(rollBackDto.getMessage());
 
             // Validate the commonDto object
             this.doValidation(rollBackDto);

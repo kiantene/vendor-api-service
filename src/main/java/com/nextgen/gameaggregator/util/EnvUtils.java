@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@UtilityClass
 public class EnvUtils {
     public static List<Integer> getVendorListFromEnv(String value) {
         // Convert the string to a list of integers

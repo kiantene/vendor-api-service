@@ -51,7 +51,7 @@ public class AdjustBalanceAction {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (BetAdjustmentIdempotentViolationException e) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {

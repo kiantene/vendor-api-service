@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,26 +30,39 @@ import java.math.BigDecimal;
 @Slf4j
 public class CashTransferInOutAction {
 
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private RequestIdempotentLogService requestIdempotentLogService;
-    @Autowired
-    private VendorGameCodeService vendorGameCodeService;
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
+    private final LoggingService loggingService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+    private final VendorGameCodeService vendorGameCodeService;
+
+    public CashTransferInOutAction(HttpService httpService,
+                                   GameSessionService gameSessionService,
+                                   WalletService walletService,
+                                   VendorLineService vendorLineService,
+                                   VendorGameService vendorGameService,
+                                   VendorService vendorService,
+                                   ValidationService validationService,
+                                   LoggingService loggingService,
+                                   RequestIdempotentLogService requestIdempotentLogService,
+                                   VendorGameCodeService vendorGameCodeService) {
+
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+        this.validationService = validationService;
+        this.loggingService = loggingService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+        this.vendorGameCodeService = vendorGameCodeService;
+    }
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -76,31 +88,13 @@ public class CashTransferInOutAction {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-            //requestIdempotentLogService.create(dto, dto.getPlayerName());
 
             // 2. Verify session token
-            GameSession gameSession;
             String newToken = (dto.getOperatorPlayerSession() != null) ? dto.getOperatorPlayerSession() : traceId;
-
-            try {
-                gameSession = gameSessionService.verifyToken(newToken);
-            } catch (AuthenticationException authenticationException) {
-                gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerName());
-                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
-                gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrencyCode());
-
-                Integer defaultPlatformId = (dto.getPlatform() == Platforms.WEB) ? 2 : 1;
-                gameSession.setLanguageId(vendorGameCodeService.getByTop1VendorGameId(gameSession.getVendorGameId()).getLanguageId());
-                gameSession.setToken(newToken);
-                gameSession.setVendorToken(newToken);
-                gameSession.setPlatformId(defaultPlatformId);
-            }
-
-            //check realTransferAmount after gameSession is checked / generated
-//            vendorService.checkRealTransferAmount(gameSession, dto);
+            GameSession gameSession = this.getGameSession(newToken, dto);
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(dto, gameSession);
 
             // 4. Process full bet data
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
@@ -124,15 +118,16 @@ public class CashTransferInOutAction {
             responseVo.setCurrencyCode(vendorCurrencyCode);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException | CredentialNotFoundException |
+                 InvalidSignatureException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (GameTerminatedException | AuthenticationException gameException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
-            httpService.logError(httpRequestLog, authenticationException);
+            httpService.logError(httpRequestLog, gameException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
@@ -169,27 +164,17 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
             httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+        } catch (InvalidAgentApiCredentialException | DisabledVendorLineException invalidAgentApiCredentialException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
-
-        } catch (InvalidSignatureException invalidSignatureException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
-            httpService.logError(httpRequestLog, invalidSignatureException);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
-            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
-        } catch (GameNotSupportedException gameNotSupportedException) {
+        } catch (GameNotSupportedException | DisabledGameException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
             httpService.logError(httpRequestLog, gameNotSupportedException);
@@ -198,16 +183,6 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
-
-        } catch (DisabledGameException disabledGameException) {
-            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
-            httpService.logError(httpRequestLog, disabledGameException);
-
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
-            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (BetFailedException betFailedException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED_3073);
@@ -231,6 +206,26 @@ public class CashTransferInOutAction {
         return parentResponseVo;
     }
 
+    private GameSession getGameSession(String token, CashTransferInOutDto dto) throws
+            InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException {
+
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.verifyToken(token);
+        } catch (AuthenticationException authenticationException) {
+            gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerName());
+            gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+            gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrencyCode());
+
+            Integer defaultPlatformId = (dto.getPlatform() == Platforms.WEB) ? 2 : 1;
+            gameSession.setLanguageId(vendorGameCodeService.getByTop1VendorGameId(gameSession.getVendorGameId()).getLanguageId());
+            gameSession.setToken(token);
+            gameSession.setVendorToken(token);
+            gameSession.setPlatformId(defaultPlatformId);
+        }
+        return gameSession;
+    }
+
     private void doValidation(CashTransferInOutDto dto) throws InvalidRequestException, InvalidPlayerException, BetFailedException {
         // General validation
         ValidationUtils.validateRequest(dto);
@@ -243,12 +238,13 @@ public class CashTransferInOutAction {
         }
     }
 
-    private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
+    private void doVerification(CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
-            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
+            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException,
+            DisabledVendorLineException, GameTerminatedException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getPlayerName());
+        validationService.isBetAllowed(gameSession, dto.getPlayerName());
 
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
