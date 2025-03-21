@@ -63,7 +63,6 @@ public class ReleaseAction {
                 gameSession = vendorService.getGameSessionV2(releaseDto.getExternalGameSessionId(), releaseDto.getExternalId());
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(releaseDto.getExternalId());
-                gameSessionService.updateByVendorGameCode(gameSession, releaseDto.getGameId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);

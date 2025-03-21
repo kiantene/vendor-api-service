@@ -60,7 +60,6 @@ public class CancelReserveAction {
                 gameSession = vendorService.getGameSessionV2(cancelReserveDto.getExternalGameSessionId(), cancelReserveDto.getExternalId());
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelReserveDto.getExternalId());
-                gameSessionService.updateByVendorGameCode(gameSession, cancelReserveDto.getGameId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
