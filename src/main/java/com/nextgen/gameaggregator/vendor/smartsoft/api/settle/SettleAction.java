@@ -4,7 +4,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
@@ -29,17 +32,15 @@ public class SettleAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final SettledBetService settledBetService;
-    private final UnsettledBetService unsettledBetService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
-                        VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService, UnsettledBetService unsettledBetService) {
+                        VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
-        this.unsettledBetService = unsettledBetService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
@@ -131,11 +132,10 @@ public class SettleAction {
     private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
         BigDecimal balance;
         try {
-            //settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-            unsettledBetService.getUnsettledBetByRoundId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-        } catch (BetNotFoundException e) {
+            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
             balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+        } catch (BetNotFoundException e) {
+            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
         }
         return balance;
     }
