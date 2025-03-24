@@ -83,10 +83,9 @@ public class CancelSessionBetAction {
             responseVo.setBalance(balance);
 
         } catch (BetResultIdempotentViolationException e) {
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance);
+            responseVo.setBalance(e.getBalance());
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);

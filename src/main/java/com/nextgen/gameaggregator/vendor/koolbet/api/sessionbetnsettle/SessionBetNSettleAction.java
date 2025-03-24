@@ -100,10 +100,9 @@ public class SessionBetNSettleAction {
 
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_ALREADY_ACCEPTED);
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance);
+            responseVo.setBalance(e.getBalance());
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_TOKEN_EXPIRED);
@@ -139,7 +138,7 @@ public class SessionBetNSettleAction {
     }
 
     private void doVerification(SessionBetNSettleDto sessionBetNSettleDto, GameSession gameSession) throws
-            AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException,
+            AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException,
             DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 
         //Verify received currency is the same from game session
