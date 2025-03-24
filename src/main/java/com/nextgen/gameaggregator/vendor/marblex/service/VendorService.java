@@ -78,5 +78,6 @@ public class VendorService extends BaseVendorService {
     public void doDataMapper(WalletRequest walletRequest, CancelDto cancelDto) {
         walletRequest.setExternalTransactionId(cancelDto.getExternalTransactionId());
         walletRequest.setVendorBetId(cancelDto.getVendorBetId());
+        walletRequest.setVendorPlayerUsername(cancelDto.getVendorPlayerUsername());
     }
 }

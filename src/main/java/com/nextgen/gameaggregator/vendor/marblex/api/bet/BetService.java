@@ -66,21 +66,24 @@ public class BetService {
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
+        } catch (InsufficientBalanceException exception) {
+            commonVo.setStatusCode(StatusCode.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
         } catch (InvalidOperatorResponseException exception) {
             commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
-        } catch (BetResultIdempotentViolationException exception){
+        } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
-            httpService.logError(httpRequestLog,exception);
-        } catch (Exception exception){
+            httpService.logError(httpRequestLog, exception);
+        } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
-            httpService.logError(httpRequestLog,exception);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             commonVo.setTraceId(betDto.getTraceId());
-            httpService.end(httpRequestLog,commonVo);
+            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }

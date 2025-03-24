@@ -59,6 +59,9 @@ public class ResettleService {
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
+        } catch (InsufficientBalanceException exception) {
+            commonVo.setStatusCode(StatusCode.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);

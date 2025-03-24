@@ -7,6 +7,9 @@ import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,18 +21,24 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends CommonDto implements SportBetResultData {
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("RoundID")
     private String roundId;
 
+    @NotBlank
     @JsonProperty("GameCode")
     private String gameCode;
 
+    @NotNull
     @JsonProperty("BetAmount")
     private BigDecimal betAmount;
 
+    @NotBlank
     @JsonProperty("JanusTransactionID")
     private String janusTransactionId;
 
+    @NotBlank
     @JsonProperty("TransactionTime")
     private String transactionTime;
 
