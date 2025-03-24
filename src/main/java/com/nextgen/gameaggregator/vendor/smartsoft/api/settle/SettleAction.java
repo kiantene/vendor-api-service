@@ -84,6 +84,10 @@ public class SettleAction {
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setTransactionId(httpRequestLog.getId());
+            vo.setBalance(e.getBalance());
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
