@@ -1,17 +1,17 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +38,7 @@ public class BetAction {
     @Autowired
     private VendorGameService vendorGameService;
     @Autowired
-    private VendorService vendorService;
+    private com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService;
 
     public ResponseVo betRequest(HttpServletRequest request) {
 
@@ -64,12 +64,12 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody(), httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_LOSE, vendorService, httpRequestLog);
 
-            String transactionId = VendorService.getTransactionId(traceId);
+            String transactionId = com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(vendorCurrencyCode);
-            responseVo.setCash(betEvent.getLastBalance());
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -79,9 +79,9 @@ public class BetAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             String betId = betResultIdempotentViolationException.getBetId();
-            responseVo.setTransactionId(VendorService.getTransactionId(betId));
+            responseVo.setTransactionId(com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(betId));
             responseVo.setCurrency(vendorCurrencyCode);
-            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
+            responseVo.setCash(betResultIdempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
@@ -132,8 +132,8 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             //operator response with invalid http status checking
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INVALID_RESPONSE.code)) {
-                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
             } else {
                 responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             }
@@ -151,9 +151,8 @@ public class BetAction {
     }
 
     private void doValidation(BetDto dto) throws InvalidRequestException, InvalidPlayerException {
-        // General validation
+
         ValidationUtils.validateRequest(dto);
-        // Validation with custom exception
         ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
@@ -171,7 +170,5 @@ public class BetAction {
 
         // 3. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
-
-        // 4. not needed to check is game availability, because validateEligibleBet already done the checking
     }
 }

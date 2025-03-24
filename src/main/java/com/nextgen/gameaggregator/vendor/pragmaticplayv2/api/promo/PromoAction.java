@@ -1,15 +1,15 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.promo;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.promo;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class PromoAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorService vendorService;
+    private com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService;
     @Autowired
     private CachingService cachingService;
 
@@ -72,7 +72,7 @@ public class PromoAction {
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
-            responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
+            responseVo.setTransactionId(com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
             responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setBonus(BigDecimal.ZERO);

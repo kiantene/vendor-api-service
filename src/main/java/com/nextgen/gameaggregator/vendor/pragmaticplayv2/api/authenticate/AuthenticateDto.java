@@ -1,0 +1,36 @@
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.authenticate;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AuthenticateDto {
+    // Hash code of the request
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    private String hash;
+
+    // Token of the player
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
+    private String token;
+
+    // Game Provider id.
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
+    private String providerId;
+
+    // Id of the game.
+    @NotBlank
+    @Size(min = 1, max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
+    private String gameId;
+}
