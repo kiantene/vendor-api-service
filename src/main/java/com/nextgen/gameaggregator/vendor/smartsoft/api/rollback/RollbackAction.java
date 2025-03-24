@@ -1,11 +1,11 @@
-package com.nextgen.gameaggregator.vendor.smartsoft.api.bet;
+package com.nextgen.gameaggregator.vendor.smartsoft.api.rollback;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -22,28 +22,28 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class BetAction {
+public class RollbackAction {
     private final WalletService walletService;
     private final HttpService httpService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
 
-    public BetAction(WalletService walletService,
-                     HttpService httpService,
-                     ValidationService validationService,
-                     VendorService vendorService, VendorLineService vendorLineService) {
+    public RollbackAction(WalletService walletService,
+                          HttpService httpService,
+                          VendorService vendorService,
+                          VendorLineService vendorLineService) {
         this.walletService = walletService;
         this.httpService = httpService;
-        this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
     }
 
-    @PostMapping(path = EndPoints.DEPOSIT)
-    public ResponseEntity<BetVo> depositTransaction(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.ROLLBACK)
+    public ResponseEntity<RollbackVo> rollbackTransaction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -51,41 +51,35 @@ public class BetAction {
         String method = httpRequestLog.getMethod();
         //Add request header log
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
-        BetVo vo = new BetVo();
-        BetDto betDto;
+        RollbackDto rollbackDto;
+        RollbackVo vo = new RollbackVo();
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
 
         try {
-            betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
-            betDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
-            betDto.setSessionId(request.getHeader(Headers.SESSION_ID));
-            betDto.setUserName(request.getHeader(Headers.USER_NAME));
-            betDto.setClientExternalKey(request.getHeader(Headers.CLIENT_EXTERNAL_KEY));
+            rollbackDto.setSignature(request.getHeader(Headers.REQUEST_SIGNATURE));
+            rollbackDto.setSessionId(request.getHeader(Headers.SESSION_ID));
+            rollbackDto.setUserName(request.getHeader(Headers.USER_NAME));
+            rollbackDto.setClientExternalKey(request.getHeader(Headers.CLIENT_EXTERNAL_KEY));
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(betDto);
+            this.doValidation(rollbackDto);
 
             // Verify session
-            gameSession = vendorService.checkGameSession(traceId, betDto.getUserName());
+            gameSession = vendorService.checkGameSession(traceId, rollbackDto.getUserName());
 
             // Verify parameters (Verify against database values)
-            this.doVerification(betDto, gameSession, body, method);
+            this.doVerification(rollbackDto, gameSession, body, method);
 
-            //Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+            //Rollback
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
-            vo.setTransactionId(betEvent.getBetInformation().getBetId());
-            vo.setBalance(betEvent.getLastBalance());
+            vo.setTransactionId(httpRequestLog.getId());
+            vo.setBalance(balance);
 
-
-        } catch (InsufficientBalanceException e) {
-            httpService.logError(httpRequestLog, e);
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-            headers.add(Headers.ERROR_CODE, ResponseCode.LOSS_LIMIT.code.toString());
-            headers.add(Headers.ERROR_MESSAGE, ResponseCode.LOSS_LIMIT.message);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -97,18 +91,14 @@ public class BetAction {
         return new ResponseEntity<>(vo, headers, status);
     }
 
-    private void doValidation(BetDto dto) throws InvalidRequestException {
+    private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
+        ValidationUtils.validateRequest(dto.getRollbackTransactionInfoDto());
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
-        //validate vendor username, agent vendor line, player status, and game status
-        if (dto.getTransactionType().equals("InitialBet") || dto.getTransactionType().equals("PlaceBet")) {
-            validationService.validateEligibleBet(gameSession, dto.getUserName());
-        }
+    private void doVerification(RollbackDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
 
         //Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserName(), InvalidRequestException::new);

@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -31,16 +30,15 @@ public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
-    private final SettledBetService settledBetService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
-                        VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
+                        VendorService vendorService,
+                        VendorLineService vendorLineService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
-        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
@@ -52,7 +50,7 @@ public class SettleAction {
         String method = httpRequestLog.getMethod();
         BigDecimal balance;
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: " + httpRequestLog.getRequestBody() + "\n Request Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
         SettleDto settleDto;
         GameSession gameSession;
@@ -132,10 +130,9 @@ public class SettleAction {
     private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
         BigDecimal balance;
         try {
-            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settleDto.getVendorBetId(), settleDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-        } catch (BetNotFoundException e) {
             balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
+        } catch (BetNotFoundException e) {
+            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
         }
         return balance;
     }
