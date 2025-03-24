@@ -5,10 +5,12 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.playngo.constant.Default;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
@@ -38,6 +40,8 @@ public class ReleaseAction {
     private SettledBetService settledBetService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     @PostMapping(path = EndPoints.RELEASE)
     public String release(HttpServletRequest request) {
@@ -63,7 +67,13 @@ public class ReleaseAction {
                 gameSession = vendorService.getGameSessionV2(releaseDto.getExternalGameSessionId(), releaseDto.getExternalId());
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(releaseDto.getExternalId());
+
+                //using dto,default language id and platform id to get vendor game code
+                VendorGameCode vendorGameCode = vendorGameCodeService.getByBetGameCode(releaseDto.getGameId(), Default.DEFAULT_LANGUAGE.id, Default.DEFAULT_PLATFORM.id, gameSession.getVendorId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode.getOpenGameCode());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setLanguageId(vendorGameCode.getLanguageId());
+                gameSession.setPlatformId(vendorGameCode.getPlatformId());
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }

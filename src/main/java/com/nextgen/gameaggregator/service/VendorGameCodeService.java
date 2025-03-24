@@ -2,12 +2,12 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -34,10 +34,14 @@ public class VendorGameCodeService {
 
     @Cacheable(value = "VendorGameCode", key = "{#gameCode, #languageId, #platformId, #vendorId}", cacheManager = "cacheManager")
     public VendorGameCode getByBetGameCode(String gameCode, Integer languageId, Integer platformId, Integer vendorId) throws GameNotSupportedException {
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameCode, languageId, platformId, vendorId);
-        this.checkGameStatus(vendorGameCode);
+        List<VendorGameCode> vendorGameCodeList = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameCode, languageId, platformId, vendorId);
 
-        return vendorGameCode;
+        // Find the first active VendorGameCode, or throw GameNotSupportedException if not found
+        return vendorGameCodeList
+                .stream()
+                .filter(vendorGame -> vendorGame.getStatus().equals(Status.ACTIVE.code))
+                .findFirst()
+                .orElseThrow(() -> new GameNotSupportedException("Game not supported or inactive"));
     }
 
     // will be removed once migrated to ProductGame
