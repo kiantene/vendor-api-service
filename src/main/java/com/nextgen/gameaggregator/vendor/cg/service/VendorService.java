@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorRepository;
@@ -16,6 +17,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.cg.api.record.RecordDto;
 import com.nextgen.gameaggregator.vendor.cg.api.record.RecordVo;
 import com.nextgen.gameaggregator.vendor.cg.constant.Action;
+import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.Format;
 import com.nextgen.gameaggregator.vendor.cg.constant.RecordStatus;
 import org.bouncycastle.crypto.DataLengthException;
@@ -37,17 +39,21 @@ import java.util.*;
 @Service
 public class VendorService extends BaseVendorService {
 
-    @Autowired
-    private static VendorLineService vendorLineService;
-    @Autowired
-    private VendorRepository vendorRepository;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private UnsettledBetService unsettledBetService;
+    private final VendorLineService vendorLineService;
+    private final VendorRepository vendorRepository;
+    private final SettledBetService settledBetService;
+    private final UnsettledBetService unsettledBetService;
 
-    //public static byte[] ivbyte = Base64.decode("YRFxDqdDDF5ExcQN5yFzUA==");
-    //public static byte[] keyBytes = Base64.decode("XXhGuwr3cyl6YnIYJ4gbNrZWctZ7b2rRd4QkExoOZ7k=");
+    @Autowired
+    public VendorService(VendorLineService vendorLineService,
+                         VendorRepository vendorRepository,
+                         SettledBetService settledBetService,
+                         UnsettledBetService unsettledBetService) {
+        this.vendorLineService = vendorLineService;
+        this.vendorRepository = vendorRepository;
+        this.settledBetService = settledBetService;
+        this.unsettledBetService = unsettledBetService;
+    }
 
     public static String encrypt(String jsonString, String iv, String key) throws DataLengthException, IllegalStateException {
 
@@ -68,7 +74,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String decryptResponse(String response, String iv, String key) {
+    public static String decrypt(String response, String iv, String key) {
         try {
             byte[] ivbyte = Base64.decode(iv);
             byte[] keyBytes = Base64.decode(key);
@@ -137,6 +143,30 @@ public class VendorService extends BaseVendorService {
 
     public static Boolean checkEmptyString(Map checkMap) {
         return checkMap.containsValue("%20");
+    }
+
+    public String encryptResponse(String response, String channelId) throws CredentialNotFoundException {
+
+        Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CHANNEL_ID, channelId);
+        Optional.ofNullable(vendorLineId).orElseThrow(CredentialNotFoundException::new);
+
+        String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.IV);
+        Optional.ofNullable(iv).orElseThrow(CredentialNotFoundException::new);
+
+        String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
+        Optional.ofNullable(key).orElseThrow(CredentialNotFoundException::new);
+
+        return encrypt(response, iv, key);
+
+    }
+
+    public String decryptData(String data, String channelId) throws CredentialNotFoundException {
+
+        Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CHANNEL_ID, channelId);
+        String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.IV);
+        String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
+
+        return decrypt(data, iv, key);
     }
 
     public Vendor findVendorByCode(String vendorCode) throws InvalidVendorException {

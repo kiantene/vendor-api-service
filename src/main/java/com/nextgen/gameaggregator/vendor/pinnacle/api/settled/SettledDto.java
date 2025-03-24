@@ -40,12 +40,12 @@ public class SettledDto extends ActionsWagerInfoDto implements SportBetResultDat
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override
     public BigDecimal getNewBetAmount() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override
@@ -60,7 +60,7 @@ public class SettledDto extends ActionsWagerInfoDto implements SportBetResultDat
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.getStake();
+        return this.getToRisk();
     }
 
     @Override
