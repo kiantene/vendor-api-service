@@ -52,7 +52,7 @@ public class SettleAction {
         //Add request header log
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
-        SettleDto settleDto = null;
+        SettleDto settleDto;
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
