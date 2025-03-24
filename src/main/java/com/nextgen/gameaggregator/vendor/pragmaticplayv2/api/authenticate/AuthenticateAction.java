@@ -1,15 +1,15 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class AuthenticateAction {
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
-    private final VendorService vendorService;
+    private final com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService;
 
     @Autowired
     public AuthenticateAction(HttpService httpService,
@@ -38,7 +38,7 @@ public class AuthenticateAction {
                               VendorLineService vendorLineService,
                               AgentPlayerService agentPlayerService,
                               VendorGameService vendorGameService,
-                              VendorService vendorService) {
+                              com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
