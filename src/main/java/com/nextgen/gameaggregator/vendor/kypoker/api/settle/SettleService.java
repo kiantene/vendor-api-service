@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.RoomCode;
@@ -75,7 +74,7 @@ public class SettleService {
                 d.setMoney(balance);
             }
             //Credit Debit flow
-            else if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3){
+            else if(settleDto.getRoomMode() == RoomCode.CODE1 || settleDto.getRoomMode() == RoomCode.CODE4){
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
