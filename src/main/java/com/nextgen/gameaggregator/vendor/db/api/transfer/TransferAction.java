@@ -109,10 +109,6 @@ public class TransferAction {
             transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
             vo.setData(transferDataVo);
 
-        } catch (AuthenticationException e) {
-            httpService.logError(httpRequestLog, e);
-            vo.setResponseCode(ResponseCodes.PLAYER_NOT_EXIST);
-
         } catch (DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_GAME_ID);
@@ -130,7 +126,7 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
 
-        } catch (InvalidSignatureException exception) {
+        } catch (InvalidSignatureException | AuthenticationException exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
 
