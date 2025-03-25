@@ -88,19 +88,16 @@ public class SettleAction {
             httpService.logError(httpRequestLog, e);
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(e.getBalance());
-            httpRequestLog.setResponseBody("Response Body: \n" + httpRequestLog.getResponseBody() + "\nResponse Header: \n" + vendorService.getHeaders(headers));
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             headers.add(Headers.ERROR_CODE, ResponseCode.LOSS_LIMIT.code.toString());
             headers.add(Headers.ERROR_MESSAGE, ResponseCode.LOSS_LIMIT.message);
-            httpRequestLog.setResponseBody("Response Body: \n" + httpRequestLog.getResponseBody() + "\nResponse Header: \n" + vendorService.getHeaders(headers));
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
             headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
-            httpRequestLog.setResponseBody("Response Body: \n" + httpRequestLog.getResponseBody() + "\nResponse Header: \n" + vendorService.getHeaders(headers));
         } finally {
             httpService.end(httpRequestLog, vo);
         }
