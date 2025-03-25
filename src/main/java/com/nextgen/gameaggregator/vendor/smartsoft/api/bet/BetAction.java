@@ -82,7 +82,7 @@ public class BetAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setTransactionId(httpRequestLog.getId());
+            vo.setTransactionId(e.getTransactionId());
             vo.setBalance(e.getBalance());
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
