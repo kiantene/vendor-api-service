@@ -68,7 +68,7 @@ public class ReleaseAction {
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(releaseDto.getExternalId());
 
-                //using dto,default language id and platform id to get vendor game code
+                //using game session,dto,default language id and platform id to get vendor game code
                 VendorGameCode vendorGameCode = vendorGameCodeService.getByBetGameCode(releaseDto.getGameId(), Default.DEFAULT_LANGUAGE.id, Default.DEFAULT_PLATFORM.id, gameSession.getVendorId());
                 gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode.getOpenGameCode());
                 gameSessionService.updateByVendorCurrencyId(gameSession);

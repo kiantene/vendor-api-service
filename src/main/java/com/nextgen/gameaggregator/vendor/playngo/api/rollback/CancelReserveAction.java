@@ -4,11 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.playngo.constant.Default;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
@@ -34,6 +37,8 @@ public class CancelReserveAction {
     private VendorService vendorService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     @PostMapping(path = EndPoints.CANCEL)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
@@ -60,7 +65,13 @@ public class CancelReserveAction {
                 gameSession = vendorService.getGameSessionV2(cancelReserveDto.getExternalGameSessionId(), cancelReserveDto.getExternalId());
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelReserveDto.getExternalId());
+
+                //using game session,dto,default language id and platform id to get vendor game code
+                VendorGameCode vendorGameCode = vendorGameCodeService.getByBetGameCode(cancelReserveDto.getGameId(), Default.DEFAULT_LANGUAGE.id, Default.DEFAULT_PLATFORM.id, gameSession.getVendorId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode.getOpenGameCode());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setLanguageId(vendorGameCode.getLanguageId());
+                gameSession.setPlatformId(vendorGameCode.getPlatformId());
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }
