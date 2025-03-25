@@ -80,7 +80,10 @@ public class BetAction {
             vo.setTransactionId(betEvent.getBetInformation().getBetId());
             vo.setBalance(betEvent.getLastBalance());
 
-
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setTransactionId(e.getTransactionId());
+            vo.setBalance(e.getBalance());
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;

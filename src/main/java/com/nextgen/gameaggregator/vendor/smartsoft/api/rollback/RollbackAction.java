@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.rollback;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -80,6 +81,10 @@ public class RollbackAction {
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setTransactionId(e.getTransactionId());
+            vo.setBalance(e.getBalance());
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;

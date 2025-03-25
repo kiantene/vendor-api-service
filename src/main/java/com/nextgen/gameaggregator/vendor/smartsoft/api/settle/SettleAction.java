@@ -49,6 +49,7 @@ public class SettleAction {
         String body = httpRequestLog.getRequestBody();
         String method = httpRequestLog.getMethod();
         BigDecimal balance;
+        BigDecimal currentBalance = null;
         //Add request header log
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
@@ -71,6 +72,8 @@ public class SettleAction {
             // Verify session
             gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName());
 
+            currentBalance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+
             // Verify parameters (Verify against database values)
             this.doVerification(settleDto, gameSession, body, method);
 
@@ -84,6 +87,10 @@ public class SettleAction {
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setTransactionId(e.getTransactionId());
+            vo.setBalance(currentBalance);
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
