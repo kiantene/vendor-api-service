@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.util.Enumeration;
@@ -71,18 +70,6 @@ public class VendorService extends BaseVendorService {
             headersString.append(headerName)
                     .append(":")
                     .append(headerValue)
-                    .append("\n");
-        }
-        return headersString.toString();
-    }
-
-    public String getHeaders(HttpHeaders headers) {
-        StringBuilder headersString = new StringBuilder();
-
-        for (String headerName : headers.keySet()) {
-            headersString.append(headerName)
-                    .append(":")
-                    .append(String.join(", ", headers.get(headerName)))
                     .append("\n");
         }
         return headersString.toString();
