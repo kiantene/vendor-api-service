@@ -1,37 +1,37 @@
 package com.nextgen.gameaggregator.vendor.kypoker.service;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleDto;
+import com.nextgen.gameaggregator.vendor.kypoker.api.bet.BetDto;
 import lombok.Data;
 import org.bouncycastle.util.encoders.Base64;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
-
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
 @Service
 public class VendorService extends BaseVendorService {
+    private final WalletRequestService walletRequestService;
+
+    @Autowired
+    public VendorService(WalletRequestService walletRequestService){
+        this.walletRequestService = walletRequestService;
+
+    }
 
     public static String aesEncrypt(String dataString, String appKey) throws InvalidEncryptionException {
         try {
@@ -111,5 +111,41 @@ public class VendorService extends BaseVendorService {
         return resultType;
     }
 
+    public void dataDebitMapper(WalletRequest walletRequest, BetDto betDto , GameSession gameSession) {
 
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setExternalTransactionId(betDto.getExternalTransactionId());
+        walletRequest.setRoundId(betDto.getRoundId());
+        walletRequest.setVendorGameCode(betDto.getGameId());
+        walletRequest.setTimestamp(betDto.getTimeStamp());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(betDto.getVendorBetId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        BigDecimal amount = betDto.getBetAmount();
+        walletRequest.setTransferAmount(amount);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+    }
+
+    public void dataCreditMapper(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession) {
+
+        walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        walletRequest.setExternalTransactionId(settleDto.getRoundId());
+        walletRequest.setRoundId(settleDto.getRoundId());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        walletRequest.setTimestamp(System.currentTimeMillis());
+        walletRequest.setToken(gameSession.getToken());
+        walletRequest.setVendorBetId(settleDto.getVendorBetId());
+        walletRequest.setTakeAll(0);
+        walletRequest.setTransferAmount(settleDto.getMoney());
+        walletRequest.setBetAmount(settleDto.getValidBet());
+        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getRevenue(), settleDto.getJackpotAmount(),
+                false);
+        walletRequest.setWinAmount(settleDto.getRevenue());
+        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setJackpotAmount(settleDto.getJackpotAmount());
+        walletRequest.setResultType(resultType.code);
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setVendorSettleTime(System.currentTimeMillis());
+    }
 }

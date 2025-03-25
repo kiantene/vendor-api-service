@@ -1,15 +1,21 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.settle;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.RoomCode;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
+import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,20 +27,28 @@ public class SettleService {
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
+    private final OperatorWalletService operatorWalletService;
+
 
     public SettleService(GameService gameService,
                          WalletService walletService,
                          ValidationService validationService,
-                         GameSessionService gameSessionService, VendorService vendorService) {
+                         GameSessionService gameSessionService,
+                         VendorService vendorService,
+                         OperatorWalletService operatorWalletService) {
+
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.operatorWalletService = operatorWalletService;
     }
     public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
+
         // Construct VO
         CommonVo vo = new CommonVo();
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         try {
             // Convert original request body into dto
@@ -50,19 +64,26 @@ public class SettleService {
             this.doVerification(settleDto, gameSession);
 
             settleDto.setTimeStamp(timeStamp);
-
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            // 4.3 Process Bet Request
-            ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
-
             ResponseObjectDto d = new ResponseObjectDto();
+
+            // Check game code to use normal flow or credit debit
+
+            //Normal Flow
+            if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3) {
+                ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+                d.setMoney(balance);
+            }
+            //Credit Debit flow
+            else if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3){
+                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+                walletRequest = operatorWalletService.betCredit(currentWalletRequest);
+                d.setMoney(walletRequest.getBalanceAfter());
+            }
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
-            d.setMoney(balance);
             d.setRoomMode(settleDto.getRoomMode());
             d.setBetCount(settleDto.getBetCount());
             d.setTotalBet(settleDto.getTotalBet());

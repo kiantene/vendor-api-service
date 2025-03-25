@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
+import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -13,8 +16,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
-
-import java.math.BigDecimal;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
 
 @Service
 public class BetService {
@@ -24,16 +26,20 @@ public class BetService {
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
+    private final OperatorWalletService operatorWalletService;
 
     public BetService(GameService gameService,
                       WalletService walletService,
                       ValidationService validationService,
-                      GameSessionService gameSessionService, VendorService vendorService) {
+                      GameSessionService gameSessionService,
+                      VendorService vendorService,
+                      OperatorWalletService operatorWalletService) {
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.operatorWalletService = operatorWalletService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -44,29 +50,45 @@ public class BetService {
             // Convert original request body into dto
             BetDto betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
 
-            // 1. Validate request parameters from vendor (Non-database related)
+            // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            // 2. Verify session token
+            // Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getAccount());
 
-            // 3. Verify remaining parameters (Verify against database values)
+            // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
+            // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
 
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            // 4.3 Process Bet Request
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
-
+            // Determine game mode to use normal bet flow or Credit/Debit
             ResponseObjectDto d = new ResponseObjectDto();
 
-            d.setCode(ResponseCodes.SUCCESS);
-            d.setAccount(gameSession.getVendorPlayerUsername());
-            d.setMoney(betEvent.getLastBalance());
-            //d.setRoomMode(gameSession.get);
+            // Normal flow
+            if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
+
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
+
+                d.setCode(ResponseCodes.SUCCESS);
+                d.setAccount(gameSession.getVendorPlayerUsername());
+                d.setMoney(betEvent.getLastBalance());
+                d.setRoomMode(betDto.getRoomMode());
+            }
+
+            // Credit Debit flow
+            else if(betDto.getRoomMode() == RoomCode.CODE1 || betDto.getRoomMode() == RoomCode.CODE4){
+
+                WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
+                walletRequest = operatorWalletService.betDebit(currentWalletRequest);
+
+                d.setCode(ResponseCodes.SUCCESS);
+                d.setAccount(gameSession.getVendorPlayerUsername());
+                d.setMoney(walletRequest.getBalanceAfter());
+                d.setRoomMode(betDto.getRoomMode());
+            }
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);

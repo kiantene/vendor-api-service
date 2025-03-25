@@ -31,6 +31,8 @@ public class BetDto implements BetResultData {
 
     private Long timeStamp;
 
+    private Integer roomMode;
+
     @Override
     public String getExternalTransactionId() {
         return this.orderId;
