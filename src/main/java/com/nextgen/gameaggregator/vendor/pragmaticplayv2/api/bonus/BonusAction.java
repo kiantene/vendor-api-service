@@ -1,15 +1,15 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.promo;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.bonus;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 @Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class PromoAction {
+public class BonusAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -32,14 +32,14 @@ public class PromoAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorService vendorService;
+    private com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService;
     @Autowired
     private CachingService cachingService;
 
-    public ResponseVo promoWinRequest(HttpServletRequest request) {
+    public ResponseVo bonusWinRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        PromoVo responseVo = new PromoVo();
+        BonusVo responseVo = new BonusVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
         GameSession gameSession = new GameSession();
@@ -47,24 +47,27 @@ public class PromoAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            //TODO: refine dto
-            PromoDto dto = HttpService.convertQueryStringToDto(body, PromoDto.class);
-            vendorCurrencyCode = dto.getCurrency();
+            BonusDto dto = HttpService.convertQueryStringToDto(body, BonusDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+            //bonusAction dto gameId will always be empty.
+            //gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
+
+            // 3. save sample bet data to redis, to support return same traceId if duplicated call.
+            traceId = cachingService.storeProcessPromoToRedis(gameSession.getVendorPlayerId(), dto.getVendorBetId(), dto.getRoundId(), traceId).getInternalTransactionId();
 
             // 4. Send win result to Operator
             BigDecimal balance = walletService.processPromo(traceId, gameSession, dto, body);
 
             String transactionId = traceId.replace("-", "");
-
             responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
@@ -72,9 +75,9 @@ public class PromoAction {
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
-            responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
-            responseVo.setCash(idempotentViolationException.getBalance());
+            responseVo.setTransactionId(com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
             responseVo.setCurrency(vendorCurrencyCode);
+            responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, idempotentViolationException);
 
@@ -84,29 +87,10 @@ public class PromoAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
             httpService.logError(httpRequestLog, invalidRequestException);
-//        } catch (CredentialNotFoundException credentialNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
             httpService.logError(httpRequestLog, invalidPlayerException);
-
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
-//
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-//
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
-//
-//        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//
-//        } catch (BetNotFoundException betNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -118,7 +102,7 @@ public class PromoAction {
         return responseVo;
     }
 
-    private void doValidation(PromoDto dto) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(BonusDto dto) throws InvalidRequestException, InvalidPlayerException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
@@ -127,7 +111,7 @@ public class PromoAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, PromoDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, BonusDto dto, GameSession gameSession) throws
             InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException {
 
         // 1. Verify received username is the same from game session

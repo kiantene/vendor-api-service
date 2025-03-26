@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.result;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -9,11 +9,11 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ public class ResultAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
@@ -91,7 +91,7 @@ public class ResultAction {
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
-            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
+            responseVo.setCash(idempotentViolationException.getBalance());
             httpService.logError(httpRequestLog, idempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
@@ -145,11 +145,9 @@ public class ResultAction {
     }
 
     private void doValidation(ResultDto dto) throws InvalidRequestException, InvalidPlayerException {
-        // General validation
+
         ValidationUtils.validateRequest(dto);
-        // Validation with custom exception
         ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
@@ -158,11 +156,6 @@ public class ResultAction {
 
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-
-        // 2. Remove Verify received game id is the same from game session
-//        if (!gameSession.getVendorGameCode().equals("101")) {
-//            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-//        }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
