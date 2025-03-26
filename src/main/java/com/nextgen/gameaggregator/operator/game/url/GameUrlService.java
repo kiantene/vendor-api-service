@@ -215,6 +215,10 @@ public class GameUrlService {
 
         String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId)
                 + NameUtils.excelColumnNameFormula(currencyId);
+
+        //GA-8495 - Add env prefix to vendorPlayerUsername for testing env
+        vendorPlayerUsername = testSupportService.appendEnvPrefixToVendorUsername(vendorPlayerUsername, vendorId);
+
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
         entity.setVendorLineId(vendorLineId);

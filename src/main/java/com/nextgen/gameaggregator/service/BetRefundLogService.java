@@ -64,12 +64,7 @@ public class BetRefundLogService {
     public RawBetRefundLog checkExistsByRoundId(Long vendorPlayerId, String roundId) {
         return rawBetRefundLogRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
     }
-
-    @Cacheable(value = "rawBetRefundLogs", key = "{#vendorPlayerId, #roundId}", cacheManager = "cacheManager", unless = "#result == null")
-    public RawBetRefundLog getTop1ExistsByRoundId(Long vendorPlayerId, String roundId) {
-        return rawBetRefundLogRepository.findTop1ByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
-    }
-
+    
     public RawBetRefundLog checkExists(String vendorPlayerId, String vendorGameId, String externalTransactionId) {
         String id = this.generateId(vendorPlayerId, vendorGameId, externalTransactionId);
 
