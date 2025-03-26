@@ -45,7 +45,7 @@ public class CancelSessionBetAction {
     }
 
     @PostMapping(path = EndPoints.CANCEL_SESSION_BET)
-    public CommonVo rollback(HttpServletRequest request) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+    public CommonVo rollback(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -99,10 +99,9 @@ public class CancelSessionBetAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_ROUND_NOT_FOUND);
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setBalance(balance);
+            responseVo.setBalance(BigDecimal.ZERO); 
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  InvalidPlayerException |
