@@ -139,9 +139,9 @@ public class VendorService extends BaseVendorService {
         walletRequest.setTakeAll(0);
         walletRequest.setTransferAmount(settleDto.getMoney());
         walletRequest.setBetAmount(settleDto.getValidBet());
-        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getRevenue(), settleDto.getJackpotAmount(),
+        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getTotalWithdraw(), settleDto.getJackpotAmount(),
                 false);
-        walletRequest.setWinAmount(settleDto.getRevenue());
+        walletRequest.setWinAmount(settleDto.getTotalWithdraw());
         walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
         walletRequest.setJackpotAmount(BigDecimal.ZERO);
         walletRequest.setResultType(resultType.code);
