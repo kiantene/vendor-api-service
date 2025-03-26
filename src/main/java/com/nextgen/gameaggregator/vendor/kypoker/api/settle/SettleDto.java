@@ -71,7 +71,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.validBet.add(this.totalWithdraw);
+        return this.totalWithdraw;
     }
 
     @Override

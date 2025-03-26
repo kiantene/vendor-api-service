@@ -68,8 +68,7 @@ public class GeneralAction {
         try {
             // Retrieve request body in original string format
             String body = request.getQueryString();
-            httpRequestLog.setRequestBody(body);
-            
+
             // Convert original request body into dto
             CommonDto commonDto = HttpService.convertQueryStringToDto(body, CommonDto.class);
 
@@ -95,15 +94,11 @@ public class GeneralAction {
             actionDto.setHttpRequestLog(httpRequestLog);
 
             vo.setM(EndPoints.LAUNCH_GAME);
-            // Handle the action and return the resulting value
-            //httpService.end(httpRequestLog, vo);
+
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
-        }
-        finally {
-            httpService.end(httpRequestLog, vo);
         }
         return vo;
     }
