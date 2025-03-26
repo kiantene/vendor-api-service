@@ -27,24 +27,28 @@ public class BetService {
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final OperatorWalletService operatorWalletService;
+    private final WalletRequestService walletRequestService;
 
     public BetService(GameService gameService,
                       WalletService walletService,
                       ValidationService validationService,
                       GameSessionService gameSessionService,
                       VendorService vendorService,
-                      OperatorWalletService operatorWalletService) {
+                      OperatorWalletService operatorWalletService,
+                      WalletRequestService walletRequestService) {
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
         this.operatorWalletService = operatorWalletService;
+        this.walletRequestService = walletRequestService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
         // Construct VO
         CommonVo vo = new CommonVo();
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         try {
             // Convert original request body into dto
@@ -79,7 +83,7 @@ public class BetService {
             // Credit Debit flow
             else if(betDto.getRoomMode() == RoomCode.CODE1 || betDto.getRoomMode() == RoomCode.CODE4){
 
-                WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+                walletRequest = WalletRequestService.init(httpRequestLog);
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
@@ -100,6 +104,8 @@ public class BetService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+        }finally {
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
         }
 
         return vo;

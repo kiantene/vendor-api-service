@@ -27,14 +27,15 @@ public class SettleService {
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final OperatorWalletService operatorWalletService;
-
+    private final WalletRequestService walletRequestService;
 
     public SettleService(GameService gameService,
                          WalletService walletService,
                          ValidationService validationService,
                          GameSessionService gameSessionService,
                          VendorService vendorService,
-                         OperatorWalletService operatorWalletService) {
+                         OperatorWalletService operatorWalletService,
+                         WalletRequestService walletRequestService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
@@ -42,6 +43,7 @@ public class SettleService {
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
         this.operatorWalletService = operatorWalletService;
+        this.walletRequestService = walletRequestService;
     }
     public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
@@ -99,9 +101,11 @@ public class SettleService {
             ResponseObjectDto d = new ResponseObjectDto();
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
+        } finally {
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
         }
-
         return vo;
     }
 
