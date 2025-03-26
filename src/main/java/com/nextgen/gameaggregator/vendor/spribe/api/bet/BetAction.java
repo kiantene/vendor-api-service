@@ -70,7 +70,7 @@ public class BetAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)

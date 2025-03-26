@@ -80,13 +80,13 @@ public class RollbackAction {
             String newToken = (dto.getSession_token() != null) ? dto.getSession_token() : traceId;
 
             try {
-                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(newToken);
+                gameSession.setToken(traceId);
                 gameSession.setVendorToken(newToken);
             }
 

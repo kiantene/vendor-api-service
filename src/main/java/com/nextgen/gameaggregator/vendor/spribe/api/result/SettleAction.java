@@ -68,13 +68,13 @@ public class SettleAction {
             // 3. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrency());
-                gameSession.setToken(dto.getSession_token());
+                gameSession.setToken(traceId);
                 gameSession.setVendorToken(dto.getSession_token());
             }
 
