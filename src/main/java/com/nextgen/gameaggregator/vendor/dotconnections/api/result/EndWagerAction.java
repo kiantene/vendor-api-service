@@ -48,6 +48,8 @@ public class EndWagerAction {
     private SettledBetService settledBetService;
     @Autowired
     private UnsettledBetCachingService unsettledBetCachingService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -89,6 +91,8 @@ public class EndWagerAction {
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
+
+            cachingService.deleteTokenByRoundIdAndVendorPlayerUsernameToRedis(gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
@@ -232,7 +236,14 @@ public class EndWagerAction {
         GameSession gameSession;
 
         try {
-            gameSession = gameServiceImpl.getGameSessionByUsername(dto.getBrandUid());
+            String token = cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(dto.getBrandUid(), dto.roundId, null);
+
+            if (token == null) {
+                throw new AuthenticationException();
+
+            } else {
+                gameSession = gameSessionService.verifyToken(token);
+            }
 
         } catch (AuthenticationException e) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
