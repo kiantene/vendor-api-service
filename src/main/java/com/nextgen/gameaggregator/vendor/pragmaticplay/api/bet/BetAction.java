@@ -16,13 +16,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-@RestController
+@Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class BetAction {
@@ -41,7 +40,6 @@ public class BetAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);

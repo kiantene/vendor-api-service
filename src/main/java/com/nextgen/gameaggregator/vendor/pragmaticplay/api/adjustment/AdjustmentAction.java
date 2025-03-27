@@ -17,13 +17,12 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-@RestController
+@Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class AdjustmentAction {
     private final HttpService httpService;
@@ -45,8 +44,7 @@ public class AdjustmentAction {
         this.walletAdjustmentService = walletAdjustmentService;
     }
 
-    @PostMapping(path = Endpoints.ADJUSTMENT)
-    public ResponseVo adjustment(HttpServletRequest request) {
+    public ResponseVo adjustmentRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         AdjustmentVo responseVo = new AdjustmentVo();

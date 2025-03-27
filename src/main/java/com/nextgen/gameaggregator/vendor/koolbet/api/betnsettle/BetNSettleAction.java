@@ -52,7 +52,7 @@ public class BetNSettleAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
 
         try {
@@ -66,7 +66,7 @@ public class BetNSettleAction {
             this.doValidation(betNSettleDto);
 
             //get rawGameSession by token id
-            GameSession gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
+            gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);
@@ -86,12 +86,18 @@ public class BetNSettleAction {
 
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_ACCEPTED);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(e.getBalance());
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.BET_TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
