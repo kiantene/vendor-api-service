@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.marblex.api.controller;
 
 import com.nextgen.gameaggregator.vendor.marblex.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetService;
-import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelService;
+import com.nextgen.gameaggregator.vendor.marblex.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.marblex.api.resettle.ResettleService;
 import com.nextgen.gameaggregator.vendor.marblex.api.result.ResultService;
 import com.nextgen.gameaggregator.vendor.marblex.constant.EndPoints;
@@ -22,15 +22,16 @@ public class ActionController {
     public final BetService betService;
     public final ResultService resultService;
     public final ResettleService resettleService;
-    public final CancelService cancelService;
+    public final RefundService refundService;
 
     @Autowired
-    public ActionController(BalanceService balanceService, BetService betService, ResultService resultService, ResettleService resettleService, CancelService cancelService) {
+    public ActionController(BalanceService balanceService, BetService betService, ResultService resultService,
+                            ResettleService resettleService, RefundService refundService) {
         this.balanceService = balanceService;
         this.betService = betService;
         this.resultService = resultService;
         this.resettleService = resettleService;
-        this.cancelService = cancelService;
+        this.refundService = refundService;
     }
 
     @PostMapping(path = EndPoints.BALANCE)
@@ -50,12 +51,18 @@ public class ActionController {
 
     @PostMapping(path = EndPoints.CANCEL)
     public CommonVo cancel(HttpServletRequest request) {
-        return this.cancelService.cancelBet(request);
+        return this.refundService.refund(request);
     }
 
     @PostMapping(path = EndPoints.RESETTLE)
     public CommonVo resettle(HttpServletRequest request) {
         return this.resettleService.resettle(request);
     }
+
+    @PostMapping(path = EndPoints.VOID)
+    public CommonVo voidBet(HttpServletRequest request) {
+        return this.refundService.refund(request);
+    }
+
 
 }

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.marblex.api.cancel;
+package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
@@ -11,13 +11,14 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
+import com.nextgen.gameaggregator.vendor.marblex.dto.CommonRefundDto;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CancelService {
+public class RefundService {
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
@@ -25,7 +26,7 @@ public class CancelService {
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
 
-    public CancelService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService, WalletRequestService walletRequestService, SportWalletService sportWalletService) {
+    public RefundService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService, WalletRequestService walletRequestService, SportWalletService sportWalletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -34,26 +35,27 @@ public class CancelService {
         this.sportWalletService = sportWalletService;
     }
 
-    public CommonVo cancelBet(HttpServletRequest request) {
+    public CommonVo refund(HttpServletRequest request) {
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         CommonVo commonVo = new CommonVo();
-        CancelDto cancelDto = new CancelDto();
+        CommonRefundDto commonRefundDto = new CommonRefundDto();
         GameSession gameSession = new GameSession();
 
         try {
-            cancelDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CancelDto.class);
+            commonRefundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CommonRefundDto.class);
 
-            ValidationUtils.validateRequest(cancelDto);
+            ValidationUtils.validateRequest(commonRefundDto);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelDto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonRefundDto.getPlayerId());
 
-            vendorService.doVerification(cancelDto, gameSession, false);
+            vendorService.doVerification(commonRefundDto, gameSession, false);
 
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
-            vendorService.doDataMapper(walletRequest, cancelDto);
+            vendorService.doDataMapper(walletRequest, commonRefundDto);
 
             walletRequest = sportWalletService.refund(walletRequest);
 
@@ -62,10 +64,12 @@ public class CancelService {
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
-        } catch (InvalidRequestException exception) {
+        } catch (
+                InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
-        } catch (InvalidOperatorResponseException exception) {
+        } catch (
+                InvalidOperatorResponseException exception) {
             commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
         } catch (BetResultIdempotentViolationException exception) {
@@ -78,7 +82,7 @@ public class CancelService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            commonVo.setTraceId(cancelDto.getTraceId());
+            commonVo.setTraceId(commonRefundDto.getTraceId());
             httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
