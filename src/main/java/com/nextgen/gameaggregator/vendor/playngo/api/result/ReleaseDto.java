@@ -162,7 +162,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.transactionId;
+        return String.valueOf(this.roundId);
     }
 
     @Override
