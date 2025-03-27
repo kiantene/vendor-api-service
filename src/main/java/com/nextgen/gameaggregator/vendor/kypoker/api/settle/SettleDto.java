@@ -66,7 +66,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return BigDecimal.ZERO;
+        return this.validBet;
     }
 
     @Override
