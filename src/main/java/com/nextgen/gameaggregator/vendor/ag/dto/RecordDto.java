@@ -58,4 +58,7 @@ public class RecordDto {
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 
+    @NotBlank
+    @Size(max = 255)
+    private String billNo;
 }

@@ -106,4 +106,9 @@ public abstract class BaseVendorService {
         Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
         return Optional.ofNullable(lineCredentials.get(key)).orElseThrow(InvalidVendorLineException::new);
     }
+
+    public Integer operatorTimeoutTiming() {
+        Integer defaultTiming = 5000;
+        return defaultTiming;
+    }
 }
