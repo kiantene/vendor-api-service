@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -35,7 +35,6 @@ public class RollbackAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final VendorService vendorService;
-    private final UnsettledBetCachingService unsettledBetCachingService;
 
     @Autowired
     public RollbackAction(HttpService httpService,
@@ -45,8 +44,7 @@ public class RollbackAction {
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
                           VendorGameService vendorGameService,
-                          VendorService vendorService,
-                          UnsettledBetCachingService unsettledBetCachingService) {
+                          VendorService vendorService) {
 
         this.httpService = httpService;
         this.settledBetService = settledBetService;
@@ -56,7 +54,6 @@ public class RollbackAction {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
-        this.unsettledBetCachingService = unsettledBetCachingService;
     }
 
     @PostMapping(path = Endpoints.ROLLBACK)
@@ -86,12 +83,15 @@ public class RollbackAction {
                 gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
-                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getAction_id());
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(unsettledBet.getGameSessionToken());
                 gameSession.setVendorToken(dto.getSession_token());
+                List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+                if(settledBetList.isEmpty()){
+                    throw new BetNotFoundException();
+                }
+                gameSession.setToken(settledBetList.get(0).getGameSessionToken());
             }
 
             // 4. Verify remaining parameters (Verify against database values)

@@ -2,13 +2,13 @@ package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.UnsettledBetCachingService;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -33,20 +34,20 @@ public class SettleAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
-    private final UnsettledBetCachingService unsettledBetCachingService;
+    private final SettledBetService settledBetService;
 
     @Autowired
     public SettleAction(HttpService httpService,
                         GameSessionService gameSessionService,
                         WalletService walletService,
                         VendorService vendorService,
-                        UnsettledBetCachingService unsettledBetCachingService) {
+                        SettledBetService settledBetService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-        this.unsettledBetCachingService = unsettledBetCachingService;
+        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = Endpoints.DEPOSIT)
@@ -76,12 +77,15 @@ public class SettleAction {
                 gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
-                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getAction_id());
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrency());
-                gameSession.setToken(unsettledBet.getGameSessionToken());
                 gameSession.setVendorToken(dto.getSession_token());
+                List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+                if(settledBetList.isEmpty()){
+                    throw new BetNotFoundException();
+                }
+                gameSession.setToken(settledBetList.get(0).getGameSessionToken());
             }
 
             userId = gameSession.getVendorPlayerUsername();
