@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cg.api.record;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,55 +40,65 @@ public class RecordAction {
     }
 
     @PostMapping(EndPoints.RECORD)
-    public RecordVo record(HttpServletRequest request) {
+    public String record(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
-        RecordVo responseVo = new RecordVo();
-        RecordDto dto = new RecordDto();
-        GameSession gameSession = new GameSession();
+        RecordVo recordVo = new RecordVo();
+        CommonDto dto = new CommonDto();
 
         try {
-            dto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, RecordDto.class);
+            //convert body into dto
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
+            dto.setData(VendorService.urlDecode(dto.getData()));
 
             this.doValidation(dto);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAccountId());
+            String decryptedData = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
+            httpRequestLog.setRequestBody(decryptedData);
+            RecordDto recordDto = HttpService.convertJsonToDto(decryptedData, RecordDto.class);
 
-            this.doVerification(dto, gameSession);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(recordDto.getAccountId());
+
+            this.doVerification(recordDto, gameSession);
 
             // initialize fixed value
-            responseVo.getData().setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setChannelId(dto.getChannelId());
+            recordVo.getData().setCurrency(gameSession.getVendorCurrencyCode());
+            recordVo.setChannelId(dto.getChannelId());
 
-            responseVo = checkBetAvailable(gameSession, dto);
-
+            recordVo = checkBetAvailable(gameSession, recordDto);
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setErrorCode(ResponseCodes.SEAMLESS_INPUT_ERROR);
+            recordVo.setErrorCode(ResponseCodes.SEAMLESS_INPUT_ERROR);
             httpService.logError(httpRequestLog, invalidRequestException);
         } catch (InvalidVendorLineException invalidVendorLineException) {
-            responseVo.setErrorCode(ResponseCodes.CHANNEL_ID_ERROR);
-            responseVo.setReturnTime(VendorService.returnTime());
+            recordVo.setErrorCode(ResponseCodes.CHANNEL_ID_ERROR);
+            recordVo.setReturnTime(VendorService.returnTime());
             httpService.logError(httpRequestLog, invalidVendorLineException);
         } catch (AuthenticationException authenticationException) {
-            responseVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_PLAYER);
-            responseVo.setReturnTime(VendorService.returnTime());
+            recordVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_PLAYER);
+            recordVo.setReturnTime(VendorService.returnTime());
             httpService.logError(httpRequestLog, authenticationException);
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_TRANSACTION);
-            responseVo.setReturnTime(VendorService.returnTime());
+            recordVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_TRANSACTION);
+            recordVo.setReturnTime(VendorService.returnTime());
             httpService.logError(httpRequestLog, betNotFoundException);
         } catch (Exception exception) {
-            responseVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
-            responseVo.setReturnTime(VendorService.returnTime());
+            recordVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
+            recordVo.setReturnTime(VendorService.returnTime());
             httpService.logError(httpRequestLog, exception);
         } finally {
-            httpService.end(httpRequestLog, responseVo);
+            try {
+                String jsonString = new Gson().toJson(recordVo);
+                recordVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, recordVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
-        return responseVo;
+        return recordVo.getEncrypt();
     }
 
-    private void doValidation(RecordDto dto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
     }
 

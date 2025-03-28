@@ -49,7 +49,7 @@ public class CancelBetAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
 
         try {
@@ -60,8 +60,6 @@ public class CancelBetAction {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
-            GameSession gameSession;
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
             } catch (AuthenticationException authenticationException) { //if session expired
@@ -86,6 +84,9 @@ public class CancelBetAction {
 
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_ROUND_NOT_FOUND);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  InvalidPlayerException |
@@ -95,6 +96,9 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(e.getBalance());
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);

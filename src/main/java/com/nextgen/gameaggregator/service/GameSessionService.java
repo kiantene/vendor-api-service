@@ -65,7 +65,7 @@ public class GameSessionService {
         if (status.equals(0)) {
             throw new GameTerminatedException();
         }
-    }   
+    }
 
     @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
     public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
@@ -86,6 +86,9 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession updateSession(GameSession gameSession) {
+        if (gameSession.getId() == null) {
+            gameSession.setId(gameSession.getToken());
+        }
         rawGameSessionRepository.save(gameSession);
         return gameSession;
 
