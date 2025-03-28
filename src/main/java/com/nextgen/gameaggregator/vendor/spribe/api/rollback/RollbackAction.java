@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
@@ -34,6 +35,7 @@ public class RollbackAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final VendorService vendorService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
 
     @Autowired
     public RollbackAction(HttpService httpService,
@@ -43,7 +45,8 @@ public class RollbackAction {
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
                           VendorGameService vendorGameService,
-                          VendorService vendorService) {
+                          VendorService vendorService,
+                          UnsettledBetCachingService unsettledBetCachingService) {
 
         this.httpService = httpService;
         this.settledBetService = settledBetService;
@@ -53,6 +56,7 @@ public class RollbackAction {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
     }
 
     @PostMapping(path = Endpoints.ROLLBACK)
@@ -77,17 +81,17 @@ public class RollbackAction {
 
             // 3. Verify session token
             GameSession gameSession;
-            String newToken = (dto.getSession_token() != null) ? dto.getSession_token() : traceId;
 
             try {
                 gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
+                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getAction_id());
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(newToken);
+                gameSession.setToken(unsettledBet.getGameSessionToken());
+                gameSession.setVendorToken(dto.getSession_token());
             }
 
             // 4. Verify remaining parameters (Verify against database values)
