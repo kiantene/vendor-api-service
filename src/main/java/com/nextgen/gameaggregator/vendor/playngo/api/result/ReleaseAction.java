@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.playngo.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -187,6 +184,8 @@ public class ReleaseAction {
             return walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } else {
+            // Check if bet record has been settled before
+            this.verifySettledBet(releaseDto, gameSession);
             // Check is unsettle bet exist
             String unsettledBetId = this.checkUnsettledBetListExist(releaseDto, gameSession);
 
@@ -229,5 +228,12 @@ public class ReleaseAction {
         return unsettledBetList.get(0).getVendorBetId();
     }
 
+    private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+        if (!settledBetList.isEmpty() && settledBetList.get(0).getOperatorStatus().equals(1)) {
+            throw new BetResultIdempotentViolationException(settledBetList.get(0));
+        }
+    }
 
 }
