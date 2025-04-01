@@ -96,7 +96,8 @@ public class CancelBetAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(0d);
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -121,9 +122,9 @@ public class CancelBetAction {
                 //insufficient balance
                 commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
                 commonVo.setMainPoints(0d);
-                
+
                 // check the previous value before go through rollback function to decide keep or cancel transaction from vendor side
-                if(settledBet != null && !settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)){
+                if (settledBet != null && !settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)) {
                     commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
                     commonVo.setMainPoints(0d);
                 }
