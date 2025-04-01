@@ -165,7 +165,7 @@ public class SettledBetService {
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
                     //only fachai, for idempotent request we will further check the betType for other error throw.
-                    if (settledBet.getVendorId().equals(5) && settledBet.getStatus().equals(BetStatus.CANCELLED)) {
+                    if (settledBet.getVendorId().equals(5) && settledBet.getStatus().equals(BetStatus.CANCELLED.code)) {
                         throw new MergedBetDataIntegrityException();
                     } else {
                         throw new BetResultIdempotentViolationException(settledBet);
