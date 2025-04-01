@@ -115,16 +115,11 @@ public class BetAction {
             httpService.logError(httpRequestLog, cancelException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //SC_INSUFFICIENT_FUNDS
-            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
-            } else {
-                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-            }
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
