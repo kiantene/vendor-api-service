@@ -124,7 +124,7 @@ public class BetAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
