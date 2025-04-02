@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.BetType;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.gpkiconic.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkiconic.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkiconic.vo.CommonVo;
@@ -176,10 +175,12 @@ public class BetService {
                 dto.getApiToken(),
                 InvalidRequestException::new);
 
-        // check platform id
-        if (!PlatformType.ICONIC.equals(dto.getPlatform())) {
-            throw new InvalidRequestException();
-        }
+        // check provider id
+        String provider = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(),
+                Credentials.PROVIDER_ID);
+        ValidationUtils.isEquals(provider,
+                dto.getProvider(),
+                InvalidRequestException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws

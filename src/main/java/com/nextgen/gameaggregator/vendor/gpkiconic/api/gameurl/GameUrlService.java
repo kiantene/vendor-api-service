@@ -55,7 +55,7 @@ public class GameUrlService extends BaseGameUrlService<IconicGameUrlVo> {
         formData.add("password",
                 gameSession.getVendorPlayerUsername());
         formData.add(platform,
-                credentials.get(Credentials.PLATFORM_ID));
+                credentials.get(Credentials.PROVIDER_ID));
         formData.add(timestamp,
                 String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode",

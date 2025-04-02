@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.BetType;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.BetType;
+import com.nextgen.gameaggregator.vendor.gpkiconic.dto.ActionDto;
+import com.nextgen.gameaggregator.vendor.gpkiconic.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -65,6 +65,11 @@ public class BetDto extends ActionDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = "\\d+")
     private String platform;
+
+    @NotBlank
+    @JsonProperty("provider")
+    @Pattern(regexp = "\\d+")
+    private String provider;
 
     @Pattern(regexp = "[01]")
     private String istips;
