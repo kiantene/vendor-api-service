@@ -63,7 +63,7 @@ public class BetDto implements BetResultData {
     private Long timeStamp;
 
     @NotNull
-    @JsonProperty("kindID")
+    @JsonProperty("roomMode")
     @Digits(integer = 1, fraction = 0)
     private Integer roomMode;
 
