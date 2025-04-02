@@ -107,9 +107,8 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
         }finally {
-            walletRequestService.end(walletRequest, httpRequestLog, vo);
+            vo.setHttpRequestLog(httpRequestLog);
         }
-
         return vo;
     }
 

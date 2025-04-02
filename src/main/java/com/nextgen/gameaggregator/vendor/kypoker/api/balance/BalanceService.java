@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.balance;
 
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -19,21 +20,25 @@ public class BalanceService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
+    private final WalletRequestService walletRequestService;
 
     public BalanceService(GameServiceImpl gameService,
                           WalletService walletService,
                           ValidationService validationService,
-                          GameSessionService gameSessionService) {
+                          GameSessionService gameSessionService,
+                          WalletRequestService walletRequestService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
+        this.walletRequestService = walletRequestService;
     }
 
     public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
+
 
         try {
             // Convert original request body into dto
@@ -75,6 +80,8 @@ public class BalanceService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
+        } finally {
+            vo.setHttpRequestLog(httpRequestLog);
         }
         return vo;
     }

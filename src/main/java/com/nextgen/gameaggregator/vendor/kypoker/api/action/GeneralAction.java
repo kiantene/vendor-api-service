@@ -99,6 +99,8 @@ public class GeneralAction {
         } catch (Exception e) {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
+        } finally {
+            httpService.end(vo.getHttpRequestLog(), vo);
         }
         return vo;
     }

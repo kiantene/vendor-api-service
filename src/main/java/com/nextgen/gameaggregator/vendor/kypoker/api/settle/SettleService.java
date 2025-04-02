@@ -104,7 +104,7 @@ public class SettleService {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
         } finally {
-            walletRequestService.end(walletRequest, httpRequestLog, vo);
+            vo.setHttpRequestLog(httpRequestLog);
         }
         return vo;
     }

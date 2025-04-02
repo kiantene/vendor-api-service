@@ -73,6 +73,8 @@ public class CancelService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
+        } finally {
+            vo.setHttpRequestLog(httpRequestLog);
         }
 
         return vo;
