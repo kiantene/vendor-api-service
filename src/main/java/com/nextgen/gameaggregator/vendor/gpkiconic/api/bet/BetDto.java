@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkiconic.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -13,14 +14,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Matcher;
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
+
+
+    @JsonIgnore
+    private boolean settledByBet = false;
+
     @NotBlank
     @JsonProperty("api_token")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -28,83 +31,49 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @JsonProperty("user")
     private String user;
 
     @NotNull
     @PositiveOrZero
+    @JsonProperty("money")
     private BigDecimal money;
 
     @NotBlank
     @Size(max = 10)
     @Pattern(regexp = "\\d+")
+    @JsonProperty("timestamp")
     private String timestamp;
 
     @NotBlank
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    @JsonProperty("dealid")
     private String dealid;
 
     @NotBlank
     @Pattern(regexp = "[12]")
+    @JsonProperty("code")
     private String code;
 
     @NotBlank
-    @JsonProperty("roundid")
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    @JsonProperty("roundid")
     private String bRoundid;
-
-    @Pattern(regexp = "[01]")
-    private String finished;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String gameinfo;
-
-    @PositiveOrZero
-    private BigDecimal betinfo;
+    @JsonProperty("gameinfo")
+    private String gameInfo;
 
     @NotBlank
     @Pattern(regexp = "\\d+")
-    private String platform;
-
-    @NotBlank
     @JsonProperty("provider")
-    @Pattern(regexp = "\\d+")
     private String provider;
 
     @Pattern(regexp = "[01]")
-    private String istips;
+    @JsonProperty("istips")
+    private String isTips;
 
-    @JsonProperty("root_roundid")
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String rootRoundid;
-
-    @JsonProperty("root_dealid")
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String rootDealid;
-
-    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String betid;
-
-    // method for 7mojo while handle settled request
-    public void setBetId(String query) {
-        try {
-            // Decode the URL-encoded query string
-            String decodedQuery = URLDecoder.decode(query,
-                    StandardCharsets.UTF_8);
-
-            // Define the pattern to match the betid value
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("betid=\\[\"([^\"]+)\"\\]");
-            Matcher matcher = pattern.matcher(decodedQuery);
-
-            if (matcher.find()) {
-                this.betid = matcher.group(1);
-            } else {
-                this.betid = null;
-            }
-        } catch (Exception e) {
-            this.betid = null;
-        }
-    }
 
     @Override
     public String getExternalTransactionId() {
@@ -123,7 +92,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameinfo;
+        return this.gameInfo;
     }
 
     @Override
@@ -181,15 +150,24 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         BetStatus status;
-        if (this.finished != null && this.finished.equals(BetType.FINISHED)) {
-            status = BetStatus.SETTLED;
+//
+//        if (this.istips.equals(BetType.TIPS)) {
+//            // tips
+//            status = BetStatus.SETTLED;
+//        } else {
+        //normal bet
+        if (this.getCode().equals(BetType.POINTIN)) {
+            // unsettled
+            status = BetStatus.UNSETTLED;
         } else {
-            if (this.code.equals(BetType.POINTIN)) {
-                status = BetStatus.UNSETTLED;
-                return status;
-            }
+            // settled
             status = BetStatus.SETTLED;
         }
         return status;
+    }
+
+    @Override
+    public boolean getShouldSettleByBet() {
+        return this.settledByBet;
     }
 }

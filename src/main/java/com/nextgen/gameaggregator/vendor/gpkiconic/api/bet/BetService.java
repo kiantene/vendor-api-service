@@ -50,7 +50,7 @@ public class BetService {
         BigDecimal balance = BigDecimal.ZERO;
         GameSession gameSession = new GameSession();
         BigDecimal money;
-
+        ResultType resultType;
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
@@ -67,25 +67,39 @@ public class BetService {
             this.doVerification(betDto,
                     gameSession);
 
-            //pushgaming
-            if (betDto.getFinished() == null) {
-                //BET
+//
+            // iconic Live game multiple bet will settle by bet
+//            if (gameSession.getGameCategoryId().equals(5)) {
+//                betDto.setSettledByBet(true);
+//            }
+//
+//            if (betDto.getIstips().equals(BetType.TIPS)) {
+//                // tips
+//                balance = walletService.processBetResult(traceId,
+//                        gameSession,
+//                        betDto,
+//                        ResultType.BET_LOSE,
+//                        vendorService,
+//                        httpRequestLog);
+//            } else {
+            // normal bet
+
+            if (betDto.getCode().equals(BetType.POINTIN)) {
+                // unsettled
                 BetEvent betEvent = walletService.processBet(traceId,
                         gameSession,
                         betDto,
                         httpRequestLog.getRequestBody(),
                         httpRequestLog);
                 balance = betEvent.getLastBalance();
-            } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
-                //SETTLE
-                ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(),
-                        betDto.getWinAmount(),
-                        betDto.getJackpotAmount(),
-                        false);
+            } else {
+                //settled
+
+                resultType = vendorService.getResultType(betDto);
                 balance = walletService.processBetResult(traceId,
                         gameSession,
                         betDto,
-                        updatedResultType,
+                        resultType,
                         vendorService,
                         httpRequestLog);
             }
@@ -165,7 +179,7 @@ public class BetService {
         }
 
         ValidationUtils.isEquals(gameSession.getVendorGameCode(),
-                dto.getGameinfo(),
+                dto.getGameInfo(),
                 GameNotSupportedException::new);
 
         //Verify received api_token is same with credential
