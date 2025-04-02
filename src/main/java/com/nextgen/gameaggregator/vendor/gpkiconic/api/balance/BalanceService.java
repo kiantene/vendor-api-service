@@ -87,7 +87,12 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException {
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidPlayerException,
+            InvalidRequestException,
+            CredentialNotFoundException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
