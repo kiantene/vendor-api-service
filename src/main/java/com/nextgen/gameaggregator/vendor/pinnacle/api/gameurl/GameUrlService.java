@@ -46,7 +46,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    @Value("${pnc-version:v1}") // Default to v1 if not set
+    @Value("${pnc-version:v2}") // Default to v2 if not set
     private String toggleVersion;
 
     public GameUrlService() {
