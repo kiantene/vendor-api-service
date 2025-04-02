@@ -45,7 +45,7 @@ public class BetDto implements BetResultData {
     private String gameId;
 
     @NotNull
-    @JsonProperty("kindID")
+    @JsonProperty("kindId")
     @Digits(integer = 5, fraction = 0)
     private Integer kindId;
 
