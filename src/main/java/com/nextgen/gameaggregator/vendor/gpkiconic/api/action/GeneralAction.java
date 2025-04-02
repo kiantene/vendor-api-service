@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkiconic.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.gpkiconic.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.Actions;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.ResponseCodes;
@@ -21,10 +22,12 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final BalanceService balanceService;
+    private final BetService betService;
 
-    public GeneralAction(HttpService httpService, BalanceService balanceService) {
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
+        this.betService = betService;
     }
 
 
@@ -67,6 +70,8 @@ public class GeneralAction {
 
         return switch (actionDto.getCmd()) {
             case Actions.BALANCE -> balanceService.balance(httpRequestLog,
+                    traceId);
+            case Actions.BET_SETTLE -> betService.transaction(httpRequestLog,
                     traceId);
             default -> vo;
         };

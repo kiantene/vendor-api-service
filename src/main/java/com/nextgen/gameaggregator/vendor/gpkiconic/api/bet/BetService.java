@@ -7,14 +7,12 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDataVo;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDto;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.BetType;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.PlatformType;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.BetType;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.PlatformType;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.gpkiconic.service.VendorService;
+import com.nextgen.gameaggregator.vendor.gpkiconic.vo.CommonVo;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,14 +27,14 @@ public class BetService {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final HttpService httpService;
-    private final com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService vendorService;
+    private final VendorService vendorService;
 
     public BetService(GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService vendorService) {
+                      VendorService vendorService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -48,8 +46,8 @@ public class BetService {
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo vo = new CommonVo();
-        com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDto betDto = new com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDto();
-        com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDataVo betDataVo = new BetDataVo();
+        BetDto betDto = new BetDto();
+        BetDataVo betDataVo = new BetDataVo();
         BigDecimal balance = BigDecimal.ZERO;
         GameSession gameSession = new GameSession();
         BigDecimal money;
@@ -58,7 +56,7 @@ public class BetService {
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
                             StandardCharsets.UTF_8),
-                    com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDto.class);
+                    BetDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -99,7 +97,7 @@ public class BetService {
             money = betDto.getCode().equals(BetType.POINTIN) ? (betDto.getMoney().negate()) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
-            betDataVo.setTimestamp(String.valueOf(com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService.getCurrentTime()));
+            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
             betDataVo.setMoney(money.setScale(2,
                     RoundingMode.DOWN));
             if (balance != null) {
@@ -128,7 +126,8 @@ public class BetService {
             }
 
             // check the code value to define it is deducted or gain money
-            money = betDto.getCode().equals(BetType.POINTIN) ? (betDto.getMoney().multiply(BigDecimal.valueOf(-1.00))) : betDto.getMoney();
+            money = betDto.getCode().equals(BetType.POINTIN) ?
+                    (betDto.getMoney().multiply(BigDecimal.valueOf(-1.00))) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
             betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
@@ -147,12 +146,19 @@ public class BetService {
         return vo;
     }
 
-    private void doValidation(com.nextgen.gameaggregator.vendor.gpkpushgaming.api.bet.BetDto dto) throws InvalidRequestException {
+    private void doValidation(BetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
+    private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException,
+            AuthenticationException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException,
+            CredentialNotFoundException,
+            InvalidRequestException,
+            GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         if (dto.getCode().equals(BetType.POINTIN)) { //only check if it's bet
             validationService.validateEligibleBet(gameSession,
@@ -171,12 +177,15 @@ public class BetService {
                 InvalidRequestException::new);
 
         // check platform id
-        if (!PlatformType.getPlatformTypeList().contains(dto.getPlatform())) {
+        if (!PlatformType.ICONIC.equals(dto.getPlatform())) {
             throw new InvalidRequestException();
         }
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            InvalidOperatorResponseException {
         return walletService.getBalance(traceId,
                 gameSession,
                 httpRequestLog);

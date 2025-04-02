@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkiconic.api.bet;
 
-import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.DataVo;
+import com.nextgen.gameaggregator.vendor.gpkiconic.vo.DataVo;
 import lombok.Getter;
 import lombok.Setter;
 
