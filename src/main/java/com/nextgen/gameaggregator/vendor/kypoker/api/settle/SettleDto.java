@@ -40,7 +40,7 @@ public class SettleDto implements BetResultData {
     private String gameNo;
 
     @NotNull
-    @JsonProperty("kindID")
+    @JsonProperty("kindId")
     @Digits(integer = 5, fraction = 0)
     private Integer kindId;
 

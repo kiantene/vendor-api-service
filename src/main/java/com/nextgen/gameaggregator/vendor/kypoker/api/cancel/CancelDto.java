@@ -41,7 +41,7 @@ public class CancelDto implements RollbackData {
     private String gameId;
 
     @NotNull
-    @JsonProperty("kindID")
+    @JsonProperty("kindId")
     @Digits(integer = 5, fraction = 0)
     private Integer kindId;
 
