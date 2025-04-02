@@ -20,17 +20,20 @@ public class CancelService {
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
+    private final HttpService httpService;
 
     public CancelService(GameService gameService,
                          WalletService walletService,
                          ValidationService validationService,
                          GameSessionService gameSessionService,
-                         VendorService vendorService) {
+                         VendorService vendorService,
+                         HttpService httpService) {
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.httpService = httpService;
     }
 
     public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp) throws AuthenticationException {
@@ -74,7 +77,7 @@ public class CancelService {
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
         } finally {
-            vo.setHttpRequestLog(httpRequestLog);
+            httpService.end(httpRequestLog, vo);
         }
 
         return vo;

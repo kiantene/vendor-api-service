@@ -21,18 +21,21 @@ public class BalanceService {
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final WalletRequestService walletRequestService;
+    private final HttpService httpService;
 
     public BalanceService(GameServiceImpl gameService,
                           WalletService walletService,
                           ValidationService validationService,
                           GameSessionService gameSessionService,
-                          WalletRequestService walletRequestService) {
+                          WalletRequestService walletRequestService,
+                          HttpService httpService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.walletRequestService = walletRequestService;
+        this.httpService = httpService;
     }
 
     public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
@@ -81,7 +84,7 @@ public class BalanceService {
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
         } finally {
-            vo.setHttpRequestLog(httpRequestLog);
+            httpService.end(httpRequestLog, vo);
         }
         return vo;
     }

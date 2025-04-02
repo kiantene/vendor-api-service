@@ -12,8 +12,6 @@ public class CommonVo implements HttpResponse {
 
     public ResponseObjectDto d;
 
-    public HttpRequestLog httpRequestLog;
-
     @Override
     public boolean hasError() {
         return false;
