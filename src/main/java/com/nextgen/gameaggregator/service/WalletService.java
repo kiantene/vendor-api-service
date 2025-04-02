@@ -538,6 +538,9 @@ public class WalletService {
                     // if SC_OK
                     if (vendorService.shouldRejectCancelRequest()) {
                         throw new BetResultIdempotentViolationException(settledBet);
+                    } else if (settledBet.getVendorId().equals(5) && settledBet.getStatus().equals(BetStatus.CANCELLED.code)) {
+                        //only for fachai.
+                        throw new BetNotFoundException();
                     }
                     // continue processRollback request if should not rejected
                     resettleNum += 1;
