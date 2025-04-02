@@ -8,7 +8,7 @@ public class Credentials {
 
     public static final String API_TOKEN = "api_token";
 
-    public static final String PLATFORM_ID = "platform_id";
+    public static final String PROVIDER_ID = "provider_id";
 
     public static final String ENV = "env";
 
