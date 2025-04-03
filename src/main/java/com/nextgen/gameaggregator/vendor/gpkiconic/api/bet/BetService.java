@@ -86,6 +86,7 @@ public class BetService {
 
             if (betDto.getCode().equals(BetType.POINTIN)) {
                 // unsettled
+                Thread.sleep(3000);
                 BetEvent betEvent = walletService.processBet(traceId,
                         gameSession,
                         betDto,
