@@ -92,12 +92,11 @@ public class BetService {
                         betDto,
                         httpRequestLog.getRequestBody(),
                         httpRequestLog);
-                Thread.sleep(4000);
                 balance = betEvent.getLastBalance();
 
             } else {
                 //settled
-
+                Thread.sleep(4000);
                 resultType = vendorService.getResultType(betDto);
                 balance = walletService.processBetResult(traceId,
                         gameSession,
