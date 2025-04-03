@@ -96,7 +96,6 @@ public class BetService {
 
             } else {
                 //settled
-                Thread.sleep(4000);
                 resultType = vendorService.getResultType(betDto);
                 balance = walletService.processBetResult(traceId,
                         gameSession,
