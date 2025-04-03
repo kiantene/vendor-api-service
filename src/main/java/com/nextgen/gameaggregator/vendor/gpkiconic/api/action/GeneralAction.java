@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkiconic.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.gpkiconic.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.gpkiconic.api.rollback.RollBackService;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.Actions;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkiconic.constant.ResponseCodes;
@@ -23,11 +24,13 @@ public class GeneralAction {
     private final HttpService httpService;
     private final BalanceService balanceService;
     private final BetService betService;
+    private final RollBackService rollBackService;
 
-    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService) {
+    public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService, RollBackService rollBackService) {
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
+        this.rollBackService = rollBackService;
     }
 
 
@@ -73,6 +76,9 @@ public class GeneralAction {
                     traceId);
             case Actions.BET_SETTLE -> betService.transaction(httpRequestLog,
                     traceId);
+            case com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Actions.ROLLBACK ->
+                    rollBackService.rollback(httpRequestLog,
+                            traceId);
             default -> vo;
         };
     }
