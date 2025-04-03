@@ -76,10 +76,12 @@ public class GeneralAction {
                     traceId);
             case Actions.BET_SETTLE -> betService.transaction(httpRequestLog,
                     traceId);
-            case com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Actions.ROLLBACK ->
-                    rollBackService.rollback(httpRequestLog,
-                            traceId);
-            default -> vo;
+            case Actions.ROLLBACK -> rollBackService.rollback(httpRequestLog,
+                    traceId);
+            default -> {
+                vo.setCodeMsg(ResponseCodes.ERROR.code);
+                yield vo;
+            }
         };
     }
 
