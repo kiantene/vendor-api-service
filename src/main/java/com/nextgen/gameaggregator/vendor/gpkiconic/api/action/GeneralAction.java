@@ -68,7 +68,10 @@ public class GeneralAction {
         return switch (actionDto.getCmd()) {
             case Actions.BALANCE -> balanceService.balance(httpRequestLog,
                     traceId);
-            default -> vo;
+            default -> {
+                vo.setCodeMsg(ResponseCodes.ERROR.code);
+                yield vo;
+            }
         };
     }
 
