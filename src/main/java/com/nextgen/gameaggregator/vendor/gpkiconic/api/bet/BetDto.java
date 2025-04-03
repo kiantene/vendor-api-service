@@ -70,7 +70,7 @@ public class BetDto extends ActionDto implements BetResultData {
     @JsonProperty("provider")
     private String provider;
 
-    @Pattern(regexp = "[01]")
+    @Pattern(regexp = "true|false")
     @JsonProperty("istips")
     private String isTips;
 
