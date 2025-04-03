@@ -73,7 +73,10 @@ public class GeneralAction {
                     traceId);
             case Actions.BET_SETTLE -> betService.transaction(httpRequestLog,
                     traceId);
-            default -> vo;
+            default -> {
+                vo.setCodeMsg(ResponseCodes.ERROR.code);
+                yield vo;
+            }
         };
     }
 

@@ -40,12 +40,11 @@ public class BalanceService {
     }
 
     public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
-        BalanceDto balanceDto;
         CommonVo vo = new CommonVo();
         BalanceDataVo dataVo = new BalanceDataVo();
 
         try {
-            balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
+            BalanceDto balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
                             StandardCharsets.UTF_8),
                     BalanceDto.class);
 
