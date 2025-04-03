@@ -99,6 +99,10 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
             httpService.logError(httpRequestLog, betNotFoundException);
 
+        } catch (RecordNotFoundException recordNotFoundException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            httpService.logError(httpRequestLog, recordNotFoundException);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
                 //if found the bet in settled status

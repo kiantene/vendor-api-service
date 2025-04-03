@@ -511,7 +511,7 @@ public class WalletService {
     }
 
     private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService, GameSession gameSession, String roundId)
-            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException, RecordNotFoundException {
 
         SettledBet settledBet = null;
 
@@ -538,15 +538,16 @@ public class WalletService {
                     // if SC_OK
                     if (vendorService.shouldRejectCancelRequest()) {
                         throw new BetResultIdempotentViolationException(settledBet);
-                    } else if (settledBet.getVendorId().equals(5) && settledBet.getStatus().equals(BetStatus.CANCELLED.code)) {
-                        //only for fachai.
-                        throw new BetNotFoundException();
                     }
                     // continue processRollback request if should not rejected
                     resettleNum += 1;
                 } else if (operatorStatus.equals(operatorStatusProcessing)) {
                     // if SC_TRANSACTION_STILL_PROCESSING
                     throw new TransactionStillProcessingException();
+
+                } else if (settledBet.getVendorId().equals(5) && operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    //only for fachai.
+                    throw new RecordNotFoundException();
                 }
                 // else then other operator error, continue processRollback request
                 settledBet.setInternalTransactionId(traceId);
