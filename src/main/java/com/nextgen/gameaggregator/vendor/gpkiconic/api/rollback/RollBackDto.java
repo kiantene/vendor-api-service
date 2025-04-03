@@ -41,6 +41,10 @@ public class RollBackDto extends ActionDto implements RollbackData {
     @Pattern(regexp = "[12]")
     private String code;
 
+    @Pattern(regexp = "true|false|1|0")
+    @JsonProperty("istips")
+    private String isTips;
+
     @Override
     public String getRollbackId() {
         return this.dealid;
