@@ -2,13 +2,12 @@ package com.nextgen.gameaggregator.vendor.kypoker.api.action;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.getorderstatus.GetOrderStatusService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.kypoker.api.cancel.CancelService;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
@@ -34,27 +33,25 @@ public class GeneralAction {
     private final BetService betService;
     private final SettleService settleService;
     private final CancelService cancelService;
+    private final GetOrderStatusService getOrderStatusService;
     private final VendorLineService vendorLineService;
-    private final ValidationService validationService;
-    private final GameSessionService gameSessionService;
-
 
     public GeneralAction(HttpService httpService,
                          BalanceService balanceService,
                          BetService betService,
                          SettleService settleService,
                          CancelService cancelService,
-                         VendorLineService vendorLineService,
-                         ValidationService validationService,
-                         GameSessionService gameSessionService) {
+                         GetOrderStatusService getOrderStatusService,
+                         VendorLineService vendorLineService) {
+
         this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
         this.settleService = settleService;
         this.cancelService = cancelService;
+        this.getOrderStatusService = getOrderStatusService;
         this.vendorLineService = vendorLineService;
-        this.validationService = validationService;
-        this.gameSessionService = gameSessionService;
+
     }
 
     @GetMapping(EndPoints.ACTION)
@@ -123,7 +120,9 @@ public class GeneralAction {
             vo = settleService.settle(body, traceId, httpRequestLog, decryptedString, timeStamp);
         } else if (Actions.CANCEL.equals(actionDto.getS())) {
             vo = cancelService.cancel(body, traceId, httpRequestLog, decryptedString, timeStamp);
-        } else {
+        }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
+            vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
+        }  else {
             if (vo.d == null) {
                 vo.d.setCode(ResponseCodes.INTERNAL_ERROR);
             }
