@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -90,9 +91,16 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            if (!betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+                //if bet result idempotent is not settled (which is rollback, then we should let vendor resend rollback instead
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+            } else {
+                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            }
 
         } catch (
                 AuthenticationException |
