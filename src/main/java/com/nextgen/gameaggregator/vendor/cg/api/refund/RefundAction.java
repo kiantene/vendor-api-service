@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cg.api.refund;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -11,6 +12,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cg.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,29 +43,42 @@ public class RefundAction {
     }
 
     @PostMapping(EndPoints.REFUND)
-    public ResponseVo refund(HttpServletRequest request) {
+    public String refund(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         ResponseVo refundVo = new ResponseVo();
+        CommonDto dto = new CommonDto();
         try {
-            //convert request body into dto
-            RefundDto dto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, RefundDto.class);
+            //convert body into dto
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
+            dto.setData(VendorService.urlDecode(dto.getData()));
 
             //basic validation
             this.doValidation(dto);
 
-            //search for game session using vendor player id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAccountId());
+            String decryptedData = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
+            httpRequestLog.setRequestBody(decryptedData);
+            RefundDto refundDto = HttpService.convertJsonToDto(decryptedData, RefundDto.class);
+
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getAccountId());
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(refundDto.getAccountId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             //basic verification
-            this.doVerification(dto, gameSession);
+            this.doVerification(refundDto, gameSession);
 
             //rollback process
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
             //set values
-            refundVo.setChannelId(dto.getChannelId());
-            refundVo.setAccountId(dto.getAccountId());
+            refundVo.setChannelId(refundDto.getChannelId());
+            refundVo.setAccountId(refundDto.getAccountId());
             refundVo.setBalance(balance);
             refundVo.setCurrency(gameSession.getVendorCurrencyCode());
             refundVo.setErrorCode(ResponseCodes.SUCCESS);
@@ -81,20 +96,23 @@ public class RefundAction {
         } catch (BetNotFoundException betNotFoundException) {
             refundVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_TRANSACTION);
             httpService.logError(httpRequestLog, betNotFoundException);
-        } catch (AuthenticationException authenticationException) {
-            refundVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_PLAYER);
-            httpService.logError(httpRequestLog, authenticationException);
         } catch (Exception e) {
             refundVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            httpService.end(httpRequestLog, refundVo);
+            try {
+                String jsonString = new Gson().toJson(refundVo);
+                refundVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, refundVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
 
-        return refundVo;
+        return refundVo.getEncrypt();
     }
 
-    private void doValidation(RefundDto dto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
     }
 

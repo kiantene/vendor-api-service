@@ -6,9 +6,9 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -26,56 +26,49 @@ public class AuthenticationAction {
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
 
     @Autowired
     public AuthenticationAction(HttpService httpService,
                                 GameSessionService gameSessionService,
                                 VendorLineService vendorLineService,
                                 AgentPlayerService agentPlayerService,
-                                VendorGameService vendorGameService) {
+                                VendorGameService vendorGameService,
+                                VendorService vendorService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.AUTHENTICATION)//, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
-        AuthenticationDto dto;
         AuthenticationVo authenticationVo = new AuthenticationVo();
-        String iv = null;
-        String key = null;
+        CommonDto dto = new CommonDto();
 
         try {
-            String body = httpRequestLog.getRequestBody();
-            DataDto dataDto = new DataDto();
             //convert to dto
-            dto = HttpService.convertQueryStringToDto(body, AuthenticationDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
             dto.setData(VendorService.urlDecode(dto.getData()));
 
             //validation
             ValidationUtils.validateRequest(dto);
 
             //decrypt token return from vendor
-            String decryptedToken;
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CHANNEL_ID, dto.getChannelId());
-            iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.IV);
-            key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
-
-            decryptedToken = dto.getData();
-            decryptedToken = VendorService.decryptResponse(decryptedToken, iv, key); //we get the json here
+            String decryptedToken = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
             httpRequestLog.setRequestBody(decryptedToken);
-            dataDto = HttpService.convertJsonToDto(decryptedToken, DataDto.class);
+            AuthenticationDto authenticationDto = HttpService.convertJsonToDto(decryptedToken, AuthenticationDto.class);
 
             //validation
-            this.doValidation(dataDto);
+            this.doValidation(authenticationDto);
 
             //get the respective game session with the decrypted token
-            GameSession gameSession = gameSessionService.verifyToken(dataDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
 
             //verify the status of the session
             this.doVerification(gameSession);
@@ -95,16 +88,20 @@ public class AuthenticationAction {
             authenticationVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            String jsonString = new Gson().toJson(authenticationVo);
-            authenticationVo.setEncrypt(VendorService.encrypt(jsonString, iv, key));
-            httpService.end(httpRequestLog, authenticationVo);
+            try {
+                String jsonString = new Gson().toJson(authenticationVo);
+                authenticationVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, authenticationVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
         //return encrypted string only
         return authenticationVo.getEncrypt();
     }
 
 
-    private void doValidation(DataDto dto) throws InvalidRequestException {
+    private void doValidation(AuthenticationDto dto) throws InvalidRequestException {
         //general validation
         ValidationUtils.validateRequest(dto);
     }

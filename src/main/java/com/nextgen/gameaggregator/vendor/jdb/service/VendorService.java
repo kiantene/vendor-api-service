@@ -98,13 +98,4 @@ public class VendorService extends BaseVendorService {
 
         return settledBet;
     }
-
-    public String getCredentialWithKey(VendorLine vendorLine, String key) throws InvalidVendorLineException {
-        return vendorLine.getCredentials()
-                .stream()
-                .filter(vendorLineCredential -> vendorLineCredential.getName().equals(key))
-                .map(VendorLineCredential::getValue)
-                .findFirst()
-                .orElseThrow(InvalidVendorLineException::new);
-    }
 }

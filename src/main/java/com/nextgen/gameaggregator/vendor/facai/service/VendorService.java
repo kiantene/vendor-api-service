@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -71,5 +70,12 @@ public class VendorService extends BaseVendorService {
         }
 
         return checkRecord;
+    }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        //fc vendor timeout is 4000, and given 500 buffer timing, then defaultTiming would be 3500.
+        Integer operatorDefaultTiming = 3500;
+        return operatorDefaultTiming;
     }
 }
