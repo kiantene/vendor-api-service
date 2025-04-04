@@ -114,7 +114,7 @@ public class VendorService extends BaseVendorService {
     public void dataDebitMapper(WalletRequest walletRequest, BetDto betDto , GameSession gameSession) {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
-        walletRequest.setExternalTransactionId(betDto.getExternalTransactionId());
+        walletRequest.setExternalTransactionId(betDto.getOrderId());
         walletRequest.setRoundId(betDto.getRoundId());
         walletRequest.setVendorGameCode(betDto.getGameId());
         walletRequest.setTimestamp(betDto.getTimeStamp());
@@ -130,7 +130,7 @@ public class VendorService extends BaseVendorService {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-        walletRequest.setExternalTransactionId(settleDto.getRoundId());
+        walletRequest.setExternalTransactionId(settleDto.getOrderId());
         walletRequest.setRoundId(settleDto.getRoundId());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
         walletRequest.setTimestamp(System.currentTimeMillis());

@@ -51,7 +51,7 @@ public class GetOrderStatusService {
 
             doValidation(getOrderStatusDto);
 
-            GetOrderStatusAgentDto getOrderStatusAgentDto = HttpService.convertQueryStringToDto(decryptedParam, GetOrderStatusAgentDto.class);
+            GetOrderStatusAgentDto getOrderStatusAgentDto = HttpService.convertQueryStringToDto(actionDto, GetOrderStatusAgentDto.class);
 
             externalTransactionId = getOrderStatusDto.getOrderId();
 
@@ -62,10 +62,9 @@ public class GetOrderStatusService {
             unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, getOrderStatusDto.getOrderId());
 
             ResponseObjectDto d = new ResponseObjectDto();
-
             d.setCode(ResponseCodes.CODE3);
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
+            vo.setS(ResponseCodes.GET_ORDER_STATUS);
             vo.setD(d);
 
         } catch (BetNotFoundException e){
@@ -75,28 +74,22 @@ public class GetOrderStatusService {
                 ResponseObjectDto d = new ResponseObjectDto();
                 d.setStatus(ResponseCodes.CODE1);
                 vo.setM(EndPoints.LAUNCH_GAME);
-                vo.setS(ResponseCodes.GET_BET);
+                vo.setS(ResponseCodes.GET_ORDER_STATUS);
                 vo.setD(d);
 
             } catch (BetNotFoundException ex) {
                 ResponseObjectDto d = new ResponseObjectDto();
                 d.setStatus(ResponseCodes.CODE4);
                 vo.setM(EndPoints.LAUNCH_GAME);
-                vo.setS(ResponseCodes.GET_BET);
+                vo.setS(ResponseCodes.GET_ORDER_STATUS);
                 vo.setD(d);
             }
-
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setStatus(ResponseCodes.CODE4);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setStatus(ResponseCodes.CODE2);
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
+            vo.setS(ResponseCodes.GET_ORDER_STATUS);
             vo.setD(d);
 
         }finally {
