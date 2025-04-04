@@ -152,6 +152,7 @@ public class SettledBetService {
         SettledBet settledBet = null;
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+        Integer skipProcessGenerateBetStatus = 0;
 
         try {
             settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
@@ -168,7 +169,8 @@ public class SettledBetService {
 
                 } else if (settledBet.getVendorId().equals(5) && settledBet.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                     //GA-10243: customized handling just for fachai with if the operator of the bet is  SC_INSUFFICIENT_FUNDS, then we will
-                    throw new BetNotFoundException(1);
+                    skipProcessGenerateBetStatus = 1;
+                    throw new BetNotFoundException();
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
                     settledBet.setOperatorStatus(operatorStatusProcessing);
@@ -177,9 +179,9 @@ public class SettledBetService {
             }
         } catch (BetNotFoundException betNotFoundException) {
 
-            if (betNotFoundException.getSkipProcessGenerateBetStatus() == 1) {
+            if (skipProcessGenerateBetStatus == 1) {
                 //GA-10243: by default if betNotFound we will continue process the bet, with this we will return betNotFound to class file instead
-                throw new BetNotFoundException(1);
+                throw new BetNotFoundException();
             }
 
             RawBetIdempotentLog betIdempotentLog = null;
