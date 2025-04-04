@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.vendor.kypoker.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 
+import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,9 +94,14 @@ public class GeneralAction {
             vo.setM(EndPoints.LAUNCH_GAME);
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
+
         } catch (Exception e) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.INTERNAL_ERROR);
+            vo.setD(d);
+            
         }
         return vo;
     }

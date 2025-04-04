@@ -72,10 +72,11 @@ public class CancelService {
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            d.setStatus(2);
+            d.setCode(ResponseCodes.CODE2);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
+
         } finally {
             httpService.end(httpRequestLog, vo);
         }

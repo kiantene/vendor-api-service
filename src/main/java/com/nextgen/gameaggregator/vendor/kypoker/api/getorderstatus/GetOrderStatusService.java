@@ -85,6 +85,7 @@ public class GetOrderStatusService {
                 vo.setS(ResponseCodes.GET_BET);
                 vo.setD(d);
             }
+
             ResponseObjectDto d = new ResponseObjectDto();
             d.setStatus(ResponseCodes.CODE4);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -97,6 +98,7 @@ public class GetOrderStatusService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+
         }finally {
             walletRequestService.end(walletRequest, httpRequestLog, vo);
         }

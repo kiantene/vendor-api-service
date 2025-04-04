@@ -103,9 +103,11 @@ public class BetService {
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
+            d.setStatus(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+
         }finally {
             walletRequestService.end(walletRequest,httpRequestLog,vo);
         }

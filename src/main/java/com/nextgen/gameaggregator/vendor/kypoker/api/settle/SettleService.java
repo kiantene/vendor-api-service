@@ -103,6 +103,7 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
+
         } finally {
             walletRequestService.end(walletRequest,httpRequestLog,vo);
         }
