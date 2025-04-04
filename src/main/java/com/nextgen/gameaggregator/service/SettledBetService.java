@@ -142,7 +142,7 @@ public class SettledBetService {
 
     public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException,
-            AmbiguousTimeoutException, UnambiguousTimeoutException, MergedBetDataIntegrityException {
+            AmbiguousTimeoutException, UnambiguousTimeoutException, BetNotFoundException {
 
         Integer vendorId = gameSession.getVendorId();
         Integer vendorGameId = gameSession.getVendorGameId();
@@ -164,12 +164,11 @@ public class SettledBetService {
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    //only fachai, for idempotent request we will further check the betType for other error throw.
-                    if (settledBet.getVendorId().equals(5) && settledBet.getStatus().equals(BetStatus.CANCELLED.code)) {
-                        throw new MergedBetDataIntegrityException();
-                    } else {
-                        throw new BetResultIdempotentViolationException(settledBet);
-                    }
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else if (settledBet.getVendorId().equals(5) && settledBet.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    //GA-10243: customized handling just for fachai with if the operator of the bet is  SC_INSUFFICIENT_FUNDS, then we will
+                    throw new BetNotFoundException(1);
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
                     settledBet.setOperatorStatus(operatorStatusProcessing);
@@ -177,6 +176,11 @@ public class SettledBetService {
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
+
+            if (betNotFoundException.getSkipProcessGenerateBetStatus().equals(1)) {
+                //GA-10243: by default if betNotFound we will continue process the bet, with this we will return betNotFound to class file instead
+                throw new BetNotFoundException(1);
+            }
 
             RawBetIdempotentLog betIdempotentLog = null;
 
