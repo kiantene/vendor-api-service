@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.exception;
 
 public class BetNotFoundException extends Exception {
 
-    private static Integer skipProcessGenerateBetStatus = 0;
+    private static int skipProcessGenerateBetStatus = 0;
     public BetNotFoundException() {
         super();
     }
@@ -11,16 +11,16 @@ public class BetNotFoundException extends Exception {
         super(message);
     }
 
-    public BetNotFoundException(Integer customStatus) {
+    public BetNotFoundException(int customStatus) {
         super();
         setSkipProcessGenerateBetStatus(customStatus);
     }
 
-    public static void setSkipProcessGenerateBetStatus(Integer newStatus) {
+    public static void setSkipProcessGenerateBetStatus(int newStatus) {
         skipProcessGenerateBetStatus = newStatus;
     }
 
-    public static Integer getSkipProcessGenerateBetStatus() {
+    public static int getSkipProcessGenerateBetStatus() {
         return skipProcessGenerateBetStatus;
     }
 }

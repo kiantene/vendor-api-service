@@ -177,7 +177,7 @@ public class SettledBetService {
             }
         } catch (BetNotFoundException betNotFoundException) {
 
-            if (betNotFoundException.getSkipProcessGenerateBetStatus().equals(1)) {
+            if (betNotFoundException.getSkipProcessGenerateBetStatus() == 1) {
                 //GA-10243: by default if betNotFound we will continue process the bet, with this we will return betNotFound to class file instead
                 throw new BetNotFoundException(1);
             }

@@ -187,7 +187,7 @@ public class BetAction {
         //Verify received Sign is the same from param value
         //MD5 encrypt
         String md5Param = DigestUtils.md5Hex(jsonParam);
-        ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
+        //ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
         String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
