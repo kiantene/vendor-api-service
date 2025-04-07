@@ -1,12 +1,13 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
+    @NotNull
     private String loginUrl;
     private String userCode;
     private String loginId;
