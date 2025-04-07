@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.vendor.avatarux.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.EndPoints;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -26,11 +25,6 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Getter
 public class GameUrlService extends BaseGameUrlService<AUGameUrlVo> {
-    //Credentials
-    String apiName;
-
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     public GameUrlService() {
         super(AUGameUrlVo.class);
@@ -40,7 +34,7 @@ public class GameUrlService extends BaseGameUrlService<AUGameUrlVo> {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        this.apiName = ValidationUtils.validateCredential(credentials.get(Credentials.API_NAME));
+        String apiName = ValidationUtils.validateCredential(credentials.get(Credentials.API_NAME));
 
         formData.add("provider", "avatarux");
         formData.add("wallet", apiName);
@@ -56,7 +50,7 @@ public class GameUrlService extends BaseGameUrlService<AUGameUrlVo> {
                                     GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException, InvalidVendorLineException, TimeoutException {
         //construct API address
-        String launchUrl = Optional.of(credentials.get(Credentials.API_URL))
+        String launchUrl = Optional.ofNullable(credentials.get(Credentials.API_URL))
                 .orElseThrow(InvalidVendorLineException::new);
 
         URI url = UriComponentsBuilder.fromUriString(launchUrl)
