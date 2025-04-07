@@ -3,13 +3,17 @@ package com.nextgen.gameaggregator.vendor.gpkiconic.service;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
+import com.nextgen.gameaggregator.vendor.gpkiconic.api.bet.BetDto;
+import com.nextgen.gameaggregator.vendor.gpkiconic.constant.BetType;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -92,5 +96,16 @@ public class VendorService extends BaseVendorService {
     public boolean shouldDoRollbackByRound(GameSession gameSession) {
         // Handle for GPK BGAMING game, will be alwaus rollback by round
         return gameSession.getGameCode().startsWith("GPKBG");
+    }
+
+
+    public ResultType getResultType(BetDto dto) {
+        ResultType resultType = ResultType.WIN; // Default value is win
+
+        if (dto.getMoney().compareTo(BigDecimal.ZERO) == 0 && dto.getCode().equals(BetType.POINTOUT)) {
+            resultType = ResultType.END;
+        }
+
+        return resultType;
     }
 }
