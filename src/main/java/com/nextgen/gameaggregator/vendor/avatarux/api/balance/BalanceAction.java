@@ -110,7 +110,7 @@ public class BalanceAction {
         // 4. Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
 
-        //5. Verify token
+        //5. Verify Authorization
         ValidationUtils.isEquals(gameSession.getToken(), dto.getAuthorization().replace("Bearer ", ""), AuthenticationException::new);
 
         //6. Verify X-Server-Authorization

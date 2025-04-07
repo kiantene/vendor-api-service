@@ -103,7 +103,7 @@ public class AuthenticateAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
 
-        //2. Verify X-Server-Authorization
+        //2. Verify Authorization
         ValidationUtils.isEquals(gameSession.getToken(), dto.getKey(), InvalidPlayerException::new);
     }
 
