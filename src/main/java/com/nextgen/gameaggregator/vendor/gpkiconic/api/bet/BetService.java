@@ -66,23 +66,7 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto,
                     gameSession);
-
-//
-            // iconic Live game multiple bet will settle by bet
-//            if (gameSession.getGameCategoryId().equals(5)) {
-//                betDto.setSettledByBet(true);
-//            }
-//
-//            if (betDto.getIstips().equals(BetType.TIPS)) {
-//                // tips
-//                balance = walletService.processBetResult(traceId,
-//                        gameSession,
-//                        betDto,
-//                        ResultType.BET_LOSE,
-//                        vendorService,
-//                        httpRequestLog);
-//            } else {
-            // normal bet
+            
 
             if (betDto.getCode().equals(BetType.POINTIN)) {
                 // unsettled
