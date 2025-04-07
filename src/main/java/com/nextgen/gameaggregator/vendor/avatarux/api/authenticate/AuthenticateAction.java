@@ -38,7 +38,7 @@ public class AuthenticateAction {
         this.gameSessionService = gameSessionService;
     }
 
-    @PostMapping(path = EndPoints.Authenticate)
+    @PostMapping(path = EndPoints.AUTHENTICATE)
     public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String body = httpRequestLog.getRequestBody();
@@ -58,7 +58,7 @@ public class AuthenticateAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getOperator());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession, body, httpRequestLog.getMethod());
+            this.doVerification(dto, gameSession, body);
 
             // 5. Set response data
             responseVo.setNativeId(dto.getOperator());
@@ -83,7 +83,7 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException {        // Verify received signature
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException {        // Verify received signature
         //1. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);

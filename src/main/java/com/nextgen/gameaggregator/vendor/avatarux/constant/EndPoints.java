@@ -9,7 +9,7 @@ public class EndPoints {
 
     public static final String LAUNCHER = "/launch/real";
 
-    public static final String Authenticate = "/authenticate";
+    public static final String AUTHENTICATE = "/authenticate";
 
     public static final String BALANCE = "/balance";
 

@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.avatarux.service;
 
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,13 +16,8 @@ import java.util.Enumeration;
 @Slf4j
 public class VendorService extends BaseVendorService {
     private static final String HASH_ALGORITHM = "HmacSHA256";
-    private final GameSessionService gameSessionService;
 
-    public VendorService(GameSessionService gameSessionService) {
-        this.gameSessionService = gameSessionService;
-    }
-
-    public static String generateHash(String apiSecret, String input) {
+    public static String generateHash(String apiSecret, String input) throws AuthenticationException {
         try {
             // Create a new secret key based on the given API secret
             SecretKeySpec keySpec = new SecretKeySpec(apiSecret.getBytes(), HASH_ALGORITHM);
@@ -40,8 +35,8 @@ public class VendorService extends BaseVendorService {
             return sb.toString();
 
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            log.error("Error generating signature : " + e.getMessage());
-            throw new RuntimeException("Error generating signature", e);
+            log.error("Error generating signature : {}", e.getMessage());
+            throw new AuthenticationException();
         }
     }
 

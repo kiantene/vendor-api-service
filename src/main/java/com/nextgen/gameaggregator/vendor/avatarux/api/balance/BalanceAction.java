@@ -60,7 +60,7 @@ public class BalanceAction {
             this.doValidation(balanceDto);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession, body, httpRequestLog.getMethod());
+            this.doVerification(balanceDto, gameSession, body);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -85,7 +85,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String body, String method)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String body)
             throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
