@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.aasexyv2.vo.BalanceVo;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Service
 @Setter
 @Getter
 public class VendorService extends BaseVendorService {
