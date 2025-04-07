@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.vendor.aasexy.constant.EndPoints;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +15,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH, consumes = {MediaType.APPLICATION_JSON_VALUE})
+@RequestMapping(path = EndPoints.PATH)
 public class RoutingAction {
 
     private final ApplicationContext applicationContext;
@@ -44,7 +43,7 @@ public class RoutingAction {
 
         try {
             controllerBean = applicationContext.getBean(controllerClass);
-            method = controllerBean.getClass().getMethod(action + "Request", HttpServletRequest.class);
+            method = controllerBean.getClass().getMethod(action, HttpServletRequest.class);
 
             result = method.invoke(controllerBean, request);
             return convertToResponseEntity(result);
