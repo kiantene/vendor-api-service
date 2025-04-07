@@ -75,8 +75,8 @@ public class BalanceAction {
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
-            responseVo.getError().setCode(ResponseCode.PLAYER_UNAUTHORIZED.code);
-            responseVo.getError().setMessage(ResponseCode.PLAYER_UNAUTHORIZED.description);
+            responseVo.getError().setCode(ResponseCode.SERVER_UNAUTHORIZED.code);
+            responseVo.getError().setMessage(ResponseCode.SERVER_UNAUTHORIZED.description);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
