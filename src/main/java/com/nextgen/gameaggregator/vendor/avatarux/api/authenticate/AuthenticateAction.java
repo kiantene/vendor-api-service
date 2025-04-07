@@ -2,12 +2,11 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.EndPoints;
@@ -30,12 +29,14 @@ public class AuthenticateAction {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final GameSessionService gameSessionService;
+    private final WalletService walletService;
 
-    public AuthenticateAction(HttpService httpService, VendorLineService vendorLineService, VendorService vendorService, GameSessionService gameSessionService) {
+    public AuthenticateAction(HttpService httpService, VendorLineService vendorLineService, VendorService vendorService, GameSessionService gameSessionService, WalletService walletService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
     }
 
     @PostMapping(path = EndPoints.AUTHENTICATE)
@@ -60,10 +61,12 @@ public class AuthenticateAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession, body);
 
+            BigDecimal balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+
             // 5. Set response data
             responseVo.setNativeId(dto.getOperator());
             responseVo.setToken(gameSession.getToken());
-            responseVo.setBalance(BigDecimal.ZERO);
+            responseVo.setBalance(balance);
             responseVo.setCurrency(gameSession.getCurrencyCode().toLowerCase());
             responseVo.setBrand("OneAPI");
 
@@ -87,6 +90,13 @@ public class AuthenticateAction {
         //1. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
+
+        // Call the service with the duplicate log
+        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 
 }

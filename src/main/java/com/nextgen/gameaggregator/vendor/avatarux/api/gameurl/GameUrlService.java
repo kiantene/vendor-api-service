@@ -38,7 +38,7 @@ public class GameUrlService extends BaseGameUrlService<AUGameUrlVo> {
 
         formData.add("provider", "avatarux");
         formData.add("wallet", apiName);
-        formData.add("operator", gameSession.getAgentPlayerUsername());
+        formData.add("operator", gameSession.getVendorPlayerUsername());
         formData.add("game", gameSession.getVendorGameCode());
         formData.add("key", gameSession.getToken());
 
