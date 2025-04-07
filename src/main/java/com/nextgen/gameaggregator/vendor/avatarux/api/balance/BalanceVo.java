@@ -21,6 +21,6 @@ public class BalanceVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return true;
     }
 }
