@@ -150,18 +150,19 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         BetStatus status;
-//
-//        if (this.istips.equals(BetType.TIPS)) {
-//            // tips
-//            status = BetStatus.SETTLED;
-//        } else {
-        //normal bet
-        if (this.getCode().equals(BetType.POINTIN)) {
-            // unsettled
-            status = BetStatus.UNSETTLED;
-        } else {
-            // settled
+
+        if (BetType.isTips(this.getIsTips())) {
+            // tips
             status = BetStatus.SETTLED;
+        } else {
+            //normal bet
+            if (this.getCode().equals(BetType.POINTIN)) {
+                // unsettled
+                status = BetStatus.UNSETTLED;
+            } else {
+                // settled
+                status = BetStatus.SETTLED;
+            }
         }
         return status;
     }

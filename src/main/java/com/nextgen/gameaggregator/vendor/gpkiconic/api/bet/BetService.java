@@ -63,46 +63,51 @@ public class BetService {
             // Verify session
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
+            // update game code from session
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameInfo(),
+                    gameSession);
+
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto,
                     gameSession);
 
-//
-            // iconic Live game multiple bet will settle by bet
-//            if (gameSession.getGameCategoryId().equals(5)) {
-//                betDto.setSettledByBet(true);
-//            }
-//
-//            if (betDto.getIstips().equals(BetType.TIPS)) {
-//                // tips
-//                balance = walletService.processBetResult(traceId,
-//                        gameSession,
-//                        betDto,
-//                        ResultType.BET_LOSE,
-//                        vendorService,
-//                        httpRequestLog);
-//            } else {
-            // normal bet
+//             iconic Live game multiple bet will settle by bet
+            if (gameSession.getGameCategoryId().equals(5)) {
+                betDto.setSettledByBet(true);
 
-            if (betDto.getCode().equals(BetType.POINTIN)) {
-                // unsettled
-//                Thread.sleep(4000);
-                BetEvent betEvent = walletService.processBet(traceId,
-                        gameSession,
-                        betDto,
-                        httpRequestLog.getRequestBody(),
-                        httpRequestLog);
-                balance = betEvent.getLastBalance();
 
-            } else {
-                //settled
-                resultType = vendorService.getResultType(betDto);
-                balance = walletService.processBetResult(traceId,
-                        gameSession,
-                        betDto,
-                        resultType,
-                        vendorService,
-                        httpRequestLog);
+                if (BetType.isTips(betDto.getIsTips())) {
+                    // tips
+                    balance = walletService.processBetResult(traceId,
+                            gameSession,
+                            betDto,
+                            ResultType.BET_LOSE,
+                            vendorService,
+                            httpRequestLog);
+                } else {
+                    // normal bet
+
+                    if (betDto.getCode().equals(BetType.POINTIN)) {
+                        // unsettled
+                        // Thread.sleep(4000);
+                        BetEvent betEvent = walletService.processBet(traceId,
+                                gameSession,
+                                betDto,
+                                httpRequestLog.getRequestBody(),
+                                httpRequestLog);
+                        balance = betEvent.getLastBalance();
+
+                    } else {
+                        //settled
+                        resultType = vendorService.getResultType(betDto);
+                        balance = walletService.processBetResult(traceId,
+                                gameSession,
+                                betDto,
+                                resultType,
+                                vendorService,
+                                httpRequestLog);
+                    }
+                }
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
