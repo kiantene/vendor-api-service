@@ -10,9 +10,6 @@ import com.nextgen.gameaggregator.vendor.avatarux.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.avatarux.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,13 +43,11 @@ public class BalanceAction {
     }
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseEntity<BalanceVo> getBalance(HttpServletRequest request) {
+    public BalanceVo getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
-        BalanceVo balanceVo = new BalanceVo();
-        HttpHeaders headers = new HttpHeaders();
+        BalanceVo responseVo = new BalanceVo();
         String body = httpRequestLog.getRequestBody();
-        HttpStatus status = HttpStatus.OK;
         httpRequestLog.setRequestBody("Request Body: \n" + body + "\nRequest Header: \n" + vendorService.getHeaders(request));
 
         try {
@@ -70,19 +65,19 @@ public class BalanceAction {
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            balanceVo.setBalance(balance);
+            responseVo.setBalance(balance);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
-            balanceVo.getError().setCode(ResponseCode.PLAYER_UNAUTHORIZED.code);
-            balanceVo.getError().setMessage(ResponseCode.PLAYER_UNAUTHORIZED.description);
+            responseVo.getError().setCode(ResponseCode.PLAYER_UNAUTHORIZED.code);
+            responseVo.getError().setMessage(ResponseCode.PLAYER_UNAUTHORIZED.description);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            balanceVo.getError().setCode(ResponseCode.UNKNOWN.code);
-            balanceVo.getError().setMessage(ResponseCode.UNKNOWN.description);
+            responseVo.getError().setCode(ResponseCode.UNKNOWN.code);
+            responseVo.getError().setMessage(ResponseCode.UNKNOWN.description);
         } finally {
-            httpService.end(httpRequestLog, balanceVo);
+            httpService.end(httpRequestLog, responseVo);
         }
-        return new ResponseEntity<>(balanceVo, headers, status);
+        return responseVo;
     }
 
     private void doValidation(BalanceDto dto) throws InvalidRequestException {

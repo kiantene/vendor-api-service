@@ -16,9 +16,6 @@ import com.nextgen.gameaggregator.vendor.avatarux.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.avatarux.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,10 +39,8 @@ public class AuthenticateAction {
     }
 
     @PostMapping(path = EndPoints.Authenticate)
-    public ResponseEntity<AuthenticateVo> authenticate(HttpServletRequest request) {
+    public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        HttpHeaders headers = new HttpHeaders();
-        HttpStatus status = HttpStatus.OK;
         String body = httpRequestLog.getRequestBody();
         String authorization = request.getHeader(Headers.SERVER_AUTHORIZATION);
         AuthenticateVo responseVo = new AuthenticateVo();
@@ -60,18 +55,17 @@ public class AuthenticateAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername("");
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getOperator());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession, body, httpRequestLog.getMethod());
 
             // 5. Set response data
-            responseVo.setNativeId("");
-            responseVo.setToken("");
+            responseVo.setNativeId(dto.getOperator());
+            responseVo.setToken(gameSession.getToken());
             responseVo.setBalance(BigDecimal.ZERO);
-            responseVo.setCurrency("");
-            responseVo.setBrand("");
-
+            responseVo.setCurrency(gameSession.getCurrencyCode().toLowerCase());
+            responseVo.setBrand("OneAPI");
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
@@ -81,7 +75,7 @@ public class AuthenticateAction {
             httpService.end(httpRequestLog, responseVo);
         }
 
-        return new ResponseEntity<>(responseVo, headers, status);
+        return responseVo;
     }
 
     private void doValidation(AuthenticateDto dto) throws InvalidRequestException {

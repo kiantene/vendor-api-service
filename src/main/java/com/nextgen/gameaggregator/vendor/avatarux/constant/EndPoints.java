@@ -5,7 +5,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EndPoints {
 
-    public static final String PATH = "/api/v1/avatarux";
+    public static final String PATH = "/api/v1/avatar";
 
     public static final String LAUNCHER = "/launch/real";
 
