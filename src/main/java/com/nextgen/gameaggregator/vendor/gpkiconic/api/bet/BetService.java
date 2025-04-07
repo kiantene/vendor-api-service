@@ -66,7 +66,7 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto,
                     gameSession);
-            
+
 
             if (betDto.getCode().equals(BetType.POINTIN)) {
                 // unsettled
@@ -124,7 +124,7 @@ public class BetService {
 
             // check the code value to define it is deducted or gain money
             money = betDto.getCode().equals(BetType.POINTIN) ?
-                    (betDto.getMoney().multiply(BigDecimal.valueOf(-1.00))) : betDto.getMoney();
+                    (betDto.getMoney().negate()) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
             betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
