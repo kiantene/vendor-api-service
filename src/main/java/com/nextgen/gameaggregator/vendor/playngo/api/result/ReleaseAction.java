@@ -185,7 +185,7 @@ public class ReleaseAction {
 
         } else {
             // Check if bet record has been settled before
-            this.verifySettledBet(releaseDto, gameSession);
+            this.verifySettledBetWithVendorPlayerIdAndRoundId(releaseDto, gameSession);
             // Check is unsettle bet exist
             String unsettledBetId = this.checkUnsettledBetListExist(releaseDto, gameSession);
 
@@ -228,7 +228,7 @@ public class ReleaseAction {
         return unsettledBetList.get(0).getVendorBetId();
     }
 
-    private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+    private void verifySettledBetWithVendorPlayerIdAndRoundId(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
         List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
         if (!settledBetList.isEmpty() && settledBetList.get(0).getOperatorStatus().equals(1)) {
