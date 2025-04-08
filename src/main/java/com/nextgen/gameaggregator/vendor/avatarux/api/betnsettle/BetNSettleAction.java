@@ -14,7 +14,7 @@ import com.nextgen.gameaggregator.vendor.avatarux.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.avatarux.service.VendorService;
 import com.nextgen.gameaggregator.vendor.avatarux.vo.ErrorVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,7 +42,7 @@ public class BetNSettleAction {
         this.gameSessionService = gameSessionService;
     }
 
-    @PostMapping(path = EndPoints.TRANSACTION)
+    @PutMapping(path = EndPoints.TRANSACTION)
     public BetNSettleVo betNSettleAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -54,7 +54,7 @@ public class BetNSettleAction {
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         BetNSettleVo betNSettleVo = new BetNSettleVo();
         BetNSettleDto betNSettleDto;
-        BigDecimal balance = null;
+        BigDecimal balance;
 
 
         try {
@@ -128,7 +128,7 @@ public class BetNSettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetNSettleDto dto, GameSession gameSession, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(BetNSettleDto dto, GameSession gameSession, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
         //1. validate vendor username, agent vendor line, player status, and game status
         if (dto.getType().equals("withdraw")) {
             validationService.validateEligibleBet(gameSession, dto.getNativeId());
