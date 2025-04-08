@@ -67,18 +67,19 @@ public class BetService {
             this.doVerification(betDto,
                     gameSession);
 
-
             if (betDto.getCode().equals(BetType.POINTIN)) {
                 // unsettled
+                //testing
+//                Thread.sleep(4000);
                 BetEvent betEvent = walletService.processBet(traceId,
                         gameSession,
                         betDto,
                         httpRequestLog.getRequestBody(),
                         httpRequestLog);
                 balance = betEvent.getLastBalance();
+
             } else {
                 //settled
-
                 resultType = vendorService.getResultType(betDto);
                 balance = walletService.processBetResult(traceId,
                         gameSession,
