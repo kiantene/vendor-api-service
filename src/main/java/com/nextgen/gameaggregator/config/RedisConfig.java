@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.config;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
@@ -27,11 +27,10 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableRedisRepositories
@@ -243,6 +242,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ClickhouseFirstDataOfCurrencyConversionChanges", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(30)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("RollbackRequestIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         //endregion
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
