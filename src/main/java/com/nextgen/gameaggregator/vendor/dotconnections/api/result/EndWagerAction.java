@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -61,6 +62,7 @@ public class EndWagerAction {
 
         String traceId = httpRequestLog.getId();
         GameSession gameSession = null;
+        EndWagerDto dto = null;
 
         try {
 
@@ -68,7 +70,7 @@ public class EndWagerAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
+            dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -128,8 +130,8 @@ public class EndWagerAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid((dto.getBrandUid() == null)?"":dto.getBrandUid());
+            responseDataVo.setCurrency(dto.getCurrency());
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
@@ -249,11 +251,11 @@ public class EndWagerAction {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
 
             if (unsettledBet == null) {
-
-                if (betIdempotentLogService.checkExists(dto, dto.getBrandUid()) == null) {
+                RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
+                if (rawBetIdempotentLog == null) {
                     throw new BetNotFoundException();
                 } else {
-                    throw new BetResultIdempotentViolationException();
+                    throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
                 }
 
             } else {

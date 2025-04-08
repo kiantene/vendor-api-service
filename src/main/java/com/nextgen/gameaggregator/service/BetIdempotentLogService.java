@@ -100,9 +100,9 @@ public class BetIdempotentLogService {
 
     }
 
-    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
-    public RawBetIdempotentLog checkExists(BetResultData betResultData, String vendorPlayerUsername) {
-        String betIdempotentId = this.generateBetIdempotentId(betResultData.getVendorBetId(), betResultData.getRoundId(), vendorPlayerUsername);
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#vendorBetId, #roundId, #vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
+    public RawBetIdempotentLog checkExists(String vendorBetId, String roundId, String vendorPlayerUsername) {
+        String betIdempotentId = this.generateBetIdempotentId(vendorBetId, roundId, vendorPlayerUsername);
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 
