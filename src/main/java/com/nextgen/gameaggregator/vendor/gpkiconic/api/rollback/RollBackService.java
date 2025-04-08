@@ -47,9 +47,7 @@ public class RollBackService {
         RollBackDataVo dataVo = new RollBackDataVo();
 
         BigDecimal balance;
-
-        GameSession gameSession;
-
+        
         try {
             // Retrieve request body in original string format
             rollBackDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
@@ -60,10 +58,11 @@ public class RollBackService {
             this.doValidation(rollBackDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(rollBackDto,
+            this.doVerification(rollBackDto.getUser(),
+                    rollBackDto.getApiToken(),
                     gameSession);
 
             // Retrieve the latest wallet balance from Operator
@@ -114,20 +113,20 @@ public class RollBackService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RollBackDto dto, GameSession gameSession) throws InvalidPlayerException,
+    private void doVerification(String user, String apiToken, GameSession gameSession) throws InvalidPlayerException,
             CredentialNotFoundException,
             InvalidRequestException {
-        
+
         //Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(),
-                dto.getUser(),
+                user,
                 InvalidPlayerException::new);
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(),
                 Credentials.API_TOKEN);
         ValidationUtils.isEquals(token,
-                dto.getApiToken(),
+                apiToken,
                 InvalidRequestException::new);
 
     }
