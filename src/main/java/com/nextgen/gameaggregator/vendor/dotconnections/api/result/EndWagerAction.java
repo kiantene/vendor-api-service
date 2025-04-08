@@ -45,7 +45,7 @@ public class EndWagerAction {
     @Autowired
     private UnsettledBetService unsettledBetService;
     @Autowired
-    private SettledBetService settledBetService;
+    private BetIdempotentLogService betIdempotentLogService;
     @Autowired
     private UnsettledBetCachingService unsettledBetCachingService;
     @Autowired
@@ -231,7 +231,7 @@ public class EndWagerAction {
 
     }
 
-    private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException {
+    private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
 
         GameSession gameSession;
 
@@ -249,7 +249,12 @@ public class EndWagerAction {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
 
             if (unsettledBet == null) {
-                throw new BetNotFoundException();
+
+                if (betIdempotentLogService.checkExists(dto, dto.getBrandUid()) == null) {
+                    throw new BetNotFoundException();
+                } else {
+                    throw new BetResultIdempotentViolationException();
+                }
 
             } else {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
