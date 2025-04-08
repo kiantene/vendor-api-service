@@ -111,7 +111,12 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
 
         //5. Verify Authorization
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getAuthorization().replace("Bearer ", ""), AuthenticationException::new);
+        String authorizationToken = dto.getAuthorization();
+        if (authorizationToken == null || !authorizationToken.startsWith("Bearer ")) {
+            throw new AuthenticationException();
+        }
+        String token = authorizationToken.substring(7);
+        ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
         //6. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
