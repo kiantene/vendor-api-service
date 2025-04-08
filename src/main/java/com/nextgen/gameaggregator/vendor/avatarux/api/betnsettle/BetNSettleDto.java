@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.avatarux.api.bet;
+package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetResultData {
+public class BetNSettleDto implements BetResultData {
 
     @NotBlank
     private String authorization;

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.avatarux.api.bet;
+package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BetVo implements HttpResponse {
+public class BetNSettleVo implements HttpResponse {
     @JsonProperty("balance")
     private BigDecimal balance;
 
