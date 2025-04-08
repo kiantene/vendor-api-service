@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.result;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -32,18 +33,21 @@ public class ResultAction {
     private final WalletService walletService;
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public ResultAction(HttpService httpService,
                         GameSessionService gameSessionService,
                         WalletService walletService,
                         VendorLineService vendorLineService,
-                        VendorService vendorService) {
+                        VendorService vendorService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public ResponseVo resultRequest(HttpServletRequest request) {
@@ -51,13 +55,23 @@ public class ResultAction {
         ResultVo responseVo = new ResultVo();
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
+        ResultDto dto = new ResultDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
-            ResultDto dto = HttpService.convertQueryStringToDto(httpRequestLog, ResultDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, ResultDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             try {
@@ -138,9 +152,13 @@ public class ResultAction {
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
-        }
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
 
-        httpService.end(httpRequestLog, responseVo);
+            httpService.end(httpRequestLog, responseVo);
+        }
         return responseVo;
     }
 
