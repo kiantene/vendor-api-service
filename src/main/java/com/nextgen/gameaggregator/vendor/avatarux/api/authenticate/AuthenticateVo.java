@@ -33,6 +33,6 @@ public class AuthenticateVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return true;
     }
 }

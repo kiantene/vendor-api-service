@@ -7,10 +7,12 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.avatarux.constant.Headers;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.avatarux.service.VendorService;
+import com.nextgen.gameaggregator.vendor.avatarux.vo.ErrorVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,16 +44,20 @@ public class BalanceAction {
         this.vendorService = vendorService;
     }
 
-    @GetMapping(path = EndPoints.BALANCE)
+    @PostMapping(path = EndPoints.BALANCE)
     public BalanceVo getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         BalanceVo responseVo = new BalanceVo();
         String body = httpRequestLog.getRequestBody();
+        String serverAuthorization = request.getHeader(Headers.SERVER_AUTHORIZATION);
+        String authorization = request.getHeader(Headers.AUTHORIZATION);
         httpRequestLog.setRequestBody("Request Body: \n" + body + "\nRequest Header: \n" + vendorService.getHeaders(request));
 
         try {
-            BalanceDto balanceDto = new BalanceDto();
+            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            balanceDto.setXServerAuthorization(serverAuthorization);
+            balanceDto.setAuthorization(authorization);
 
             // Get GameSession with username
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getNativeId());
@@ -68,10 +74,12 @@ public class BalanceAction {
             responseVo.setBalance(balance);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.getError().setCode(ResponseCode.PLAYER_UNAUTHORIZED.code);
-            responseVo.getError().setMessage(ResponseCode.PLAYER_UNAUTHORIZED.description);
+            responseVo.setError(new ErrorVo());
+            responseVo.getError().setCode(ResponseCode.SERVER_UNAUTHORIZED.code);
+            responseVo.getError().setMessage(ResponseCode.SERVER_UNAUTHORIZED.description);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
+            responseVo.setError(new ErrorVo());
             responseVo.getError().setCode(ResponseCode.UNKNOWN.code);
             responseVo.getError().setMessage(ResponseCode.UNKNOWN.description);
         } finally {
@@ -102,8 +110,13 @@ public class BalanceAction {
         // 4. Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
 
-        //5. Verify token
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getAuthorization(), AuthenticationException::new);
+        //5. Verify Authorization
+        String authorizationToken = dto.getAuthorization();
+        if (authorizationToken == null || !authorizationToken.startsWith("Bearer ")) {
+            throw new AuthenticationException();
+        }
+        String token = authorizationToken.substring(7);
+        ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
         //6. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

@@ -9,8 +9,6 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto {
-    @NotBlank
-    private String contentType;
 
     @NotBlank
     private String authorization;
