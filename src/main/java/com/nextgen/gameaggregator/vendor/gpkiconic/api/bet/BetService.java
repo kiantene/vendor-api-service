@@ -108,6 +108,7 @@ public class BetService {
                             httpRequestLog);
                 }
             }
+
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             // check the code value to define it is deducted or gain money
