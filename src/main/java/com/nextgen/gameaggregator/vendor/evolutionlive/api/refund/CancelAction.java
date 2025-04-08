@@ -1,14 +1,15 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,17 @@ public class CancelAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
-    public CancelAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService) {
+    public CancelAction(HttpService httpService,
+                        VendorLineService vendorLineService,
+                        AgentPlayerService agentPlayerService,
+                        VendorGameService vendorGameService,
+                        GameSessionService gameSessionService,
+                        WalletService walletService,
+                        VendorService vendorService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -40,6 +49,7 @@ public class CancelAction {
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CANCEL)
@@ -48,15 +58,24 @@ public class CancelAction {
 
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
+        CancelDto cancelDto = new CancelDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelDto cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
+            cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
 
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cancelDto);
+
+            if (requestIdempotentLogService.checkExistsRollback(cancelDto, cancelDto.getUserId()) == null) {
+                requestIdempotentLogService.createRollback(cancelDto, cancelDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
@@ -108,6 +127,9 @@ public class CancelAction {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.deleteRollback(cancelDto, cancelDto.getUserId());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
