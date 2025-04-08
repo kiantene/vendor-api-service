@@ -45,7 +45,7 @@ public class BetService {
     @NotNull
     private static List<MultipleBetDto> getMultipleBetDtos(ActionsWagerInfoDto wagerInfoDto, String externalTransactionId) throws InvalidRequestException {
         int wagerNum = wagerInfoDto.getWagerNum();
-        BigDecimal stake = wagerInfoDto.getStake();
+        BigDecimal stake = wagerInfoDto.getToRisk();
         long wagerId = wagerInfoDto.getWagerId();
 
         List<MultipleBetDto> multipleBetList = new ArrayList<>(wagerNum);
@@ -74,7 +74,7 @@ public class BetService {
 
         GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(walletRequest.getVendorPlayerUsername());
         walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-        
+
         this.dataMapper(walletRequest, wagerInfoDto);
 
         if (this.isMultipleBet(wagerInfoDto)) {
@@ -90,9 +90,9 @@ public class BetService {
     private void dataMapper(WalletRequest walletRequest, ActionsWagerInfoDto wagerInfoDto) throws InvalidRequestException {
         walletRequest.setVendorBetId(wagerInfoDto.getWagerId().toString());
         walletRequest.setRoundId(wagerInfoDto.getWagerId().toString());
-        walletRequest.setBetAmount(wagerInfoDto.getStake());
-        walletRequest.setNewBetAmount(wagerInfoDto.getStake());
-        walletRequest.setEffectiveTurnover(wagerInfoDto.getStake());
+        walletRequest.setBetAmount(wagerInfoDto.getToRisk());
+        walletRequest.setNewBetAmount(wagerInfoDto.getToRisk());
+        walletRequest.setEffectiveTurnover(wagerInfoDto.getToRisk());
 
         Long vendorBetTime = VendorService.convertDateTimeStringToTimestamp(wagerInfoDto.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR);
         walletRequest.setVendorBetTime(vendorBetTime);

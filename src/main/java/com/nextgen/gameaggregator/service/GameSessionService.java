@@ -86,6 +86,9 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession updateSession(GameSession gameSession) {
+        if (gameSession.getId() == null) {
+            gameSession.setId(gameSession.getToken());
+        }
         rawGameSessionRepository.save(gameSession);
         return gameSession;
 

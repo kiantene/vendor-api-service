@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cg.api.balance;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -8,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cg.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,7 @@ public class BalanceAction {
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
 
 
     @Autowired
@@ -38,41 +41,50 @@ public class BalanceAction {
                          WalletService walletService,
                          VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService,
-                         VendorGameService vendorGameService) {
+                         VendorGameService vendorGameService,
+                         VendorService vendorService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request) {
+    public String balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         ResponseVo balanceVo = new ResponseVo();
+        CommonDto dto = new CommonDto();
         try {
             //convert body into dto
-            BalanceDto dto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BalanceDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
+            dto.setData(VendorService.urlDecode(dto.getData()));
 
             //basic validation
             this.doValidation(dto);
 
+            //decrypt token return from vendor
+            String decryptedData = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
+            httpRequestLog.setRequestBody(decryptedData);
+            BalanceDto balanceDto = HttpService.convertJsonToDto(decryptedData, BalanceDto.class);
+
             //get game session
             //Authentication error throw if session not found
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAccountId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getAccountId());
 
             //basic verification
-            this.doVerification(dto, gameSession);
+            this.doVerification(balanceDto, gameSession);
 
             //get player wallet balance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //set values
-            balanceVo.setChannelId(dto.getChannelId());
-            balanceVo.setAccountId(dto.getAccountId());
+            balanceVo.setChannelId(balanceDto.getChannelId());
+            balanceVo.setAccountId(balanceDto.getAccountId());
             balanceVo.setBalance(balance);
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             balanceVo.setErrorCode(ResponseCodes.SUCCESS);
@@ -90,12 +102,18 @@ public class BalanceAction {
             balanceVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            httpService.end(httpRequestLog, balanceVo);
+            try {
+                String jsonString = new Gson().toJson(balanceVo);
+                balanceVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, balanceVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
-        return balanceVo;
+        return balanceVo.getEncrypt();
     }
 
-    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
     }
 

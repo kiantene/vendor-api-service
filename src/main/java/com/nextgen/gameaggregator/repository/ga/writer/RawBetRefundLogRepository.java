@@ -13,3 +13,5 @@ public interface RawBetRefundLogRepository extends CouchbaseRepository<RawBetRef
 
     RawBetRefundLog findByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId);
 }
+
+

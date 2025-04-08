@@ -56,7 +56,7 @@ public class SessionBetNSettleAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
 
         try {
@@ -70,7 +70,7 @@ public class SessionBetNSettleAction {
             this.doValidation(sessionBetNSettleDto);
 
             //get rawGameSession by token id
-            GameSession gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
+            gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(sessionBetNSettleDto, gameSession);
@@ -100,12 +100,19 @@ public class SessionBetNSettleAction {
 
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_ALREADY_ACCEPTED);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(e.getBalance());
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_INSUFFICIENT_BALANCE);
+            responseVo.setBalance(BigDecimal.ZERO);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
@@ -130,7 +137,7 @@ public class SessionBetNSettleAction {
     }
 
     private void doVerification(SessionBetNSettleDto sessionBetNSettleDto, GameSession gameSession) throws
-            AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException,
+            AuthenticationException, CurrencyNotSupportedException, InvalidPlayerException,
             DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 
         //Verify received currency is the same from game session
