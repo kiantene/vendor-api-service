@@ -72,9 +72,9 @@ public class BetService {
                     gameSession);
 
             boolean isIconicLive = gameSession.getGameCategoryId().equals(5);
-            if (isIconicLive) {
-                betDto.setSettledByBet(true);
-            }
+//            if (isIconicLive) {
+//                betDto.setSettledByBet(true);
+//            }
             boolean isTips = BetType.isTips(betDto.getIsTips());
 //          iconic Live game multiple bet will settle by bet
             if (isIconicLive && isTips) {
@@ -87,6 +87,7 @@ public class BetService {
                         httpRequestLog);
             } else {
                 // bet
+//                Thread.sleep(4000);
                 if (betDto.getCode().equals(BetType.POINTIN)) {
                     // unsettled
                     BetEvent betEvent = walletService.processBet(traceId,

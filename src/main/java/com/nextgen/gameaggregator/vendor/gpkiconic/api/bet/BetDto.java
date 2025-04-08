@@ -167,8 +167,8 @@ public class BetDto extends ActionDto implements BetResultData {
         return status;
     }
 
-    @Override
-    public boolean getShouldSettleByBet() {
-        return this.settledByBet;
-    }
+//    @Override
+//    public boolean getShouldSettleByBet() {
+//        return this.settledByBet;
+//    }
 }
