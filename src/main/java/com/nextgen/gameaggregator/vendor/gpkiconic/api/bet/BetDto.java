@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.gpkiconic.api.bet;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -19,10 +18,6 @@ import java.math.BigDecimal;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
-
-
-    @JsonIgnore
-    private boolean settledByBet = false;
 
     @NotBlank
     @JsonProperty("api_token")
@@ -150,19 +145,20 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         BetStatus status;
-        //normal bet
-        if (this.getCode().equals(BetType.POINTIN)) {
-            // unsettled
-            status = BetStatus.UNSETTLED;
-        } else {
-            // settled
+
+        if (BetType.isTips(this.getIsTips())) {
+            // tips
             status = BetStatus.SETTLED;
+        } else {
+            //normal bet
+            if (this.getCode().equals(BetType.POINTIN)) {
+                // unsettled
+                status = BetStatus.UNSETTLED;
+            } else {
+                // settled
+                status = BetStatus.SETTLED;
+            }
         }
         return status;
-    }
-
-    @Override
-    public boolean getShouldSettleByBet() {
-        return this.settledByBet;
     }
 }

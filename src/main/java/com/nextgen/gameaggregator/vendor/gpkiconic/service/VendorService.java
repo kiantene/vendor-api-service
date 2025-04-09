@@ -11,13 +11,9 @@ import com.nextgen.gameaggregator.vendor.gpkiconic.constant.BetType;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Getter
@@ -32,22 +28,6 @@ public class VendorService extends BaseVendorService {
 
     public static long getCurrentTime() {
         return Instant.now().getEpochSecond();
-    }
-
-    public static Map<String, Object> convertToHashMap(MultiValueMap<String, String> multiValueMap) {
-        Map<String, Object> hashMap = new HashMap<>();
-
-        // Iterate over entries in the MultiValueMap
-        for (Map.Entry<String, List<String>> entry : multiValueMap.entrySet()) {
-            String key = entry.getKey();
-            List<String> values = entry.getValue();
-            // Convert the list of values into an Object, e.g., by selecting the first value
-            Object value = (values != null && !values.isEmpty()) ? (Object) values.get(0) : null;
-            hashMap.put(key,
-                    value);
-        }
-
-        return hashMap;
     }
 
     public static long getMilSec() {
@@ -91,13 +71,7 @@ public class VendorService extends BaseVendorService {
     public boolean shouldRejectCancelRequest() {
         return false;
     }
-
-    @Override
-    public boolean shouldDoRollbackByRound(GameSession gameSession) {
-        // Handle for GPK BGAMING game, will be alwaus rollback by round
-        return gameSession.getGameCode().startsWith("GPKBG");
-    }
-
+    
 
     public ResultType getResultType(BetDto dto) {
         ResultType resultType = ResultType.WIN; // Default value is win
