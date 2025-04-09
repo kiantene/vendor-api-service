@@ -94,20 +94,20 @@ public class RedisConfig extends CachingConfigurerSupport {
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper redisObjectMapper = objectMapper.copy();
         // Enable default typing only for Redis serialization
-        redisObjectMapper.activateDefaultTyping(redisObjectMapper.getPolymorphicTypeValidator(), 
-            ObjectMapper.DefaultTyping.NON_FINAL);
+        redisObjectMapper.activateDefaultTyping(redisObjectMapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL);
         serializer.setObjectMapper(redisObjectMapper);
         return serializer;
     }
 
     @Bean
     @Primary
-    RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory, 
-            Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer) {
+    RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory,
+                                                Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(factory);
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        
+
         redisTemplate.setKeySerializer(stringRedisSerializer);
         redisTemplate.setHashKeySerializer(stringRedisSerializer);
         redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
@@ -123,7 +123,7 @@ public class RedisConfig extends CachingConfigurerSupport {
         RedisSerializationContext.SerializationPair<Object> pair = RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer);
 
         Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
-    
+
         cacheNamesConfigurationMap.put("sportSettledBet", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGameDeactivated", RedisCacheConfiguration.defaultCacheConfig()
@@ -242,6 +242,9 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ClickhouseFirstDataOfCurrencyConversionChanges", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(30)).serializeValuesWith(pair));
+
+        cacheNamesConfigurationMap.put("TempSessionToken", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("RollbackRequestIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         //endregion

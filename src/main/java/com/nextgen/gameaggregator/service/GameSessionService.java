@@ -379,6 +379,15 @@ public class GameSessionService {
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
     }
 
+    public void updateByVendorGameId(GameSession gameSession, Integer vendorGameId) throws GameNotSupportedException {
+
+        VendorGame vendorGame = vendorGameService.getByVendorGameId(vendorGameId);
+        gameSession.setVendorGameId(vendorGame.getId());
+        gameSession.setGameCode(vendorGame.getCode());
+        gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+    }
+
     public void updateByVendorCurrencyCode(GameSession gameSession, String vendorCurrencyCode) throws VendorCurrencyNotSupportException {
         Integer vendorId = gameSession.getVendorId();
 
