@@ -112,7 +112,7 @@ public class VoidSettleService {
             this.doValidation(voidSettleTransactionsDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(voidSettleTransactionsDto.getUserId(), voidSettleTransactionsDto.getGameCode());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(voidSettleTransactionsDto.getUserId());
 
             // Verify game session
             this.doVerification(voidSettleTransactionsDto, gameSession);

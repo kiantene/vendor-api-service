@@ -159,7 +159,7 @@ public class CancelTipsService {
             this.doValidation(cancelTipsTransactionsDto);
 
             // 2. Verify session token
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(cancelTipsTransactionsDto.getGameCode()+"_"+cancelTipsTransactionsDto.getTipInfo(), gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(cancelTipsTransactionsDto.getGameCode()+"_"+cancelTipsTransactionsDto.getTipInfo().getTableId(), gameSession);
 
             this.doVerification(cancelTipsTransactionsDto, gameSession);
 
