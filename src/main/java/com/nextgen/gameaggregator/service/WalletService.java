@@ -246,7 +246,7 @@ public class WalletService {
 
     private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
-            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
+            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException, MergedBetDataIntegrityException {
 
         String rawData = httpRequestLog.getRequestBody();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
@@ -505,7 +505,7 @@ public class WalletService {
     }
 
     private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService, GameSession gameSession, String roundId)
-            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException, RecordNotFoundException {
 
         SettledBet settledBet = null;
 
@@ -538,6 +538,10 @@ public class WalletService {
                 } else if (operatorStatus.equals(operatorStatusProcessing)) {
                     // if SC_TRANSACTION_STILL_PROCESSING
                     throw new TransactionStillProcessingException();
+
+                } else if (settledBet.getVendorId().equals(5) && operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    //only for fachai.
+                    throw new RecordNotFoundException();
                 }
                 // else then other operator error, continue processRollback request
                 settledBet.setInternalTransactionId(traceId);
