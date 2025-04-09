@@ -46,6 +46,8 @@ public class BetNSettleDto implements BetResultData {
     @Size(max = 255)
     private String roundId;
 
+    private String campaignType;
+
     @Override
     public String getExternalTransactionId() {
         return this.transactionId;
@@ -114,6 +116,9 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
+        if ("freeBets".equals(this.campaignType)) {
+            return 1;
+        }
         return 0;
     }
 
