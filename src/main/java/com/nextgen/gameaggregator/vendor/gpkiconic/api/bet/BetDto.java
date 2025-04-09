@@ -19,10 +19,6 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
 
-
-//    @JsonIgnore
-//    private boolean settledByBet = false;
-
     @NotBlank
     @JsonProperty("api_token")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -165,9 +161,4 @@ public class BetDto extends ActionDto implements BetResultData {
         }
         return status;
     }
-
-//    @Override
-//    public boolean getShouldSettleByBet() {
-//        return this.settledByBet;
-//    }
 }

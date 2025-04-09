@@ -54,7 +54,6 @@ public class BetService {
         BigDecimal balance = BigDecimal.ZERO;
         GameSession gameSession = new GameSession();
         BigDecimal money;
-        ResultType resultType;
 
         try {
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
@@ -76,11 +75,8 @@ public class BetService {
                     gameSession);
 
             boolean isIconicLive = gameSession.getGameCategoryId().equals(5);
-//            if (isIconicLive) {
-//                betDto.setSettledByBet(true);
-//            }
             boolean isTips = BetType.isTips(betDto.getIsTips());
-//          iconic Live game multiple bet will settle by bet
+            
             if (isIconicLive && isTips) {
                 // tips
                 balance = walletService.processBetResult(traceId,
@@ -90,40 +86,10 @@ public class BetService {
                         vendorService,
                         httpRequestLog);
             } else {
-                // bet
-                if (betDto.getCode().equals(BetType.POINTIN)) {
-                    // unsettled
-                    //testing
-                    if ("1e91fwpzx4ka".equals(gameSession.getVendorPlayerUsername())) {
-                        synchronized (processedTransactions) {
-                            if (processedTransactions.contains(betDto.getRoundId())) {
-                                try {
-                                    Thread.sleep(4000);
-                                } catch (InterruptedException e) {
-                                    Thread.currentThread().interrupt();
-                                }
-                            } else {
-                                processedTransactions.add(betDto.getRoundId());
-                            }
-                        }
-                    }
-                    BetEvent betEvent = walletService.processBet(traceId,
-                            gameSession,
-                            betDto,
-                            httpRequestLog.getRequestBody(),
-                            httpRequestLog);
-                    balance = betEvent.getLastBalance();
-
-                } else {
-                    // settled
-                    resultType = vendorService.getResultType(betDto);
-                    balance = walletService.processBetResult(traceId,
-                            gameSession,
-                            betDto,
-                            resultType,
-                            vendorService,
-                            httpRequestLog);
-                }
+                balance = this.processBetOrSettlement(traceId,
+                        gameSession,
+                        betDto,
+                        httpRequestLog);
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
@@ -150,7 +116,7 @@ public class BetService {
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             try {
-                balance = getCurrentBalance(traceId,
+                balance = this.getCurrentBalance(traceId,
                         gameSession,
                         httpRequestLog);
             } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException |
@@ -226,6 +192,48 @@ public class BetService {
         return walletService.getBalance(traceId,
                 gameSession,
                 httpRequestLog);
+    }
+
+    private BigDecimal processBetOrSettlement(String traceId,
+                                              GameSession gameSession,
+                                              BetDto betDto,
+                                              HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, MergedBetDataIntegrityException, BetNotFoundException, InternalServerTimeoutRetryException {
+        BigDecimal balance;
+        // bet
+        if (betDto.getCode().equals(BetType.POINTIN)) {
+            // unsettled
+            //testing
+            if ("1e91fwpzx4ka".equals(gameSession.getVendorPlayerUsername())) {
+                synchronized (processedTransactions) {
+                    if (processedTransactions.contains(betDto.getRoundId())) {
+                        try {
+                            Thread.sleep(4000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    } else {
+                        processedTransactions.add(betDto.getRoundId());
+                    }
+                }
+            }
+            BetEvent betEvent = walletService.processBet(traceId,
+                    gameSession,
+                    betDto,
+                    httpRequestLog.getRequestBody(),
+                    httpRequestLog);
+            balance = betEvent.getLastBalance();
+
+        } else {
+            // settled
+            ResultType resultType = vendorService.getResultType(betDto);
+            balance = walletService.processBetResult(traceId,
+                    gameSession,
+                    betDto,
+                    resultType,
+                    vendorService,
+                    httpRequestLog);
+        }
+        return balance;
     }
 }
 
