@@ -1,7 +1,11 @@
 package com.nextgen.gameaggregator.vendor.avatarux.service;
 
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,11 @@ import java.util.Enumeration;
 @Slf4j
 public class VendorService extends BaseVendorService {
     private static final String HASH_ALGORITHM = "HmacSHA256";
+    private final GameSessionService gameSessionService;
+
+    public VendorService(GameSessionService gameSessionService) {
+        this.gameSessionService = gameSessionService;
+    }
 
     public static String generateHash(String apiSecret, String input) throws AuthenticationException {
         try {
@@ -52,5 +61,18 @@ public class VendorService extends BaseVendorService {
                     .append("\n");
         }
         return headersString.toString();
+    }
+
+    public GameSession checkGameSession(String traceId, String userName) throws VendorCurrencyNotSupportException, InvalidPlayerException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(userName);
+        } catch (AuthenticationException authenticationException) {
+            gameSession = gameSessionService.generateNewSessionToken(userName);
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }
