@@ -245,6 +245,8 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         cacheNamesConfigurationMap.put("TempSessionToken", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("RollbackRequestIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         //endregion
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),

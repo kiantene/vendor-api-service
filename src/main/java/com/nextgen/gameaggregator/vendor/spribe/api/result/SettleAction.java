@@ -1,12 +1,15 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -31,17 +35,23 @@ public class SettleAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final SettledBetService settledBetService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public SettleAction(HttpService httpService,
                         GameSessionService gameSessionService,
                         WalletService walletService,
-                        VendorService vendorService) {
+                        VendorService vendorService,
+                        SettledBetService settledBetService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.settledBetService = settledBetService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = Endpoints.DEPOSIT)
@@ -56,26 +66,41 @@ public class SettleAction {
         String provider = null;
         String providerTxId = null;
         BigDecimal oldBalance = null;
+        boolean isRequestExists = false;
+        SettleDto dto = new SettleDto();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            SettleDto dto = HttpService.convertJsonToDto(body, SettleDto.class);
+            dto = HttpService.convertJsonToDto(body, SettleDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
+            // 3. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(dto, dto.getUser_id()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUser_id());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 4. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyCode(gameSession, dto.getCurrency());
-                gameSession.setToken(dto.getSession_token());
                 gameSession.setVendorToken(dto.getSession_token());
+                List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+                if (settledBetList.isEmpty()) {
+                    gameSession.setToken(traceId);
+                } else {
+                    gameSession.setToken(settledBetList.get(0).getGameSessionToken());
+                }
             }
 
             userId = gameSession.getVendorPlayerUsername();
@@ -83,14 +108,14 @@ public class SettleAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 4. Verify remaining parameters (Verify against database values)
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 5. Send bet request to Operator
+            // 6. Send bet request to Operator
             ResultType resultType = getResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            // 6. Set response data
+            // 7. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
             data.setOld_balance(AmountConverter.convertBalanceToUnit(balance.subtract(dto.getWinAmount())));
@@ -155,6 +180,10 @@ public class SettleAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUser_id());
+            }
             httpService.end(httpRequestLog, vo);
         }
 
