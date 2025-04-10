@@ -16,6 +16,8 @@ import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -107,11 +109,17 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
             requestService.validateVendorHttpStatusResponse(Objects.requireNonNull(apiResponse));
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
-            // 2. validate vendor response
+            //2. use vendor userCode to set vendorPlayer Username
+            JsonParser jsonParser = JsonParserFactory.getJsonParser();
+            String userCode = jsonParser.parseMap(apiResponse.getBody()).get("userCode").toString();
+            gameSessionService.updateNewVendorPlayerUsername(gameSession, userCode);
+
+            // 3. validate vendor response
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidPlayerException
+                 | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
