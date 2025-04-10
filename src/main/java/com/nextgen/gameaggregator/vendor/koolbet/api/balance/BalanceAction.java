@@ -76,9 +76,6 @@ public class BalanceAction {
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
-            responseVo.setResponseCode(ResponseCode.BET_INVALID_PARAMETER);
-            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
