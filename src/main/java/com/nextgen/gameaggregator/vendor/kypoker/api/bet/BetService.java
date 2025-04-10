@@ -82,7 +82,6 @@ public class BetService {
                 d.setCode(ResponseCodes.SUCCESS);
                 d.setAccount(gameSession.getVendorPlayerUsername());
                 d.setMoney(betEvent.getLastBalance());
-                d.setRoomMode(betDto.getRoomMode());
                 httpService.end(httpRequestLog, vo);
 
             }

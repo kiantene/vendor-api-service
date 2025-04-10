@@ -89,12 +89,6 @@ public class SettleService {
 
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
-            d.setRoomMode(settleDto.getRoomMode());
-            d.setBetCount(settleDto.getBetCount());
-            d.setTotalBet(settleDto.getTotalBet());
-            d.setValidBet(settleDto.getValidBet());
-            d.setTotalWithdraw(settleDto.getTotalWithdraw());
-            d.setRevenue(settleDto.getRevenue());
 
             // Construct VO
             vo.setM(EndPoints.LAUNCH_GAME);
