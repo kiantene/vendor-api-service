@@ -21,18 +21,21 @@ public class GetOrderStatusService {
     private final UnsettledBetService unsettledBetService;
     private final VendorLineService vendorLineService;
     private final SettledBetService settleBetService;
+    private final WalletTransactionService walletTransactionService;
     private final VendorPlayerService vendorPlayerService;
 
     public GetOrderStatusService(WalletRequestService walletRequestService,
                                  UnsettledBetService unsettledBetService,
                                  VendorLineService vendorLineService,
                                  SettledBetService settleBetService,
+                                 WalletTransactionService walletTransactionService,
                                  VendorPlayerService vendorPlayerService) {
 
         this.walletRequestService = walletRequestService;
         this.unsettledBetService = unsettledBetService;
         this.vendorLineService = vendorLineService;
         this.settleBetService = settleBetService;
+        this.walletTransactionService = walletTransactionService;
         this.vendorPlayerService = vendorPlayerService;
     }
 
@@ -42,7 +45,7 @@ public class GetOrderStatusService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         UnsettledBet unsettledBet;
         VendorPlayer vendorPlayer = null;
-        Integer vendorId;
+        Integer vendorId = 0;
         String externalTransactionId = null;
 
         try {
@@ -78,11 +81,16 @@ public class GetOrderStatusService {
                 vo.setD(d);
 
             } catch (BetNotFoundException ex) {
-                ResponseObjectDto d = new ResponseObjectDto();
-                d.setStatus(ResponseCodes.CODE4);
-                vo.setM(EndPoints.LAUNCH_GAME);
-                vo.setS(ResponseCodes.GET_ORDER_STATUS);
-                vo.setD(d);
+                {
+                    walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
+
+                    ResponseObjectDto d = new ResponseObjectDto();
+                    d.setStatus(ResponseCodes.CODE1);
+                    vo.setM(EndPoints.LAUNCH_GAME);
+                    vo.setS(ResponseCodes.GET_ORDER_STATUS);
+                    vo.setD(d);
+
+                }
             }
 
         } catch (Exception e){
