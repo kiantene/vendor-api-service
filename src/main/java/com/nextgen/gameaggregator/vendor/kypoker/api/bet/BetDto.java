@@ -27,7 +27,7 @@ public class BetDto implements BetResultData {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 36)
+    @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @JsonProperty("orderId")
     private String orderId;
