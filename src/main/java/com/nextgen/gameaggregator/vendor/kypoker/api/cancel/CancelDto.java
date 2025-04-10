@@ -11,10 +11,11 @@ import java.math.BigDecimal;
 @Data
 public class CancelDto implements RollbackData {
 
-    @NotNull
+    @NotBlank
+    @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @JsonProperty("s")
-    @Digits(integer = 1, fraction = 0)
-    private Integer s;
+    private String s;
 
     @NotBlank
     @Size(min = 1, max = 36)
@@ -23,7 +24,7 @@ public class CancelDto implements RollbackData {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 36)
+    @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @JsonProperty("orderId")
     private String orderId;
