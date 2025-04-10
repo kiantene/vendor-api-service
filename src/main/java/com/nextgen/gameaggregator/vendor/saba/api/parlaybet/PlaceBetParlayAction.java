@@ -110,6 +110,7 @@ public class PlaceBetParlayAction {
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
         walletRequest.setBetType(BetType.PARLAY_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetParlayDto.getUserId());
+        walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
 
         if (isMultipleBet(placeBetParlayDto)) {
             List<String> refIdList = new LinkedList<>();
