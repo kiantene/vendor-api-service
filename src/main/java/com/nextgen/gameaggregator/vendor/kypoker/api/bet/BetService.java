@@ -28,6 +28,7 @@ public class BetService {
     private final VendorService vendorService;
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
+    private final HttpService httpService;
 
     public BetService(GameService gameService,
                       WalletService walletService,
@@ -35,7 +36,8 @@ public class BetService {
                       GameSessionService gameSessionService,
                       VendorService vendorService,
                       OperatorWalletService operatorWalletService,
-                      WalletRequestService walletRequestService) {
+                      WalletRequestService walletRequestService,
+                      HttpService httpService) {
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
@@ -43,6 +45,7 @@ public class BetService {
         this.vendorService = vendorService;
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
+        this.httpService = httpService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -80,6 +83,8 @@ public class BetService {
                 d.setAccount(gameSession.getVendorPlayerUsername());
                 d.setMoney(betEvent.getLastBalance());
                 d.setRoomMode(betDto.getRoomMode());
+                httpService.end(httpRequestLog, vo);
+
             }
 
             // Credit Debit flow
@@ -109,7 +114,11 @@ public class BetService {
             vo.setD(d);
 
         }finally {
-            walletRequestService.end(walletRequest,httpRequestLog,vo);
+            if (walletRequest == null){
+                httpService.end(httpRequestLog, vo);
+            }else {
+                walletRequestService.end(walletRequest, httpRequestLog, vo);
+            }
         }
         return vo;
     }

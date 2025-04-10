@@ -28,6 +28,8 @@ public class SettleService {
     private final VendorService vendorService;
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
+    private final HttpService httpService;
+
 
     public SettleService(GameService gameService,
                          WalletService walletService,
@@ -35,7 +37,8 @@ public class SettleService {
                          GameSessionService gameSessionService,
                          VendorService vendorService,
                          OperatorWalletService operatorWalletService,
-                         WalletRequestService walletRequestService) {
+                         WalletRequestService walletRequestService,
+                         HttpService httpService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
@@ -44,6 +47,7 @@ public class SettleService {
         this.vendorService = vendorService;
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
+        this.httpService = httpService;
     }
     public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
@@ -105,7 +109,11 @@ public class SettleService {
             vo.setD(d);
 
         } finally {
-            walletRequestService.end(walletRequest,httpRequestLog,vo);
+            if (walletRequest == null){
+                httpService.end(httpRequestLog, vo);
+            }else {
+                walletRequestService.end(walletRequest, httpRequestLog, vo);
+            }
         }
         return vo;
     }

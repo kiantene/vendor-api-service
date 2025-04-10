@@ -99,7 +99,6 @@ public class GeneralAction {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
             
         }
