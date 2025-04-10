@@ -56,7 +56,7 @@ public class CancelAction {
         CancelDto cancelDto;
         BigDecimal balance;
         BigDecimal currentBalance = null;
-        
+
         try {
             cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
             cancelDto.setXServerAuthorization(serverAuthorization);
@@ -71,11 +71,11 @@ public class CancelAction {
             // Verify parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession, body);
 
+            currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+
             //Cancel Bet
             balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
             cancelVo.setBalance(balance);
-
-            currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);

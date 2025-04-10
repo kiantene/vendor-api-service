@@ -103,9 +103,6 @@ public class AuthenticateAction {
         //1. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
-
-        //2. Verify Authorization
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getKey(), InvalidPlayerException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
