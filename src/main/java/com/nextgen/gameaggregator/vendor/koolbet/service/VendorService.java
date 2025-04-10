@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.koolbet.service;
 
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
+import com.nextgen.gameaggregator.vendor.koolbet.constant.GameList;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
@@ -45,5 +47,15 @@ public class VendorService extends BaseVendorService {
         return params.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().get(0))
                 .collect(Collectors.joining("&")) + "&AgentId=" + agentId;
 
+    }
+
+    public static void getBetType(String gameId, String betType) throws BetNotFoundException {
+        Integer gameCode = Integer.parseInt(gameId);
+        
+        if (GameList.GAME_BET_TYPE_MAP.containsKey(gameCode)) {
+            if (!GameList.GAME_BET_TYPE_MAP.get(gameCode).equals(betType)) {
+                throw new BetNotFoundException();
+            }
+        }
     }
 }
