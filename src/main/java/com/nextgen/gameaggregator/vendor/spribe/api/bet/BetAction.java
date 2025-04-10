@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -33,19 +34,22 @@ public class BetAction {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public BetAction(HttpService httpService,
                      GameSessionService gameSessionService,
                      WalletService walletService,
                      ValidationService validationService,
-                     VendorService vendorService) {
+                     VendorService vendorService,
+                     RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = Endpoints.WITHDRAW)
@@ -60,20 +64,30 @@ public class BetAction {
         String provider = null;
         String providerTxId = null;
         BigDecimal oldBalance = null;
+        boolean isRequestExists = false;
+        BetDto dto = new BetDto();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetDto dto = HttpService.convertJsonToDto(body, BetDto.class);
+            dto = HttpService.convertJsonToDto(body, BetDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            // 3. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(dto, dto.getUser_id()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUser_id());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 4. Verify session token
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
-            // 4. Verify remaining parameters (Verify against database values)
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -81,11 +95,11 @@ public class BetAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Send bet request to Operator
+            // 6. Send bet request to Operator
             ResultType resultType = getResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            // 6. Set response data
+            // 7. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
             data.setOld_balance(AmountConverter.convertBalanceToUnit(balance.add(dto.getBetAmount())));
@@ -149,6 +163,10 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUser_id());
+            }
             httpService.end(httpRequestLog, vo);
         }
 
