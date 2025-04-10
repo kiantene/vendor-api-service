@@ -52,6 +52,7 @@ public class BetService {
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        Integer roomMode = 0;
 
         try {
             // Convert original request body into dto
@@ -74,9 +75,10 @@ public class BetService {
             // Determine game mode to use normal bet flow or Credit/Debit
             ResponseObjectDto d = new ResponseObjectDto();
 
+            roomMode = betDto.getRoomMode();
+
             // Normal flow
             if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
-
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
 
                 d.setCode(ResponseCodes.SUCCESS);
@@ -112,10 +114,10 @@ public class BetService {
             vo.setD(d);
 
         }finally {
-            if (walletRequest == null){
-                httpService.end(httpRequestLog, vo);
-            }else {
+            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
+            }else {
+                httpService.end(httpRequestLog, vo);
             }
         }
         return vo;

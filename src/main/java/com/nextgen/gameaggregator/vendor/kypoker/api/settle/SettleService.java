@@ -54,6 +54,7 @@ public class SettleService {
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        Integer roomMode = 0;
 
         try {
             // Convert original request body into dto
@@ -72,6 +73,7 @@ public class SettleService {
             ResponseObjectDto d = new ResponseObjectDto();
 
             // Check game code to use normal flow or credit debit
+            roomMode = settleDto.getRoomMode();
 
             //Normal Flow
             if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3) {
@@ -103,10 +105,10 @@ public class SettleService {
             vo.setD(d);
 
         } finally {
-            if (walletRequest == null){
-                httpService.end(httpRequestLog, vo);
-            }else {
+            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
+            }else {
+                httpService.end(httpRequestLog, vo);
             }
         }
         return vo;
