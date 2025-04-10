@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.cancel;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -58,7 +55,8 @@ public class CancelAction {
         CancelVo cancelVo = new CancelVo();
         CancelDto cancelDto;
         BigDecimal balance;
-
+        BigDecimal currentBalance = null;
+        
         try {
             cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
             cancelDto.setXServerAuthorization(serverAuthorization);
@@ -74,14 +72,17 @@ public class CancelAction {
             this.doVerification(cancelDto, gameSession, body);
 
             //Cancel Bet
-            //Rollback
             balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
             cancelVo.setBalance(balance);
 
+            currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             cancelVo.setBalance(e.getBalance());
+        } catch (BetNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
+            cancelVo.setBalance(currentBalance);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             cancelVo.setError(new ErrorVo());
@@ -120,5 +121,12 @@ public class CancelAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
 
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
+
+        // Call the service with the duplicate log
+        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 }

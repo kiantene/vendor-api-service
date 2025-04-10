@@ -68,6 +68,7 @@ public class BetNSettleAction {
 
             // Get GameSession with username
             GameSession gameSession = vendorService.checkGameSession(traceId, betNSettleDto.getNativeId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betNSettleDto.getGame(), gameSession);
 
             // Verify parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession, body);

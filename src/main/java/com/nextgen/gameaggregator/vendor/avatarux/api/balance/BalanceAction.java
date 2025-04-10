@@ -61,6 +61,7 @@ public class BalanceAction {
 
             // Get GameSession with username
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getNativeId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(balanceDto.getGame(), gameSession);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
