@@ -57,7 +57,7 @@ public class AuthenticateAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getOperator());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getKey());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
@@ -72,12 +72,12 @@ public class AuthenticateAction {
             responseVo.setCurrency(gameSession.getCurrencyCode().toLowerCase());
             responseVo.setBrand("ONEAPI");
 
-        } catch (AuthenticationException e) {
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
             responseVo.getError().setCode(ResponseCode.SERVER_UNAUTHORIZED.code);
             responseVo.getError().setMessage(ResponseCode.SERVER_UNAUTHORIZED.description);
-        } catch (InvalidPlayerException e) {
+        } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
             responseVo.getError().setCode(ResponseCode.PLAYER_UNAUTHORIZED.code);
@@ -99,10 +99,10 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidPlayerException {        // Verify received signature
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {        // Verify received signature
         //1. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), InvalidRequestException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
