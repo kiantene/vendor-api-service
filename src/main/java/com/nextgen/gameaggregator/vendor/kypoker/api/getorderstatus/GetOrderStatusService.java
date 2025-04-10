@@ -75,6 +75,7 @@ public class GetOrderStatusService {
                 settleBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayer.getId(),externalTransactionId);
 
                 ResponseObjectDto d = new ResponseObjectDto();
+                d.setCode(ResponseCodes.SUCCESS);
                 d.setStatus(ResponseCodes.CODE1);
                 vo.setM(EndPoints.LAUNCH_GAME);
                 vo.setS(ResponseCodes.GET_ORDER_STATUS);
@@ -85,6 +86,7 @@ public class GetOrderStatusService {
                     walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
 
                     ResponseObjectDto d = new ResponseObjectDto();
+                    d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.CODE1);
                     vo.setM(EndPoints.LAUNCH_GAME);
                     vo.setS(ResponseCodes.GET_ORDER_STATUS);
@@ -95,6 +97,7 @@ public class GetOrderStatusService {
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
             d.setStatus(ResponseCodes.CODE2);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_ORDER_STATUS);
