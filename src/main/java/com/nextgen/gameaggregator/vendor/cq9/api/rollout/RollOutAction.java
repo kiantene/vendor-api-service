@@ -119,36 +119,44 @@ public class RollOutAction {
         } catch (DuplicateRequestException duplicateRequestException) {
             statusVo.setCode(ResponseCodes.SUCCESS); // vendor requested to return success
             errorMessage = duplicateRequestException.getMessage();
+            httpService.logError(httpRequestLog, duplicateRequestException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             errorMessage = invalidRequestException.getMessage();
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException |
                  InvalidPlayerException |
                  DisabledAgentPlayerException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
             errorMessage = authenticationException.getMessage();
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (DisabledGameException disabledGameException) {
             statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
             errorMessage = disabledGameException.getMessage();
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
             errorMessage = dateTimeParseException.getMessage();
+            httpService.logError(httpRequestLog, dateTimeParseException);
 
         } catch (InternalServerException | InvalidOperatorResponseException internalServerException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             errorMessage = internalServerException.getMessage();
+            httpService.logError(httpRequestLog, internalServerException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             errorMessage = insufficientBalanceException.getMessage();
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             errorMessage = exception.getMessage();
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
