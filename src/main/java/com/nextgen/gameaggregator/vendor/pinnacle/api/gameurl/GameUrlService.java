@@ -16,8 +16,6 @@ import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.json.JsonParser;
-import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -110,9 +108,9 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
             //2. use vendor userCode to set vendorPlayer Username
-            JsonParser jsonParser = JsonParserFactory.getJsonParser();
-            String userCode = jsonParser.parseMap(apiResponse.getBody()).get("userCode").toString();
-            gameSessionService.updateNewVendorPlayerUsername(gameSession, userCode);
+            if (responseVo.getUserCode() != null) {
+                gameSessionService.updateNewVendorPlayerUsername(gameSession, responseVo.getUserCode());
+            }
 
             // 3. validate vendor response
             RequestService.validateResponse(responseVo);
