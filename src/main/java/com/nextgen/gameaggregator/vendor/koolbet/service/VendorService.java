@@ -51,11 +51,10 @@ public class VendorService extends BaseVendorService {
 
     public static void getBetType(String gameId, String betType) throws BetNotFoundException {
         Integer gameCode = Integer.parseInt(gameId);
-        
-        if (GameList.GAME_BET_TYPE_MAP.containsKey(gameCode)) {
-            if (!GameList.GAME_BET_TYPE_MAP.get(gameCode).equals(betType)) {
-                throw new BetNotFoundException();
-            }
+
+        if (GameList.GAME_BET_TYPE_MAP.containsKey(gameCode) && !GameList.GAME_BET_TYPE_MAP.get(gameCode).equals(betType)) {
+            throw new BetNotFoundException();
         }
+
     }
 }
