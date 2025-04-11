@@ -94,7 +94,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("userId", gameSession.getVendorPlayerUsername());
         formData.add("currency", gameSession.getVendorCurrencyCode());
         formData.add("betLimit", this.betLimit);
-        formData.add("language", gameSession.getLanguage());
+        formData.add("language", gameSession.getVendorLanguageCode());
 
         httpRequestLog.setUrl(this.apiUrl + EndPoints.CREATE_MEMBER);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
