@@ -107,14 +107,12 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
             requestService.validateVendorHttpStatusResponse(Objects.requireNonNull(apiResponse));
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
-            //2. use vendor userCode to set vendorPlayer Username
-            if (responseVo.getUserCode() != null) {
-                gameSessionService.updateNewVendorPlayerUsername(gameSession, responseVo.getUserCode());
-            }
-
-            // 3. validate vendor response
+            // 2. validate vendor response
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
+
+            // 3. use vendor userCode to set vendorPlayer Username
+            gameSessionService.updateNewVendorPlayerUsername(gameSession, responseVo.getUserCode());
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidPlayerException
                  | InvalidResponseException invalidException) {
