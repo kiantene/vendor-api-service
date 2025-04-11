@@ -56,7 +56,6 @@ public class CancelAction {
         CancelDto cancelDto;
         BigDecimal balance;
         BigDecimal currentBalance;
-        boolean isBetNotFound = false;
         GameSession gameSession = null;
 
         try {
@@ -82,7 +81,8 @@ public class CancelAction {
             cancelVo.setBalance(e.getBalance());
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
-            isBetNotFound = true;
+            currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+            cancelVo.setBalance(currentBalance);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             cancelVo.setError(new ErrorVo());
@@ -94,10 +94,6 @@ public class CancelAction {
             cancelVo.getError().setCode(ResponseCode.UNKNOWN.code);
             cancelVo.getError().setMessage(ResponseCode.UNKNOWN.description);
         } finally {
-            if (isBetNotFound) {
-                currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                cancelVo.setBalance(currentBalance);
-            }
             httpService.end(httpRequestLog, cancelVo);
         }
         return cancelVo;
