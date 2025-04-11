@@ -109,11 +109,11 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
             // 2. validate vendor response
             RequestService.validateResponse(responseVo);
-            RequestService.successResponseLog(requestLogVo);
 
             // 3. use vendor userCode to set vendorPlayer Username
             gameSessionService.updateNewVendorPlayerUsername(gameSession, responseVo.getUserCode());
 
+            RequestService.successResponseLog(requestLogVo);
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidPlayerException
                  | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
