@@ -43,7 +43,7 @@ public class CancelAction {
     }
 
     @DeleteMapping(path = EndPoints.CANCEL)
-    public CancelVo cancelAction(HttpServletRequest request) {
+    public CancelVo cancelAction(HttpServletRequest request) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -55,7 +55,9 @@ public class CancelAction {
         CancelVo cancelVo = new CancelVo();
         CancelDto cancelDto;
         BigDecimal balance;
-        BigDecimal currentBalance = null;
+        BigDecimal currentBalance;
+        boolean isBetNotFound = false;
+        GameSession gameSession = null;
 
         try {
             cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
@@ -66,12 +68,10 @@ public class CancelAction {
             this.doValidation(cancelDto);
 
             // Get GameSession with username
-            GameSession gameSession = gameSessionService.verifyToken(authorization.substring(7));
+            gameSession = gameSessionService.verifyToken(authorization.substring(7));
 
             // Verify parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession, body);
-
-            currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             //Cancel Bet
             balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
@@ -82,7 +82,7 @@ public class CancelAction {
             cancelVo.setBalance(e.getBalance());
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
-            cancelVo.setBalance(currentBalance);
+            isBetNotFound = true;
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             cancelVo.setError(new ErrorVo());
@@ -94,6 +94,10 @@ public class CancelAction {
             cancelVo.getError().setCode(ResponseCode.UNKNOWN.code);
             cancelVo.getError().setMessage(ResponseCode.UNKNOWN.description);
         } finally {
+            if (isBetNotFound) {
+                currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+                cancelVo.setBalance(currentBalance);
+            }
             httpService.end(httpRequestLog, cancelVo);
         }
         return cancelVo;

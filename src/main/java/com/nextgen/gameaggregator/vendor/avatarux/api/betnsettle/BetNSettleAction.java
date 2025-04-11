@@ -34,7 +34,8 @@ public class BetNSettleAction {
                             HttpService httpService,
                             ValidationService validationService,
                             VendorService vendorService,
-                            VendorLineService vendorLineService, GameSessionService gameSessionService) {
+                            VendorLineService vendorLineService,
+                            GameSessionService gameSessionService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
