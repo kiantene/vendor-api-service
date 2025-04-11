@@ -46,6 +46,9 @@ public class BetNSettleDto implements BetResultData {
     @Size(max = 255)
     private String roundId;
 
+    @NotBlank
+    private String game;
+
     private String campaignType;
 
     @Override

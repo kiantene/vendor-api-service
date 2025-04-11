@@ -15,4 +15,7 @@ public class AuthenticateDto {
 
     @NotBlank
     private String key;
+
+    @NotBlank
+    private String game;
 }
