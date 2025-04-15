@@ -115,7 +115,6 @@ public class BetService {
             vo.setD(d);
 
         }finally {
-
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {
