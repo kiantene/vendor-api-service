@@ -95,6 +95,25 @@ public class GeneralAction {
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
 
+        } catch (InvalidRequestException invalidRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(5);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setD(d);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(10);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setD(d);
+
+        } catch(InvalidDecryptionException invalidDecryptionException){
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(6);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BALANCE);
+            vo.setD(d);
+
         } catch (Exception e) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
@@ -106,10 +125,8 @@ public class GeneralAction {
     }
 
     private void doVerification(CommonDto dto,String encryptedMd5)
-            throws InvalidRequestException
-    {
+            throws InvalidTokenException, InvalidRequestException {
         ValidationUtils.isEquals(dto.getKey(), encryptedMd5);
-
     }
 
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
@@ -129,7 +146,7 @@ public class GeneralAction {
             vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
         }  else {
             if (vo.d == null) {
-                vo.d.setCode(ResponseCodes.INTERNAL_ERROR);
+                vo.d.setCode(8);
             }
         }
         return vo;

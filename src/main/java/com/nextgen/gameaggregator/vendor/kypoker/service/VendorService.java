@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.service;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -56,7 +57,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String AESDecrypt(String value,String key,boolean isDecodeURL) throws Exception {
+    public static String AESDecrypt(String value,String key,boolean isDecodeURL) throws InvalidDecryptionException {
         try {
             byte[] raw = key.getBytes("UTF-8");
             SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");

@@ -72,6 +72,20 @@ public class BalanceService {
 
         } catch(InvalidPlayerException invalidPlayerException){
             ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(2);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BALANCE);
+            vo.setD(d);
+
+        } catch(InvalidRequestException invalidRequestException){
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(5);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BALANCE);
+            vo.setD(d);
+
+        } catch(AuthenticationException invalidRequestException){
+            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(10);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BALANCE);
@@ -79,10 +93,11 @@ public class BalanceService {
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
+            d.setCode(13);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
+
         } finally {
             httpService.end(httpRequestLog, vo);
         }

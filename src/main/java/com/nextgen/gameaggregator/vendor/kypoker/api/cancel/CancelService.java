@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -83,7 +84,7 @@ public class CancelService {
                 String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
                 this.dataMapper(walletRequest,cancelDto,gameSession);
-                walletRequest = operatorWalletService.betDebit(walletRequest);
+                walletRequest = operatorWalletService.betCredit(walletRequest);
 
                 if (walletTransaction != null) {
                     ResponseObjectDto d = new ResponseObjectDto();
@@ -105,11 +106,16 @@ public class CancelService {
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
 
-        }
-        catch (Exception e){
+        } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(ResponseCodes.INTERNAL_ERROR);
-            d.setCode(ResponseCodes.CODE2);
+            d.setCode(5);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+
+        } catch (Exception e){
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(13);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
@@ -144,15 +150,22 @@ public class CancelService {
     private void dataMapper (WalletRequest walletRequest, CancelDto cancelDto , GameSession gameSession)
     {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
+        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         walletRequest.setExternalTransactionId(cancelDto.getOrderId());
         walletRequest.setRoundId(cancelDto.getRoundId());
-        walletRequest.setVendorGameCode(cancelDto.getGameId());
-        walletRequest.setTimestamp(cancelDto.getTimeStamp());
+        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(cancelDto.getOrderId());
-        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        BigDecimal amount = cancelDto.getMoney();
-        walletRequest.setTransferAmount(amount);
-        walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        walletRequest.setTakeAll(0);
+        walletRequest.setTransferAmount(cancelDto.getMoney());
+        walletRequest.setBetAmount(cancelDto.getMoney());
+        ResultType resultType = ResultType.BET_WIN;
+        walletRequest.setWinAmount(cancelDto.getMoney());
+        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setJackpotAmount(BigDecimal.ZERO);
+        walletRequest.setResultType(resultType.code);
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
 }

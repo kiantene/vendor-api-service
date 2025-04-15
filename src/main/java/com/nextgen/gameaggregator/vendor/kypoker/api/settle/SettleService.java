@@ -97,11 +97,39 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
 
-        } catch (Exception e){
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(9);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setD(d);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(11);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setD(d);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(12);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setD(d);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(5);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setD(d);
+
+        } catch (Exception e){
+            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
 
         } finally {

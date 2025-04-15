@@ -107,9 +107,23 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
-        } catch (Exception e){
+        } catch (InsufficientBalanceException insufficientBalanceException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setStatus(ResponseCodes.INTERNAL_ERROR);
+            d.setCode(1);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(5);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+
+        }  catch (Exception e){
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
