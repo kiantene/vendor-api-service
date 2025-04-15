@@ -64,16 +64,7 @@ public class CancelService {
             ResponseObjectDto d = new ResponseObjectDto();
 
             d.setCode(ResponseCodes.SUCCESS);
-            d.setStatus(1);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
-
-        } catch (BetNotFoundException betNotFoundException){
-            ResponseObjectDto d = new ResponseObjectDto();
-
-            d.setCode(ResponseCodes.SUCCESS);
-            d.setStatus(1);
+            d.setStatus(ResponseCodes.CODE1);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);

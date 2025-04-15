@@ -52,11 +52,14 @@ public class BetService {
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        Integer roomMode = 0;
+        Integer roomMode = null;
+        BetDto betDto = null;
 
         try {
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
+            betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
+
+            roomMode = betDto.getRoomMode();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -74,8 +77,6 @@ public class BetService {
 
             // Determine game mode to use normal bet flow or Credit/Debit
             ResponseObjectDto d = new ResponseObjectDto();
-
-            roomMode = betDto.getRoomMode();
 
             // Normal flow
             if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
@@ -114,10 +115,11 @@ public class BetService {
             vo.setD(d);
 
         }finally {
-            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
+
+            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
-            }else {
-                httpService.end(httpRequestLog, vo);
+            } else {
+                httpService.end(httpRequestLog, vo);  // Ensure this runs even after an exception
             }
         }
         return vo;
