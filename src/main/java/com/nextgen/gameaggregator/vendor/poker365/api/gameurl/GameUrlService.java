@@ -57,7 +57,6 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
             throws InvalidVendorLineException,
             InvalidFormatException {
 
-
         this.apiUrl = ValidationUtils.validateCredential(credentials.get(Credentials.API_URL));
         this.cert = ValidationUtils.validateCredential(credentials.get(Credentials.CERT));
         this.account = ValidationUtils.validateCredential(credentials.get(Credentials.ACCOUNT));
@@ -72,8 +71,6 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
         formData.add("jackpot", "1");
 
         return formData;
-
-
     }
 
     @Override
@@ -81,16 +78,18 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
                                           GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException,
             TimeoutException,
-            InvalidVendorLineException {
-
+            InvalidVendorLineException
+    {
         try {
             key = this.getKey(gameSession, httpRequestLog);
             formData.add("key", key);
+
         } catch (Exception e) {
             throw new InvalidVendorResponseException("Failed to get Key: " + e);
-        }
-        AtomicBoolean isTimeout = new AtomicBoolean(false);
 
+        }
+
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
         httpRequestLog.setUrl(this.getApiUrl() + api + website + EndPoints.LAUNCH_GAME);
         this.launchGameUrl = this.getApiUrl() + api + website;
         ResponseEntity<String> response = this.doPost(this.getLaunchGameUrl(), EndPoints.LAUNCH_GAME, headers, formData, isTimeout);
@@ -109,7 +108,6 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
         param.add("userName", gameSession.getVendorPlayerUsername());
         param.add("extension1", account);
         param.add("currency", gameSession.getVendorCurrencyCode());
-
 
         httpRequestLog.setUrl(this.getApiUrl() + api + website + EndPoints.KEY);
         AtomicBoolean isTimeout = new AtomicBoolean(false);

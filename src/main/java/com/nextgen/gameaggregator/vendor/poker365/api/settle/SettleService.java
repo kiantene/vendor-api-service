@@ -44,7 +44,10 @@ public class SettleService {
                          VendorService vendorService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, OperatorWalletService operatorWalletService, WalletRequestService walletRequestService) {
+                         AgentPlayerService agentPlayerService,
+                         VendorPlayerService vendorPlayerService,
+                         OperatorWalletService operatorWalletService,
+                         WalletRequestService walletRequestService) {
         this.validationService = validationService;
         this.walletService = walletService;
         this.vendorService = vendorService;
@@ -79,7 +82,6 @@ public class SettleService {
 //                ? dto.getProfit().subtract(dto.getBonus())
 //                : dto.getProfit();
 
-
         ResultType resultType = vendorService.calculateResultType(dto.getRealBetMoney(), winAmount, dto.getJackpotAmount(), false);
 
         walletRequest.setWinAmount(winAmount);
@@ -88,6 +90,7 @@ public class SettleService {
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
+
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
@@ -124,7 +127,6 @@ public class SettleService {
             commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
-
 //        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
 //            commonVo.setStatus(ResponseCodes.NO_DATA.status);
 //            commonVo.setMsg(ResponseCodes.NO_DATA.message);
@@ -149,20 +151,25 @@ public class SettleService {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (AuthenticationException e) {
             commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
             commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException e) {
             commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
             commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
             httpService.logError(httpRequestLog, e);
+
         } finally {
             httpService.end(httpRequestLog, commonVo);
+
         }
         return commonVo;
     }
@@ -171,14 +178,23 @@ public class SettleService {
         // General validation
         ValidationUtils.validateRequest(commonDto);
         ValidationUtils.validateRequest(messageDto);
-
     }
 
-    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession)
+            throws AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            CredentialNotFoundException,
+            InvalidVendorLineException,
+            InvalidPlayerException,
+            DisabledGameException,
+            CurrencyNotSupportedException,
+            GameNotSupportedException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
         // FindVendorLine
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
@@ -186,10 +202,13 @@ public class SettleService {
         ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), String.valueOf(messageDto.getUserId()), InvalidPlayerException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), messageDto.getCurrency(), CurrencyNotSupportedException::new);
 

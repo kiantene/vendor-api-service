@@ -89,10 +89,8 @@ public class BetService {
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
             WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
-
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
-
 
             this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
@@ -101,14 +99,14 @@ public class BetService {
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
-            //26184739 (timeout001)
-            //26184741(gxt1)26181055(gxt5)
+
             if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
                 Thread.sleep(9000);
             }
 
             //Map data for walletRequest
             this.dataMapper(walletRequest, messageDto, gameSession);
+
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
 //            BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
@@ -117,7 +115,6 @@ public class BetService {
             // 6. Set response data
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
-
 
 //        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
 //            commonVo.setStatus(ResponseCodes.NO_DATA.status);
@@ -143,20 +140,25 @@ public class BetService {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (AuthenticationException e) {
             commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
             commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException e) {
             commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
             commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
             httpService.logError(httpRequestLog, e);
+
         } finally {
             httpService.end(httpRequestLog, commonVo);
+
         }
         return commonVo;
     }
@@ -167,20 +169,35 @@ public class BetService {
         ValidationUtils.validateRequest(messageDto);
     }
 
-    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, CredentialNotFoundException, InvalidVendorLineException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession)
+            throws AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            CredentialNotFoundException,
+            InvalidVendorLineException,
+            InvalidPlayerException,
+            DisabledGameException,
+            CurrencyNotSupportedException,
+            GameNotSupportedException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
         // FindVendorLine
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
+
         Integer vendorLineId = vendorLine.getId();
+
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
+
         ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 

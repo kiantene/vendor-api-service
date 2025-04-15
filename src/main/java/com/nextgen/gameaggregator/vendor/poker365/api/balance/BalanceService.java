@@ -38,7 +38,9 @@ public class BalanceService {
             VendorService vendorService,
             GameSessionService gameSessionService,
             VendorLineService vendorLineService,
-            AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, HttpService httpService) {
+            AgentPlayerService agentPlayerService,
+            VendorPlayerService vendorPlayerService,
+            HttpService httpService) {
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
@@ -82,18 +84,22 @@ public class BalanceService {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (AuthenticationException e) {
             commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
             commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException e) {
             commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
             commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
             httpService.logError(httpRequestLog, e);
+
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
@@ -105,10 +111,16 @@ public class BalanceService {
         // General validation
         ValidationUtils.validateRequest(commonDto);
         ValidationUtils.validateRequest(messageDto);
+
     }
 
-    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, InvalidVendorLineException, InvalidPlayerException, CredentialNotFoundException {
+    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession)
+            throws AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            InvalidVendorLineException,
+            InvalidPlayerException,
+            CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
@@ -116,13 +128,17 @@ public class BalanceService {
         VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
         Integer vendorLineId = vendorLine.getId();
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
+
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
     }
 }
