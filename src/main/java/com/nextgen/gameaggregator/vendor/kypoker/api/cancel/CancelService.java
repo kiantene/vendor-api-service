@@ -83,7 +83,7 @@ public class CancelService {
                 String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
                 this.dataMapper(walletRequest,cancelDto,gameSession);
-                walletRequest = operatorWalletService.betDebit(walletRequest);
+                walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
 
                 if (walletTransaction != null) {
                     ResponseObjectDto d = new ResponseObjectDto();
