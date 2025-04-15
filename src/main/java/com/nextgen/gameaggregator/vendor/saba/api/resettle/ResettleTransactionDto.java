@@ -25,6 +25,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private BigDecimal debitAmount;
     private String extraStatus;
     private String operationId;
+    private ExtraInfo extraInfo;
 
     @Override
     public String getExternalTransactionId() {
