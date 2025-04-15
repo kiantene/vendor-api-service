@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -64,6 +65,11 @@ public class TransferAction {
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
         CommonDto commonDto;
+
+        // default value
+        transferDataVo.setTradeType(0);
+        transferDataVo.setTradeAmount(BigInteger.ZERO);
+        transferDataVo.setBalance(BigInteger.ZERO);
         try {
             //get body and queryString from vendor request
             String body = httpRequestLog.getRequestBody();
@@ -107,7 +113,6 @@ public class TransferAction {
             transferDataVo.setBalance(balance.toBigInteger());
             transferDataVo.setTradeType(transferDto.getTradeType());
             transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
-            vo.setData(transferDataVo);
 
         } catch (DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
@@ -134,6 +139,7 @@ public class TransferAction {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INTERNAL_SERVER_ERROR);
         } finally {
+            vo.setData(transferDataVo);
             httpService.end(httpRequestLog, vo);
         }
 
