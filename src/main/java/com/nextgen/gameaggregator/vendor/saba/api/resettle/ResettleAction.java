@@ -50,7 +50,7 @@ public class ResettleAction {
 
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
                 txn.setOperationId(dtos.getMessage().getOperationId());
-                sportWalletService.resettle(traceId, txn, httpRequestLog, txn.getExtraInfo().getIsOnlyWinlostDateChanged());
+                sportWalletService.resettle(traceId, txn, httpRequestLog, txn.getExtraInfo().isOnlyWinlostDateChanged());
             }
 
             RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
