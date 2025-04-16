@@ -76,7 +76,7 @@ public class BetService {
 
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
-
+        WalletRequest walletRequest = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -84,7 +84,7 @@ public class BetService {
             CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
-            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+            walletRequest = WalletRequestService.init(httpRequestLog);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
@@ -146,7 +146,7 @@ public class BetService {
             httpService.logError(httpRequestLog, e);
 
         } finally {
-            httpService.end(httpRequestLog, commonVo);
+            walletRequestService.end(walletRequest, httpRequestLog, commonVo);
 
         }
         return commonVo;

@@ -73,11 +73,9 @@ public class CancelService {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         WalletTransaction walletTransaction = null;
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         try {
-
-            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-
             String body = httpRequestLog.getRequestBody();
 
             CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
@@ -132,7 +130,7 @@ public class CancelService {
             httpService.logError(httpRequestLog, e);
 
         } finally {
-            httpService.end(httpRequestLog, commonVo);
+            walletRequestService.end(walletRequest, httpRequestLog,commonVo);
 
         }
 

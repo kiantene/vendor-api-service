@@ -104,7 +104,6 @@ public class SettleService {
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
-//            List<TransactionsDto> transactionsDto = messageDto.getTransactionsDto();
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
@@ -116,21 +115,12 @@ public class SettleService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-//            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, messageDto.getWinAmount(), messageDto.getJackpotAmount(), false);
-
-//            balance = walletService.processBetResult(traceId, gameSession, messageDto, resultType, vendorService, httpRequestLog);
-
             this.dataMapper(walletRequest, messageDto, gameSession);
             walletRequest = operatorWalletService.betCredit(walletRequest);
             balance = walletRequest.getBalanceAfter();
             // 6. Set response data
             commonVo.setBalance(balance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
-
-//        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
-//            commonVo.setStatus(ResponseCodes.NO_DATA.status);
-//            commonVo.setMsg(ResponseCodes.NO_DATA.message);
-//            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);
@@ -168,7 +158,7 @@ public class SettleService {
             httpService.logError(httpRequestLog, e);
 
         } finally {
-            httpService.end(httpRequestLog, commonVo);
+            walletRequestService.end(walletRequest, httpRequestLog, commonVo);
 
         }
         return commonVo;
