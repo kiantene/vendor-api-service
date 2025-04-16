@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.poker365.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
@@ -34,6 +31,7 @@ public class CancelService {
     private final VendorPlayerService vendorPlayerService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
+    private final WalletTransactionService walletTransactionService;
     Integer vendorPlayerId;
 
     @Autowired
@@ -45,7 +43,8 @@ public class CancelService {
                          WalletService walletService,
                          VendorPlayerService vendorPlayerService,
                          WalletRequestService walletRequestService,
-                         OperatorWalletService operatorWalletService) {
+                         OperatorWalletService operatorWalletService,
+                         WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
@@ -55,6 +54,7 @@ public class CancelService {
         this.vendorPlayerService = vendorPlayerService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
+        this.walletTransactionService = walletTransactionService;
     }
 
     private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
@@ -72,6 +72,8 @@ public class CancelService {
     public CommonVo cancel(HttpRequestLog httpRequestLog, String traceId) throws JsonProcessingException {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
+        WalletTransaction walletTransaction = null;
+
         try {
 
             WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
@@ -96,10 +98,18 @@ public class CancelService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
+            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), messageDto.getGameNumber());
+
+            if (walletTransaction != null) {
             this.dataMapper(walletRequest, messageDto, gameSession);
-            walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
+            walletRequest = operatorWalletService.betCredit(walletRequest);
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+
+             }
+            else {
+                throw new BetNotFoundException();
+            }
 
         } catch (InvalidPlayerException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
