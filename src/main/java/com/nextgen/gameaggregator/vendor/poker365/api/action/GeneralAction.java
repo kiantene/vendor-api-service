@@ -36,15 +36,19 @@ public class GeneralAction {
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
-    Integer vendorPlayerId;
 
     @Autowired
-    public GeneralAction(BalanceService balanceService, BetService betService, CancelService cancelService, SettleService settleService, HttpService httpService,
+    public GeneralAction(BalanceService balanceService,
+                         BetService betService,
+                         CancelService cancelService,
+                         SettleService settleService,
+                         HttpService httpService,
                          WalletService walletService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService) {
+                         AgentPlayerService agentPlayerService,
+                         VendorPlayerService vendorPlayerService) {
         this.balanceService = balanceService;
         this.betService = betService;
         this.cancelService = cancelService;
@@ -72,15 +76,6 @@ public class GeneralAction {
 
             commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);
 
-//        } catch (InvalidPlayerException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_PLAYER_NOT_FOUND));
-//            httpService.logError(httpRequestLog, e);
-//        } catch (AuthenticationException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_AUTHENTICATION_FAILED));
-//            httpService.logError(httpRequestLog, e);
-//        } catch (InvalidRequestException e) {
-//            balanceVo.setError(ErrorVo.from(ResponseCodes.ERR_REGULATORY_GENERAL));
-//            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
             commonVo.setMsg(ResponseCodes.FAIL.message);
@@ -96,21 +91,12 @@ public class GeneralAction {
     private CommonVo actionHandling(MessageDto messageDto, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidRequestException, JsonProcessingException {
 
-//        if (messageDto.getAction() == null) {
-//            for (TransactionMessageDto transaction : messageDto.getTransactionMessageDto()) {
-//                if ("settle".equals(transaction.getAction())) {
-//                    return settleService.settle(httpRequestLog, traceId);
-//                }
-//            }
-//        } else {
-        return switch (messageDto.getAction()) {
-            case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
-            case "bet" -> betService.bet(httpRequestLog, traceId);
-            case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
-            case "settle" -> settleService.settle(httpRequestLog, traceId);
-            default -> throw new InvalidRequestException();
-        };
+            return switch (messageDto.getAction()) {
+                case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
+                case "bet" -> betService.bet(httpRequestLog, traceId);
+                case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
+                case "settle" -> settleService.settle(httpRequestLog, traceId);
+                default -> throw new InvalidRequestException();
+            };
     }
-//        return null;
-//    }
 }

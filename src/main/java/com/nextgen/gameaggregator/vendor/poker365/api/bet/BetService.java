@@ -61,7 +61,6 @@ public class BetService {
 
     private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
 
-
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setExternalTransactionId(dto.getRoundId());
         walletRequest.setRoundId(dto.getRoundId());
@@ -70,8 +69,6 @@ public class BetService {
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(dto.getTxId());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        //walletRequest.setAction("debit");
-//        walletRequest.setTakeAll(0);
         walletRequest.setTransferAmount(dto.getBetAmount());
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
 
@@ -96,7 +93,6 @@ public class BetService {
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
-
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
@@ -109,17 +105,10 @@ public class BetService {
 
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
-//            BetEvent betEvent = walletService.processBet(traceId, gameSession, messageDto,
-//                    httpRequestLog.getRequestBody(), httpRequestLog);
 
             // 6. Set response data
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
-
-//        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException e) {
-//            commonVo.setStatus(ResponseCodes.NO_DATA.status);
-//            commonVo.setMsg(ResponseCodes.NO_DATA.message);
-//            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);

@@ -65,8 +65,6 @@ public class CancelService {
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        //walletRequest.setAction("debit");
-//        walletRequest.setTakeAll(0);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
 
     }
@@ -98,21 +96,10 @@ public class CancelService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-//            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-//                Thread.sleep(5000);
-//            }
-//            balance = walletService.processRollback(traceId, messageDto, gameSession, vendorService, httpRequestLog);
-
             this.dataMapper(walletRequest, messageDto, gameSession);
             walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
-
-//        } catch (BetRefundIdempotentViolationException |
-//                 BetResultIdempotentViolationException e) {
-//            commonVo.setStatus(ResponseCodes.NO_DATA.status);
-//            commonVo.setMsg(ResponseCodes.NO_DATA.message);
-//            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidPlayerException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
@@ -169,8 +156,10 @@ public class CancelService {
         ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
