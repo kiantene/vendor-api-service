@@ -110,8 +110,8 @@ public class BetService {
             walletRequest = operatorWalletService.betDebit(walletRequest);
 
             // 6. Set response data
-            commonVo.setBalance(walletRequest.getBalanceAfter());
-            commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+           // commonVo.setBalance(walletRequest.getBalanceAfter());
+          //  commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);
