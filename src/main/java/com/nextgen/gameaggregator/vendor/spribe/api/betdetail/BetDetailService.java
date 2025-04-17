@@ -40,7 +40,7 @@ public class BetDetailService implements BetDetailUrl {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("round_id", iBetDetailUrlInfo.getExternalRoundId());
         formData.add("game", iBetDetailUrlInfo.getGameCode().split("_")[1]);
-        formData.add("session_token", iBetDetailUrlInfo.getGameSessionToken()); // player_token or session_token can be used
+        formData.add("player_token", iBetDetailUrlInfo.getGameSessionToken()); // player_token or session_token can be used
         formData.add("op_player_id", iBetDetailUrlInfo.getVendorUsername());
         formData.add("operator", operator);
 
