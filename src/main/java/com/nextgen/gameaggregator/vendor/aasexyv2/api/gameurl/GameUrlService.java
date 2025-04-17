@@ -98,7 +98,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         GameUrlVo responseVo = new Gson().fromJson(response.getBody(), GameUrlVo.class);
 
         if (!responseVo.getStatus().equalsIgnoreCase("0000")
-                && !responseVo.getStatus().equalsIgnoreCase("1001")){
+                && !responseVo.getStatus().equalsIgnoreCase("1001")) {
             throw new InvalidVendorResponseException("Failed to checkAndCreateAccount : " + response.getBody());
         }
     }

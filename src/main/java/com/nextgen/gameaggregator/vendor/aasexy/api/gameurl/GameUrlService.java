@@ -52,13 +52,13 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("platform", "SEXYBCRT");
         formData.add("gameType", "LIVE");
 
-        if(toggleVersion.equals("v2")) {
+        if (toggleVersion.equals("v2")) {
             String[] gameCodeParts = gameSession.getVendorGameCode().split("_");
             formData.add("gameCode", gameCodeParts[0]);
             formData.add("hall", "SEXY");
             formData.add("isLaunchGameTable", "true");
             formData.add("gameTableId", gameCodeParts[1]);
-        }else{
+        } else {
             formData.add("gameCode", gameSession.getVendorGameCode());
         }
 
@@ -105,7 +105,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         GameUrlVo responseVo = new Gson().fromJson(response.getBody(), GameUrlVo.class);
 
         if (!responseVo.getStatus().equalsIgnoreCase("0000")
-                && !responseVo.getStatus().equalsIgnoreCase("1001")){
+                && !responseVo.getStatus().equalsIgnoreCase("1001")) {
             throw new InvalidVendorResponseException("Failed to checkAndCreateAccount : " + response.getBody());
         }
     }
