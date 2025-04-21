@@ -61,11 +61,18 @@ public class CancelService {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setExternalTransactionId(dto.getRoundId());
         walletRequest.setRoundId(dto.getRoundId());
-        walletRequest.setVendorId(gameSession.getVendorId());
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        walletRequest.setVendorId(gameSession.getVendorId());
+        walletRequest.setWinAmount(BigDecimal.ZERO);
+        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setJackpotAmount(BigDecimal.ZERO);
+        walletRequest.setBetAmount(BigDecimal.ZERO);
+        walletRequest.setVendorBetTime(System.currentTimeMillis());
+        walletRequest.setJackpotAmount(BigDecimal.ZERO);
+        walletRequest.setWinLoss(BigDecimal.ZERO);
 
     }
 
@@ -99,14 +106,24 @@ public class CancelService {
             walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), messageDto.getGameNumber());
 
             if (walletTransaction != null) {
-            this.dataMapper(walletRequest, messageDto, gameSession);
-            walletRequest = operatorWalletService.betCredit(walletRequest);
-            commonVo.setBalance(walletRequest.getBalanceAfter());
-            commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+
+                this.dataMapper(walletRequest, messageDto, gameSession);
+
+                walletRequest.setTransferAmount(walletTransaction.getTransferAmount());
+
+                walletRequest.setVendorBetId(messageDto.getGameNumber());
+
+                walletRequest = operatorWalletService.betCredit(walletRequest);
+
+                commonVo.setBalance(walletRequest.getBalanceAfter());
+
+                commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
              }
             else {
+
                 throw new BetNotFoundException();
+
             }
 
         } catch (InvalidPlayerException e) {
