@@ -106,7 +106,7 @@ public class BetService {
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
 
-        if ("Cancel_Poker365".equals(String.valueOf(gameSession.getVendorPlayerUsername()))) {
+        if ("26225469".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
             // 6. Set response data
             commonVo.setBalance(null);
             commonVo.setStatus(null);
