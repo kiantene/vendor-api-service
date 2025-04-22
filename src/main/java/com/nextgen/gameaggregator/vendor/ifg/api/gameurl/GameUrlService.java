@@ -21,14 +21,12 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
-        formData.add("project", credentials.get(Credentials.partner));
         formData.add("game", gameSession.getVendorGameCode());
+        formData.add("project", credentials.get(Credentials.partner));
+        formData.add("auth", gameSession.getToken());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("demo", GameType.demo_false);
-        formData.add("auth", gameSession.getToken());
-
         return formData;
     }
 
