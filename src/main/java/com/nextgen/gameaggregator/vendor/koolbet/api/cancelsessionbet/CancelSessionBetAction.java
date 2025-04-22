@@ -62,6 +62,7 @@ public class CancelSessionBetAction {
 
             try { //this check only verify if it's null, not status = 0
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(dto.getGame()), gameSession);
             } catch (AuthenticationException authenticationException) { //if session expired
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUserId()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(dto.getGame()));
