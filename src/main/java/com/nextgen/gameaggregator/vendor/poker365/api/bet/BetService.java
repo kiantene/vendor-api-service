@@ -90,6 +90,7 @@ public class BetService {
             this.doValidation(commonDto, messageDto);
 
             this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
+
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -99,19 +100,22 @@ public class BetService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-            if ("26184741".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-                Thread.sleep(9000);
-            }
-
             //Map data for walletRequest
             this.dataMapper(walletRequest, messageDto, gameSession);
 
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
 
+        if ("Cancel_Poker365".equals(String.valueOf(gameSession.getVendorPlayerUsername()))) {
             // 6. Set response data
+            commonVo.setBalance(null);
+            commonVo.setStatus(null);
+
+        }else {
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+
+        }
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);
