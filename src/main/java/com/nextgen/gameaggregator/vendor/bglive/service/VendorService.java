@@ -266,12 +266,11 @@ public class VendorService extends BaseVendorService {
         ResultType resultType = this.calculateResultType(ordersDto.getBetAmount(), amount, ordersDto.getJackpotAmount(),
                 false);
         walletRequest.setWinAmount(amount);
-        walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
+        walletRequest.setEffectiveTurnover(ordersDto.getOrderAmount());
         walletRequest.setJackpotAmount(ordersDto.getJackpotAmount());
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
-
 
 }
