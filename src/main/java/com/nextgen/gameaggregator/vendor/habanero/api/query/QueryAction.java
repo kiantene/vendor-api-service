@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -35,6 +36,8 @@ public class QueryAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.QUERY)
     public ResponseEntity<QueryVo> balance(HttpServletRequest request) {
@@ -44,16 +47,25 @@ public class QueryAction {
         // Construct VO
         QueryVo responseVo = new QueryVo();
         Integer httpStatus = HttpStatus.SC_OK;
-
+        boolean isRequestExists = false;
+        QueryDto queryDto = null;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into authDto
-            QueryDto queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
+            queryDto = HttpService.convertJsonToDto(body, QueryDto.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(queryDto);
+
+            // Request idempotent checking for this transaction
+            if (requestIdempotentLogService.checkExists(queryDto, queryDto.getQueryRequestDto().getAccountId()) == null) {
+                requestIdempotentLogService.create(queryDto, queryDto.getQueryRequestDto().getAccountId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException("Request still processing.");
+            }
 
             //Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(queryDto.getQueryRequestDto().getAccountId(), queryDto.getBaseGame().getKeyName());
@@ -78,10 +90,10 @@ public class QueryAction {
             responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
             httpService.logError(httpRequestLog, generalException);
 
-        } catch (TransactionStillProcessingException TransactionStillProcessingException) {
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
-            httpService.logError(httpRequestLog, TransactionStillProcessingException);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // bet found return true respond
@@ -92,14 +104,18 @@ public class QueryAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                assert queryDto != null;
+                requestIdempotentLogService.delete(queryDto, queryDto.getQueryRequestDto().getAccountId());
+            }
             httpService.end(httpRequestLog, responseVo);
 
         }
 
         if (responseVo.getFundTransferResponseVo().getStatusVo().getRetryStatus() != null) {
-            //return invalid respond 404 to trigger vendor resend when record still in processing
+            //return invalid respond 503 to trigger vendor resend when record still in processing
             responseVo = null;
-            httpStatus = HttpStatus.SC_NOT_FOUND;
+            httpStatus = HttpStatus.SC_SERVICE_UNAVAILABLE;
         }
 
         return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
