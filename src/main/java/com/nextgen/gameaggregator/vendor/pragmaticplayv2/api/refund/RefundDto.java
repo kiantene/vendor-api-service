@@ -58,7 +58,8 @@ public class RefundDto implements RollbackData, BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.reference;
+        // mapping for request idempotent use
+        return "refund_" + this.reference;
     }
 
     @Override
