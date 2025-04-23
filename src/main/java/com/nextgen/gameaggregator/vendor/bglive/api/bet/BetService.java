@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -44,6 +45,7 @@ public class BetService {
     private final BetActionLogService betActionLogService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
+    private final WalletTransactionService walletTransactionService;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -53,7 +55,8 @@ public class BetService {
                       VendorService vendorService,
                       BetActionLogService betActionLogService,
                       OperatorWalletService operatorWalletService,
-                      WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                      WalletTransactionBetHistoryService walletTransactionBetHistoryService,
+                      WalletTransactionService walletTransactionService) {
 
         this.httpService = httpService;
         this.walletService = walletService;
@@ -64,6 +67,7 @@ public class BetService {
         this.betActionLogService = betActionLogService;
         this.operatorWalletService = operatorWalletService;
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
+        this.walletTransactionService = walletTransactionService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -171,6 +175,7 @@ public class BetService {
         String traceId = httpRequestLog.getId();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         ResultVo resultVo = null;
+        WalletTransaction walletTransaction;
         try {
             this.doValidation(ordersDto);
 
@@ -187,6 +192,10 @@ public class BetService {
                     BigDecimal doublePlayAmount = ordersDto.getBetAmount().
                             multiply(BigDecimal.valueOf(NiuBetMagnification.NIU_BET_MAGNIFICATION));
                     ordersDto.setAmount(doublePlayAmount);
+                }
+                walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), ordersDto.getExternalTransactionId());
+                if (walletTransaction != null) {
+                    throw new BetResultIdempotentViolationException();
                 }
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
