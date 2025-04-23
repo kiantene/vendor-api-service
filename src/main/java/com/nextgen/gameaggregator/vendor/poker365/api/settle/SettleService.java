@@ -85,7 +85,7 @@ public class SettleService {
         ResultType resultType = vendorService.calculateResultType(dto.getRealBetMoney(), winAmount, dto.getJackpotAmount(), false);
 
         walletRequest.setWinAmount(winAmount);
-        walletRequest.setEffectiveTurnover(dto.getBetAmount().subtract(dto.getWinLoss()));
+        walletRequest.setEffectiveTurnover(dto.getWinAmount().subtract(dto.getWinLoss()));
         walletRequest.setJackpotAmount(dto.getJackpotAmount());
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
