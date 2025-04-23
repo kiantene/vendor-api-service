@@ -5,7 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -26,7 +29,6 @@ public class OrdersDto implements BetResultData {
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
-    @DecimalMin(value = "0.0")
     @JacksonXmlProperty(localName = "amount")
     private BigDecimal amount;
 
@@ -37,7 +39,6 @@ public class OrdersDto implements BetResultData {
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
-    @DecimalMin(value = "0.0")
     @JacksonXmlProperty(localName = "validAmount")
     private BigDecimal validAmount;
 

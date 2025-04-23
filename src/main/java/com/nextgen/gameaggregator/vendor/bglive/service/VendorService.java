@@ -244,8 +244,7 @@ public class VendorService extends BaseVendorService {
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(ordersDto.getVendorBetId());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
-        BigDecimal amount = ordersDto.getAmount().abs();
-        walletRequest.setTransferAmount(amount);
+        walletRequest.setTransferAmount(ordersDto.getBetAmount());
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
     }
 
@@ -266,7 +265,7 @@ public class VendorService extends BaseVendorService {
         ResultType resultType = this.calculateResultType(ordersDto.getBetAmount(), amount, ordersDto.getJackpotAmount(),
                 false);
         walletRequest.setWinAmount(amount);
-        walletRequest.setEffectiveTurnover(ordersDto.getOrderAmount());
+        walletRequest.setEffectiveTurnover(ordersDto.getBetAmount());
         walletRequest.setJackpotAmount(ordersDto.getJackpotAmount());
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());

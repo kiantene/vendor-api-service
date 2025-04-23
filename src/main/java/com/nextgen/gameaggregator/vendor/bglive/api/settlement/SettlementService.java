@@ -7,6 +7,8 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -44,6 +46,9 @@ public class SettlementService {
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
+    private final WalletTransactionService walletTransactionService;
+
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -54,7 +59,7 @@ public class SettlementService {
                              BetActionLogService betActionLogService,
                              RequestIdempotentLogService requestIdempotentLogService,
                              OperatorWalletService operatorWalletService,
-                             WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                             WalletTransactionBetHistoryService walletTransactionBetHistoryService, UnsettledBetCachingService unsettledBetCachingService, WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -65,6 +70,8 @@ public class SettlementService {
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.operatorWalletService = operatorWalletService;
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
+        this.walletTransactionService = walletTransactionService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -169,14 +176,28 @@ public class SettlementService {
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        WalletTransaction walletTransaction;
         String traceId = httpRequestLog.getId();
         BigDecimal balance;
         boolean isRequestExists = false;
         ResultType resultType = null;
-        ResultVo resultVo = null;
+        ResultVo resultVo;
         try {
             this.doValidation(ordersDto);
 
+            //regenerate token
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(ordersDto.getOrderId());
+            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), ordersDto.getExternalTransactionId());
+            if (unsettledBet == null && walletTransaction == null) {
+                throw new BetNotFoundException("Cannot find round Id: " + ordersDto.getRoundId());
+            } else {
+                gameSession = getVendorPlayerId(unsettledBet, walletTransaction);
+
+                gameSessionService.updateByVendorGameCode(gameSession, gameSession.getVendorGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             // Request idempotent checking for this transaction
             if (requestIdempotentLogService.checkExists(ordersDto, paramsDto.getLoginId()) == null) {
                 requestIdempotentLogService.create(ordersDto, paramsDto.getLoginId());
@@ -195,7 +216,7 @@ public class SettlementService {
                 resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
             } else {
                 // Process Result
-                resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount(),
+                resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount().abs(),
                         ordersDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService,
                         httpRequestLog);
@@ -301,6 +322,22 @@ public class SettlementService {
         String tranId = settleDto.getParamsDto().getTranId();
         resultVo.setTranId(tranId != null && !tranId.trim().isEmpty() ? tranId : "null");
         return resultVo;
+    }
+
+    private GameSession getVendorPlayerId(UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
+            InvalidPlayerException,
+            AuthenticationException {
+
+        GameSession gameSession = null;
+        if (unsettledBet != null) {
+            gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
+        }
+
+        if (walletTransaction != null) {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(walletTransaction.getVendorPlayerUsername());
+        }
+
+        return gameSession;
     }
 
 }
