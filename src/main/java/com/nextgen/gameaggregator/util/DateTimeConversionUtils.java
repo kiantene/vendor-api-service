@@ -25,6 +25,11 @@ public class DateTimeConversionUtils {
 
     /**
      * Convert datetime string to Unix timestamp in milliseconds (custom pattern + zone).
+     *
+     * @param datetimeStr the datetime string to convert
+     * @param pattern     the date pattern (e.g. "yyyy-MM-dd HH:mm:ss")
+     * @param zone        the timezone to apply (e.g. ZoneId.of("GMT+0"))
+     * @return the Unix timestamp in milliseconds
      */
     public static long toUnixTimestamp(String datetimeStr, String pattern, ZoneId zone) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern).withZone(zone);
@@ -34,6 +39,9 @@ public class DateTimeConversionUtils {
 
     /**
      * Convert Unix timestamp (milliseconds) to formatted string using default zone and pattern.
+     *
+     * @param timestamp the Unix timestamp to convert (milliseconds or seconds)
+     * @return the formatted date string
      */
     public static String fromUnixTimestamp(long timestamp) {
         return fromUnixTimestamp(timestamp, DEFAULT_PATTERN, DEFAULT_ZONE);
@@ -41,6 +49,11 @@ public class DateTimeConversionUtils {
 
     /**
      * Convert Unix timestamp (milliseconds) to formatted string (custom pattern + zone).
+     *
+     * @param timestamp the Unix timestamp to convert (milliseconds or seconds)
+     * @param pattern   the date pattern (e.g. "yyyy-MM-dd HH:mm:ss")
+     * @param zone      the timezone to apply (e.g. ZoneId.of("GMT+0"))
+     * @return the formatted date string
      */
     public static String fromUnixTimestamp(long timestamp, String pattern, ZoneId zone) {
         ZonedDateTime zonedDateTime = Instant.ofEpochMilli(timestamp).atZone(zone);
