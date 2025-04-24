@@ -9,9 +9,9 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,7 @@ public class CancelSessionBetAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
 
         try {
@@ -60,11 +60,9 @@ public class CancelSessionBetAction {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
-            GameSession gameSession;
-
             try { //this check only verify if it's null, not status = 0
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(dto.getGame()), gameSession);
             } catch (AuthenticationException authenticationException) { //if session expired
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUserId()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(dto.getGame()));
@@ -86,6 +84,9 @@ public class CancelSessionBetAction {
             responseVo.setBalance(balance);
 
         } catch (BetResultIdempotentViolationException e) {
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(e.getBalance());
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
                 responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
@@ -99,6 +100,9 @@ public class CancelSessionBetAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_ROUND_NOT_FOUND);
+            responseVo.setUsername(gameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  InvalidPlayerException |
@@ -123,10 +127,11 @@ public class CancelSessionBetAction {
     }
 
     private void doVerification(CancelSessionBetDto dto, GameSession gameSession)
-            throws CurrencyNotSupportedException, GameNotSupportedException {
+            throws CurrencyNotSupportedException, GameNotSupportedException, BetNotFoundException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
+        VendorService.getBetType(dto.getGame().toString(), "SESSIONBET");
     }
 }

@@ -20,18 +20,19 @@ public class BetNSettleDto extends CommonDto implements BetResultData {
     private String currency;
 
     @NotNull
-    private Integer game;
+    @Digits(integer = 20, fraction = 0)
+    private BigDecimal game;
 
     @NotNull
     @PositiveOrZero
     private BigInteger round;
 
     @NotNull
-    @PositiveOrZero
+    @Positive
     private Long wagersTime;
 
     @NotNull
-    @PositiveOrZero
+    @Positive
     @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 

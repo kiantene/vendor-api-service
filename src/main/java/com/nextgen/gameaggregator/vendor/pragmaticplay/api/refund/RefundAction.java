@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -15,11 +16,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class RefundAction {
@@ -35,22 +35,33 @@ public class RefundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
-    @PostMapping(path = Endpoints.REFUND)
-    public ResponseVo refund(HttpServletRequest request) {
+    public ResponseVo refundRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         RefundVo responseVo = new RefundVo();
         String traceId = httpRequestLog.getId();
         String transactionId = null;
+        RefundDto dto = new RefundDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            RefundDto dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
+            dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            // request Idempotent checking
+            if (requestIdempotentLogService.checkExistsRollback(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.createRollback(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
@@ -127,9 +138,12 @@ public class RefundAction {
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.deleteRollback(dto, dto.getUserId());
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 

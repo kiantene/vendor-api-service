@@ -65,7 +65,7 @@ public class GameSessionService {
         if (status.equals(0)) {
             throw new GameTerminatedException();
         }
-    }   
+    }
 
     @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
     public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
@@ -86,6 +86,9 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession updateSession(GameSession gameSession) {
+        if (gameSession.getId() == null) {
+            gameSession.setId(gameSession.getToken());
+        }
         rawGameSessionRepository.save(gameSession);
         return gameSession;
 
@@ -209,13 +212,13 @@ public class GameSessionService {
 
     }
 
-    @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
-    public GameSession getLastGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
+    @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
+    public GameSession getLastGameSessionByVendorPlayerUsername(String username) {
 
         List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
 
         if (gameSessionList.isEmpty()) {
-            throw new AuthenticationException();
+            return null;
         }
 
         return gameSessionList.stream()
@@ -373,6 +376,15 @@ public class GameSessionService {
         gameSession.setVendorGameId(vendorGame.getId());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorGameCode(vendorGameCode);
+        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+    }
+
+    public void updateByVendorGameId(GameSession gameSession, Integer vendorGameId) throws GameNotSupportedException {
+
+        VendorGame vendorGame = vendorGameService.getByVendorGameId(vendorGameId);
+        gameSession.setVendorGameId(vendorGame.getId());
+        gameSession.setGameCode(vendorGame.getCode());
+        gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
     }
 

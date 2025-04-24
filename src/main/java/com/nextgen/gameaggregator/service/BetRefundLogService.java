@@ -64,7 +64,7 @@ public class BetRefundLogService {
     public RawBetRefundLog checkExistsByRoundId(Long vendorPlayerId, String roundId) {
         return rawBetRefundLogRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
     }
-
+    
     public RawBetRefundLog checkExists(String vendorPlayerId, String vendorGameId, String externalTransactionId) {
         String id = this.generateId(vendorPlayerId, vendorGameId, externalTransactionId);
 

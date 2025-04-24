@@ -81,7 +81,7 @@ public class AcceptService {
     private void updateNewBetAmount(WalletRequest walletRequest, ActionsTransactionDto transactionDto, ActionsWagerInfoDto wagerInfoDto) throws InvalidRequestException {
 
         BigDecimal placeBetBetAmount = walletRequest.getBetAmount();
-        BigDecimal acceptBetBetAmount = wagerInfoDto.getStake();
+        BigDecimal acceptBetBetAmount = wagerInfoDto.getToRisk();
 
         // If the accepted bet amount is different from the placed bet amount, update the new bet amount
         if (Objects.nonNull(acceptBetBetAmount) && acceptBetBetAmount.compareTo(placeBetBetAmount) != 0) {

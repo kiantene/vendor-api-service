@@ -107,4 +107,12 @@ public class CachingService {
         return timestamp;
     }
 
+    @Cacheable(value = "TempSessionToken", key = "{#vendorPlayerUsername, #roundId}", cacheManager = "cacheManager")
+    public String cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(String vendorPlayerUsername, String roundId, String token) {
+        return token;
+    }
+
+    @CacheEvict(value = "TempSessionToken", key = "{#vendorPlayerUsername, #roundId}", cacheManager = "cacheManager")
+    public void deleteTokenByRoundIdAndVendorPlayerUsernameToRedis(String vendorPlayerUsername, String roundId) {
+    }
 }
