@@ -100,7 +100,7 @@ public class SettleService {
             if (gameSession.getVendorPlayerId().equals(26225523)){
                 vo.setM(null);
                 vo.setS(null);
-                vo.setD(d);
+                vo.setD(null);
             }
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {

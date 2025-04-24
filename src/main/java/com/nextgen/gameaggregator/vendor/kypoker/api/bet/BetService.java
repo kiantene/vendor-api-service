@@ -109,7 +109,7 @@ public class BetService {
             if (gameSession.getVendorPlayerId().equals(26225516)){
                 vo.setM(null);
                 vo.setS(null);
-                vo.setD(d);
+                vo.setD(null);
             }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
