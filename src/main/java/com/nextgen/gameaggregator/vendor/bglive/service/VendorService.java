@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -51,7 +52,10 @@ public class VendorService extends BaseVendorService {
     @Autowired
     public VendorService(GameSessionService gameSessionService,
                          UnsettledBetCachingService unsettledBetCachingService,
-                         SettledBetService settledBetService, WalletRequestService walletRequestService, BetActionLogService betActionLogService, WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                         SettledBetService settledBetService,
+                         WalletRequestService walletRequestService,
+                         BetActionLogService betActionLogService,
+                         WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
         this.gameSessionService = gameSessionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.settledBetService = settledBetService;
@@ -75,7 +79,8 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String encryptLoginMd5Key(String random, String snCode, String loginId, String secretCode) throws InvalidFormatException {
+    public static String encryptLoginMd5Key(String random, String snCode, String loginId, String secretCode)
+            throws InvalidFormatException {
         try {
             String combined = random + snCode + loginId + secretCode;
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -90,7 +95,8 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String encryptBetMd5Key(String random, String snCode, String loginId, String amount, String secretCode) throws InvalidFormatException {
+    public static String encryptBetMd5Key(String random, String snCode, String loginId, String amount, String secretCode)
+            throws InvalidFormatException {
         try {
             String combined = random + snCode + loginId + amount + secretCode;
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -207,7 +213,9 @@ public class VendorService extends BaseVendorService {
                 .orElse(null);
     }
 
-    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws InsufficientBalanceException {
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
+            InsufficientBalanceException,
+            DuplicateRequestException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
 
         for (ResultVo resultVo : resultList) {
@@ -215,6 +223,8 @@ public class VendorService extends BaseVendorService {
                 return null;
             } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new InsufficientBalanceException();
+            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) == 0) {
+                throw new DuplicateRequestException();
             }
         }
         // Find the latest process bet event

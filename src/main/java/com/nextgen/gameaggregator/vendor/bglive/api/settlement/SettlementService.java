@@ -187,7 +187,8 @@ public class SettlementService {
 
             //regenerate token
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(ordersDto.getOrderId());
-            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), ordersDto.getExternalTransactionId());
+            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(),
+                    ordersDto.getExternalTransactionId());
             if (unsettledBet == null && walletTransaction == null) {
                 throw new BetNotFoundException("Cannot find round Id: " + ordersDto.getRoundId());
             } else {
@@ -198,6 +199,10 @@ public class SettlementService {
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }
+
+            // add request idempotent check
+            httpService.isDuplicateRequest(ordersDto);
+
             // Request idempotent checking for this transaction
             if (requestIdempotentLogService.checkExists(ordersDto, paramsDto.getLoginId()) == null) {
                 requestIdempotentLogService.create(ordersDto, paramsDto.getLoginId());
@@ -225,11 +230,10 @@ public class SettlementService {
 
         } catch (InsufficientBalanceException |
                  InvalidRequestException |
-                 TransactionStillProcessingException e) {
+                 TransactionStillProcessingException |
+                 BetResultIdempotentViolationException |
+                 DuplicateRequestException e) {
             resultVo = new ResultVo(BigDecimal.ZERO, System.currentTimeMillis());
-            httpService.logError(httpRequestLog, e);
-        } catch (BetResultIdempotentViolationException e) {
-            resultVo = new ResultVo(e.getBalance(), System.currentTimeMillis());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             // do nothing, return null

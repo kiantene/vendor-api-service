@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import jakarta.validation.constraints.Digits;
@@ -15,7 +16,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class OrdersDto implements BetResultData {
+public class OrdersDto implements BetResultData, RequestIdempotency {
 
     @NotBlank
     @Size(max = 255)
@@ -112,5 +113,15 @@ public class OrdersDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public String getTransactionId() {
+        return this.orderId;
+    }
+
+    @Override
+    public String getVendorPlayerUsername() {
+        return this.orderId;
     }
 }
