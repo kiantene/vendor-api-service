@@ -15,6 +15,7 @@ public class CancelSessionBetDto implements RollbackData {
 
     @NotBlank
     @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String reqId;
 
     @NotBlank
@@ -24,7 +25,8 @@ public class CancelSessionBetDto implements RollbackData {
 
     @NotNull
     @Positive
-    private Integer game;
+    @Digits(integer = 20, fraction = 0)
+    private BigDecimal game;
 
     @NotNull
     @Positive

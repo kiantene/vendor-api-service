@@ -45,6 +45,8 @@ public class WagerAction {
     private VendorService vendorService;
     @Autowired
     private BetRefundLogService betRefundLogService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = EndPoints.WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -89,6 +91,8 @@ public class WagerAction {
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
+
+            cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(gameSession.getVendorPlayerUsername(), dto.getRoundId(), gameSession.getToken());
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);

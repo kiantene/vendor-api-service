@@ -5,6 +5,7 @@ public class Endpoints {
     public static final String PING = "/ping";
     public static final String PLAYER_CREATE = "/player/create";
     public static final String PLAYER_LOGIN = "/player/login";
+    public static final String PLAYER_LOGIN_V2 = "/player/loginV2";
     public static final String REPORT_WAGERS = "/report/wagers";
     public static final String REPORT_ALL_WAGERS = "/report/all-wagers";
     public static final String MY_BETS_FULL = "/player/account/my-bets-full";

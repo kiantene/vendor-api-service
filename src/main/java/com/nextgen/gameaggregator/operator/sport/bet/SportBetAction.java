@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,6 +65,8 @@ public class SportBetAction {
 
             AtomicBoolean isTimeout = new AtomicBoolean(false);
 
+            int timeoutTiming = Optional.ofNullable(walletRequest.getOperatorTimeoutTiming()).orElse(EndPoints.TIMEOUT);
+
             ResponseEntity<String> response = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_BET)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
@@ -73,7 +76,7 @@ public class SportBetAction {
                     .retrieve()
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(timeoutTiming))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
                         return Mono.error(e);

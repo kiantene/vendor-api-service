@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.exception;
 
 public class BetNotFoundException extends Exception {
+
     public BetNotFoundException() {
         super();
     }

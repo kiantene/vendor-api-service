@@ -92,6 +92,9 @@ public class WalletRequest {
     private BigDecimal fromVendorRate;
     private BigDecimal toVendorRate;
 
+    //call operator timeout timing
+    private Integer operatorTimeoutTiming;
+
     public WalletRequest() {
         this.init(UUID.randomUUID().toString());
     }

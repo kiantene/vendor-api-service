@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;
@@ -106,7 +105,6 @@ public class VendorService extends BaseVendorService {
 
     @Cacheable(value = "Vendors", key = "{#agent.id, #language.id, #currency.id}", cacheManager = "cacheManager")
     public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent, Currency currency) {
-
         return vendorReaderRepository.findByAgentSupportedVendorAndStatusAndCurrency(
                 agent.getId(), currency.getId(), language.getId(), Status.ACTIVE.code);
     }

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core;
 
 import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RequestIdempotentLogRepository;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,10 +27,29 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
+    public String generateRollbackRequestIdempotentLogId(RollbackData rollbackData, String vendorPlayerUsername) {
+        String externalTransactionId = (rollbackData.getRollbackId() == null) ? "" : rollbackData.getRollbackId();
+        vendorPlayerUsername = (vendorPlayerUsername == null) ? "" : vendorPlayerUsername;
+
+        return "rollback_" + externalTransactionId + "_" + vendorPlayerUsername;
+    }
+
+    @Override
     @CacheEvict(value = "RequestIdempotentLog", key = "{#betResultData.externalTransactionId, #vendorPlayerUsername}", cacheManager = "cacheManager")
     public void delete(BetResultData betResultData, String vendorPlayerUsername) {
         try {
             String id = this.generateRequestIdempotentLogId(betResultData, vendorPlayerUsername);
+            requestIdempotentLogRepository.deleteById(id);
+        } catch (Exception e) {
+            // Handle exception for document not found, but do nothing
+        }
+    }
+
+    @Override
+    @CacheEvict(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager")
+    public void deleteRollback(RollbackData rollbackData, String vendorPlayerUsername) {
+        try {
+            String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
             requestIdempotentLogRepository.deleteById(id);
         } catch (Exception e) {
             // Handle exception for document not found, but do nothing
@@ -45,9 +65,27 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
+    @Cacheable(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
+    public RequestIdempotentLog checkExistsRollback(RollbackData rollbackData, String vendorPlayerUsername) throws TransactionStillProcessingException {
+        String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
+        return requestIdempotentLogRepository.findById(id).orElse(null);
+    }
+
+    @Override
     @CachePut(value = "RequestIdempotentLog", key = "{#betResultData.externalTransactionId, #vendorPlayerUsername}", cacheManager = "cacheManager")
     public RequestIdempotentLog create(BetResultData betResultData, String vendorPlayerUsername) {
         String id = this.generateRequestIdempotentLogId(betResultData, vendorPlayerUsername);
+        RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
+        createRequestIdempotentLog.setId(id);
+        createRequestIdempotentLog.setCreateTime(System.currentTimeMillis());
+        requestIdempotentLogRepository.save(createRequestIdempotentLog);
+        return createRequestIdempotentLog;
+    }
+
+    @Override
+    @CachePut(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager")
+    public RequestIdempotentLog createRollback(RollbackData rollbackData, String vendorPlayerUsername) {
+        String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
         RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
         createRequestIdempotentLog.setId(id);
         createRequestIdempotentLog.setCreateTime(System.currentTimeMillis());

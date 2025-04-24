@@ -14,4 +14,11 @@ import java.util.List;
 @Setter
 public class VendorService extends BaseVendorService {
     private List<UnsettledBet> vendorClassFileUnsettledBetList;
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        //mg vendor timeout is 4000, and given 500 buffer timing, then defaultTiming would be 3500.
+        Integer operatorDefaultTiming = 3500;
+        return operatorDefaultTiming;
+    }
 }
