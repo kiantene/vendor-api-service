@@ -60,4 +60,18 @@ public class DateTimeConversionUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return formatter.format(zonedDateTime);
     }
+
+    /**
+     * Normalize a Unix timestamp to milliseconds.
+     * Automatically detects whether the input is in seconds or milliseconds.
+     *
+     * @param timestamp the input timestamp (in seconds or milliseconds)
+     * @return timestamp converted to milliseconds
+     */
+    public static long normalizeToMilliseconds(long timestamp) {
+        // Seconds usually have 10 digits; anything shorter is definitely seconds
+        // Add an extra safety check: timestamps < year 2000 are considered seconds
+        long absTimestamp = Math.abs(timestamp);
+        return (absTimestamp < 1_000_000_000_000L) ? timestamp * 1000 : timestamp;
+    }
 }
