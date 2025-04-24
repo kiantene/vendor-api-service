@@ -97,6 +97,12 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
 
+            if (gameSession.getVendorPlayerId().equals(26225523)){
+                vo.setM(null);
+                vo.setS(null);
+                vo.setD(d);
+            }
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(9);
