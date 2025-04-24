@@ -106,6 +106,11 @@ public class BetService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+            if (gameSession.getVendorPlayerId().equals(26225516)){
+                vo.setM(null);
+                vo.setS(null);
+                vo.setD(d);
+            }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             ResponseObjectDto d = new ResponseObjectDto();
