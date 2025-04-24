@@ -1,12 +1,13 @@
-package com.nextgen.gameaggregator.vendor.marblex.dto;
+package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public class CommonRefundDto extends CommonDto implements SportRefundData {
+public class RefundDto extends CommonDto implements SportRefundData {
     @NotBlank
     @Size(max = 255)
     @JsonProperty("RoundID")

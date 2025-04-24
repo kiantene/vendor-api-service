@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
-import com.nextgen.gameaggregator.vendor.marblex.dto.CommonRefundDto;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,21 +40,21 @@ public class RefundService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         CommonVo commonVo = new CommonVo();
-        CommonRefundDto commonRefundDto = new CommonRefundDto();
+        RefundDto refundDto = new RefundDto();
         GameSession gameSession = new GameSession();
 
         try {
-            commonRefundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CommonRefundDto.class);
+            refundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RefundDto.class);
 
-            ValidationUtils.validateRequest(commonRefundDto);
+            ValidationUtils.validateRequest(refundDto);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonRefundDto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
 
-            vendorService.doVerification(commonRefundDto, gameSession, false);
+            vendorService.doVerification(refundDto, gameSession, false);
 
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
-            vendorService.doDataMapper(walletRequest, commonRefundDto);
+            vendorService.doDataMapper(walletRequest, refundDto);
 
             walletRequest = sportWalletService.refund(walletRequest);
 
@@ -82,7 +81,7 @@ public class RefundService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            commonVo.setTraceId(commonRefundDto.getTraceId());
+            commonVo.setTraceId(refundDto.getTraceId());
             httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;

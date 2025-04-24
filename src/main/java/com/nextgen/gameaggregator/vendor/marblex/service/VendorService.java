@@ -6,9 +6,10 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelDto;
+import com.nextgen.gameaggregator.vendor.marblex.api.refund.RefundDto;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.marblex.dto.CommonRefundDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,9 +76,17 @@ public class VendorService extends BaseVendorService {
         walletRequest.setBetStatus(sportBetResultData.getBetStatus());
     }
 
-    public void doDataMapper(WalletRequest walletRequest, CommonRefundDto commonRefundDto) {
-        walletRequest.setExternalTransactionId(commonRefundDto.getExternalTransactionId());
-        walletRequest.setVendorBetId(commonRefundDto.getVendorBetId());
-        walletRequest.setVendorPlayerUsername(commonRefundDto.getVendorPlayerUsername());
+    public void doDataMapper(WalletRequest walletRequest, RefundDto refundDto) {
+        walletRequest.setExternalTransactionId(refundDto.getExternalTransactionId());
+        walletRequest.setVendorBetId(refundDto.getVendorBetId());
+        walletRequest.setRoundId(refundDto.getRoundId());
+        walletRequest.setVendorPlayerUsername(refundDto.getVendorPlayerUsername());
+    }
+
+    public void doDataMapper(WalletRequest walletRequest, CancelDto cancelDto) {
+        walletRequest.setExternalTransactionId(cancelDto.getExternalTransactionId());
+        walletRequest.setVendorBetId(cancelDto.getVendorBetId());
+        walletRequest.setRoundId(cancelDto.getRoundId());
+        walletRequest.setVendorPlayerUsername(cancelDto.getVendorPlayerUsername());
     }
 }

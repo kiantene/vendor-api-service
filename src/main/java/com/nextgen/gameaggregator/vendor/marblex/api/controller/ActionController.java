@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.marblex.api.controller;
 
 import com.nextgen.gameaggregator.vendor.marblex.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelService;
 import com.nextgen.gameaggregator.vendor.marblex.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.marblex.api.resettle.ResettleService;
 import com.nextgen.gameaggregator.vendor.marblex.api.result.ResultService;
@@ -23,15 +24,17 @@ public class ActionController {
     public final ResultService resultService;
     public final ResettleService resettleService;
     public final RefundService refundService;
+    public final CancelService cancelService;
 
     @Autowired
     public ActionController(BalanceService balanceService, BetService betService, ResultService resultService,
-                            ResettleService resettleService, RefundService refundService) {
+                            ResettleService resettleService, RefundService refundService, CancelService cancelService) {
         this.balanceService = balanceService;
         this.betService = betService;
         this.resultService = resultService;
         this.resettleService = resettleService;
         this.refundService = refundService;
+        this.cancelService = cancelService;
     }
 
     @PostMapping(path = EndPoints.BALANCE)
@@ -61,7 +64,7 @@ public class ActionController {
 
     @PostMapping(path = EndPoints.VOID)
     public CommonVo voidBet(HttpServletRequest request) {
-        return this.refundService.refund(request);
+        return this.cancelService.cancel(request);
     }
 
 
