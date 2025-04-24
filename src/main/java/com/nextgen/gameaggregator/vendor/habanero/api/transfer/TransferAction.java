@@ -150,7 +150,6 @@ public class TransferAction {
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
             //return invalid respond 503 to trigger vendor resend when record still in processing
             httpStatus = HttpStatus.SC_SERVICE_UNAVAILABLE;

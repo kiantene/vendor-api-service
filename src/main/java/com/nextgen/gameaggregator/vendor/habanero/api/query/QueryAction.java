@@ -91,8 +91,9 @@ public class QueryAction {
             httpService.logError(httpRequestLog, generalException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            //return invalid respond to trigger vendor resend when record still in processing
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+            //return invalid respond 503 to trigger vendor resend when record still in processing
+            httpStatus = HttpStatus.SC_SERVICE_UNAVAILABLE;
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -110,12 +111,6 @@ public class QueryAction {
             }
             httpService.end(httpRequestLog, responseVo);
 
-        }
-
-        if (responseVo.getFundTransferResponseVo().getStatusVo().getRetryStatus() != null) {
-            //return invalid respond 503 to trigger vendor resend when record still in processing
-            responseVo = null;
-            httpStatus = HttpStatus.SC_SERVICE_UNAVAILABLE;
         }
 
         return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
