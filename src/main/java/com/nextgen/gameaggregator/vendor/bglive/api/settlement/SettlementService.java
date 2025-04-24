@@ -77,6 +77,9 @@ public class SettlementService {
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
         CommonVo commonVo = new CommonVo();
         ExecutorService executor = null;
+        GameSession gameSession;
+        String traceId = httpRequestLog.getId();
+        WalletTransaction walletTransaction;
         try {
 //            Thread.sleep(10000);
             String body = httpRequestLog.getRequestBody();
@@ -84,7 +87,15 @@ public class SettlementService {
             int orderCount = settleDto.getParamsDto().getOrders().size();
             executor = vendorService.createThreadPool(orderCount);
             this.doValidation(settleDto);
-            GameSession gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
+            try {
+                gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
+
+            } catch (AuthenticationException authenticationException) {
+                //regenerate token
+                gameSession = regenerateSession(settleDto, traceId);
+
+            }
+
             this.doVerification(settleDto, gameSession);
 
             List<CompletableFuture<ResultVo>> balanceList = this.processAllOrders(settleDto, request, gameSession,
@@ -176,7 +187,6 @@ public class SettlementService {
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        WalletTransaction walletTransaction;
         String traceId = httpRequestLog.getId();
         BigDecimal balance;
         boolean isRequestExists = false;
@@ -184,21 +194,6 @@ public class SettlementService {
         ResultVo resultVo;
         try {
             this.doValidation(ordersDto);
-
-            //regenerate token
-            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(ordersDto.getOrderId());
-            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(),
-                    ordersDto.getExternalTransactionId());
-            if (unsettledBet == null && walletTransaction == null) {
-                throw new BetNotFoundException("Cannot find round Id: " + ordersDto.getRoundId());
-            } else {
-                gameSession = getVendorPlayerId(unsettledBet, walletTransaction);
-
-                gameSessionService.updateByVendorGameCode(gameSession, gameSession.getVendorGameCode());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
 
             // add request idempotent check
             httpService.isDuplicateRequest(ordersDto);
@@ -344,4 +339,37 @@ public class SettlementService {
         return gameSession;
     }
 
+    private GameSession regenerateSession(SettleDto settleDto, String traceId) throws
+            BetNotFoundException,
+            InvalidPlayerException,
+            AuthenticationException,
+            GameNotSupportedException,
+            VendorCurrencyNotSupportException {
+
+        String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
+        String loginId = settleDto.getParamsDto().getLoginId();
+        GameSession session;
+
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
+        WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, loginId);
+
+        if (unsettledBet == null && walletTransaction == null) {
+            throw new BetNotFoundException("Cannot find round Id: " + roundId);
+        }
+
+        session = getVendorPlayerId(unsettledBet, walletTransaction);
+
+        if (session == null) {
+            session = gameSessionService.generateNewSessionToken(loginId);
+        }
+
+        if (unsettledBet != null) {
+            gameSessionService.updateByVendorGameId(session, unsettledBet.getVendorGameId());
+        }
+        gameSessionService.updateByVendorCurrencyId(session);
+        session.setToken(traceId);
+        session.setVendorToken(traceId);
+
+        return session;
+    }
 }
