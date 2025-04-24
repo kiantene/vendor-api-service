@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -78,14 +79,14 @@ public class BetNSettleAction {
                     //Bet
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betNSettleDto, body, httpRequestLog);
                     balance = betEvent.getLastBalance();
-                    betNSettleVo.setBalance(balance);
+                    betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
                     break;
 
                 case "deposit":
                     //Settle
-                    ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), false);
+                    ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
                     balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
-                    betNSettleVo.setBalance(balance);
+                    betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
                     break;
 
                 default:
@@ -94,7 +95,7 @@ public class BetNSettleAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            betNSettleVo.setBalance(e.getBalance());
+            betNSettleVo.setBalance(e.getBalance().setScale(2, RoundingMode.DOWN));
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             betNSettleVo.setError(new ErrorVo());
