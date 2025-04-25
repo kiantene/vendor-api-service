@@ -4,7 +4,6 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
@@ -187,7 +186,7 @@ public class SettlementService {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
-        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        WalletRequest walletRequest = null;
         String traceId = httpRequestLog.getId();
         BigDecimal balance;
         boolean isRequestExists = false;
@@ -208,7 +207,7 @@ public class SettlementService {
             if (isBullBullGame) {
                 // add request idempotent check
                 httpService.isDuplicateRequest(ordersDto);
-                
+
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);

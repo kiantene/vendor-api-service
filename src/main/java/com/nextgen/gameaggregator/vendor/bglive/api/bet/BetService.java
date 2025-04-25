@@ -44,6 +44,7 @@ public class BetService {
     private final BetActionLogService betActionLogService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
+    private final WalletRequestService walletRequestService;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -53,7 +54,8 @@ public class BetService {
                       VendorService vendorService,
                       BetActionLogService betActionLogService,
                       OperatorWalletService operatorWalletService,
-                      WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                      WalletTransactionBetHistoryService walletTransactionBetHistoryService,
+                      WalletRequestService walletRequestService) {
 
         this.httpService = httpService;
         this.walletService = walletService;
@@ -64,6 +66,7 @@ public class BetService {
         this.betActionLogService = betActionLogService;
         this.operatorWalletService = operatorWalletService;
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
+        this.walletRequestService = walletRequestService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -169,8 +172,8 @@ public class BetService {
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
         httpRequestLog.setRequestBody(new Gson().toJson(ordersDto));
         String traceId = httpRequestLog.getId();
-        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         ResultVo resultVo = null;
+        WalletRequest walletRequest = null;
         try {
             this.doValidation(ordersDto);
 
@@ -181,6 +184,7 @@ public class BetService {
             }
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
             if (isBullBullGame) {
+                walletRequest = WalletRequestService.init(httpRequestLog);
                 boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(ordersDto.getPlayId()));
                 if (isDoublePlay) {
                     BigDecimal doublePlayAmount = ordersDto.getBetAmount().
@@ -217,6 +221,9 @@ public class BetService {
             }
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
+                walletRequestService.end(walletRequest, httpRequestLog, new CommonVo());
+            }
             httpService.end(httpRequestLog, new CommonVo());
         }
         return resultVo;
