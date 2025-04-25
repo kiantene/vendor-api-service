@@ -120,6 +120,6 @@ public class OrdersDto implements BetResultData, RequestIdempotency {
 
     @Override
     public String getVendorPlayerUsername() {
-        return this.getOrderId();
+        return this.getIssueId();
     }
 }

@@ -196,9 +196,6 @@ public class SettlementService {
         try {
             this.doValidation(ordersDto);
 
-            // add request idempotent check
-            httpService.isDuplicateRequest(ordersDto);
-
             // Request idempotent checking for this transaction
             if (requestIdempotentLogService.checkExists(ordersDto, paramsDto.getLoginId()) == null) {
                 requestIdempotentLogService.create(ordersDto, paramsDto.getLoginId());
@@ -209,6 +206,9 @@ public class SettlementService {
 
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
             if (isBullBullGame) {
+                // add request idempotent check
+                httpService.isDuplicateRequest(ordersDto);
+                
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
