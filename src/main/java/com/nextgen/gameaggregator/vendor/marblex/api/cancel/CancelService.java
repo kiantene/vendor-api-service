@@ -4,9 +4,11 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,18 +42,42 @@ public class CancelService {
             cancelDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CancelDto.class);
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelDto.getPlayerId());
+
             vendorService.doVerification(cancelDto, gameSession, false);
+
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
             vendorService.doDataMapper(walletRequest, cancelDto);
             walletRequest = sportWalletService.unsettle(walletRequest);
+
             vendorService.doDataMapper(walletRequest, cancelDto);
             walletRequest = sportWalletService.refund(walletRequest);
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
+        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
+            httpService.logError(httpRequestLog, exception);
+        } catch (
+                InvalidRequestException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, exception);
+        } catch (
+                InvalidOperatorResponseException exception) {
+            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+        } catch (BetResultIdempotentViolationException exception) {
+            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
+            httpService.logError(httpRequestLog, exception);
+        } catch (BetNotFoundException exception) {
+            commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, exception);
+        } catch (Exception exception) {
+            commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
+            httpService.logError(httpRequestLog, exception);
+        } finally {
+            commonVo.setTraceId(cancelDto.getTraceId());
+            httpService.end(httpRequestLog, commonVo);
+        }
 
         return commonVo;
     }
