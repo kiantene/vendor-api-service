@@ -85,7 +85,7 @@ public class VendorService extends BaseVendorService {
 
     public void doDataMapper(WalletRequest walletRequest, CancelDto cancelDto) {
         if (cancelDto.getExternalTransactionId().equals(walletRequest.getExternalTransactionId())) {
-            walletRequest.setExternalTransactionId(walletRequest.getTraceId());
+            walletRequest.setExternalTransactionId(cancelDto.getTraceId());
         } else {
             walletRequest.setExternalTransactionId(cancelDto.getExternalTransactionId());
         }
