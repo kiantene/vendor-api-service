@@ -4,6 +4,7 @@ package com.nextgen.gameaggregator.vendor.bglive.api.settlement;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
@@ -47,7 +48,7 @@ public class SettlementService {
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final WalletTransactionService walletTransactionService;
-
+    private final WalletRequestService walletRequestService;
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -60,7 +61,8 @@ public class SettlementService {
                              OperatorWalletService operatorWalletService,
                              WalletTransactionBetHistoryService walletTransactionBetHistoryService,
                              UnsettledBetCachingService unsettledBetCachingService,
-                             WalletTransactionService walletTransactionService) {
+                             WalletTransactionService walletTransactionService,
+                             WalletRequestService walletRequestService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -73,6 +75,7 @@ public class SettlementService {
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.walletTransactionService = walletTransactionService;
+        this.walletRequestService = walletRequestService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -205,6 +208,7 @@ public class SettlementService {
 
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
             if (isBullBullGame) {
+                walletRequest = WalletRequestService.init(httpRequestLog);
                 // add request idempotent check
                 httpService.isDuplicateRequest(ordersDto);
 
@@ -245,6 +249,9 @@ public class SettlementService {
             if (!isRequestExists) {
                 // first request (not request exist) will delete log after process finish.
                 requestIdempotentLogService.delete(ordersDto, paramsDto.getLoginId());
+            }
+            if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
+                walletRequestService.end(walletRequest, httpRequestLog, new CommonVo());
             }
             httpService.end(httpRequestLog, new CommonVo());
         }
