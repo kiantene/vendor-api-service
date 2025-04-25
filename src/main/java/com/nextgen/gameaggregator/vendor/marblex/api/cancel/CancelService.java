@@ -45,6 +45,7 @@ public class CancelService {
 
             vendorService.doDataMapper(walletRequest, cancelDto);
             walletRequest = sportWalletService.unsettle(walletRequest);
+            vendorService.doDataMapper(walletRequest, cancelDto);
             walletRequest = sportWalletService.refund(walletRequest);
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
         } catch (Exception e) {
