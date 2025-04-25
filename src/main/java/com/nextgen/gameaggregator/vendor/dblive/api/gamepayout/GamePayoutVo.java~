@@ -1,0 +1,8 @@
+package com.nextgen.gameaggregator.vendor.dblive.api.gamepayout;
+
+import lombok.Data;
+
+@Data
+public class GamePayoutVo {
+    
+}
