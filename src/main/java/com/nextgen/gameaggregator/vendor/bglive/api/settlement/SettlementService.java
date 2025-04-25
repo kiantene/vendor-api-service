@@ -59,7 +59,9 @@ public class SettlementService {
                              BetActionLogService betActionLogService,
                              RequestIdempotentLogService requestIdempotentLogService,
                              OperatorWalletService operatorWalletService,
-                             WalletTransactionBetHistoryService walletTransactionBetHistoryService, UnsettledBetCachingService unsettledBetCachingService, WalletTransactionService walletTransactionService) {
+                             WalletTransactionBetHistoryService walletTransactionBetHistoryService,
+                             UnsettledBetCachingService unsettledBetCachingService,
+                             WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -79,7 +81,6 @@ public class SettlementService {
         ExecutorService executor = null;
         GameSession gameSession;
         String traceId = httpRequestLog.getId();
-        WalletTransaction walletTransaction;
         try {
 //            Thread.sleep(10000);
             String body = httpRequestLog.getRequestBody();

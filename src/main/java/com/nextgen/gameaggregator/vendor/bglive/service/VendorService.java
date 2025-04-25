@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -211,11 +210,12 @@ public class VendorService extends BaseVendorService {
                 .max(Comparator.comparing(ResultVo::getTimestamp))
                 .map(ResultVo::getAvailableAmount)
                 .orElse(null);
+        
     }
 
     public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
-            InsufficientBalanceException,
-            DuplicateRequestException {
+            InsufficientBalanceException {
+
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
 
         for (ResultVo resultVo : resultList) {
@@ -223,8 +223,6 @@ public class VendorService extends BaseVendorService {
                 return null;
             } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) < 0) {
                 throw new InsufficientBalanceException();
-            } else if (resultVo.getAvailableAmount().compareTo(BigDecimal.ZERO) == 0) {
-                throw new DuplicateRequestException();
             }
         }
         // Find the latest process bet event
