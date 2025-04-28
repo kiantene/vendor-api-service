@@ -160,13 +160,13 @@ public class TransferAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            if (!isRequestExists.get()) {
-                assert transferDto != null;
+            if (transferDto != null && !isRequestExists.get()) {
                 for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
 
                     requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
                 }
             }
+
 
             httpService.end(httpRequestLog, responseVo);
 
