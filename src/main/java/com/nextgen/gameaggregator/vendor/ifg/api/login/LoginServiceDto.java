@@ -19,7 +19,7 @@ public class LoginServiceDto {
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z?")
+    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{5,6}Z?")
     private String time;
 
     @JacksonXmlProperty(localName = "enter")
