@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
@@ -18,6 +19,8 @@ import java.util.Base64;
 
 @Service
 public class VendorService extends BaseVendorService {
+
+    private static final ObjectMapper objectMapper = null;
 
     public static void verifySignature(String param, String md5Key, String signature) throws InvalidSignatureException {
         String md5Signature = getMD5(param + md5Key);
@@ -60,5 +63,11 @@ public class VendorService extends BaseVendorService {
 
     public static BigDecimal convertDecimal(BigDecimal amount) {
         return amount.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE);
+    }
+
+    public static <T> String getMD5(T requestObject, String md5Key) throws JsonProcessingException {
+        String input = objectMapper.writeValueAsString(requestObject) + md5Key;
+        // Validation with custom exception
+        return DigestUtils.md5Hex(input).toUpperCase();
     }
 }

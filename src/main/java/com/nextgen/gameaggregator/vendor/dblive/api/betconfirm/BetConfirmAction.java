@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.betconfirm;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -32,18 +31,16 @@ public class BetConfirmAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final ValidationService validationService;
-    private final ObjectMapper objectMapper;
     private final VendorService vendorService;
 
     public BetConfirmAction(HttpService httpService, VendorLineService vendorLineService,
                             GameSessionService gameSessionService,
-                            WalletService walletService, ValidationService validationService, ObjectMapper objectMapper, VendorService vendorService) {
+                            WalletService walletService, ValidationService validationService, VendorService vendorService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
-        this.objectMapper = objectMapper;
         this.vendorService = vendorService;
     }
 
@@ -95,7 +92,7 @@ public class BetConfirmAction {
             betConfirmDataVo.setBalance(convertDecimal(balance));
 
             //MD5 betConfirmDataVo to signature
-            String signature = generateSignature(betConfirmDataVo, md5Key);
+            String signature = VendorService.getMD5(betConfirmDataVo, md5Key);
             vo.setResponseSuccess(betConfirmDataVo, signature);
 
             if (vendorPlayerUsername.equals("1e905ywkv93b")) {
@@ -132,10 +129,6 @@ public class BetConfirmAction {
     private <T> void doValidation(T requestObject) throws InvalidRequestException {
         // Validation with custom exception
         ValidationUtils.validateRequest(requestObject);
-    }
-
-    private String generateSignature(BetConfirmDataVo betConfirmDataVo, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(betConfirmDataVo) + md5Key);
     }
 
     private void doVerification(BetConfirmDto betConfirmDto, GameSession gameSession, String vendorPlayerUsername) throws

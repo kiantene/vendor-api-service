@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.activitypayout;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -32,7 +31,6 @@ public class ActivityPayoutAction {
     private final GameSessionService gameSessionService;
     private final ValidationService validationService;
     private final WalletService walletService;
-    private final ObjectMapper objectMapper;
 
     public ActivityPayoutAction(HttpService httpService, VendorLineService vendorLineService,
                                 VendorService vendorService, GameSessionService gameSessionService,
@@ -43,7 +41,6 @@ public class ActivityPayoutAction {
         this.gameSessionService = gameSessionService;
         this.validationService = validationService;
         this.walletService = walletService;
-        this.objectMapper = new ObjectMapper();
     }
 
     @PostMapping(path = EndPoints.ACTIVITY_PAYOUT)
@@ -72,7 +69,7 @@ public class ActivityPayoutAction {
 
             ActivityPayoutDataVo payoutDataVo = processPayoutByType(commonDto, gameSession, traceId, httpRequestLog);
 
-            String signature = generateSignature(payoutDataVo, md5Key);
+            String signature = VendorService.getMD5(payoutDataVo, md5Key);
             responseVo.setResponseSuccess(payoutDataVo, signature);
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCodes.BET_NOT_FOUND);
@@ -99,7 +96,7 @@ public class ActivityPayoutAction {
             String signature = "";
 
             try {
-                signature = generateSignature(payoutDataVo, md5Key);
+                signature = VendorService.getMD5(payoutDataVo, md5Key);
                 responseVo.setResponseSuccess(payoutDataVo, signature);
             } catch (JsonProcessingException ex) {
                 responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
@@ -168,10 +165,6 @@ public class ActivityPayoutAction {
                 (rollbackDto, gameSession, vendorService, httpRequestLog);
 
         payoutDataVo.setBalance(walletRequest.getBalanceAfter().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
-    }
-
-    private String generateSignature(ActivityPayoutDataVo payoutDataVo, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(payoutDataVo) + md5Key);
     }
 
     private <T> void doValidation(T requestObject) throws InvalidRequestException {

@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.gamepayout;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -38,12 +37,11 @@ public class GamePayoutAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final WalletAdjustmentService walletAdjustmentService;
-    private final ObjectMapper objectMapper;
 
     public GamePayoutAction(HttpService httpService, VendorLineService vendorLineService,
                             AgentPlayerService agentPlayerService, VendorGameService vendorGameService,
                             GameSessionService gameSessionService, WalletService walletService,
-                            VendorService vendorService, WalletAdjustmentService walletAdjustmentService, ObjectMapper objectMapper) {
+                            VendorService vendorService, WalletAdjustmentService walletAdjustmentService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -52,7 +50,6 @@ public class GamePayoutAction {
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletAdjustmentService = walletAdjustmentService;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping(path = EndPoints.GAME_PAYOUT)
@@ -116,7 +113,7 @@ public class GamePayoutAction {
             gamePayoutDataVo.setRealAmount(gamePayoutParamDto.getPayoutAmount());
             gamePayoutDataVo.setBadAmount(BigDecimal.ZERO);
 
-            String signature = generateSignature(gamePayoutDataVo, md5Key);
+            String signature = VendorService.getMD5(gamePayoutDataVo, md5Key);
             responseVo.setResponseSuccess(gamePayoutDataVo, signature);
         } catch (InvalidOperatorResponseException |
                  DisabledVendorLineException |
@@ -140,7 +137,7 @@ public class GamePayoutAction {
             String signature = "";
 
             try {
-                signature = generateSignature(gamePayoutDataVo, md5Key);
+                signature = VendorService.getMD5(gamePayoutDataVo, md5Key);
                 responseVo.setResponseSuccess(gamePayoutDataVo, signature);
             } catch (JsonProcessingException ex) {
                 responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
@@ -166,10 +163,6 @@ public class GamePayoutAction {
     private <T> void doValidation(T requestObject) throws InvalidRequestException {
         // Validation with custom exception
         ValidationUtils.validateRequest(requestObject);
-    }
-
-    private String generateSignature(GamePayoutDataVo gamePayoutDataVo, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(gamePayoutDataVo) + md5Key);
     }
 
     private void doVerification(CommonDto gamePayoutDto, GameSession gameSession, String vendorPlayerUsername) throws

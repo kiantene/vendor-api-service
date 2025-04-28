@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.balance;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -33,18 +31,16 @@ public class BalanceAction {
     private final VendorGameService vendorGameService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final ObjectMapper objectMapper;
 
     public BalanceAction(HttpService httpService, VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService, VendorGameService vendorGameService,
-                         GameSessionService gameSessionService, WalletService walletService, ObjectMapper objectMapper) {
+                         GameSessionService gameSessionService, WalletService walletService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping(path = EndPoints.BALANCE)
@@ -83,7 +79,7 @@ public class BalanceAction {
             balanceDataVo.setLoginName(balanceParamsDto.getLoginName());
             balanceDataVo.setBalance(convertDecimal(balance));
 
-            String signature = generateSignature(balanceDataVo, md5Key);
+            String signature = VendorService.getMD5(balanceDataVo, md5Key);
             responseVo.setResponseSuccess(balanceDataVo, signature);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
@@ -112,10 +108,6 @@ public class BalanceAction {
     private <T> void doValidation(T requestObject) throws InvalidRequestException {
         // Validation with custom exception
         ValidationUtils.validateRequest(requestObject);
-    }
-
-    private String generateSignature(BalanceDataVo balanceDataVo, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(balanceDataVo) + md5Key);
     }
 
     private void doVerification(CommonDto balanceDto, GameSession gameSession, String vendorPlayerUsername) throws

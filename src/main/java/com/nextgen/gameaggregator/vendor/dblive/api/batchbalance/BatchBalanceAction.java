@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.batchbalance;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -39,15 +37,13 @@ public class BatchBalanceAction {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final ObjectMapper objectMapper;
 
     public BatchBalanceAction(HttpService httpService, VendorLineService vendorLineService,
-                              GameSessionService gameSessionService, WalletService walletService, ObjectMapper objectMapper) {
+                              GameSessionService gameSessionService, WalletService walletService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping(path = EndPoints.BATCH_BALANCE)
@@ -79,7 +75,7 @@ public class BatchBalanceAction {
             String md5Key = vendorLineService.getCredentialValueByName
                     (gameSession.getVendorLineId(), Credentials.SEAMLESS_MD5_KEY);
 
-            String signature = generateSignature(balanceDataList, md5Key);
+            String signature = VendorService.getMD5(balanceDataList, md5Key);
             responseVo.setResponseSuccess(balanceDataList, signature);
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
@@ -137,10 +133,6 @@ public class BatchBalanceAction {
     private <T> void doValidation(T requestObject) throws InvalidRequestException {
         // Validation with custom exception
         ValidationUtils.validateRequest(requestObject);
-    }
-
-    private String generateSignature(List<BatchBalanceDataVo> batchBalanceDataVos, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(batchBalanceDataVos) + md5Key);
     }
 
     private void doVerification(CommonDto batchBalanceDto, GameSession gameSession) throws CredentialNotFoundException, InvalidSignatureException {

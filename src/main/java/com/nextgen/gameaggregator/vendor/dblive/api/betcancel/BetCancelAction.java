@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.betcancel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -31,11 +30,10 @@ public class BetCancelAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final VendorLineService vendorLineService;
-    private final ObjectMapper objectMapper;
 
     public BetCancelAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
                            VendorService vendorService, AgentPlayerService agentPlayerService,
-                           VendorGameService vendorGameService, VendorLineService vendorLineService, ObjectMapper objectMapper) {
+                           VendorGameService vendorGameService, VendorLineService vendorLineService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -43,7 +41,6 @@ public class BetCancelAction {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorLineService = vendorLineService;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping(EndPoints.BET_CANCEL)
@@ -93,7 +90,7 @@ public class BetCancelAction {
             betCancelDataVo.setRollbackAmount(walletRequest.getBetAmount());
             betCancelDataVo.setLoginName(betCancelParamsDto.getLoginName());
 
-            String signature = generateSignature(betCancelDataVo, md5Key);
+            String signature = VendorService.getMD5(betCancelDataVo, md5Key);
             responseVo.setResponseSuccess(betCancelDataVo, signature);
         } catch (InvalidOperatorResponseException |
                  DisabledVendorLineException |
@@ -112,7 +109,7 @@ public class BetCancelAction {
             String signature = "";
 
             try {
-                signature = generateSignature(betCancelDataVo, md5Key);
+                signature = VendorService.getMD5(betCancelDataVo, md5Key);
                 responseVo.setResponseSuccess(betCancelDataVo, signature);
             } catch (JsonProcessingException ex) {
                 responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
@@ -138,10 +135,6 @@ public class BetCancelAction {
     private <T> void doValidation(T requestObject) throws InvalidRequestException {
         // Validation with custom exception
         ValidationUtils.validateRequest(requestObject);
-    }
-
-    private String generateSignature(BetCancelDataVo betCancelDataVo, String md5Key) throws JsonProcessingException {
-        return VendorService.getMD5(objectMapper.writeValueAsString(betCancelDataVo) + md5Key);
     }
 
     private void doVerification(CommonDto gamePayoutDto, GameSession gameSession, String vendorPlayerUsername) throws
