@@ -80,6 +80,7 @@ public class TransferAction {
         GameSession gameSession = new GameSession();
         TransferDto transferDto = null;
         AtomicBoolean isRequestExists = new AtomicBoolean(false);
+        RefundDto refundDto = null;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -92,11 +93,14 @@ public class TransferAction {
                 responseVo.setDebitNCreditMessage();
             }
 
+
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(transferDto);
 
+            // get refundDto before check exist
+            refundDto = transferDto.getFundTransferRequestDto().getFundDto().getRefundDto();
             // Request idempotent checking for this transaction
-            this.doCheckExist(transferDto, isRequestExists);
+            this.doCheckExist(transferDto, isRequestExists, refundDto);
 
             //Get GameSession
             try {
@@ -160,14 +164,8 @@ public class TransferAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            if (transferDto != null && !isRequestExists.get()) {
-                for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-
-                    requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
-                }
-            }
-
-
+            //delete request Idempotent log
+            this.doCheckExistDelete(transferDto, isRequestExists, refundDto);
             httpService.end(httpRequestLog, responseVo);
 
         }
@@ -209,16 +207,39 @@ public class TransferAction {
 
     }
 
-    private void doCheckExist(TransferDto transferDto, AtomicBoolean isRequestExists) throws TransactionStillProcessingException {
+    private void doCheckExist(TransferDto transferDto, AtomicBoolean isRequestExists, RefundDto refundDto) throws TransactionStillProcessingException {
 
-        for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-            // Request idempotent checking for this transaction
-            if (requestIdempotentLogService.checkExists(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId()) == null) {
-                requestIdempotentLogService.create(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
+        if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null) {
+
+            // Request idempotent checking for bet and result
+            for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
+                if (requestIdempotentLogService.checkExists(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId()) == null) {
+                    requestIdempotentLogService.create(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
+                } else {
+                    isRequestExists.set(true);
+                    throw new TransactionStillProcessingException("Request still processing.");
+                }
+            }
+        } else {
+            // Request idempotent checking for refund
+            if (requestIdempotentLogService.checkExists(refundDto, transferDto.getFundTransferRequestDto().getAccountId()) == null) {
+                requestIdempotentLogService.create(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
             } else {
                 isRequestExists.set(true);
                 throw new TransactionStillProcessingException("Request still processing.");
             }
+        }
+    }
+
+    private void doCheckExistDelete(TransferDto transferDto, AtomicBoolean isRequestExists, RefundDto refundDto) {
+
+        if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null && !isRequestExists.get()) {
+            for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
+                requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
+            }
+
+        } else {
+            requestIdempotentLogService.delete(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
         }
     }
 
