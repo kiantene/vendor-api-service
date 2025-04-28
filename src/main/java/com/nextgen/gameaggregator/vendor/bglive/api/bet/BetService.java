@@ -71,6 +71,7 @@ public class BetService {
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
         CommonVo commonVo = new CommonVo();
+        String traceId = httpRequestLog.getId();
         boolean processFailed = false;
         BetDto betDto = null;
         ExecutorService executor = null;
@@ -90,7 +91,7 @@ public class BetService {
                     body, executor);
 
             //check all orders balance
-            balance = vendorService.checkResponseAndReturnBalance(resultVoList);
+            balance = vendorService.checkResponseAndReturnBalance(resultVoList, traceId, gameSession, httpRequestLog);
             if (balance == null) {
                 processFailed = true;
                 throw new BetFailedException("Have Transaction Failed");
@@ -200,19 +201,19 @@ public class BetService {
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
                 //create wallet transaction bet history
                 walletTransactionBetHistoryService.create(currentWalletRequest, gameSession);
-                resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
+                resultVo = new ResultVo(walletRequest.getBalanceAfter());
             } else {
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
-                resultVo = new ResultVo(betEvent.getLastBalance(), httpRequestLog.getOperatorTimestamp());
+                resultVo = new ResultVo(betEvent.getLastBalance());
             }
         } catch (InsufficientBalanceException e) {
-            resultVo = new ResultVo(BigDecimal.ONE.negate(), httpRequestLog.getOperatorTimestamp());
+            resultVo = new ResultVo(BigDecimal.ONE.negate());
             if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
                 errorOrderIds.add(ordersDto.getExternalTransactionId());
             }
             httpService.logError(httpRequestLog, e);
         } catch (DuplicateRequestException | BetResultIdempotentViolationException e) {
-            resultVo = new ResultVo(BigDecimal.ZERO, httpRequestLog.getOperatorTimestamp());
+            resultVo = new ResultVo(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             // do nothing, return null

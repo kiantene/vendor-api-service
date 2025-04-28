@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.bglive.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -26,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -42,25 +38,32 @@ public class VendorService extends BaseVendorService {
     private final WalletRequestService walletRequestService;
     private final BetActionLogService betActionLogService;
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
-    private GameSessionService gameSessionService;
-    private UnsettledBetCachingService unsettledBetCachingService;
-    private SettledBetService settledBetService;
-    private BetNotFoundLogService betNotFoundLogService;
-    private VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
+    private final SettledBetService settledBetService;
+    private final BetNotFoundLogService betNotFoundLogService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
 
     @Autowired
     public VendorService(GameSessionService gameSessionService,
                          UnsettledBetCachingService unsettledBetCachingService,
                          SettledBetService settledBetService,
+                         WalletService walletService,
                          WalletRequestService walletRequestService,
                          BetActionLogService betActionLogService,
-                         WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                         WalletTransactionBetHistoryService walletTransactionBetHistoryService,
+                         BetNotFoundLogService betNotFoundLogService,
+                         VendorLineService vendorLineService) {
         this.gameSessionService = gameSessionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.settledBetService = settledBetService;
         this.walletRequestService = walletRequestService;
         this.betActionLogService = betActionLogService;
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
+        this.walletService = walletService;
+        this.betNotFoundLogService = betNotFoundLogService;
+        this.vendorLineService = vendorLineService;
     }
 
     public static String encryptCreateUserMd5Key(String random, String snCode, String secretCode) throws InvalidFormatException {
@@ -183,7 +186,9 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public BigDecimal checkSettleResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
+    public BigDecimal checkSettleResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList, String traceId,
+                                                          GameSession gameSession,
+                                                          HttpRequestLog httpRequestLog) throws
             InsufficientBalanceException,
             BetNotFoundException {
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
@@ -204,16 +209,13 @@ public class VendorService extends BaseVendorService {
         if (!hasValidResult) {
             throw new BetNotFoundException("All results are null");
         }
-        //get latest timestamp
-        return resultList.stream()
-                .filter(Objects::nonNull)
-                .max(Comparator.comparing(ResultVo::getTimestamp))
-                .map(ResultVo::getAvailableAmount)
-                .orElse(null);
-        
+        //get latest balance
+        return this.getCurrentBalance(traceId, gameSession, httpRequestLog);
     }
 
-    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList) throws
+    public BigDecimal checkResponseAndReturnBalance(List<CompletableFuture<ResultVo>> resultVoList, String traceId,
+                                                    GameSession gameSession,
+                                                    HttpRequestLog httpRequestLog) throws
             InsufficientBalanceException {
 
         List<ResultVo> resultList = processMultipleDataResponds(resultVoList);
@@ -228,11 +230,11 @@ public class VendorService extends BaseVendorService {
         // Find the latest process bet event
         ResultVo resultVo = resultList.stream()
                 .filter(Objects::nonNull)
-                .max(Comparator.comparing(ResultVo::getTimestamp))
+                .findFirst()
                 .orElse(null);
 
         if (resultVo != null) {
-            return resultVo.getAvailableAmount();
+            return this.getCurrentBalance(traceId, gameSession, httpRequestLog);
         }
         return null;
     }
@@ -278,6 +280,14 @@ public class VendorService extends BaseVendorService {
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
+    }
+
+    public BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        try {
+            return walletService.getBalance(traceId, gameSession, httpRequestLog);
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
     }
 
 }

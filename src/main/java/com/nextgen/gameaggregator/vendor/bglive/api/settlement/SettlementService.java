@@ -103,7 +103,8 @@ public class SettlementService {
 
             List<CompletableFuture<ResultVo>> balanceList = this.processAllOrders(settleDto, request, gameSession,
                     executor);
-            BigDecimal balance = vendorService.checkSettleResponseAndReturnBalance(balanceList);
+            BigDecimal balance = vendorService.checkSettleResponseAndReturnBalance(balanceList, traceId, gameSession,
+                    httpRequestLog);
             if (balance == null) {
                 throw new BetResultNotFoundException("Have Transaction Failed");
             }
@@ -217,14 +218,14 @@ public class SettlementService {
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                 //Update walletTransaction Bet History
                 walletTransactionBetHistoryService.update(currentWalletRequest);
-                resultVo = new ResultVo(walletRequest.getBalanceAfter(), httpRequestLog.getOperatorTimestamp());
+                resultVo = new ResultVo(walletRequest.getBalanceAfter());
             } else {
                 // Process Result
                 resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount().abs(),
                         ordersDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService,
                         httpRequestLog);
-                resultVo = new ResultVo(balance, httpRequestLog.getOperatorTimestamp());
+                resultVo = new ResultVo(balance);
             }
 
         } catch (InsufficientBalanceException |
@@ -232,8 +233,7 @@ public class SettlementService {
                  TransactionStillProcessingException |
                  BetResultIdempotentViolationException |
                  DuplicateRequestException e) {
-            resultVo = new ResultVo(BigDecimal.ZERO, System.currentTimeMillis());
-            httpService.logError(httpRequestLog, e);
+            resultVo = new ResultVo(BigDecimal.ZERO);
         } catch (Exception e) {
             // do nothing, return null
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
@@ -243,7 +243,7 @@ public class SettlementService {
             } else {
                 this.prepareSettleBet(ordersDto, gameSession, resultType);
             }
-            resultVo = new ResultVo(BigDecimal.ZERO, System.currentTimeMillis());
+            resultVo = new ResultVo(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } finally {
             if (!isRequestExists) {
