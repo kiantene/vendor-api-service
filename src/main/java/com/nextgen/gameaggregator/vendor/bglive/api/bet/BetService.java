@@ -208,9 +208,8 @@ public class BetService {
             }
         } catch (InsufficientBalanceException e) {
             resultVo = new ResultVo(BigDecimal.ONE.negate());
-            if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
-                errorOrderIds.add(ordersDto.getExternalTransactionId());
-            }
+            errorOrderIds.add(ordersDto.getExternalTransactionId());
+
             httpService.logError(httpRequestLog, e);
         } catch (DuplicateRequestException | BetResultIdempotentViolationException e) {
             resultVo = new ResultVo(BigDecimal.ZERO);
@@ -303,21 +302,21 @@ public class BetService {
     private void prepareRollback(List<OrdersDto> ordersDtoList, GameSession gameSession) {
         int orderCount = ordersDtoList.size();
         ExecutorService executor = vendorService.createThreadPool(orderCount);
-
-        executor.submit(() -> {
-            for (OrdersDto ordersDto : ordersDtoList) {
-                if (shouldSkipOrder(ordersDto)) {
-                    continue;
-                }
-                GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
-                generalRollbackDto.setRollbackId(ordersDto.getExternalTransactionId());
-                generalRollbackDto.setVendorSettledTime(null);
-                generalRollbackDto.setRoundId(ordersDto.getRoundId());
-                betActionLogService.create(new Gson().toJson(generalRollbackDto), ordersDto.getRoundId(),
-                        ordersDto.getVendorBetId(), ordersDto.getExternalTransactionId(), gameSession, 1,
-                        null);
+        for (OrdersDto ordersDto : ordersDtoList) {
+            if (shouldSkipOrder(ordersDto)) {
+                continue;
             }
-        });
+            executor.submit(() -> {
+                        GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
+                        generalRollbackDto.setRollbackId(ordersDto.getExternalTransactionId());
+                        generalRollbackDto.setVendorSettledTime(null);
+                        generalRollbackDto.setRoundId(ordersDto.getRoundId());
+                        betActionLogService.create(new Gson().toJson(generalRollbackDto), ordersDto.getRoundId(),
+                                ordersDto.getVendorBetId(), ordersDto.getExternalTransactionId(), gameSession, 1,
+                                null);
+                    }
+            );
+        }
     }
 
     // process credit
