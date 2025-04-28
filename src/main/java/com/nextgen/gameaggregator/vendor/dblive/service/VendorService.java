@@ -20,7 +20,7 @@ import java.util.Base64;
 @Service
 public class VendorService extends BaseVendorService {
 
-    private static final ObjectMapper objectMapper = null;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void verifySignature(String param, String md5Key, String signature) throws InvalidSignatureException {
         String md5Signature = getMD5(param + md5Key);
