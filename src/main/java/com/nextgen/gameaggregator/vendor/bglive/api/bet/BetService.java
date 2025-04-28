@@ -306,6 +306,9 @@ public class BetService {
 
         executor.submit(() -> {
             for (OrdersDto ordersDto : ordersDtoList) {
+                if (shouldSkipOrder(ordersDto)) {
+                    continue;
+                }
                 GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
                 generalRollbackDto.setRollbackId(ordersDto.getExternalTransactionId());
                 generalRollbackDto.setVendorSettledTime(null);
@@ -322,8 +325,7 @@ public class BetService {
         int orderCount = ordersDtoList.size();
         ExecutorService executor = vendorService.createThreadPool(orderCount);
         for (OrdersDto ordersDto : ordersDtoList) {
-            if (errorOrderIds.contains(ordersDto.getExternalTransactionId())) {
-                errorOrderIds.remove(ordersDto.getExternalTransactionId());
+            if (shouldSkipOrder(ordersDto)) {
                 continue;
             }
             executor.submit(() -> {
@@ -347,5 +349,14 @@ public class BetService {
         generalCreditDto.setVendorSettleTime(System.currentTimeMillis());
         generalCreditDto.setIsRollBack(1);
         return generalCreditDto;
+    }
+
+    private boolean shouldSkipOrder(OrdersDto ordersDto) {
+        String transactionId = ordersDto.getExternalTransactionId();
+        if (errorOrderIds.contains(transactionId)) {
+            errorOrderIds.remove(transactionId);
+            return true;
+        }
+        return false;
     }
 }
