@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.dblive.api.balance;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -11,7 +10,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dblive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
@@ -23,7 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -82,7 +81,7 @@ public class BalanceAction {
             //Encrypt Data
             BalanceDataVo balanceDataVo = new BalanceDataVo();
             balanceDataVo.setLoginName(balanceParamsDto.getLoginName());
-            balanceDataVo.setBalance(balance.setScale(Formats.BALANCE_SCALE, RoundingMode.DOWN));
+            balanceDataVo.setBalance(convertDecimal(balance));
 
             String signature = generateSignature(balanceDataVo, md5Key);
             responseVo.setResponseSuccess(balanceDataVo, signature);
@@ -94,7 +93,7 @@ public class BalanceAction {
             responseVo.setResponseCode(ResponseCodes.INVALID_GAME_ID);
         } catch (CredentialNotFoundException | JsonParseException |
                  UnexpectedTypeException | InvalidPlayerException | InvalidRequestException
-                 | JsonSyntaxException e) {
+                e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
         } catch (InvalidSignatureException exception) {

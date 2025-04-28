@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.dblive.api.activitypayout;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -19,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -46,7 +47,7 @@ public class ActivityPayoutAction {
     }
 
     @PostMapping(path = EndPoints.ACTIVITY_PAYOUT)
-    public ResponseVo gamePayout(HttpServletRequest request) throws JsonProcessingException {
+    public ResponseVo gamePayout(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -85,20 +86,26 @@ public class ActivityPayoutAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidRequestException |
-                 JsonSyntaxException |
                  TransactionStillProcessingException |
                  JsonProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             ActivityPayoutDataVo payoutDataVo = new ActivityPayoutDataVo();
-            payoutDataVo.setBalance(e.getBalance().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+            payoutDataVo.setBalance(convertDecimal(e.getBalance()));
             payoutDataVo.setLoginName(commonDto.getLoginName());
             payoutDataVo.setBadAmount(ZERO_AMOUNT);
             payoutDataVo.setRealAmount(commonDto.getPayoutAmount());
+            String signature = "";
 
-            String signature = generateSignature(payoutDataVo, md5Key);
-            responseVo.setResponseSuccess(payoutDataVo, signature);
+            try {
+                signature = generateSignature(payoutDataVo, md5Key);
+                responseVo.setResponseSuccess(payoutDataVo, signature);
+            } catch (JsonProcessingException ex) {
+                responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
+            }
+
+
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException | InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PLAYER_SESSION);

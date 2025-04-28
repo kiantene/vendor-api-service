@@ -6,11 +6,13 @@ import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
 import java.security.Key;
 import java.util.Base64;
 
@@ -54,5 +56,9 @@ public class VendorService extends BaseVendorService {
 
     public static String extractVendorPlayerUsername(String loginName) {
         return loginName.substring(loginName.indexOf("_") + 1);
+    }
+
+    public static BigDecimal convertDecimal(BigDecimal amount) {
+        return amount.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE);
     }
 }

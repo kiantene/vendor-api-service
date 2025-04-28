@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.dblive.vo.ResponseVo;
@@ -21,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -91,7 +92,7 @@ public class BetConfirmAction {
             betConfirmDataVo.setLoginName(betParamsDto.getLoginName());
             betConfirmDataVo.setRealBetAmount(betParamsDto.getBetTotalAmount());
             betConfirmDataVo.setRealBetInfo(betParamsDto.getBetInfo());
-            betConfirmDataVo.setBalance(balance.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+            betConfirmDataVo.setBalance(convertDecimal(balance));
 
             //MD5 betConfirmDataVo to signature
             String signature = generateSignature(betConfirmDataVo, md5Key);

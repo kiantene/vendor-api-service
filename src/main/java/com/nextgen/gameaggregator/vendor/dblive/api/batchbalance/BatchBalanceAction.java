@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.dblive.api.batchbalance;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -14,7 +13,6 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dblive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
@@ -30,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -85,7 +85,7 @@ public class BatchBalanceAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.INVALID_PLAYER_SESSION);
         } catch (CredentialNotFoundException | JsonParseException |
-                 UnexpectedTypeException | InvalidRequestException | JsonSyntaxException e) {
+                 UnexpectedTypeException | InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
         } catch (InvalidSignatureException exception) {
@@ -117,7 +117,7 @@ public class BatchBalanceAction {
                 //Encrypt Data
                 BatchBalanceDataVo balanceData = new BatchBalanceDataVo();
                 balanceData.setLoginName(username);
-                balanceData.setBalance(balance.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+                balanceData.setBalance(convertDecimal(balance));
 
                 balanceDataList.add(balanceData);
             } catch (AuthenticationException | InvalidAgentApiCredentialException |

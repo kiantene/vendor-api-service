@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.dblive.api.betcancel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -11,7 +10,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dblive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
@@ -20,6 +18,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -34,7 +34,8 @@ public class BetCancelAction {
     private final ObjectMapper objectMapper;
 
     public BetCancelAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                           VendorService vendorService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, VendorLineService vendorLineService, ObjectMapper objectMapper) {
+                           VendorService vendorService, AgentPlayerService agentPlayerService,
+                           VendorGameService vendorGameService, VendorLineService vendorLineService, ObjectMapper objectMapper) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -46,7 +47,7 @@ public class BetCancelAction {
     }
 
     @PostMapping(EndPoints.BET_CANCEL)
-    public ResponseVo betCancel(HttpServletRequest request) throws JsonProcessingException {
+    public ResponseVo betCancel(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -88,7 +89,7 @@ public class BetCancelAction {
             // Retrieve the latest wallet balance from Operator
             WalletRequest walletRequest = walletService.processRollback(betCancelParamsDto, gameSession, vendorService, httpRequestLog);
 
-            betCancelDataVo.setBalance(walletRequest.getBalanceAfter().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+            betCancelDataVo.setBalance(convertDecimal(walletRequest.getBalanceAfter()));
             betCancelDataVo.setRollbackAmount(walletRequest.getBetAmount());
             betCancelDataVo.setLoginName(betCancelParamsDto.getLoginName());
 
@@ -100,7 +101,6 @@ public class BetCancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidRequestException |
-                 JsonSyntaxException |
                  TransactionStillProcessingException |
                  JsonProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
@@ -108,10 +108,16 @@ public class BetCancelAction {
         } catch (BetResultIdempotentViolationException e) {
             betCancelDataVo.setRollbackAmount(e.getBetInformation().getBetAmount());
             betCancelDataVo.setLoginName(betCancelParamsDto.getLoginName());
-            betCancelDataVo.setBalance(e.getBalance().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+            betCancelDataVo.setBalance(convertDecimal(e.getBalance()));
+            String signature = "";
 
-            String signature = generateSignature(betCancelDataVo, md5Key);
-            responseVo.setResponseSuccess(betCancelDataVo, signature);
+            try {
+                signature = generateSignature(betCancelDataVo, md5Key);
+                responseVo.setResponseSuccess(betCancelDataVo, signature);
+            } catch (JsonProcessingException ex) {
+                responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
+            }
+
             httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PLAYER_SESSION);

@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.dblive.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dblive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
@@ -25,6 +24,7 @@ import java.math.BigDecimal;
 
 import static com.nextgen.gameaggregator.vendor.dblive.constant.TransferType.CANCEL;
 import static com.nextgen.gameaggregator.vendor.dblive.constant.TransferType.REPAYOUT;
+import static com.nextgen.gameaggregator.vendor.dblive.service.VendorService.convertDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -56,7 +56,7 @@ public class GamePayoutAction {
     }
 
     @PostMapping(path = EndPoints.GAME_PAYOUT)
-    public ResponseVo gamePayout(HttpServletRequest request) throws JsonProcessingException {
+    public ResponseVo gamePayout(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -102,14 +102,14 @@ public class GamePayoutAction {
 
                 BigDecimal appendBalance = walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
 
-                gamePayoutDataVo.setBalance(appendBalance.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+                gamePayoutDataVo.setBalance(convertDecimal(appendBalance));
             } else {
 
                 ResultType resultType = vendorService.calculateResultType(gamePayoutParamDto.getBetAmount(), gamePayoutParamDto.getWinAmount(), gamePayoutParamDto.getJackpotAmount(), false);
 
                 BigDecimal balance = walletService.processBetResult(traceId, gameSession, gamePayoutParamDto, resultType, vendorService, httpRequestLog);
 
-                gamePayoutDataVo.setBalance(balance.setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+                gamePayoutDataVo.setBalance(convertDecimal(balance));
             }
 
             gamePayoutDataVo.setLoginName(gamePayoutParamDto.getLoginName());
@@ -136,10 +136,16 @@ public class GamePayoutAction {
             gamePayoutDataVo.setLoginName(gamePayoutParamDto.getLoginName());
             gamePayoutDataVo.setRealAmount(gamePayoutParamDto.getPayoutAmount());
             gamePayoutDataVo.setBadAmount(BigDecimal.ZERO);
-            gamePayoutDataVo.setBalance(e.getBalance().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
+            gamePayoutDataVo.setBalance(convertDecimal(e.getBalance()));
+            String signature = "";
 
-            String signature = generateSignature(gamePayoutDataVo, md5Key);
-            responseVo.setResponseSuccess(gamePayoutDataVo, signature);
+            try {
+                signature = generateSignature(gamePayoutDataVo, md5Key);
+                responseVo.setResponseSuccess(gamePayoutDataVo, signature);
+            } catch (JsonProcessingException ex) {
+                responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
+            }
+
             httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PLAYER_SESSION);
