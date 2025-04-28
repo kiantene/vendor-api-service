@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
@@ -57,10 +56,10 @@ public class BetConfirmAction {
 
             //convert queryString to dto
             BetConfirmDto betConfirmDto = HttpService.convertJsonToDto(body, BetConfirmDto.class);
-            doValidation(betConfirmDto);
+            VendorService.doValidation(betConfirmDto);
 
             BetParamsDto betParamsDto = VendorService.convertDto(betConfirmDto.getParams(), BetParamsDto.class);
-            doValidation(betParamsDto);
+            VendorService.doValidation(betParamsDto);
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betParamsDto.getLoginName());
 
@@ -124,11 +123,6 @@ public class BetConfirmAction {
         }
 
         return vo;
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        // Validation with custom exception
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(BetConfirmDto betConfirmDto, GameSession gameSession, String vendorPlayerUsername) throws

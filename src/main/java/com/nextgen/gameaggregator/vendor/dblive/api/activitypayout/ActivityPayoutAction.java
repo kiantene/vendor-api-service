@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.*;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.dblive.vo.ResponseVo;
@@ -56,10 +55,10 @@ public class ActivityPayoutAction {
             String requestBody = httpRequestLog.getRequestBody();
 
             ActivityPayoutDto activityPayoutDto = HttpService.convertJsonToDto(requestBody, ActivityPayoutDto.class);
-            doValidation(activityPayoutDto);
+            VendorService.doValidation(activityPayoutDto);
 
             commonDto = VendorService.convertDto(activityPayoutDto.getParams(), ActivityPayoutCommonDto.class);
-            doValidation(commonDto);
+            VendorService.doValidation(commonDto);
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(commonDto.getLoginName());
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
@@ -165,10 +164,6 @@ public class ActivityPayoutAction {
                 (rollbackDto, gameSession, vendorService, httpRequestLog);
 
         payoutDataVo.setBalance(walletRequest.getBalanceAfter().setScale(Formats.BALANCE_SCALE, Formats.ROUNDING_MODE));
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(ActivityPayoutDto activityPayoutDto, GameSession gameSession, String vendorPlayerUsername) throws

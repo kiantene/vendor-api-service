@@ -62,10 +62,10 @@ public class BetCancelAction {
 
             //convert queryString to dto validate request param
             BetCancelDto betCancelDto = HttpService.convertJsonToDto(body, BetCancelDto.class);
-            this.doValidation(betCancelDto);
+            VendorService.doValidation(betCancelDto);
 
             betCancelParamsDto = VendorService.convertDto(betCancelDto.getParams(), BetCancelParamsDto.class);
-            this.doValidation(betCancelParamsDto);
+            VendorService.doValidation(betCancelParamsDto);
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betCancelParamsDto.getLoginName());
 
@@ -130,11 +130,6 @@ public class BetCancelAction {
         }
 
         return responseVo;
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        // Validation with custom exception
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(CommonDto gamePayoutDto, GameSession gameSession, String vendorPlayerUsername) throws

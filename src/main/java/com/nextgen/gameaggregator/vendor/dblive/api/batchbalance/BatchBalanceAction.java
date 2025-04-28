@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dblive.constant.ResponseCodes;
@@ -58,10 +57,10 @@ public class BatchBalanceAction {
 
             //validate request param
             CommonDto batchBalanceDto = HttpService.convertJsonToDto(body, CommonDto.class);
-            this.doValidation(batchBalanceDto);
+            VendorService.doValidation(batchBalanceDto);
 
             BatchParamDto batchParamsDto = VendorService.convertDto(batchBalanceDto.getParams(), BatchParamDto.class);
-            this.doValidation(batchParamsDto);
+            VendorService.doValidation(batchParamsDto);
 
             //Query list of user balance
             List<BatchBalanceDataVo> balanceDataList = getBatchBalanceDataVos(batchParamsDto, traceId, httpRequestLog);
@@ -128,11 +127,6 @@ public class BatchBalanceAction {
             }
         });
         return balanceDataList;
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        // Validation with custom exception
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(CommonDto batchBalanceDto, GameSession gameSession) throws CredentialNotFoundException, InvalidSignatureException {

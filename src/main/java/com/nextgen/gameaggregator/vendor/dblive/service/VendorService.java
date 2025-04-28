@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dblive.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -69,5 +70,9 @@ public class VendorService extends BaseVendorService {
         String input = objectMapper.writeValueAsString(requestObject) + md5Key;
         // Validation with custom exception
         return DigestUtils.md5Hex(input).toUpperCase();
+    }
+
+    public static <T> void doValidation(T requestObject) throws InvalidRequestException {
+        ValidationUtils.validateRequest(requestObject);
     }
 }

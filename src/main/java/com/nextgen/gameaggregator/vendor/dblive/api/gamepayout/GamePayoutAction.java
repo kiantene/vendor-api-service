@@ -70,10 +70,10 @@ public class GamePayoutAction {
 
             //convert queryString to dto
             GamePayoutDto gamePayoutDto = HttpService.convertJsonToDto(body, GamePayoutDto.class);
-            this.doValidation(gamePayoutDto);
+            VendorService.doValidation(gamePayoutDto);
 
             gamePayoutParamDto = VendorService.convertDto(gamePayoutDto.getParams(), GamePayoutParamDto.class);
-            this.doValidation(gamePayoutParamDto);
+            VendorService.doValidation(gamePayoutParamDto);
 
             // using vendorPlayerId to find gameSession details
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(gamePayoutParamDto.getLoginName());
@@ -158,11 +158,6 @@ public class GamePayoutAction {
         }
         return responseVo;
 
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        // Validation with custom exception
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(CommonDto gamePayoutDto, GameSession gameSession, String vendorPlayerUsername) throws

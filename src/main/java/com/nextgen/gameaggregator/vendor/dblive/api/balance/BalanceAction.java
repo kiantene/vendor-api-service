@@ -56,11 +56,11 @@ public class BalanceAction {
 
             //convert queryString to dto
             CommonDto balanceDto = HttpService.convertJsonToDto(body, CommonDto.class);
-            this.doValidation(balanceDto);
+            VendorService.doValidation(balanceDto);
 
             //convert and validate request param
             BalanceParamsDto balanceParamsDto = VendorService.convertDto(balanceDto.getParams(), BalanceParamsDto.class);
-            this.doValidation(balanceParamsDto);
+            VendorService.doValidation(balanceParamsDto);
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(balanceParamsDto.getLoginName());
 
@@ -103,11 +103,6 @@ public class BalanceAction {
         }
 
         return responseVo;
-    }
-
-    private <T> void doValidation(T requestObject) throws InvalidRequestException {
-        // Validation with custom exception
-        ValidationUtils.validateRequest(requestObject);
     }
 
     private void doVerification(CommonDto balanceDto, GameSession gameSession, String vendorPlayerUsername) throws
