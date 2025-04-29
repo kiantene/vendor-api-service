@@ -125,7 +125,6 @@ public class BetService {
     private void doValidation(BetDto betDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(betDto);
-
         ParamsDto paramsDto = betDto.getParamsDto();
         if (paramsDto != null) {
             ValidationUtils.validateRequest(paramsDto);
@@ -138,6 +137,7 @@ public class BetService {
                 ValidationUtils.validateRequest(order);
             }
         }
+
     }
 
     private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
