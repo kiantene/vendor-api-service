@@ -236,14 +236,16 @@ public class TransferAction {
     }
 
     private void doCheckExistDelete(TransferDto transferDto, AtomicBoolean isRequestExists, RefundDto refundDto) {
+        if (!isRequestExists.get()) {
 
-        if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null && !isRequestExists.get()) {
-            for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
+            if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null) {
+                for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
+                    requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
+                }
+
+            } else if (refundDto != null) {
+                requestIdempotentLogService.delete(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
             }
-
-        } else if (refundDto != null) {
-            requestIdempotentLogService.delete(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
         }
     }
 
