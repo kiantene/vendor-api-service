@@ -143,14 +143,14 @@ public class BetService {
     private void doVerification(BetDto betDto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            InvalidPlayerException,
             CredentialNotFoundException,
-            InvalidFormatException {
+            InvalidFormatException,
+            InvalidTokenException {
 
         String snCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SN_CODE);
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
-        // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(snCode, betDto.getParamsDto().getSn(), InvalidPlayerException::new);
+        // Verify received sn code is the same from game session
+        ValidationUtils.isEquals(snCode, betDto.getParamsDto().getSn(), InvalidTokenException::new);
 
         String validateSign = VendorService.encryptBetMd5Key(betDto.getParamsDto().getRandom(), snCode,
                 gameSession.getVendorPlayerUsername(), String.valueOf(betDto.getParamsDto().getAmount()), secretKey);
