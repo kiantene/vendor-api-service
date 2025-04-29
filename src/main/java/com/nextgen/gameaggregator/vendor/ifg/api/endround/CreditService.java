@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.ifg.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -13,33 +14,42 @@ import com.nextgen.gameaggregator.vendor.ifg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ifg.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.ErrorVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@Slf4j
 public class CreditService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+    private final VendorLineService vendorLineService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
+    public CreditService(GameSessionService gameSessionService,
+                         WalletService walletService,
+                         HttpService httpService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService,
+                         VendorService vendorService,
+                         VendorLineService vendorLineService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+        this.vendorLineService = vendorLineService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+    }
 
 
-    public CommonVo credit(HttpRequestLog httpRequestLog, String traceId){
+    public CommonVo credit(HttpRequestLog httpRequestLog, String traceId) {
         CreditServiceDto creditServiceDto = new CreditServiceDto();
         CreditServiceVo vo = new CreditServiceVo();
         BalanceVo balanceVo = new BalanceVo();
@@ -47,14 +57,20 @@ public class CreditService {
         ErrorVo errorVo = new ErrorVo();
         XmlMapper xmlMapper = new XmlMapper();
         GameSession gameSession = new GameSession();
-        BigDecimal balance = null;
-
-        try{
-            creditServiceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(),CreditServiceDto.class);
+        BigDecimal balance;
+        boolean isRequestExists = false;
+        try {
+            creditServiceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), CreditServiceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(creditServiceDto);
-
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(creditServiceDto, creditServiceDto.getRoundWinDto().getWlid()) == null) {
+                requestIdempotentLogService.create(creditServiceDto, creditServiceDto.getRoundWinDto().getWlid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
             // Verify session token
             gameSession = gameSessionService.verifyToken(creditServiceDto.getRoundWinDto().getGuid());
 
@@ -122,7 +138,7 @@ public class CreditService {
             vo.setRoundwin(roundWinVo);
 
             httpService.logError(httpRequestLog, e);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -136,7 +152,10 @@ public class CreditService {
             vo.setRoundwin(roundWinVo);
 
             httpService.logError(httpRequestLog, e);
-        }finally{
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(creditServiceDto, creditServiceDto.getRoundWinDto().getWlid());
+            }
             // set vo
             vo.setSession(creditServiceDto.getSession());
             vo.setTime(creditServiceDto.getTime());

@@ -19,12 +19,12 @@ public class CreditServiceDto implements BetResultData {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 32)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String session;
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}")
+    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{5,6}Z?")
     private String time;
 
     @JacksonXmlProperty(localName = "roundwin")
@@ -93,18 +93,18 @@ public class CreditServiceDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        if(this.getRoundWinDto().getFinished().equals("0")){
+        if (this.getRoundWinDto().getFinished().equals("0")) {
             return 1;
-        }else{
+        } else {
             return 0;
         }
     }
 
     @Override
     public BetStatus getBetStatus() {
-        if(this.getRoundWinDto().getFinished().equals("0")){
+        if (this.getRoundWinDto().getFinished().equals("0")) {
             return BetStatus.UNSETTLED;
-        }else{
+        } else {
             return BetStatus.SETTLED;
         }
     }
