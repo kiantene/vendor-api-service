@@ -165,7 +165,11 @@ public class TransferAction {
 
         } finally {
             //delete request Idempotent log
-            this.doCheckExistDelete(transferDto, isRequestExists, refundDto);
+            try {
+                this.doCheckExistDelete(transferDto, isRequestExists, refundDto);
+            } catch (Exception e) {
+                log.error("Exception during doCheckExistDelete in finally block", e);
+            }
             httpService.end(httpRequestLog, responseVo);
 
         }
