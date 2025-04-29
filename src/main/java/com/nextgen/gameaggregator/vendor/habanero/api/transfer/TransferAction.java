@@ -220,7 +220,7 @@ public class TransferAction {
                     throw new TransactionStillProcessingException("Request still processing.");
                 }
             }
-        } else {
+        } else if (refundDto != null) {
             // Request idempotent checking for refund
             if (requestIdempotentLogService.checkExists(refundDto, transferDto.getFundTransferRequestDto().getAccountId()) == null) {
                 requestIdempotentLogService.create(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
@@ -238,7 +238,7 @@ public class TransferAction {
                 requestIdempotentLogService.delete(fundInfoDto, transferDto.getFundTransferRequestDto().getAccountId());
             }
 
-        } else {
+        } else if (refundDto != null) {
             requestIdempotentLogService.delete(refundDto, transferDto.getFundTransferRequestDto().getAccountId());
         }
     }
