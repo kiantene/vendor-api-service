@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.betcancel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -31,11 +30,10 @@ public class BetCancelAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final VendorLineService vendorLineService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetCancelAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
                            VendorService vendorService, AgentPlayerService agentPlayerService,
-                           VendorGameService vendorGameService, VendorLineService vendorLineService, RequestIdempotentLogService requestIdempotentLogService) {
+                           VendorGameService vendorGameService, VendorLineService vendorLineService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -43,7 +41,6 @@ public class BetCancelAction {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorLineService = vendorLineService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(EndPoints.BET_CANCEL)
@@ -55,7 +52,6 @@ public class BetCancelAction {
         ResponseVo responseVo = new ResponseVo();
         BetCancelDataVo betCancelDataVo = new BetCancelDataVo();
         BetCancelParamsDto betCancelParamsDto = new BetCancelParamsDto();
-        boolean isRequestExists = false;
         String md5Key = "";
 
         GameSession gameSession = new GameSession();
@@ -68,14 +64,6 @@ public class BetCancelAction {
 
             betCancelParamsDto = VendorService.convertDto(betCancelDto.getParams(), BetCancelParamsDto.class);
             VendorService.doValidation(betCancelParamsDto);
-
-            // 3. Request idempotent checking.
-            if (requestIdempotentLogService.checkExistsRollback(betCancelParamsDto, betCancelParamsDto.getLoginName()) == null) {
-                requestIdempotentLogService.createRollback(betCancelParamsDto, betCancelParamsDto.getLoginName());
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betCancelParamsDto.getLoginName());
 
@@ -136,10 +124,6 @@ public class BetCancelAction {
             responseVo.setResponseCode(ResponseCodes.OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            // first request (not request exist) will delete log after process finish.
-            if (!isRequestExists) {
-                requestIdempotentLogService.deleteRollback(betCancelParamsDto, betCancelParamsDto.getLoginName());
-            }
 
             httpService.end(httpRequestLog, responseVo);
         }
