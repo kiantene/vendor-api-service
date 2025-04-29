@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dblive.api.betconfirm;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -31,16 +32,19 @@ public class BetConfirmAction {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetConfirmAction(HttpService httpService, VendorLineService vendorLineService,
                             GameSessionService gameSessionService,
-                            WalletService walletService, ValidationService validationService, VendorService vendorService) {
+                            WalletService walletService, ValidationService validationService,
+                            VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.BET_CONFIRM)
@@ -51,6 +55,11 @@ public class BetConfirmAction {
 
         GameSession gameSession = new GameSession();
         ResponseVo vo = new ResponseVo();
+        BetParamsDto betParamsDto = new BetParamsDto();
+        boolean isRequestExists = false;
+        Integer languageId = 0;
+        Integer platformId = 0;
+
         try {
             String body = httpRequestLog.getRequestBody();
 
@@ -58,18 +67,30 @@ public class BetConfirmAction {
             BetConfirmDto betConfirmDto = HttpService.convertJsonToDto(body, BetConfirmDto.class);
             VendorService.doValidation(betConfirmDto);
 
-            BetParamsDto betParamsDto = VendorService.convertDto(betConfirmDto.getParams(), BetParamsDto.class);
+            betParamsDto = VendorService.convertDto(betConfirmDto.getParams(), BetParamsDto.class);
             VendorService.doValidation(betParamsDto);
 
-            String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betParamsDto.getLoginName());
+            if (requestIdempotentLogService.checkExists(betParamsDto, betParamsDto.getLoginName()) == null) {
+                requestIdempotentLogService.create(betParamsDto, betParamsDto.getLoginName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
+            String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betParamsDto.getLoginName());
+            
             try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorPlayerUsername, betParamsDto.getGameTypeId());
-                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betParamsDto.getGameTypeId(), gameSession);
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+                languageId = gameSession.getLanguageId();
+                platformId = gameSession.getPlatformId();
+                if (!gameSession.getVendorGameCode().equals(betParamsDto.getGameTypeId()))
+                    throw new AuthenticationException();
             } catch (AuthenticationException e) {
                 gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
                 gameSessionService.updateByVendorGameCode(gameSession, betParamsDto.getGameTypeId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setLanguageId(languageId);
+                gameSession.setPlatformId(platformId);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }
@@ -119,6 +140,10 @@ public class BetConfirmAction {
             vo.setResponseCode(ResponseCodes.OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betParamsDto, betParamsDto.getLoginName());
+            }
             httpService.end(httpRequestLog, vo);
         }
 

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dblive.api.gamepayout;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -37,11 +38,12 @@ public class GamePayoutAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final WalletAdjustmentService walletAdjustmentService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public GamePayoutAction(HttpService httpService, VendorLineService vendorLineService,
                             AgentPlayerService agentPlayerService, VendorGameService vendorGameService,
                             GameSessionService gameSessionService, WalletService walletService,
-                            VendorService vendorService, WalletAdjustmentService walletAdjustmentService) {
+                            VendorService vendorService, WalletAdjustmentService walletAdjustmentService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -50,6 +52,7 @@ public class GamePayoutAction {
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletAdjustmentService = walletAdjustmentService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.GAME_PAYOUT)
@@ -61,6 +64,9 @@ public class GamePayoutAction {
         ResponseVo responseVo = new ResponseVo();
         GamePayoutDataVo gamePayoutDataVo = new GamePayoutDataVo();
         GamePayoutParamDto gamePayoutParamDto = new GamePayoutParamDto();
+        boolean isRequestExists = false;
+        Integer languageId = 0;
+        Integer platformId = 0;
 
         String md5Key = "";
         GameSession gameSession = new GameSession();
@@ -75,17 +81,30 @@ public class GamePayoutAction {
             gamePayoutParamDto = VendorService.convertDto(gamePayoutDto.getParams(), GamePayoutParamDto.class);
             VendorService.doValidation(gamePayoutParamDto);
 
+            // 3. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(gamePayoutParamDto, gamePayoutParamDto.getLoginName()) == null) {
+                requestIdempotentLogService.create(gamePayoutParamDto, gamePayoutParamDto.getLoginName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             // using vendorPlayerId to find gameSession details
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(gamePayoutParamDto.getLoginName());
 
             // Try to catch if session is expired and generate new session
             try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorPlayerUsername, gamePayoutParamDto.getGameTypeId());
-                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gamePayoutParamDto.getGameTypeId(), gameSession);
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+                languageId = gameSession.getLanguageId();
+                platformId = gameSession.getPlatformId();
+                if (!gameSession.getVendorGameCode().equals(gamePayoutParamDto.getGameTypeId()))
+                    throw new AuthenticationException();
             } catch (AuthenticationException e) {
                 gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
                 gameSessionService.updateByVendorGameCode(gameSession, gamePayoutParamDto.getGameTypeId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setLanguageId(languageId);
+                gameSession.setPlatformId(platformId);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }
@@ -154,6 +173,10 @@ public class GamePayoutAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.OTHER_ERROR);
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(gamePayoutParamDto, gamePayoutParamDto.getLoginName());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
