@@ -7,17 +7,18 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,21 +29,15 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
+@RequiredArgsConstructor
 public class BetAction {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
@@ -66,7 +61,9 @@ public class BetAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            String secret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+            String jsonParam = EncryptionUtils.aesDecrypt(Encryption.CIPHER_MODE_AND_PADDING, commonDto.getParams(), secret);
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into betDto
             BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
