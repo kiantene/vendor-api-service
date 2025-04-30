@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ifg.constant.ResponseCodes;
@@ -58,7 +59,7 @@ public class TransactionService {
         GameSession gameSession = new GameSession();
         BigDecimal balance;
         boolean isRequestExists = false;
-
+        ResultType resultType;
         try {
             transactionServiceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), TransactionServiceDto.class);
 
@@ -79,11 +80,17 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);
 
-            // Process Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionServiceDto, httpRequestLog.getRequestBody(), httpRequestLog);
-
+            if ("1".equals(transactionServiceDto.getRoundbet().getFinished())) {
+                resultType = vendorService.calculateResultType(transactionServiceDto.getBetAmount(), transactionServiceDto.getWinAmount(),
+                        transactionServiceDto.getJackpotAmount(), true);
+                balance = walletService.processBetResult(traceId, gameSession, transactionServiceDto, resultType, vendorService, httpRequestLog);
+            } else {
+                // Process Bet
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionServiceDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                balance = BigDecimal.valueOf(betEvent.getLastBalance().intValue());
+            }
             // set balanceVo
-            balanceVo.setValue(String.valueOf(betEvent.getLastBalance().intValue()));
+            balanceVo.setValue(String.valueOf(balance));
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());

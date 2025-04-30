@@ -99,7 +99,10 @@ public class TransactionServiceDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        if ("1".equals(this.getRoundbet().getFinished())) {
+            return BetStatus.SETTLED;
+        } else {
+            return BetStatus.UNSETTLED;
+        }
     }
-
 }
