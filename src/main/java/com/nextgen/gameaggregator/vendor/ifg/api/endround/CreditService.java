@@ -77,10 +77,10 @@ public class CreditService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditServiceDto, gameSession);
 
-
+            Thread.sleep(6000);
             ResultType resultType = vendorService.checkResult(creditServiceDto.getRoundWinDto().getWin(), creditServiceDto.getRoundWinDto().getFinished());
             balance = walletService.processBetResult(traceId, gameSession, creditServiceDto, resultType, vendorService, httpRequestLog);
-            Thread.sleep(6000);
+
             // set balanceVo
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setValue(String.valueOf(balance.intValue()));
