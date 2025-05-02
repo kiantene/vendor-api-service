@@ -22,7 +22,6 @@ public class RollBackServiceDto implements RollbackData {
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}")
     private String time;
 
     @JacksonXmlProperty(localName = "refund")
