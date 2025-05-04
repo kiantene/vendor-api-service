@@ -14,7 +14,7 @@ public class BalanceServiceDto {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 32)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String session;
 
     @JacksonXmlProperty(isAttribute = true)
