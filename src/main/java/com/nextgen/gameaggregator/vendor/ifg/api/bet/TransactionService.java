@@ -80,6 +80,7 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);
 
+            Thread.sleep(6000);
             if ("1".equals(transactionServiceDto.getRoundbet().getFinished())) {
                 resultType = vendorService.calculateResultType(transactionServiceDto.getBetAmount(), transactionServiceDto.getWinAmount(),
                         transactionServiceDto.getJackpotAmount(), true);
