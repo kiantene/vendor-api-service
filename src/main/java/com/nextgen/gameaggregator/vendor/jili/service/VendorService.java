@@ -11,6 +11,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.TimeZone;
 
 @Service
@@ -20,6 +21,7 @@ public class VendorService extends BaseVendorService {
 
     private String agentId;
     private String agentKey;
+    private Integer operatorTiming;
 
     public static String dateGenerator(String dateFormat, String timeZone) {
 
@@ -60,6 +62,6 @@ public class VendorService extends BaseVendorService {
 
     @Override
     public Integer operatorTimeoutTiming() {
-        return 3500;
+        return Objects.requireNonNullElse(this.operatorTiming, 5000);
     }
 }
