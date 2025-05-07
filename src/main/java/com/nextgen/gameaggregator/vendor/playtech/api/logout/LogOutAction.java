@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
@@ -51,9 +50,6 @@ public class LogOutAction {
     @PostMapping(path = EndPoints.LOG_OUT)
     public CommonVo logOut(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
-
         CommonVo responseVo = new CommonVo();
         CommonDto commonDto = new CommonDto();
         try {
@@ -65,7 +61,7 @@ public class LogOutAction {
             // Validate DTO.
             ValidationUtils.validateRequest(commonDto);
 
-            String removedPrefix = vendorService.removePrefix(commonDto.getExternalToken(), removePrefix);
+            String removedPrefix = vendorService.getExtractToken(commonDto.getExternalToken());
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(removedPrefix);
             this.doVerification(commonDto, gameSession);
