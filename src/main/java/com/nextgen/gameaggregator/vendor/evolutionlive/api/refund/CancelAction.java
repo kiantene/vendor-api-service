@@ -70,8 +70,8 @@ public class CancelAction {
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cancelDto);
 
-            if (requestIdempotentLogService.checkExistsRollback(cancelDto, cancelDto.getUserId()) == null) {
-                requestIdempotentLogService.createRollback(cancelDto, cancelDto.getUserId());
+            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getUserId()) == null) {
+                requestIdempotentLogService.create(cancelDto, cancelDto.getUserId());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
@@ -128,7 +128,7 @@ public class CancelAction {
             httpService.logError(httpRequestLog, e);
         } finally {
             if (!isRequestExists) {
-                requestIdempotentLogService.deleteRollback(cancelDto, cancelDto.getUserId());
+                requestIdempotentLogService.delete(cancelDto, cancelDto.getUserId());
             }
             httpService.end(httpRequestLog, responseVo);
         }
