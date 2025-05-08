@@ -17,7 +17,7 @@ public class BetParamsDto implements BetResultData {
     private String gameTypeId;
     @NotNull
     @Positive
-    @Digits(integer = 15, fraction = 4)
+    @Digits(integer = 15, fraction = 6)
     private BigDecimal betTotalAmount;
     @NotNull
     @Digits(integer = 19, fraction = 0)
