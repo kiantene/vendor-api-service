@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.settle;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -30,26 +31,25 @@ public class SettleService {
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final HttpService httpService;
-    private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
     private final ValidationService validationService;
     private final VendorPlayerService vendorPlayerService;
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
-    Integer vendorPlayerId;
 
     @Autowired
     public SettleService(HttpService httpService,
                          ValidationService validationService,
-                         WalletService walletService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService,
+                         RequestIdempotentLogService requestIdempotentLogService,
                          VendorPlayerService vendorPlayerService,
                          OperatorWalletService operatorWalletService,
                          WalletRequestService walletRequestService) {
         this.validationService = validationService;
-        this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorService = vendorService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -70,7 +70,6 @@ public class SettleService {
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(dto.getTxId());
-        //walletRequest.setAction("credit");
         walletRequest.setTakeAll(0);
 
         BigDecimal amount = dto.getProfit().subtract(dto.getBonus());
@@ -78,9 +77,6 @@ public class SettleService {
 
         walletRequest.setTransferAmount(dto.getPayAmount());
         walletRequest.setBetAmount(dto.getRealBetMoney());
-//        BigDecimal winAmount = dto.getBonus().compareTo(BigDecimal.ZERO) > 0
-//                ? dto.getProfit().subtract(dto.getBonus())
-//                : dto.getProfit();
 
         ResultType resultType = vendorService.calculateResultType(dto.getRealBetMoney(), winAmount, dto.getJackpotAmount(), false);
 
@@ -97,6 +93,9 @@ public class SettleService {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        boolean isRequestExists = false;
+        Integer vendorPlayerId;
+
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -107,10 +106,16 @@ public class SettleService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-
-            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
+            vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+
+            if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);

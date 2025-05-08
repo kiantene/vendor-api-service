@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -23,34 +24,30 @@ import java.math.BigDecimal;
 @Slf4j
 public class CancelService {
     private final HttpService httpService;
-    private final VendorService vendorService;
     private final GameSessionService gameSessionService;
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
-    private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorPlayerService vendorPlayerService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionService walletTransactionService;
-    Integer vendorPlayerId;
 
     @Autowired
     public CancelService(HttpService httpService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
                          VendorLineService vendorLineService,
-                         VendorService vendorService,
-                         WalletService walletService,
+                         RequestIdempotentLogService requestIdempotentLogService,
                          VendorPlayerService vendorPlayerService,
                          WalletRequestService walletRequestService,
                          OperatorWalletService operatorWalletService,
                          WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
-        this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorLineService = vendorLineService;
-        this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
@@ -81,6 +78,8 @@ public class CancelService {
         BigDecimal balance;
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        boolean isRequestExists = false;
+        Integer vendorPlayerId;
 
         try {
             String body = httpRequestLog.getRequestBody();
@@ -94,11 +93,18 @@ public class CancelService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
+            vendorPlayerId = Integer.valueOf(messageDto.getUserId());
 
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+
+            if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);

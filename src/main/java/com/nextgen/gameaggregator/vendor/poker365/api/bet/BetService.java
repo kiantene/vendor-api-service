@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -28,26 +29,25 @@ public class BetService {
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final HttpService httpService;
-    private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
     private final ValidationService validationService;
     private final VendorPlayerService vendorPlayerService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
-    Integer vendorPlayerId;
 
     @Autowired
     public BetService(HttpService httpService,
                       ValidationService validationService,
-                      WalletService walletService,
                       VendorService vendorService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       AgentPlayerService agentPlayerService,
+                      RequestIdempotentLogService requestIdempotentLogService,
                       VendorPlayerService vendorPlayerService,
                       WalletRequestService walletRequestService,
                       OperatorWalletService operatorWalletService) {
         this.validationService = validationService;
-        this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorService = vendorService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -77,6 +77,8 @@ public class BetService {
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
         WalletRequest walletRequest = null;
+        boolean isRequestExists = false;
+        Integer vendorPlayerId;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -89,9 +91,16 @@ public class BetService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
+            vendorPlayerId = Integer.valueOf(messageDto.getUserId());
 
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
+
+            if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
