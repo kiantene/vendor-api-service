@@ -30,19 +30,22 @@ public class BetNSettleAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
+    private final UnsettledBetService unsettledBetService;
 
     public BetNSettleAction(WalletService walletService,
                             HttpService httpService,
                             ValidationService validationService,
                             VendorService vendorService,
                             VendorLineService vendorLineService,
-                            GameSessionService gameSessionService) {
+                            GameSessionService gameSessionService,
+                            UnsettledBetService unsettledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
+        this.unsettledBetService = unsettledBetService;
     }
 
     @PutMapping(path = EndPoints.TRANSACTION)
@@ -84,6 +87,9 @@ public class BetNSettleAction {
 
                 case "deposit":
                     //Settle
+                    //Check for Bet
+                    unsettledBetService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
                     ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
                     balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
                     betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
