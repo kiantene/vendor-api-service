@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
@@ -50,8 +49,6 @@ public class BalanceAction {
     @PostMapping(path = EndPoints.BALANCE)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         String traceId = httpRequestLog.getId();
         BalanceVo balanceVo = new BalanceVo();
         CommonBalanceVo commonBalanceVo = new CommonBalanceVo();
@@ -63,7 +60,7 @@ public class BalanceAction {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto);
 
-            String removedPrefix = vendorService.removePrefix(commonDto.getExternalToken(), removePrefix);
+            String removedPrefix = vendorService.getExtractToken(commonDto.getExternalToken());
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(removedPrefix);
 

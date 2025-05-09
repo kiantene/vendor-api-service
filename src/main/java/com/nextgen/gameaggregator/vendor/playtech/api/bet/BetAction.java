@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
 import com.nextgen.gameaggregator.vendor.playtech.vo.CommonBalanceVo;
@@ -50,8 +49,6 @@ public class BetAction {
     @PostMapping(path = EndPoints.BET)
     public BetVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         String traceId = httpRequestLog.getId();
         BetVo betVo = new BetVo();
         CommonBalanceVo commonBalanceVo = new CommonBalanceVo();
@@ -63,9 +60,9 @@ public class BetAction {
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(betDto);
-
+            
+            String removedPrefix = vendorService.getExtractToken(betDto.getExternalToken());
             // 3. Verify session token
-            String removedPrefix = vendorService.removePrefix(betDto.getExternalToken(), removePrefix);
             gameSession = gameSessionService.verifyToken(removedPrefix);
 
             if (!(betDto.getGameCodeName()).equals(gameSession.getVendorGameCode())) {
