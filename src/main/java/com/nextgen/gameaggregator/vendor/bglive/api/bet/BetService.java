@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.bet;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -45,6 +46,7 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private final WalletRequestService walletRequestService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -55,7 +57,8 @@ public class BetService {
                       BetActionLogService betActionLogService,
                       OperatorWalletService operatorWalletService,
                       WalletTransactionBetHistoryService walletTransactionBetHistoryService,
-                      WalletRequestService walletRequestService) {
+                      WalletRequestService walletRequestService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.walletService = walletService;
@@ -67,6 +70,7 @@ public class BetService {
         this.operatorWalletService = operatorWalletService;
         this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
         this.walletRequestService = walletRequestService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -77,6 +81,7 @@ public class BetService {
         ExecutorService executor = null;
         GameSession gameSession = null;
         BigDecimal balance;
+
         try {
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
@@ -167,7 +172,7 @@ public class BetService {
     }
 
     //Concurrent process orders
-    private ResultVo processData(OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body,
+    private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest, String body,
                                  GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = httpService.start(httpServletRequest);
@@ -175,9 +180,17 @@ public class BetService {
         String traceId = httpRequestLog.getId();
         ResultVo resultVo = null;
         WalletRequest walletRequest = null;
+        boolean isRequestExists = false;
+
         try {
             this.doValidation(ordersDto);
 
+            if (requestIdempotentLogService.checkExists(ordersDto, paramsDto.getLoginId()) == null) {
+                requestIdempotentLogService.create(ordersDto, paramsDto.getLoginId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
             // Verify session token
             String gameCode = VendorService.getGameCode(ordersDto.getIssueId());
             if (!gameCode.equals(gameSession.getVendorGameCode())) {
@@ -221,6 +234,10 @@ public class BetService {
             }
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists) {
+                // first request (not request exist) will delete log after process finish.
+                requestIdempotentLogService.delete(ordersDto, paramsDto.getLoginId());
+            }
             if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
                 walletRequestService.end(walletRequest, httpRequestLog, new CommonVo());
             }
@@ -238,7 +255,7 @@ public class BetService {
         for (OrdersDto order : betDto.getParamsDto().getOrders()) {
             GameSession orderGameSession = this.getGameSession(betDto.getParamsDto().getLoginId());
             CompletableFuture<ResultVo> resultVo = CompletableFuture.supplyAsync(
-                    () -> this.processData(order, httpServletRequest, body, orderGameSession),
+                    () -> this.processData(betDto.getParamsDto(), order, httpServletRequest, body, orderGameSession),
                     executor);
             resultVoList.add(resultVo);
         }

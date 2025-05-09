@@ -22,21 +22,18 @@ public class BalanceService {
     private final AgentPlayerService agentPlayerService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final VendorPlayerService vendorPlayerService;
 
     public BalanceService(HttpService httpService,
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
                           GameSessionService gameSessionService,
-                          WalletService walletService,
-                          VendorPlayerService vendorPlayerService) {
+                          WalletService walletService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
-        this.vendorPlayerService = vendorPlayerService;
     }
 
     public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {

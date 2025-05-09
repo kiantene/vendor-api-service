@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.transfer;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -29,6 +30,7 @@ public class TransferService {
     private final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public TransferService(HttpService httpService,
                            GameSessionService gameSessionService,
@@ -36,7 +38,8 @@ public class TransferService {
                            AgentPlayerService agentPlayerService,
                            VendorService vendorService,
                            WalletRequestService walletRequestService,
-                           OperatorWalletService operatorWalletService) {
+                           OperatorWalletService operatorWalletService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -44,19 +47,27 @@ public class TransferService {
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo transfer(HttpRequestLog httpRequestLog) {
         CommonVo commonVo = new CommonVo();
+        boolean isRequestExists = false;
+        TransferDto transferDto = new TransferDto();
         try {
-
             String body = httpRequestLog.getRequestBody();
-            TransferDto transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
+            transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
             WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
             this.doValidation(transferDto);
             GameSession gameSession = getGameSession(transferDto.getParamsDto().getLoginId());
             this.doVerification(transferDto, gameSession);
 
+            if (requestIdempotentLogService.checkExists(transferDto, transferDto.getParamsDto().getLoginId()) == null) {
+                requestIdempotentLogService.create(transferDto, transferDto.getParamsDto().getLoginId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
             walletRequest = this.processTransferInOut(transferDto, walletRequest, gameSession);
 
             commonVo.setSuccessResponse(transferDto.getId(), walletRequest.getBalanceAfter());
@@ -90,6 +101,11 @@ public class TransferService {
                     ResponseCodes.SYSTEM_ERROR.message);
             httpService.logError(httpRequestLog, e);
 
+        } finally {
+            if (!isRequestExists) {
+                // first request (not request exist) will delete log after process finish.
+                requestIdempotentLogService.delete(transferDto, transferDto.getParamsDto().getLoginId());
+            }
         }
         return commonVo;
     }

@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,9 +31,7 @@ public class GeneralAction {
     private final QueryService queryService;
     private final TransferService transferService;
     private final PingService pingService;
-
-
-    @Autowired
+    
     public GeneralAction(HttpService httpService, BalanceService balanceService, BetService betService,
                          SettlementService settlementService, QueryService queryService, TransferService transferService, PingService pingService) {
         this.httpService = httpService;
