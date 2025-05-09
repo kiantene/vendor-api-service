@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.bglive.api.transfer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.bglive.dto.CommonDto;
@@ -15,7 +16,7 @@ import java.math.BigDecimal;
 @Setter
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto extends CommonDto implements BetResultData {
+public class TransferDto extends CommonDto implements BetResultData, RequestIdempotency {
 
     @JsonProperty("params")
     private ParamsDto paramsDto;
@@ -88,5 +89,15 @@ public class TransferDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return null;
+    }
+
+    @Override
+    public String getTransactionId() {
+        return paramsDto.getBizId();
+    }
+
+    @Override
+    public String getVendorPlayerUsername() {
+        return paramsDto.getAmount().toString();
     }
 }

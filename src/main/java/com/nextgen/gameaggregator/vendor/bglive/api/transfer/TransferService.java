@@ -72,6 +72,9 @@ public class TransferService {
 
             commonVo.setSuccessResponse(transferDto.getId(), walletRequest.getBalanceAfter());
 
+        } catch (DuplicateRequestException e) {
+            commonVo.setSuccessResponse(transferDto.getId(), BigDecimal.ZERO);
+
         } catch (InsufficientBalanceException e) {
             //set Vo
             commonVo.setErrorResponse(httpRequestLog.getId(), ResponseCodes.INSUFFICIENT_BALANCE.code,
@@ -154,7 +157,10 @@ public class TransferService {
             InvalidOperatorResponseException,
             InternalServerException,
             InvalidRequestException,
-            BetNotAllowedException {
+            BetNotAllowedException, DuplicateRequestException {
+
+        // add request idempotent check
+        httpService.isDuplicateRequest(transferDto);
 
         if (transferDto.getParamsDto().getAmount().compareTo(BigDecimal.ZERO) < 0) {
             this.dataDebitMapper(walletRequest, transferDto, gameSession);
