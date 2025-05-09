@@ -30,7 +30,7 @@ public class BetNSettleAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
-    private final UnsettledBetService unsettledBetService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
 
     public BetNSettleAction(WalletService walletService,
                             HttpService httpService,
@@ -38,14 +38,14 @@ public class BetNSettleAction {
                             VendorService vendorService,
                             VendorLineService vendorLineService,
                             GameSessionService gameSessionService,
-                            UnsettledBetService unsettledBetService) {
+                            UnsettledBetCachingService unsettledBetCachingService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
-        this.unsettledBetService = unsettledBetService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
     }
 
     @PutMapping(path = EndPoints.TRANSACTION)
@@ -88,7 +88,7 @@ public class BetNSettleAction {
                 case "deposit":
                     //Settle
                     //Check for Bet
-                    unsettledBetService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                    unsettledBetCachingService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
                     ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
                     balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
