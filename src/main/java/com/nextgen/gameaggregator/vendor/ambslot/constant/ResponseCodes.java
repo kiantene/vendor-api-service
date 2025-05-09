@@ -23,7 +23,7 @@ public class ResponseCodes {
     public static final String INVALID_REQUEST_MSG = "Invalid request data";
     public static final String INVALID_AGENT_MSG = "Invalid agent id";
     public static final String RESPONSE_ERROR_MSG = "Response error";
-    public static final String INVALID_GAME_MSG = "Invalid game";
+    public static final String INVALID_GAME_MSG = "Invalid game id";
     public static final String RESPONSE_TIMEOUT_ERROR_MSG = "Response error timeout";
     public static final String DUPLICATED_TRANSACTION_ERROR_MSG = "Duplicate transaction id";
     public static final String INSUFFICIENT_BALANCE_MSG = "Balance insufficient";
