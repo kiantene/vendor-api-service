@@ -93,11 +93,7 @@ public class BetNSettleAction {
                     //Check for Bet
                     unsettledBetCachingService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
-                    settledBetService.idempotentCheck(traceId, gameSession, betNSettleDto);
-                    ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
-                    balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
-                    betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
-
+                    settleBet(betNSettleDto, gameSession, traceId, betNSettleVo, httpRequestLog);
                     break;
 
                 default:
@@ -154,5 +150,22 @@ public class BetNSettleAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
 
+    }
+
+    private void settleBet(BetNSettleDto betNSettleDto, GameSession gameSession, String traceId,
+                           BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
+        try {
+            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
+                    betNSettleDto.getTransactionId(),
+                    betNSettleDto.getRoundId(),
+                    gameSession.getVendorId(),
+                    gameSession.getVendorPlayerId()
+            );
+            throw new BetRefundIdempotentViolationException();
+        } catch (BetNotFoundException e) {
+            ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
+            betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+        }
     }
 }
