@@ -31,6 +31,7 @@ public class BetNSettleAction {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final UnsettledBetCachingService unsettledBetCachingService;
+    private final SettledBetService settledBetService;
 
     public BetNSettleAction(WalletService walletService,
                             HttpService httpService,
@@ -38,7 +39,8 @@ public class BetNSettleAction {
                             VendorService vendorService,
                             VendorLineService vendorLineService,
                             GameSessionService gameSessionService,
-                            UnsettledBetCachingService unsettledBetCachingService) {
+                            UnsettledBetCachingService unsettledBetCachingService,
+                            SettledBetService settledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
@@ -46,6 +48,7 @@ public class BetNSettleAction {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
+        this.settledBetService = settledBetService;
     }
 
     @PutMapping(path = EndPoints.TRANSACTION)
@@ -90,9 +93,11 @@ public class BetNSettleAction {
                     //Check for Bet
                     unsettledBetCachingService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
+                    settledBetService.idempotentCheck(traceId, gameSession, betNSettleDto);
                     ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
                     balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
                     betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+
                     break;
 
                 default:
