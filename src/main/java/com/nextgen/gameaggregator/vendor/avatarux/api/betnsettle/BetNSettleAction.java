@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -154,6 +155,13 @@ public class BetNSettleAction {
 
     }
 
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
+
+        // Call the service with the duplicate log
+        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
+    }
+
     private void settleBet(BetNSettleDto betNSettleDto, GameSession gameSession, String traceId,
                            BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
 
@@ -164,7 +172,9 @@ public class BetNSettleAction {
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
             betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } else {
-            throw new BetResultIdempotentViolationException();
+            RawBetResultLog betResultLog = new RawBetResultLog();
+            betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
+            throw new BetResultIdempotentViolationException(betResultLog);
         }
     }
 }
