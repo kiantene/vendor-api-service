@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -153,19 +155,17 @@ public class BetNSettleAction {
     }
 
     private void settleBet(BetNSettleDto betNSettleDto, GameSession gameSession, String traceId,
-                           BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
-        try {
-            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
-                    betNSettleDto.getTransactionId(),
-                    betNSettleDto.getRoundId(),
-                    gameSession.getVendorId(),
-                    gameSession.getVendorPlayerId()
-            );
-            throw new BetRefundIdempotentViolationException();
-        } catch (BetNotFoundException e) {
+                           BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
+
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), betNSettleDto.getRoundId());
+
+        if (settledBetList == null || settledBetList.isEmpty()) {
             ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
             betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+        } else {
+            throw new BetResultIdempotentViolationException();
         }
     }
 }
+    
