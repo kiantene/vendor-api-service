@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.cancel;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.avatarux.constant.EndPoints;
@@ -20,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -29,17 +28,20 @@ public class CancelAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
+    private final SettledBetService settledBetService;
 
     public CancelAction(WalletService walletService,
                         HttpService httpService,
                         VendorService vendorService,
                         VendorLineService vendorLineService,
-                        GameSessionService gameSessionService) {
+                        GameSessionService gameSessionService,
+                        SettledBetService settledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
+        this.settledBetService = settledBetService;
     }
 
     @DeleteMapping(path = EndPoints.CANCEL)
@@ -54,7 +56,6 @@ public class CancelAction {
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         CancelVo cancelVo = new CancelVo();
         CancelDto cancelDto;
-        BigDecimal balance;
         BigDecimal currentBalance;
         GameSession gameSession = null;
 
@@ -73,13 +74,9 @@ public class CancelAction {
             this.doVerification(cancelDto, gameSession, body);
 
             //Cancel Bet
-            balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
-            cancelVo.setBalance(balance);
+            cancelBet(cancelDto, gameSession, traceId, cancelVo, httpRequestLog);
 
         } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            cancelVo.setBalance(e.getBalance());
-        } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
             cancelVo.setBalance(currentBalance);
@@ -128,5 +125,17 @@ public class CancelAction {
 
         // Call the service with the duplicate log
         return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
+    }
+
+    private void cancelBet(CancelDto cancelDto, GameSession gameSession, String traceId,
+                           CancelVo cancelVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), cancelDto.getRoundId());
+
+        if (settledBetList == null || settledBetList.isEmpty()) {
+            walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+            cancelVo.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
+        } else {
+            throw new BetResultIdempotentViolationException();
+        }
     }
 }

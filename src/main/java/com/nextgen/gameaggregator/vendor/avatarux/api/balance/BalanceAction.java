@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -72,7 +73,7 @@ public class BalanceAction {
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            responseVo.setBalance(balance);
+            responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
