@@ -54,7 +54,6 @@ public class CancelAction {
         httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
         CancelVo cancelVo = new CancelVo();
         CancelDto cancelDto;
-        BigDecimal balance;
         BigDecimal currentBalance;
         GameSession gameSession = null;
 
