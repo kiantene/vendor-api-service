@@ -118,37 +118,37 @@ public class RollOutAction {
 
         } catch (DuplicateRequestException duplicateRequestException) {
             statusVo.setCode(ResponseCodes.SUCCESS); // vendor requested to return success
-            errorMessage = duplicateRequestException.getMessage();
+            errorMessage = duplicateRequestException.toString();
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
-            errorMessage = invalidRequestException.getMessage();
+            errorMessage = invalidRequestException.toString();
 
         } catch (AuthenticationException |
                  InvalidPlayerException |
                  DisabledAgentPlayerException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-            errorMessage = authenticationException.getMessage();
+            errorMessage = authenticationException.toString();
 
         } catch (DisabledGameException disabledGameException) {
             statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
-            errorMessage = disabledGameException.getMessage();
+            errorMessage = disabledGameException.toString();
 
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
-            errorMessage = dateTimeParseException.getMessage();
+            errorMessage = dateTimeParseException.toString();
 
         } catch (InternalServerException | InvalidOperatorResponseException internalServerException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            errorMessage = internalServerException.getMessage();
+            errorMessage = internalServerException.toString();
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
-            errorMessage = insufficientBalanceException.getMessage();
+            errorMessage = insufficientBalanceException.toString();
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            errorMessage = exception.getMessage();
+            errorMessage = exception.toString();
 
         } finally {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
