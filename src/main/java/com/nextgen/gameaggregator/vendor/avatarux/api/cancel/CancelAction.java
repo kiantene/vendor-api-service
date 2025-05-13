@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.cancel;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -74,10 +76,7 @@ public class CancelAction {
             //Cancel Bet
             cancelBet(cancelDto, gameSession, traceId, cancelVo, httpRequestLog);
 
-        } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            cancelVo.setBalance(e.getBalance());
-        } catch (BetNotFoundException e) {
+        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
             cancelVo.setBalance(currentBalance);
@@ -130,16 +129,13 @@ public class CancelAction {
 
     private void cancelBet(CancelDto cancelDto, GameSession gameSession, String traceId,
                            CancelVo cancelVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
-        try {
-            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
-                    cancelDto.getTransactionId(),
-                    cancelDto.getRoundId(),
-                    gameSession.getVendorId(),
-                    gameSession.getVendorPlayerId()
-            );
-        } catch (BetNotFoundException e) {
-            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
-            cancelVo.setBalance(balance);
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), cancelDto.getRoundId());
+
+        if (settledBetList == null || settledBetList.isEmpty()) {
+            walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+            cancelVo.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
+        } else {
+            throw new BetResultIdempotentViolationException();
         }
     }
 }

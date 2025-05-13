@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -33,7 +32,7 @@ public class BetNSettleAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
-    private final UnsettledBetCachingService unsettledBetCachingService;
+    private final UnsettledBetService unsettledBetService;
     private final SettledBetService settledBetService;
 
     public BetNSettleAction(WalletService walletService,
@@ -42,7 +41,7 @@ public class BetNSettleAction {
                             VendorService vendorService,
                             VendorLineService vendorLineService,
                             GameSessionService gameSessionService,
-                            UnsettledBetCachingService unsettledBetCachingService,
+                            UnsettledBetService unsettledBetService,
                             SettledBetService settledBetService) {
         this.walletService = walletService;
         this.httpService = httpService;
@@ -50,7 +49,7 @@ public class BetNSettleAction {
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
-        this.unsettledBetCachingService = unsettledBetCachingService;
+        this.unsettledBetService = unsettledBetService;
         this.settledBetService = settledBetService;
     }
 
@@ -86,15 +85,15 @@ public class BetNSettleAction {
             switch (betNSettleDto.getType()) {
                 case "withdraw":
                     //Bet
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betNSettleDto, body, httpRequestLog);
-                    balance = betEvent.getLastBalance();
+                    walletService.processBet(traceId, gameSession, betNSettleDto, body, httpRequestLog);
+                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
                     break;
 
                 case "deposit":
                     //Settle
                     //Check for Bet
-                    unsettledBetCachingService.getUnsettledBetByRoundId(betNSettleDto.getVendorBetId(), betNSettleDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                    unsettledBetService.getUnsettledBet(betNSettleDto, betNSettleDto.getRoundId(), gameSession, httpRequestLog);
 
                     settleBet(betNSettleDto, gameSession, traceId, betNSettleVo, httpRequestLog);
                     break;
@@ -170,8 +169,8 @@ public class BetNSettleAction {
         if (settledBetList == null || settledBetList.isEmpty()) {
             //If not yet Settle
             ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
-            betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+            walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
+            betNSettleVo.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog).setScale(2, RoundingMode.DOWN));
         } else {
             //Check if Idempotent Settle
             settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
