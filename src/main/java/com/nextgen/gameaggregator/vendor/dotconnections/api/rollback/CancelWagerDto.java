@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
@@ -13,6 +14,7 @@ import org.hibernate.validator.constraints.Range;
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CancelWagerDto extends CommonDto implements RollbackData {
 

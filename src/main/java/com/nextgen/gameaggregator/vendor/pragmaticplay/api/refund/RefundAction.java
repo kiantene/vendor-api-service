@@ -56,8 +56,8 @@ public class RefundAction {
             this.doValidation(dto);
 
             // request Idempotent checking
-            if (requestIdempotentLogService.checkExistsRollback(dto, dto.getUserId()) == null) {
-                requestIdempotentLogService.createRollback(dto, dto.getUserId());
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
@@ -140,7 +140,7 @@ public class RefundAction {
             httpService.logError(httpRequestLog, exception);
         } finally {
             if (!isRequestExists) {
-                requestIdempotentLogService.deleteRollback(dto, dto.getUserId());
+                requestIdempotentLogService.delete(dto, dto.getUserId());
             }
             httpService.end(httpRequestLog, responseVo);
         }

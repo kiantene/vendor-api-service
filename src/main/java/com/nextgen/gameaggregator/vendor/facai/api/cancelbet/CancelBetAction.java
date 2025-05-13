@@ -100,7 +100,8 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (RecordNotFoundException recordNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(0d);
             httpService.logError(httpRequestLog, recordNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
