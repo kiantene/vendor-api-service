@@ -163,15 +163,23 @@ public class BetNSettleAction {
     }
 
     private void settleBet(BetNSettleDto betNSettleDto, GameSession gameSession, String traceId,
-                           BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
+                           BetNSettleVo betNSettleVo, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException, InternalServerTimeoutRetryException {
 
         List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), betNSettleDto.getRoundId());
 
         if (settledBetList == null || settledBetList.isEmpty()) {
+            //If not yet Settle
             ResultType updatedResultType = vendorService.calculateResultType(betNSettleDto.getBetAmount(), betNSettleDto.getWinAmount(), betNSettleDto.getJackpotAmount(), true);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, updatedResultType, vendorService, httpRequestLog);
             betNSettleVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } else {
+            //Check if Idempotent Settle
+            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
+                    betNSettleDto.getTransactionId(),
+                    betNSettleDto.getRoundId(),
+                    gameSession.getVendorId(),
+                    gameSession.getVendorPlayerId()
+            );
             RawBetResultLog betResultLog = new RawBetResultLog();
             betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
             throw new BetResultIdempotentViolationException(betResultLog);
