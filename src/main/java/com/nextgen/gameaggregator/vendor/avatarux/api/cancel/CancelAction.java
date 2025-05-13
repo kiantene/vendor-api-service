@@ -76,7 +76,7 @@ public class CancelAction {
             //Cancel Bet
             cancelBet(cancelDto, gameSession, traceId, cancelVo, httpRequestLog);
 
-        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             currentBalance = getCurrentBalance(traceId, gameSession, httpRequestLog);
             cancelVo.setBalance(currentBalance);
