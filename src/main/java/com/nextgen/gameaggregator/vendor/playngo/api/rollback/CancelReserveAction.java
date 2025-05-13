@@ -4,10 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.playngo.constant.Default;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
@@ -18,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 
 @RestController
@@ -32,6 +35,10 @@ public class CancelReserveAction {
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     @PostMapping(path = EndPoints.CANCEL)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
@@ -53,8 +60,21 @@ public class CancelReserveAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelReserveDto);
 
-            // Get game session or verify Token
-            gameSession = vendorService.getGameSession(cancelReserveDto);
+            // Get game session by vendorPlayerUsername or verify Token
+            try {
+                gameSession = vendorService.getGameSessionV2(cancelReserveDto.getExternalGameSessionId(), cancelReserveDto.getExternalId());
+            } catch (AuthenticationException authenticationException) {
+                gameSession = gameSessionService.generateNewSessionToken(cancelReserveDto.getExternalId());
+
+                //using game session,dto,default language id and platform id to get vendor game code
+                VendorGameCode vendorGameCode = vendorGameCodeService.getByBetGameCode(cancelReserveDto.getGameId(), Default.DEFAULT_LANGUAGE.id, Default.DEFAULT_PLATFORM.id, gameSession.getVendorId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode.getOpenGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setLanguageId(vendorGameCode.getLanguageId());
+                gameSession.setPlatformId(vendorGameCode.getPlatformId());
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, cancelReserveDto);
@@ -71,10 +91,7 @@ public class CancelReserveAction {
                  GameNotSupportedException |
                  CredentialNotFoundException |
                  JsonProcessingException |
-                 InvalidRequestException |
-                 NoSuchMethodException |
-                 InvocationTargetException |
-                 IllegalAccessException internalErrorException) {
+                 InvalidRequestException internalErrorException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -101,7 +118,7 @@ public class CancelReserveAction {
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
                 vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, cancelReserveVo);
 

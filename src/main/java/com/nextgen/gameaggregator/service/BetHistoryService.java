@@ -146,7 +146,7 @@ public class BetHistoryService {
 
 
         //2. get vendor line credential
-        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
+        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
 
         try {
@@ -178,7 +178,7 @@ public class BetHistoryService {
             InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
 
         //2. get vendor line credential
-        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
+        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
 
         try {

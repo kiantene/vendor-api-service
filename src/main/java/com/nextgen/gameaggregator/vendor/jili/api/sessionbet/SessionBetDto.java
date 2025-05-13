@@ -3,12 +3,12 @@ package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
-
-import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -113,17 +113,17 @@ public class SessionBetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
     public Long getResultTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
@@ -146,13 +146,5 @@ public class SessionBetDto implements BetResultData {
         }
 
         return BetStatus.UNSETTLED;
-    }
-
-    private Long getTimestamp() {
-        long timestamp = this.getWagersTime().longValueExact();
-        if (String.valueOf(Math.abs(timestamp)).length() > 10) {
-            return timestamp;
-        }
-        return timestamp * 1000;
     }
 }

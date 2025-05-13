@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.refund;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -34,6 +35,8 @@ public class RefundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     public ResponseVo refundRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -41,14 +44,23 @@ public class RefundAction {
         RefundVo responseVo = new RefundVo();
         String traceId = httpRequestLog.getId();
         String transactionId = null;
+        RefundDto dto = new RefundDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            RefundDto dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
+            dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
@@ -125,9 +137,12 @@ public class RefundAction {
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 

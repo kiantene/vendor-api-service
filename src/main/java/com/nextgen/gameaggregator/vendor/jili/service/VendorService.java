@@ -1,35 +1,26 @@
 package com.nextgen.gameaggregator.vendor.jili.service;
 
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZoneId;
 import java.util.Objects;
-import java.util.TimeZone;
 
 @Service
-@Slf4j
-@Data
+@Getter
+@Setter
 public class VendorService extends BaseVendorService {
 
     private String agentId;
     private String agentKey;
     private Integer operatorTiming;
-
-    public static String dateGenerator(String dateFormat, String timeZone) {
-
-        SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
-        sdf.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-        return sdf.format(new Date());
-    }
 
     public static String urlQueryStringGenerator(MultiValueMap<String, String> params) {
 
@@ -53,7 +44,8 @@ public class VendorService extends BaseVendorService {
     }
 
     public String gKeyGenerator() {
-        return md5Generator(dateGenerator(Formats.DATE_FORMAT, Formats.TIME_ZONE) + this.getAgentId() + this.getAgentKey());
+        String dateStr = DateTimeConversionUtils.fromUnixTimestamp(System.currentTimeMillis(), Formats.DATE_FORMAT, ZoneId.of(Formats.TIME_ZONE));
+        return md5Generator(dateStr + this.getAgentId() + this.getAgentKey());
     }
 
     public String keyGenerator(MultiValueMap<String, String> params) {

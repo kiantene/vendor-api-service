@@ -14,6 +14,7 @@ import java.math.BigInteger;
 public class CancelBetDto implements RollbackData {
     @NotBlank
     @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String reqId;
 
     @NotBlank
@@ -23,14 +24,15 @@ public class CancelBetDto implements RollbackData {
 
     @NotNull
     @Positive
-    private Integer game;
+    @Digits(integer = 20, fraction = 0)
+    private BigDecimal game;
 
     @NotNull
     @Positive
     private BigInteger round;
 
     @NotNull
-    @PositiveOrZero
+    @Positive
     @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
