@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.dto.GameRoundCloseDto;
 import com.nextgen.gameaggregator.vendor.playtech.dto.PayDto;
@@ -49,8 +48,6 @@ public class GameRoundGeneralAction {
     @PostMapping(path = EndPoints.RESULT)
     public CommonGameRoundVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         String traceId = httpRequestLog.getId();
         CommonGameRoundVo settleVo = new CommonGameRoundVo();
         BigDecimal finalBalance;
@@ -65,7 +62,7 @@ public class GameRoundGeneralAction {
 
             this.doValidation(commonGameRoundDto);
 
-            String removedPrefix = vendorService.removePrefix(commonGameRoundDto.getExternalToken(), removePrefix);
+            String removedPrefix = vendorService.getExtractToken(commonGameRoundDto.getExternalToken());
 
             gameSession = gameSessionService.verifyToken(removedPrefix);
 

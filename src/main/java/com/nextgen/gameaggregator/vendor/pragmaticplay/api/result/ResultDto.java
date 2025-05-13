@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import lombok.Data;
-
 import jakarta.validation.constraints.*;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -65,7 +64,7 @@ public class ResultDto implements BetResultData {
 
     // Additional information about the current game round.
     @NotBlank
-    @Size(max = 4000)
+    @Size(max = 12000)
     private String roundDetails;
 
     // Token of the player from Authenticate response.

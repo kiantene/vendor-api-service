@@ -47,7 +47,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
 
     @Override
     @CacheEvict(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager")
-    public void deleteRollback(RollbackData rollbackData, String vendorPlayerUsername) {
+    public void delete(RollbackData rollbackData, String vendorPlayerUsername) {
         try {
             String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
             requestIdempotentLogRepository.deleteById(id);
@@ -61,12 +61,11 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     public RequestIdempotentLog checkExists(BetResultData betResultData, String vendorPlayerUsername) throws TransactionStillProcessingException {
         String id = this.generateRequestIdempotentLogId(betResultData, vendorPlayerUsername);
         return requestIdempotentLogRepository.findById(id).orElse(null);
-
     }
 
     @Override
     @Cacheable(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
-    public RequestIdempotentLog checkExistsRollback(RollbackData rollbackData, String vendorPlayerUsername) throws TransactionStillProcessingException {
+    public RequestIdempotentLog checkExists(RollbackData rollbackData, String vendorPlayerUsername) throws TransactionStillProcessingException {
         String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
         return requestIdempotentLogRepository.findById(id).orElse(null);
     }
@@ -84,7 +83,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
 
     @Override
     @CachePut(value = "RollbackRequestIdempotentLog", key = "{#rollbackData.rollbackId, #vendorPlayerUsername}", cacheManager = "cacheManager")
-    public RequestIdempotentLog createRollback(RollbackData rollbackData, String vendorPlayerUsername) {
+    public RequestIdempotentLog create(RollbackData rollbackData, String vendorPlayerUsername) {
         String id = this.generateRollbackRequestIdempotentLogId(rollbackData, vendorPlayerUsername);
         RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
         createRequestIdempotentLog.setId(id);
