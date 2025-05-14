@@ -14,20 +14,25 @@ public class BgLiveGameUrlVo implements GameUrlVo {
     private String data;
 
     @JsonProperty("result")
-    private String result;
+    private Object result;
 
     @JsonProperty("error")
     private ErrorDto error;
-
-    private ResultDto parsedResult;
-
+    
     public boolean isSuccess() {
-        return parsedResult != null && parsedResult.isSuccess();
+        if (result instanceof ResultDto dto) {
+            return dto.isSuccess();
+        }
+        return false;
     }
 
     public boolean isFailed() {
-        return "0".equals(result);
+        if (result instanceof String str) {
+            return "0".equals(str);
+        }
+        return !isSuccess();
     }
+
 
     @Override
     public String getGameUrl() {

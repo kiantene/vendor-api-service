@@ -145,7 +145,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
-                .uri(apiUrl + EndPoints.CREATE_USER)
+                .uri(apiUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(formData)
                 .retrieve()
