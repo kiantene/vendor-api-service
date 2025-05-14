@@ -92,6 +92,7 @@ public class RollInAction {
             walletRequest.setToken(walletRequest.getTraceId());
         } else {
             walletRequest.setToken(walletTransaction.getToken());
+            walletRequest.setBetId(walletTransaction.getBetId());
         }
 
     }
