@@ -74,16 +74,18 @@ public class BetService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
 
-            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
-
-                requestIdempotentLogService.create(betDto, betDto.getAccount());
-
-            } else {
-
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-
-            }
+//            betDto.setOrderId("1234");
+//
+//            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
+//
+//                requestIdempotentLogService.create(betDto, betDto.getAccount());
+//
+//            } else {
+//
+//                isRequestExists = true;
+//                throw new TransactionStillProcessingException();
+//
+//            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
@@ -149,16 +151,7 @@ public class BetService {
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
 
-        } catch (DuplicateRequestException duplicateRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
-            httpService.logError(httpRequestLog, duplicateRequestException);
-            errorMessage = duplicateRequestException.toString();
-
-        } catch (Exception e){
+        }  catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
