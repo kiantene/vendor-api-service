@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.service.CustomBooleanDeserializer;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +16,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class FundInfoDto {
+public class FundInfoDto implements BetResultData {
 
     @NotNull
     @JsonProperty("gamestatemode")
@@ -94,4 +96,74 @@ public class FundInfoDto {
     @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("lastbonusaction")
     public Boolean lastBonusAction;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.getTransferId();
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return null;
+    }
+
+    @Override
+    public String getRoundId() {
+        return null;
+    }
+
+    @Override
+    public String getGameId() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return null;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return null;
+    }
 }

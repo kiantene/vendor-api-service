@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -71,7 +72,7 @@ public class BalanceAction {
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            commonBalanceVo.setReal(String.valueOf(getWalletBalance));
+            commonBalanceVo.setReal(getWalletBalance.setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             balanceVo.setBalance(commonBalanceVo);
 

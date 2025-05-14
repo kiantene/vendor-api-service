@@ -92,6 +92,7 @@ public class PokerBetService {
                 //setup debit and credit bet type respond message
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessDebit(true);
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
             httpService.logError(httpRequestLog, e);

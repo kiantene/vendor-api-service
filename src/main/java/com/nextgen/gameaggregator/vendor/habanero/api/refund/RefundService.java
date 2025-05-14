@@ -65,10 +65,12 @@ public class RefundService {
         ) {
             //handle when unsettle bet not available, no action and void the game
             responseVo.setResponseCode(ResponseCodes.REFUND_NOT_REQUIRE);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             //void the game
             responseVo.setResponseCode(ResponseCodes.REFUNDED);
+            httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);
