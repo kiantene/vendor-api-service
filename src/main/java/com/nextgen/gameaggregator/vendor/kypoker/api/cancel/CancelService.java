@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.cancel;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -20,7 +21,6 @@ import java.math.BigDecimal;
 @Service
 public class CancelService {
 
-    private final GameService gameService;
     private final WalletService walletService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
@@ -29,16 +29,18 @@ public class CancelService {
     private final WalletTransactionService walletTransactionService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public CancelService(GameService gameService,
-                         WalletService walletService,
-                         ValidationService validationService,
-                         GameSessionService gameSessionService,
-                         VendorService vendorService,
-                         HttpService httpService,
-                         WalletTransactionService walletTransactionService,
-                         WalletRequestService walletRequestService, OperatorWalletService operatorWalletService) {
-        this.gameService = gameService;
+    public CancelService(
+            WalletService walletService,
+            ValidationService validationService,
+            GameSessionService gameSessionService,
+            VendorService vendorService,
+            HttpService httpService,
+            WalletTransactionService walletTransactionService,
+            WalletRequestService walletRequestService,
+            OperatorWalletService operatorWalletService,
+            RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -47,6 +49,7 @@ public class CancelService {
         this.walletTransactionService = walletTransactionService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp)
@@ -58,6 +61,7 @@ public class CancelService {
         BigDecimal balance = null;
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        Boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
@@ -72,6 +76,17 @@ public class CancelService {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
+
+            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
+
+                requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
+
+            } else {
+
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+
+            }
 
             cancelDto.setTimeStamp(timeStamp);
 
@@ -112,6 +127,7 @@ public class CancelService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
@@ -119,8 +135,12 @@ public class CancelService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelDto, cancelDto.getAccount());
+            }
             httpService.end(httpRequestLog, vo);
         }
 

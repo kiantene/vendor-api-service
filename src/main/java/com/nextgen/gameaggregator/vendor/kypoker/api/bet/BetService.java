@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -17,11 +18,11 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
+import org.web3j.abi.datatypes.Bool;
 
 @Service
 public class BetService {
 
-    private final GameService gameService;
     private final WalletService walletService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
@@ -29,16 +30,17 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public BetService(GameService gameService,
+    public BetService(
                       WalletService walletService,
                       ValidationService validationService,
                       GameSessionService gameSessionService,
                       VendorService vendorService,
                       OperatorWalletService operatorWalletService,
                       WalletRequestService walletRequestService,
-                      HttpService httpService) {
-        this.gameService = gameService;
+                      HttpService httpService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -46,6 +48,7 @@ public class BetService {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -54,6 +57,7 @@ public class BetService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Integer roomMode = null;
         BetDto betDto = null;
+        Boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
@@ -68,6 +72,17 @@ public class BetService {
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getAccount());
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
+
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
+
+                requestIdempotentLogService.create(betDto, betDto.getAccount());
+
+            } else {
+
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
@@ -118,6 +133,7 @@ public class BetService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
@@ -125,6 +141,7 @@ public class BetService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         }  catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
@@ -132,8 +149,13 @@ public class BetService {
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
+            httpService.logError(httpRequestLog, e);
 
         }finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getAccount());
+            }
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {
