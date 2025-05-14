@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -173,15 +174,23 @@ public class BetNSettleAction {
             betNSettleVo.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog).setScale(2, RoundingMode.DOWN));
         } else {
             //Check if Idempotent Settle
-            settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
                     betNSettleDto.getTransactionId(),
                     betNSettleDto.getRoundId(),
                     gameSession.getVendorId(),
                     gameSession.getVendorPlayerId()
             );
-            RawBetResultLog betResultLog = new RawBetResultLog();
-            betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
-            throw new BetResultIdempotentViolationException(betResultLog);
+            if (settledBet != null) {
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
+                    RawBetResultLog betResultLog = new RawBetResultLog();
+                    betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
+                    throw new BetResultIdempotentViolationException(betResultLog);
+                }
+            }
         }
     }
 }
