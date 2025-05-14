@@ -139,9 +139,8 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formData.put("method", EndPoints.CREATE_USER);
         formData.put("params", params);
         formData.put("jsonrpc", JSON_RPC_VERSION);
-
-
-        httpRequestLog.setUrl(apiUrl + EndPoints.CREATE_USER);
+        
+        httpRequestLog.setUrl(apiUrl);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         WebClient webClient = WebClient.create();
         ResponseEntity<String> response = webClient.post()
