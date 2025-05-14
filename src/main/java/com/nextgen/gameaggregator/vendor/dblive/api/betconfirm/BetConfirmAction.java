@@ -78,9 +78,10 @@ public class BetConfirmAction {
             }
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betParamsDto.getLoginName());
-            
+
             try {
                 gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+                if (gameSession == null) throw new AuthenticationException();
                 languageId = gameSession.getLanguageId();
                 platformId = gameSession.getPlatformId();
                 if (!gameSession.getVendorGameCode().equals(betParamsDto.getGameTypeId()))
