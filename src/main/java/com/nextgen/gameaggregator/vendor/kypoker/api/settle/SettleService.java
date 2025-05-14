@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -30,6 +31,7 @@ public class SettleService {
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final WalletTransactionService walletTransactionService;
 
 
     public SettleService(
@@ -40,7 +42,8 @@ public class SettleService {
             OperatorWalletService operatorWalletService,
             WalletRequestService walletRequestService,
             HttpService httpService,
-            RequestIdempotentLogService requestIdempotentLogService) {
+            RequestIdempotentLogService requestIdempotentLogService,
+            WalletTransactionService walletTransactionService) {
 
         this.walletService = walletService;
         this.validationService = validationService;
@@ -50,15 +53,18 @@ public class SettleService {
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.walletTransactionService = walletTransactionService;
     }
     public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        WalletTransaction walletTransaction = null;
         Integer roomMode = 0;
         Boolean isRequestExists = false;
         SettleDto settleDto = null;
+        String errorMessage = "";
 
         try {
             // Convert original request body into dto
@@ -85,6 +91,8 @@ public class SettleService {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
 
+            httpService.isDuplicateRequest(settleDto);
+
             settleDto.setTimeStamp(timeStamp);
             ResponseObjectDto d = new ResponseObjectDto();
 
@@ -99,10 +107,19 @@ public class SettleService {
             }
             //Credit Debit flow
             else if(settleDto.getRoomMode() == RoomCode.CODE1 || settleDto.getRoomMode() == RoomCode.CODE4){
-                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-                vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
-                walletRequest = operatorWalletService.betCredit(currentWalletRequest);
-                d.setMoney(walletRequest.getBalanceAfter());
+                walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), settleDto.getExternalTransactionId());
+
+                if(walletTransaction !=null ) {
+                    WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                    vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+                    walletRequest = operatorWalletService.betCredit(currentWalletRequest);
+                    d.setMoney(walletRequest.getBalanceAfter());
+
+                }
+                else{
+                    throw new BetNotFoundException() ;
+
+                }
             }
 
             d.setCode(ResponseCodes.SUCCESS);
@@ -126,6 +143,7 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            errorMessage = betResultIdempotentViolationException.toString();
 
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
@@ -135,6 +153,7 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
+            errorMessage = transactionStillProcessingException.toString();
 
 
         } catch (BetNotFoundException betNotFoundException) {
@@ -144,6 +163,7 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
             httpService.logError(httpRequestLog, betNotFoundException);
+            errorMessage = betNotFoundException.toString();
 
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -153,6 +173,7 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
+            errorMessage = invalidRequestException.toString();
 
 
         } catch (Exception e){
@@ -162,12 +183,14 @@ public class SettleService {
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
+            errorMessage = e.toString();
 
         } finally {
             if (!isRequestExists) {
                 requestIdempotentLogService.delete(settleDto, settleDto.getAccount());
             }
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
+                walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             }else {
                 httpService.end(httpRequestLog, vo);

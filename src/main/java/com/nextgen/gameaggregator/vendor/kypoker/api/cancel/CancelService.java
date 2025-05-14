@@ -62,6 +62,7 @@ public class CancelService {
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Boolean isRequestExists = false;
+        String errorMessage = "";
 
         try {
             // Convert original request body into dto
@@ -88,6 +89,8 @@ public class CancelService {
 
             }
 
+            httpService.isDuplicateRequest(cancelDto);
+
             cancelDto.setTimeStamp(timeStamp);
 
             // 4. Send refund to Operator
@@ -95,6 +98,7 @@ public class CancelService {
                 balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
             } catch (BetNotFoundException e) {
+
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
@@ -128,6 +132,16 @@ public class CancelService {
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
+            errorMessage = invalidRequestException.toString();
+
+        } catch (BetNotFoundException betNotFoundException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(12);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+            httpService.logError(httpRequestLog, betNotFoundException);
+            errorMessage = betNotFoundException.toString();
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
@@ -136,6 +150,7 @@ public class CancelService {
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
+            errorMessage = e.toString();
 
         } finally {
             if (!isRequestExists) {

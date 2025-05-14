@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.cancel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
@@ -9,7 +10,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class CancelDto implements RollbackData {
+public class CancelDto implements RollbackData, RequestIdempotency {
 
     @NotBlank
     @Size(min = 1, max = 36)
@@ -72,5 +73,15 @@ public class CancelDto implements RollbackData {
     @Override
     public String getRoundId() {
         return this.gameNo;
+    }
+
+    @Override
+    public String getTransactionId() {
+        return getRollbackId();
+    }
+
+    @Override
+    public String getVendorPlayerUsername() {
+        return getAccount();
     }
 }

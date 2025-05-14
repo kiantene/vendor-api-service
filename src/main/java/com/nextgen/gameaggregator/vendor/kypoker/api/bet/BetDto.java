@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -12,7 +13,7 @@ import java.math.BigDecimal;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-public class BetDto implements BetResultData {
+public class BetDto implements BetResultData, RequestIdempotency {
 
     @NotBlank
     @Size(min = 1, max = 36)
@@ -135,5 +136,15 @@ public class BetDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
+    }
+
+    @Override
+    public String getTransactionId() {
+        return getExternalTransactionId();
+    }
+
+    @Override
+    public String getVendorPlayerUsername() {
+        return getAccount();
     }
 }

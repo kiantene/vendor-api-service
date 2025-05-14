@@ -58,6 +58,7 @@ public class BetService {
         Integer roomMode = null;
         BetDto betDto = null;
         Boolean isRequestExists = false;
+        String errorMessage = "";
 
         try {
             // Convert original request body into dto
@@ -86,6 +87,9 @@ public class BetService {
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
+
+            //Idempotent check
+            httpService.isDuplicateRequest(betDto);
 
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
@@ -134,6 +138,7 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
             httpService.logError(httpRequestLog, insufficientBalanceException);
+            errorMessage = insufficientBalanceException.toString();
 
         } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
@@ -142,6 +147,7 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
+            errorMessage = invalidRequestException.toString();
 
         }  catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
@@ -150,6 +156,7 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
+            errorMessage = e.toString();
 
         }finally {
             // first request (not request exist) will delete log after process finish.
@@ -157,6 +164,7 @@ public class BetService {
                 requestIdempotentLogService.delete(betDto, betDto.getAccount());
             }
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
+                walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {
                 httpService.end(httpRequestLog, vo);  // Ensure this runs even after an exception
