@@ -156,7 +156,7 @@ public class SettleService {
             errorMessage = transactionStillProcessingException.toString();
 
 
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetNotFoundException | DuplicateRequestException betNotFoundException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(12);
             vo.setM(EndPoints.LAUNCH_GAME);
