@@ -104,7 +104,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
             LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
             String gameUrl = loginDto.getResult();
             BgLiveGameUrlVo responseVo = new BgLiveGameUrlVo();
-            responseVo.setData(gameUrl);
+            responseVo.setResult(gameUrl);
 
             return responseVo;
         } catch (Exception e) {
@@ -139,7 +139,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         formData.put("method", EndPoints.CREATE_USER);
         formData.put("params", params);
         formData.put("jsonrpc", JSON_RPC_VERSION);
-        
+
         httpRequestLog.setUrl(apiUrl);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         WebClient webClient = WebClient.create();
@@ -163,9 +163,9 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
             throw new InvalidVendorResponseException("Failed to Create Account: response is null");
         }
 
-        BgLiveGameUrlVo responseVo = objectMapper.readValue(response.getBody(), BgLiveGameUrlVo.class);
+        BgLiveRegisterVo responseVo = objectMapper.readValue(response.getBody(), BgLiveRegisterVo.class);
 
-        if (responseVo.isSuccess() || (responseVo.getError() != null && "2206".equals(responseVo.getError().getCode()))) {
+        if (responseVo.getError() == null || "2206".equals(responseVo.getError().getCode())) {
             return;
         }
         throw new InvalidVendorResponseException("Failed to Create Account : " + response.getBody());
