@@ -74,16 +74,18 @@ public class BetService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
 
-            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
-
-                requestIdempotentLogService.create(betDto, betDto.getAccount());
-
-            } else {
-
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-
-            }
+//            betDto.setOrderId("1234");
+//
+//            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
+//
+//                requestIdempotentLogService.create(betDto, betDto.getAccount());
+//
+//            } else {
+//
+//                isRequestExists = true;
+//                throw new TransactionStillProcessingException();
+//
+//            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);

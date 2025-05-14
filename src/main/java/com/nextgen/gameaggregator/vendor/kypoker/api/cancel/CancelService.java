@@ -78,16 +78,16 @@ public class CancelService {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
 
-            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
-
-                requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
-
-            } else {
-
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-
-            }
+//            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
+//
+//                requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
+//
+//            } else {
+//
+//                isRequestExists = true;
+//                throw new TransactionStillProcessingException();
+//
+//            }
 
             httpService.isDuplicateRequest(cancelDto);
 

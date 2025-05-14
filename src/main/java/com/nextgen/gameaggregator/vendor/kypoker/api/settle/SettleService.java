@@ -77,16 +77,16 @@ public class SettleService {
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
 
 
-            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getAccount()) == null) {
-
-                requestIdempotentLogService.create(settleDto, settleDto.getAccount());
-
-            } else {
-
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-
-            }
+//            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getAccount()) == null) {
+//
+//                requestIdempotentLogService.create(settleDto, settleDto.getAccount());
+//
+//            } else {
+//
+//                isRequestExists = true;
+//                throw new TransactionStillProcessingException();
+//
+//            }
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
