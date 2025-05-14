@@ -77,14 +77,14 @@ public class SettleService {
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
 
 
-//            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getAccount()) == null) {
+//            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getS()) == null) {
 //
-//                requestIdempotentLogService.create(settleDto, settleDto.getAccount());
+//                requestIdempotentLogService.create(settleDto, settleDto.getS());
 //
 //            } else {
 //
 //                isRequestExists = true;
-//                throw new TransactionStillProcessingException();
+//                throw new DuplicateRequestException();
 //
 //            }
 

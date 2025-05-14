@@ -74,16 +74,14 @@ public class BetService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
 
-//            betDto.setOrderId("1234");
+//            if (requestIdempotentLogService.checkExists(betDto, betDto.getS()) == null) {
 //
-//            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
-//
-//                requestIdempotentLogService.create(betDto, betDto.getAccount());
+//                requestIdempotentLogService.create(betDto, betDto.getS());
 //
 //            } else {
 //
 //                isRequestExists = true;
-//                throw new TransactionStillProcessingException();
+//                throw new DuplicateRequestException();
 //
 //            }
 
@@ -142,7 +140,16 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (DuplicateRequestException duplicateRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(9);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+            httpService.logError(httpRequestLog, duplicateRequestException);
+            errorMessage = duplicateRequestException.toString();
+
+        }catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(5);
             vo.setM(EndPoints.LAUNCH_GAME);
