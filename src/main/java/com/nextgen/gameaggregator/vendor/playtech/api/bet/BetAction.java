@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.RoundingMode;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class BetAction {
@@ -60,7 +62,7 @@ public class BetAction {
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(betDto);
-            
+
             String removedPrefix = vendorService.getExtractToken(betDto.getExternalToken());
             // 3. Verify session token
             gameSession = gameSessionService.verifyToken(removedPrefix);
@@ -79,7 +81,7 @@ public class BetAction {
             // 6. Set response data
             betVo.setExternalTransactionCode(betDto.getExternalTransactionId());
             betVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(betDto.getVendorBetTime()));
-            commonBalanceVo.setReal(String.valueOf(betEvent.getLastBalance()));
+            commonBalanceVo.setReal(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             betVo.setBalance(commonBalanceVo);
 
@@ -92,7 +94,7 @@ public class BetAction {
         } catch (BetResultIdempotentViolationException e) {
             betVo.setExternalTransactionCode(betDto.getExternalTransactionId());
             betVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(betDto.getVendorBetTime()));
-            commonBalanceVo.setReal(String.valueOf(e.getBalance()));
+            commonBalanceVo.setReal(e.getBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             betVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);

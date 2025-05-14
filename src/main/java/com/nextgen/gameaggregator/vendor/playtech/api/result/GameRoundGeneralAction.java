@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -80,20 +81,20 @@ public class GameRoundGeneralAction {
 
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(finalBalance));
+            commonBalanceVo.setReal(finalBalance.setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
         } catch (BetResultIdempotentViolationException e) {
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(e.getBalance()));
+            commonBalanceVo.setReal(e.getBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException e) {
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(BigDecimal.ZERO));
+            commonBalanceVo.setReal(BigDecimal.ZERO);
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);
