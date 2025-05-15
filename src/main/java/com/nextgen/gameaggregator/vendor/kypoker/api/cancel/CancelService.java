@@ -89,7 +89,6 @@ public class CancelService {
 //
 //            }
 
-            httpService.isDuplicateRequest(cancelDto);
 
             cancelDto.setTimeStamp(timeStamp);
 

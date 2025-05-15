@@ -88,7 +88,6 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
-
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
 

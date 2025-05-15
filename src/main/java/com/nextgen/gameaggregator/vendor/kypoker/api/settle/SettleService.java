@@ -91,8 +91,6 @@ public class SettleService {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
 
-            httpService.isDuplicateRequest(settleDto);
-
             settleDto.setTimeStamp(timeStamp);
             ResponseObjectDto d = new ResponseObjectDto();
 
