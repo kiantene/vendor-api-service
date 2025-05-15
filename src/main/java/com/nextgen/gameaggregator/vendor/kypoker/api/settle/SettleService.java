@@ -105,15 +105,12 @@ public class SettleService {
             }
             //Credit Debit flow
             else if(settleDto.getRoomMode() == RoomCode.CODE1 || settleDto.getRoomMode() == RoomCode.CODE4){
-                walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(settleDto.getRoundId(), settleDto.getVendorPlayerUsername());
+                walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(settleDto.getGameNo(), settleDto.getAccount());
 
                 if(walletTransaction !=null ) {
                     WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                     vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
-
-                    //Idempotent check
                     httpService.isDuplicateRequest(settleDto);
-
                     walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                     d.setMoney(walletRequest.getBalanceAfter());
 
