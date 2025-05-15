@@ -107,7 +107,7 @@ public class SettleService {
             }
             //Credit Debit flow
             else if(settleDto.getRoomMode() == RoomCode.CODE1 || settleDto.getRoomMode() == RoomCode.CODE4){
-                walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), settleDto.getExternalTransactionId());
+                walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(settleDto.getRoundId(), settleDto.getVendorPlayerUsername());
 
                 if(walletTransaction !=null ) {
                     WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
