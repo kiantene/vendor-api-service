@@ -123,8 +123,16 @@ public class BetAction {
             httpService.logError(httpRequestLog, cancelException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+            if (invalidOperatorResponseException.getOperatorStatus()
+                    .equals(com.nextgen.gameaggregator.operator.constant
+                            .ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)){
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }else {
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
