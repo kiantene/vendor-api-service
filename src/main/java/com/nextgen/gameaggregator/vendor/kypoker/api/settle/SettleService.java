@@ -112,6 +112,10 @@ public class SettleService {
                 if(walletTransaction !=null ) {
                     WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                     vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+
+                    //Idempotent check
+                    httpService.isDuplicateRequest(settleDto);
+
                     walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                     d.setMoney(walletRequest.getBalanceAfter());
 
@@ -156,7 +160,7 @@ public class SettleService {
             errorMessage = transactionStillProcessingException.toString();
 
 
-        } catch (BetNotFoundException | DuplicateRequestException betNotFoundException) {
+        } catch (BetNotFoundException betNotFoundException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(12);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -164,6 +168,16 @@ public class SettleService {
             vo.setD(d);
             httpService.logError(httpRequestLog, betNotFoundException);
             errorMessage = betNotFoundException.toString();
+
+
+        } catch (DuplicateRequestException duplicateRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(9);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setD(d);
+            httpService.logError(httpRequestLog, duplicateRequestException);
+            errorMessage = duplicateRequestException.toString();
 
 
         } catch (InvalidRequestException invalidRequestException) {

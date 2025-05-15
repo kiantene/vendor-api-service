@@ -103,9 +103,14 @@ public class CancelService {
                 String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
                 this.dataMapper(walletRequest,cancelDto,gameSession);
-                walletRequest = operatorWalletService.betCredit(walletRequest);
+
+                //Idempotent check
+                httpService.isDuplicateRequest(cancelDto);
 
                 if (walletTransaction != null) {
+
+                    walletRequest = operatorWalletService.betCredit(walletRequest);
+
                     ResponseObjectDto d = new ResponseObjectDto();
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.CODE1);

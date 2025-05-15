@@ -88,8 +88,6 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
-            //Idempotent check
-            httpService.isDuplicateRequest(betDto);
 
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
@@ -113,6 +111,10 @@ public class BetService {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
+
+                //Idempotent check
+                httpService.isDuplicateRequest(betDto);
+
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
 
                 d.setCode(ResponseCodes.SUCCESS);
@@ -130,6 +132,7 @@ public class BetService {
                 vo.setS(null);
                 vo.setD(null);
             }
+
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             ResponseObjectDto d = new ResponseObjectDto();
