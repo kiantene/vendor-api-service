@@ -71,7 +71,7 @@ public class CancelAction {
             gameSession = gameSessionService.verifyToken(authorization.substring(7));
 
             // Verify parameters (Verify against database values)
-            this.doVerification(cancelDto, gameSession, body);
+            this.doVerification(cancelDto.getNativeId(), cancelDto.getAuthorization(), cancelDto.getXServerAuthorization(), gameSession, body);
 
             //Cancel Bet
             cancelBet(cancelDto, gameSession, traceId, cancelVo, httpRequestLog);
@@ -101,22 +101,21 @@ public class CancelAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(String dtoNativeId, String dtoAuthorization, String dtoXServerAuthorization, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
 
         //1. Verify username
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId());
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dtoNativeId);
 
         //2. Verify Authorization
-        String authorizationToken = dto.getAuthorization();
-        if (authorizationToken == null || !authorizationToken.startsWith("Bearer ")) {
+        if (dtoAuthorization == null || !dtoAuthorization.startsWith("Bearer ")) {
             throw new AuthenticationException();
         }
-        String token = authorizationToken.substring(7);
+        String token = dtoAuthorization.substring(7);
         ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
         //3. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
+        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dtoXServerAuthorization, AuthenticationException::new);
 
     }
 
