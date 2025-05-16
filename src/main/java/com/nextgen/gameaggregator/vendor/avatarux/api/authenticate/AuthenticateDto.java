@@ -2,9 +2,11 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateDto {
     @NotBlank

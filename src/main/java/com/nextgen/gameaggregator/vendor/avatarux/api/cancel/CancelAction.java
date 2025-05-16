@@ -101,10 +101,10 @@ public class CancelAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException {
+    private void doVerification(CancelDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
 
         //1. Verify username
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId());
 
         //2. Verify Authorization
         String authorizationToken = dto.getAuthorization();

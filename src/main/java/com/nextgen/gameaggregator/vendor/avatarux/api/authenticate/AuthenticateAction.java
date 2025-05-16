@@ -72,7 +72,7 @@ public class AuthenticateAction {
             responseVo.setCurrency(gameSession.getCurrencyCode().toLowerCase());
             responseVo.setBrand("ONEAPI");
 
-        } catch (InvalidRequestException e) {
+        } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(new ErrorVo());
             responseVo.getError().setCode(ResponseCode.SERVER_UNAUTHORIZED.code);
@@ -99,11 +99,14 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
-        
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String body) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException, InvalidPlayerException, InvalidSignatureException {
+
         //1. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), InvalidRequestException::new);
+        ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), InvalidSignatureException::new);
+
+        //2. Verify username(Operator)
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getOperator(), InvalidPlayerException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {

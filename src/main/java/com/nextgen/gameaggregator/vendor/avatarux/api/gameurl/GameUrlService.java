@@ -35,8 +35,9 @@ public class GameUrlService extends BaseGameUrlService<AUGameUrlVo> {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String apiName = ValidationUtils.validateCredential(credentials.get(Credentials.API_NAME));
+        String provider = ValidationUtils.validateCredential(credentials.get(Credentials.PROVIDER));
 
-        formData.add("provider", "avatarux");
+        formData.add("provider", provider);
         formData.add("wallet", apiName);
         formData.add("operator", gameSession.getVendorPlayerUsername());
         formData.add("game", gameSession.getVendorGameCode());

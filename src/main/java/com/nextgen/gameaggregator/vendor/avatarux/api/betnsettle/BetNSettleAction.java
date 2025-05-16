@@ -132,7 +132,7 @@ public class BetNSettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetNSettleDto dto, GameSession gameSession, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
+    private void doVerification(BetNSettleDto dto, GameSession gameSession, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
         //1. validate vendor username, agent vendor line, player status, and game status
         if (dto.getType().equals("withdraw")) {
             validationService.validateEligibleBet(gameSession, dto.getNativeId());
@@ -141,7 +141,11 @@ public class BetNSettleAction {
         //2. Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
 
-        //3. Verify Authorization
+        //3. Verify provider
+        String provider = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROVIDER);
+        ValidationUtils.isEquals(provider, dto.getProvider());
+
+        //4. Verify Authorization
         String authorizationToken = dto.getAuthorization();
         if (authorizationToken == null || !authorizationToken.startsWith("Bearer ")) {
             throw new AuthenticationException();
@@ -149,7 +153,7 @@ public class BetNSettleAction {
         String token = authorizationToken.substring(7);
         ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
-        //4. Verify X-Server-Authorization
+        //5. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
 
