@@ -18,7 +18,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
-import org.web3j.abi.datatypes.Bool;
 
 @Service
 public class BetService {
@@ -135,7 +134,7 @@ public class BetService {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(1);
+            d.setCode(ResponseCodes.CODE1);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
@@ -144,7 +143,7 @@ public class BetService {
 
         } catch (DuplicateRequestException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(9);
+            d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
@@ -153,7 +152,7 @@ public class BetService {
 
         }catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
+            d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);

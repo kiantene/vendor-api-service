@@ -135,9 +135,9 @@ public class SettleService {
                 vo.setD(null);
             }
 
-        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+        } catch (BetResultIdempotentViolationException | DuplicateRequestException betResultIdempotentViolationException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(9);
+            d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
@@ -147,7 +147,7 @@ public class SettleService {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(11);
+            d.setCode(ResponseCodes.PROCESSING);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
@@ -157,7 +157,7 @@ public class SettleService {
 
         } catch (BetNotFoundException betNotFoundException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(12);
+            d.setCode(ResponseCodes.BET_NOT_FOUND);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);
@@ -165,19 +165,9 @@ public class SettleService {
             errorMessage = betNotFoundException.toString();
 
 
-        } catch (DuplicateRequestException duplicateRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(9);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
-            httpService.logError(httpRequestLog, duplicateRequestException);
-            errorMessage = duplicateRequestException.toString();
-
-
         } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
+            d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setD(d);

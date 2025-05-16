@@ -58,11 +58,9 @@ public class CancelService {
         // Construct VO
         CommonVo vo = new CommonVo();
         CancelDto cancelDto = null;
-        BigDecimal balance = null;
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Boolean isRequestExists = false;
-        String errorMessage = "";
 
         try {
             // Convert original request body into dto
@@ -94,7 +92,7 @@ public class CancelService {
 
             // 4. Send refund to Operator
             try {
-                balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+                walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
             } catch (BetNotFoundException e) {
 
@@ -131,30 +129,27 @@ public class CancelService {
 
         } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
+            d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
-            errorMessage = invalidRequestException.toString();
 
         } catch (BetNotFoundException | DuplicateRequestException betNotFoundException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(12);
+            d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
             httpService.logError(httpRequestLog, betNotFoundException);
-            errorMessage = betNotFoundException.toString();
 
         } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(13);
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
-            errorMessage = e.toString();
 
         } finally {
             if (!isRequestExists) {

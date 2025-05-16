@@ -14,6 +14,11 @@ public class ResponseCodes {
     public static final Integer CODE2 = 2;
     public static final Integer CODE3 = 3;
     public static final Integer CODE4 = 4;
+    public static final Integer INVALID_REQUEST = 5;
+    public static final Integer DUPLICATE = 9;
+    public static final Integer PROCESSING = 11;
+    public static final Integer BET_NOT_FOUND = 12;
+
 
 
 }
