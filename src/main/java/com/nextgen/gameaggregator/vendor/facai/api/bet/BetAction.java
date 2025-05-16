@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
@@ -125,8 +126,7 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             if (invalidOperatorResponseException.getOperatorStatus()
-                    .equals(com.nextgen.gameaggregator.operator.constant
-                            .ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)){
+                    .equals(Status.SC_INSUFFICIENT_FUNDS.code)){
                 commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }else {
