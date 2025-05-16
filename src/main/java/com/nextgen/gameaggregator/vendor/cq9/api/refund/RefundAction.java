@@ -211,6 +211,7 @@ public class RefundAction {
         walletRequest.setBetStatus(BetStatus.REFUNDED);
         walletRequest.setVendorBetTime(walletTransaction.getTimestamp());
         walletRequest.setVendorSettleTime(walletTransaction.getTimestamp());
+        walletRequest.setBetId(walletTransaction.getBetId());
     }
 
     private void doRollback(String traceId, Integer vendorId, String wToken, RefundDto refundDto, CommonVo commonVo, HttpRequestLog httpRequestLog) throws
