@@ -4,9 +4,8 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,6 +27,7 @@ public class BetNSettleDto implements BetResultData {
     private String nativeId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 255)
     private String transactionId;
 
@@ -39,10 +39,12 @@ public class BetNSettleDto implements BetResultData {
     @Size(max = 255)
     private String provider;
 
+    @NotNull
     @Digits(integer = 20, fraction = 8)
     private BigDecimal amount;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 255)
     private String roundId;
 

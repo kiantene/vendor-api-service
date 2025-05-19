@@ -96,7 +96,7 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession, String body)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException {
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException, InvalidRequestException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
@@ -110,9 +110,13 @@ public class BalanceAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // 4. Verify username
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getNativeId());
 
-        //5. Verify Authorization
+        // 5. Verify provider
+        String provider = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROVIDER);
+        ValidationUtils.isEquals(provider, dto.getProvider());
+
+        // 6. Verify Authorization
         String authorizationToken = dto.getAuthorization();
         if (authorizationToken == null || !authorizationToken.startsWith("Bearer ")) {
             throw new AuthenticationException();
@@ -120,7 +124,7 @@ public class BalanceAction {
         String token = authorizationToken.substring(7);
         ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
-        //6. Verify X-Server-Authorization
+        // 7. Verify X-Server-Authorization
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(VendorService.generateHash(secretKey, body), dto.getXServerAuthorization(), AuthenticationException::new);
 

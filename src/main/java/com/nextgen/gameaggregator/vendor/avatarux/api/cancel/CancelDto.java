@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.avatarux.api.cancel;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,10 +26,12 @@ public class CancelDto implements RollbackData {
     private String nativeId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 255)
     private String transactionId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 255)
     private String roundId;
 
