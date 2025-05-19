@@ -121,7 +121,7 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.money;
+        return this.revenue;
     }
 
     @Override
