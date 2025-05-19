@@ -252,8 +252,9 @@ public class SettlementService {
             }
             if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
                 walletRequestService.end(walletRequest, httpRequestLog, new CommonVo());
+            } else {
+                httpService.end(httpRequestLog, new CommonVo());
             }
-            httpService.end(httpRequestLog, new CommonVo());
         }
         return resultVo;
     }
