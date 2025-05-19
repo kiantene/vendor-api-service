@@ -121,7 +121,6 @@ public class BetService {
             // Rollback transactions if processing failed
             if (processFailed) {
                 this.handleRollbackForFailedBets(betDto, gameSession);
-                httpService.end(httpRequestLog, new CommonVo());
             }
         }
         return commonVo;
@@ -240,8 +239,9 @@ public class BetService {
             }
             if (ordersDto.getGameId().equals(GameCode.BULL_BULL)) {
                 walletRequestService.end(walletRequest, httpRequestLog, new CommonVo());
+                httpService.end(httpRequestLog, new CommonVo());
             }
-            httpService.end(httpRequestLog, new CommonVo());
+
         }
         return resultVo;
     }
