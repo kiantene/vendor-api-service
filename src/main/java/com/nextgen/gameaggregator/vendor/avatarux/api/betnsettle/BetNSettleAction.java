@@ -178,22 +178,27 @@ public class BetNSettleAction {
             betNSettleVo.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog).setScale(2, RoundingMode.DOWN));
         } else {
             //Check if Idempotent Settle
-            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
-                    betNSettleDto.getTransactionId(),
-                    betNSettleDto.getRoundId(),
-                    gameSession.getVendorId(),
-                    gameSession.getVendorPlayerId()
-            );
-            if (settledBet != null) {
-                Integer operatorStatus = settledBet.getOperatorStatus();
-                if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
-                    throw new TransactionStillProcessingException();
+            settledBetIdempotentCheck(betNSettleDto.getTransactionId(), betNSettleDto.getRoundId(), gameSession, traceId, httpRequestLog);
+        }
+    }
 
-                } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
-                    RawBetResultLog betResultLog = new RawBetResultLog();
-                    betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
-                    throw new BetResultIdempotentViolationException(betResultLog);
-                }
+    private void settledBetIdempotentCheck(String dtoTransactionId, String dtoRoundId, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws TransactionStillProcessingException, BetResultIdempotentViolationException, BetNotFoundException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
+                dtoTransactionId,
+                dtoRoundId,
+                gameSession.getVendorId(),
+                gameSession.getVendorPlayerId()
+        );
+
+        if (settledBet != null) {
+            Integer operatorStatus = settledBet.getOperatorStatus();
+            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
+                throw new TransactionStillProcessingException();
+
+            } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
+                RawBetResultLog betResultLog = new RawBetResultLog();
+                betResultLog.setBalance(getCurrentBalance(traceId, gameSession, httpRequestLog));
+                throw new BetResultIdempotentViolationException(betResultLog);
             }
         }
     }
