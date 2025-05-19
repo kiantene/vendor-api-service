@@ -135,7 +135,15 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (BetNotFoundException | DuplicateRequestException betNotFoundException) {
+        } catch (DuplicateRequestException duplicateRequestException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(ResponseCodes.DUPLICATE);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+            httpService.logError(httpRequestLog, duplicateRequestException);
+
+        }catch (BetNotFoundException betNotFoundException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
