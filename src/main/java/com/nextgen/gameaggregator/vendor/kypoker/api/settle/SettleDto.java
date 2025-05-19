@@ -116,7 +116,7 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.validBet;
+        return BigDecimal.ZERO;
     }
 
     @Override
