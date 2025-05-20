@@ -97,7 +97,6 @@ public class BetService {
 
             //check all orders balance
             balance = vendorService.checkResponseAndReturnBalance(resultVoList, traceId, gameSession, httpRequestLog);
-            balance = null;
             if (balance == null) {
                 processFailed = true;
                 throw new BetFailedException("Have Transaction Failed");
