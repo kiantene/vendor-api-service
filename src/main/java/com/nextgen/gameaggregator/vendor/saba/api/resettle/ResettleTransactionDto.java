@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,6 +25,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    private String settlementTime;
     private String operationId;
 
     @Override
@@ -79,10 +81,15 @@ public class ResettleTransactionDto implements SportResettleData {
     @Override
     public Long getVendorSettleTime() {
         // Parse the original string to a ZonedDateTime
-        ZonedDateTime zonedDateTime = ZonedDateTime.parse(this.winLostDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        ZonedDateTime unixWinLoseDate = ZonedDateTime.parse(this.winLostDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        LocalDateTime unixSettlementTime = LocalDateTime.parse(this.settlementTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-        // Convert ZonedDateTime to milliseconds
-        return zonedDateTime.toInstant().toEpochMilli();
+        //convert to millisecond
+        long millisWinLostDate = unixWinLoseDate.toInstant().toEpochMilli();
+        long millisSettlementTime = unixSettlementTime.toInstant(unixWinLoseDate.getOffset()).toEpochMilli();
+
+        //compare and get the Later Time
+        return Math.max(millisWinLostDate, millisSettlementTime);
     }
 
     @Override
