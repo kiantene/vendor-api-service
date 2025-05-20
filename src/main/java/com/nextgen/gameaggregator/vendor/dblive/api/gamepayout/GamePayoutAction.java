@@ -95,6 +95,7 @@ public class GamePayoutAction {
             // Try to catch if session is expired and generate new session
             try {
                 gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+                if (gameSession == null) throw new AuthenticationException();
                 languageId = gameSession.getLanguageId();
                 platformId = gameSession.getPlatformId();
                 if (!gameSession.getVendorGameCode().equals(gamePayoutParamDto.getGameTypeId()))

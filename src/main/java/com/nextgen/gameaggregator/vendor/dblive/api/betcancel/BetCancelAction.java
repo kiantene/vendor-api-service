@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.betcancel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -97,7 +98,7 @@ public class BetCancelAction {
                  DisabledGameException |
                  InvalidRequestException |
                  TransactionStillProcessingException |
-                 JsonProcessingException e) {
+                 JsonProcessingException | JsonSyntaxException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
@@ -109,7 +110,7 @@ public class BetCancelAction {
             try {
                 signature = VendorService.getMD5(betCancelDataVo, md5Key);
                 responseVo.setResponseSuccess(betCancelDataVo, signature);
-            } catch (JsonProcessingException ex) {
+            } catch (JsonProcessingException | JsonSyntaxException ex) {
                 responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             }
 

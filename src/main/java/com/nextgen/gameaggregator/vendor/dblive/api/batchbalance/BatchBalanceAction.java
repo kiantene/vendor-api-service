@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.dblive.api.batchbalance;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -80,7 +81,7 @@ public class BatchBalanceAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.INVALID_PLAYER_SESSION);
         } catch (CredentialNotFoundException | JsonParseException |
-                 UnexpectedTypeException | InvalidRequestException e) {
+                 UnexpectedTypeException | InvalidRequestException | JsonSyntaxException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
         } catch (InvalidSignatureException exception) {
