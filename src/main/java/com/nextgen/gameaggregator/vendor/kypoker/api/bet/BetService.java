@@ -141,7 +141,7 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
-        } catch (DuplicateRequestException duplicateRequestException) {
+        } catch (DuplicateRequestException | BetResultIdempotentViolationException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);

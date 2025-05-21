@@ -135,7 +135,7 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (DuplicateRequestException duplicateRequestException) {
+        } catch (DuplicateRequestException | BetResultIdempotentViolationException | BetRefundIdempotentViolationException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
