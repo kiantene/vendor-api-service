@@ -88,7 +88,7 @@ public class SettleService {
 
             //Normal Flow
             if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3) {
-                ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
                 BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
                 d.setMoney(balance);
             }
