@@ -76,18 +76,6 @@ public class CancelService {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
 
-//            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
-//
-//                requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
-//
-//            } else {
-//
-//                isRequestExists = true;
-//                throw new TransactionStillProcessingException();
-//
-//            }
-
-
             cancelDto.setTimeStamp(timeStamp);
 
             // 4. Send refund to Operator
@@ -100,9 +88,6 @@ public class CancelService {
                 String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
                 this.dataMapper(walletRequest,cancelDto,gameSession);
-
-                //Idempotent check
-                httpService.isDuplicateRequest(cancelDto);
 
                 if (walletTransaction != null) {
 
@@ -135,7 +120,7 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (DuplicateRequestException | BetResultIdempotentViolationException | BetRefundIdempotentViolationException duplicateRequestException) {
+        } catch ( BetResultIdempotentViolationException | BetRefundIdempotentViolationException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);

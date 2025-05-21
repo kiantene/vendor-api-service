@@ -73,17 +73,6 @@ public class BetService {
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
 
-//            if (requestIdempotentLogService.checkExists(betDto, betDto.getS()) == null) {
-//
-//                requestIdempotentLogService.create(betDto, betDto.getS());
-//
-//            } else {
-//
-//                isRequestExists = true;
-//                throw new DuplicateRequestException();
-//
-//            }
-
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
@@ -109,9 +98,6 @@ public class BetService {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
-
-                //Idempotent check
-                httpService.isDuplicateRequest(betDto);
 
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
 
@@ -141,7 +127,7 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
-        } catch (DuplicateRequestException | BetResultIdempotentViolationException duplicateRequestException) {
+        } catch (BetResultIdempotentViolationException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);

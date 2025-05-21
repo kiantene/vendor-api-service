@@ -77,17 +77,6 @@ public class SettleService {
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
 
 
-//            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getS()) == null) {
-//
-//                requestIdempotentLogService.create(settleDto, settleDto.getS());
-//
-//            } else {
-//
-//                isRequestExists = true;
-//                throw new DuplicateRequestException();
-//
-//            }
-
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
 
@@ -110,7 +99,6 @@ public class SettleService {
                 if(walletTransaction !=null ) {
                     WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                     vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
-                    httpService.isDuplicateRequest(settleDto);
                     walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                     d.setMoney(walletRequest.getBalanceAfter());
 
@@ -135,7 +123,7 @@ public class SettleService {
                 vo.setD(null);
             }
 
-        } catch (BetResultIdempotentViolationException | DuplicateRequestException betResultIdempotentViolationException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
