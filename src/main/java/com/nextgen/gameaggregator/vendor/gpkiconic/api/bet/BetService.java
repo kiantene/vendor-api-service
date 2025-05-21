@@ -76,7 +76,7 @@ public class BetService {
 
             boolean isIconicLive = gameSession.getGameCategoryId().equals(5);
             boolean isTips = BetType.isTips(betDto.getIsTips());
-            
+
             if (isIconicLive && isTips) {
                 // tips
                 balance = walletService.processBetResult(traceId,
@@ -110,13 +110,13 @@ public class BetService {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE.code);
-        } catch (BetResultIdempotentViolationException e) {
+        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
 
             try {
-                balance = this.getCurrentBalance(traceId,
+                balance = vendorService.getCurrentBalance(traceId,
                         gameSession,
                         httpRequestLog);
             } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException |
@@ -185,19 +185,18 @@ public class BetService {
                 InvalidRequestException::new);
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws
-            InvalidAgentApiCredentialException,
+    private BigDecimal processBetOrSettlement(String traceId, GameSession gameSession, BetDto betDto,
+                                              HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException,
             VendorCurrencyNotSupportException,
-            InvalidOperatorResponseException {
-        return walletService.getBalance(traceId,
-                gameSession,
-                httpRequestLog);
-    }
+            BetResultIdempotentViolationException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            InvalidOperatorResponseException,
+            CouchbaseDataIntegrityException,
+            MergedBetDataIntegrityException,
+            BetNotFoundException,
+            InternalServerTimeoutRetryException {
 
-    private BigDecimal processBetOrSettlement(String traceId,
-                                              GameSession gameSession,
-                                              BetDto betDto,
-                                              HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, MergedBetDataIntegrityException, BetNotFoundException, InternalServerTimeoutRetryException {
         BigDecimal balance;
         // bet
         if (betDto.getCode().equals(BetType.POINTIN)) {

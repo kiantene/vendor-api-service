@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.gpkiconic.api.rollback;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -45,9 +42,9 @@ public class RollBackService {
         RollBackDto rollBackDto = new RollBackDto();
         CommonVo vo = new CommonVo();
         RollBackDataVo dataVo = new RollBackDataVo();
+        GameSession gameSession = new GameSession();
+        BigDecimal balance = BigDecimal.ZERO;
 
-        BigDecimal balance;
-        
         try {
             // Retrieve request body in original string format
             rollBackDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(),
@@ -58,7 +55,7 @@ public class RollBackService {
             this.doValidation(rollBackDto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollBackDto.getUser(),
@@ -82,14 +79,21 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-        } catch (BetResultIdempotentViolationException e) {
+        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
             // vendor site already thread this transaction as cancel no matter we return error or success
             httpService.logError(httpRequestLog,
                     e);
-
-            balance = e.getBalance();
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
-
+            try {
+                balance = vendorService.getCurrentBalance(traceId,
+                        gameSession,
+                        httpRequestLog);
+            } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException |
+                     InvalidOperatorResponseException ex) {
+                httpService.logError(httpRequestLog,
+                        ex);
+                vo.setCodeMsg(ResponseCodes.ERROR.code);
+            }
             dataVo.setCash(balance.setScale(2,
                     RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney());
