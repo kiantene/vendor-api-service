@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
+import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -81,13 +83,8 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        // Parse the original string to a ZonedDateTime
-        ZonedDateTime unixWinLoseDate = ZonedDateTime.parse(this.winLostDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        LocalDateTime unixSettlementTime = LocalDateTime.parse(this.settlementTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-
-        //convert to millisecond
-        long millisWinLostDate = unixWinLoseDate.toInstant().toEpochMilli();
-        long millisSettlementTime = unixSettlementTime.toInstant(unixWinLoseDate.getOffset()).toEpochMilli();
+        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE,DateTime.ZONE);
+        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME,DateTime.ZONE);
 
         //compare and get the Later Time
         return Math.max(millisWinLostDate, millisSettlementTime);
