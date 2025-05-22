@@ -143,7 +143,7 @@ public class RollInAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
-            errorMessage = invalidRequestException.getMessage();
+            errorMessage = invalidRequestException.toString();
 
         } catch (AuthenticationException |
                  InvalidPlayerException authenticationException) {
