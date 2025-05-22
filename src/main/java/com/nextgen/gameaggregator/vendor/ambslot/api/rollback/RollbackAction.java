@@ -113,8 +113,8 @@ public class RollbackAction {
                  BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
 
-            statusVo.setCode(ResponseCodes.TRANSACTION_CANCELED);
-            statusVo.setMessage(ResponseCodes.TRANSACTION_CANCELED_MSG);
+            statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
+            statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  BetNotFoundException |
