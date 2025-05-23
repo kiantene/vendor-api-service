@@ -35,13 +35,9 @@ public class WalletBetCreditProcessor {
         this.kafkaService = kafkaService;
     }
 
-    public WalletRequest process(WalletRequest walletRequest) throws InternalServerException, BetNotAllowedException, InsufficientBalanceException, InvalidOperatorResponseException {
+    public WalletRequest process(WalletRequest walletRequest) throws InternalServerException, BetNotAllowedException, InvalidOperatorResponseException {
 
         walletRequestService.initialise(walletRequest);
-
-        if (walletRequest.getWinLoss() == null && walletRequest.getBetAmount() != null && walletRequest.getWinAmount() != null) {
-            walletRequest.setWinLoss(walletRequest.getWinAmount().subtract(walletRequest.getBetAmount()));
-        }
 
         WalletTransaction walletTransaction = walletTransactionService.prepareEntity(walletRequest, OperatorWalletService.CREDIT);
 
@@ -49,14 +45,17 @@ public class WalletBetCreditProcessor {
 
         WalletBetCreditDto dto = this.prepareOperatorRequestData(walletRequest);
 
-        new WalletBetCreditAction().callToOperator(walletRequest, dto);
+        try {
+            new WalletBetCreditAction().callToOperator(walletRequest, dto);
 
-        walletTransaction.setOperatorStatus(walletRequest.getOperatorResponseStatus().code);
-        walletTransactionService.save(walletTransaction);
+        } finally {
+            walletTransaction.setOperatorStatus(walletRequest.getOperatorResponseStatus().code);
+            walletTransactionService.save(walletTransaction);
 
-        walletRequest = this.generateBetHistory(walletTransaction, walletRequest);
+            walletRequest = this.generateBetHistory(walletTransaction, walletRequest);
+            return walletRequest;
 
-        return walletRequest;
+        }
     }
 
     public WalletRequest generateBetHistory(WalletTransaction walletTransaction, WalletRequest walletRequest) throws InternalServerException {

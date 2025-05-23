@@ -3,20 +3,23 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,21 +30,15 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
+@RequiredArgsConstructor
 public class BetAction {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
@@ -65,7 +62,9 @@ public class BetAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            String secret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+            String jsonParam = EncryptionUtils.aesDecrypt(Encryption.CIPHER_MODE_AND_PADDING, commonDto.getParams(), secret);
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into betDto
             BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
@@ -90,9 +89,16 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            if (!betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+                //if bet result idempotent is not settled (which is rollback, then we should let vendor resend rollback instead
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+            } else {
+                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            }
 
         } catch (
                 AuthenticationException |
@@ -115,16 +121,18 @@ public class BetAction {
             httpService.logError(httpRequestLog, cancelException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //SC_INSUFFICIENT_FUNDS
-            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+
+            if (invalidOperatorResponseException.getOperatorStatus()
+                    .equals(Status.SC_INSUFFICIENT_FUNDS.code)){
                 commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
-            } else {
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }else {
                 commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {

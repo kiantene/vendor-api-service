@@ -20,7 +20,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
@@ -57,7 +56,6 @@ public class SlotBetService {
         String traceId = httpRequestLog.getId();
         httpRequestLog.setRequestBody(new Gson().toJson(fundInfoDto));
 
-        BigDecimal currentBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         try {
             //Retrieve request body in original string format
@@ -95,6 +93,7 @@ public class SlotBetService {
                 //setup debit and credit bet type respond message
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessDebit(true);
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
             httpService.logError(httpRequestLog, e);

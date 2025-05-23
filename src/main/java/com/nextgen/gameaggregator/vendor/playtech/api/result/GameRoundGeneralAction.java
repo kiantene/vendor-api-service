@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.dto.GameRoundCloseDto;
 import com.nextgen.gameaggregator.vendor.playtech.dto.PayDto;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -49,8 +49,6 @@ public class GameRoundGeneralAction {
     @PostMapping(path = EndPoints.RESULT)
     public CommonGameRoundVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         String traceId = httpRequestLog.getId();
         CommonGameRoundVo settleVo = new CommonGameRoundVo();
         BigDecimal finalBalance;
@@ -65,7 +63,7 @@ public class GameRoundGeneralAction {
 
             this.doValidation(commonGameRoundDto);
 
-            String removedPrefix = vendorService.removePrefix(commonGameRoundDto.getExternalToken(), removePrefix);
+            String removedPrefix = vendorService.getExtractToken(commonGameRoundDto.getExternalToken());
 
             gameSession = gameSessionService.verifyToken(removedPrefix);
 
@@ -83,20 +81,20 @@ public class GameRoundGeneralAction {
 
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(finalBalance));
+            commonBalanceVo.setReal(finalBalance.setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
         } catch (BetResultIdempotentViolationException e) {
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(e.getBalance()));
+            commonBalanceVo.setReal(e.getBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException e) {
             settleVo.setExternalTransactionCode(commonGameRoundDto.getExternalTransactionId());
             settleVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(commonGameRoundDto.getVendorSettleTime()));
-            commonBalanceVo.setReal(String.valueOf(BigDecimal.ZERO));
+            commonBalanceVo.setReal(BigDecimal.ZERO);
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);

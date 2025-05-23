@@ -8,47 +8,33 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
+@RequiredArgsConstructor
 public class BalanceAction {
 
     private final HttpService httpService;
-    private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final WalletService walletService;
     private final GameSessionService gameSessionService;
-
-    public BalanceAction(HttpService httpService,
-                         VendorService vendorService,
-                         VendorLineService vendorLineService,
-                         WalletService walletService,
-                         GameSessionService gameSessionService) {
-
-        this.httpService = httpService;
-        this.vendorService = vendorService;
-        this.vendorLineService = vendorLineService;
-        this.walletService = walletService;
-        this.gameSessionService = gameSessionService;
-    }
 
     @PostMapping(path = EndPoints.BALANCE)
     public CommonVo balance(HttpServletRequest request) {
@@ -73,7 +59,9 @@ public class BalanceAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            String secret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+            String jsonParam = EncryptionUtils.aesDecrypt(Encryption.CIPHER_MODE_AND_PADDING, commonDto.getParams(), secret);
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into balanceDto
             BalanceDto balanceDto = HttpService.convertJsonToDto(jsonParam, BalanceDto.class);

@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
@@ -27,14 +31,16 @@ public class DebitAction {
     private final WalletService walletService;
     private final ValidationService validationService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
-    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService) {
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.DEBIT)
@@ -43,14 +49,23 @@ public class DebitAction {
 
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
+        boolean isRequestExists = false;
+        DebitDto debitDto = new DebitDto();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
+            debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
+
+            if (requestIdempotentLogService.checkExists(debitDto, debitDto.getUserId()) == null) {
+                requestIdempotentLogService.create(debitDto, debitDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = vendorService.preCheckGameSessionToken(debitDto.getSid());
@@ -94,6 +109,9 @@ public class DebitAction {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(debitDto, debitDto.getUserId());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;

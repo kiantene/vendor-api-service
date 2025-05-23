@@ -66,7 +66,7 @@ public class AuthAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getUser_token());
 
             // 4. Regenerate token (Use vendor's session token)
-            gameSession = gameSessionService.regenerateGameSessionToken(gameSession, dto.getSession_token());
+            gameSession = gameSessionService.regenerateVendorToken(gameSession, dto.getSession_token());
             gameToken = dto.getSession_token();
 
             // 5. Verify remaining parameters (Verify against database values)
