@@ -56,7 +56,7 @@ public class CancelBetService {
             roundPayoutVo.setReqId(reqId);
 
             // Verify cancel bet data
-            this.verifyCancelBet(gameSession, dto);
+//            this.verifyCancelBet(gameSession, dto);
 
             // Verify if there is a win transaction within unsettled bet
             this.verifyUnsettledWinTransaction(gameSession, dto);
