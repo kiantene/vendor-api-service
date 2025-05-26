@@ -2,9 +2,11 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.GameService;
+import com.nextgen.gameaggregator.service.GameServiceImpl;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -13,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -22,14 +23,23 @@ import java.math.BigDecimal;
 @Slf4j
 public class SettleService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameService gameService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final HttpService httpService;
 
-    public CommonVo settle(ActionDto actionDto, String traceId) {
+    public SettleService(GameServiceImpl gameService,
+                         WalletService walletService,
+                         VendorService vendorService,
+                         HttpService httpService) {
+
+        this.gameService = gameService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+        this.httpService = httpService;
+    }
+
+    public CommonVo settle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -41,7 +51,7 @@ public class SettleService {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid());
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
@@ -53,25 +63,32 @@ public class SettleService {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             vo.setBalance(betResultIdempotentViolationException.getBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (BetNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
         } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
+            httpService.logError(httpRequestLog, cannotCancelException);
             vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (InvalidAgentApiCredentialException | JsonProcessingException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
                 String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
@@ -80,7 +97,7 @@ public class SettleService {
             }
 
         } catch (Exception exception) {
-
+            httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 

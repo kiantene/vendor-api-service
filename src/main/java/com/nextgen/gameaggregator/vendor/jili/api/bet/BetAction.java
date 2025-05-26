@@ -64,6 +64,9 @@ public class BetAction {
 
             this.doVerification(betDto, gameSession);
 
+            // bet endpoint operator time out set 3.5sec
+            vendorService.setOperatorTiming(3500);
+
             // 3. Process bet data
             // 4. Process win data
             ResultType resultType = getResultType(betDto);

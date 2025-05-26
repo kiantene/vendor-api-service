@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.vendor.saba.api.resettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -14,6 +17,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private String refId;
     private Long txId;
     private String updateTime;
+    @JsonProperty("winlostDate")
     private String winLostDate;
     private String status;
     private BigDecimal payout;
@@ -74,7 +78,11 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public Long getVendorSettleTime() {
-        return System.currentTimeMillis();
+        // Parse the original string to a ZonedDateTime
+        ZonedDateTime zonedDateTime = ZonedDateTime.parse(this.winLostDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
+        // Convert ZonedDateTime to milliseconds
+        return zonedDateTime.toInstant().toEpochMilli();
     }
 
     @Override

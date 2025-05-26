@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,8 +11,8 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
+import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,13 +31,18 @@ public class CreditAction {
     private final WalletService walletService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
-    public CreditAction(HttpService httpService, WalletService walletService, AutowireCapableBeanFactory autowireCapableBeanFactory, VendorService vendorService) {
+    public CreditAction(HttpService httpService, WalletService walletService,
+                        AutowireCapableBeanFactory autowireCapableBeanFactory,
+                        VendorService vendorService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CREDIT)
@@ -45,15 +51,23 @@ public class CreditAction {
 
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
+        CreditDto creditDto = new CreditDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
-
+            creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
+
+            if (requestIdempotentLogService.checkExists(creditDto, creditDto.getUserId()) == null) {
+                requestIdempotentLogService.create(creditDto, creditDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             VendorService vendorService = new VendorService();
             autowireCapableBeanFactory.autowireBean(vendorService);
@@ -104,6 +118,9 @@ public class CreditAction {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(creditDto, creditDto.getUserId());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;

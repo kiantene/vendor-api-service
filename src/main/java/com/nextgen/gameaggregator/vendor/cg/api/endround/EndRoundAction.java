@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cg.api.endround;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -8,8 +9,8 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cg.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.cg.constant.Format;
 import com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cg.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.cg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cg.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 @Slf4j
@@ -49,35 +49,50 @@ public class EndRoundAction {
     }
 
     @PostMapping(EndPoints.END_ROUND)
-    public ResponseVo endRound(HttpServletRequest request) {
+    public String endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         ResponseVo endRoundVo = new ResponseVo();
+        CommonDto dto = new CommonDto();
         try {
-            //convert to dto
-            EndRoundDto dto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
+            //convert body into dto
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, CommonDto.class);
+            dto.setData(VendorService.urlDecode(dto.getData()));
 
             //basic validation
             this.doValidation(dto);
 
-            //search for game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAccountId());
+            String decryptedData = vendorService.decryptData(dto.getData(), dto.getChannelId());//we get the json here
+            httpRequestLog.setRequestBody(decryptedData);
+            EndRoundDto endRoundDto = HttpService.convertJsonToDto(decryptedData, EndRoundDto.class);
 
+            //search for game session
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(endRoundDto.getAccountId(), endRoundDto.getGameType());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(endRoundDto.getGameType(), gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(endRoundDto.getAccountId());
+                gameSessionService.updateByVendorGameCode(gameSession, endRoundDto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             //basic verification
-            this.doVerification(dto, gameSession);
+            this.doVerification(endRoundDto, gameSession);
 
             //make a ResultType for settle process indicator
-            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, dto.getWinAmount(), dto.getJackpotAmount(), false);
+            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
 
             //process
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, httpRequestLog);
 
             //set values
-            endRoundVo.setChannelId(dto.getChannelId());
-            endRoundVo.setAccountId(dto.getAccountId());
+            endRoundVo.setChannelId(endRoundDto.getChannelId());
+            endRoundVo.setAccountId(endRoundDto.getAccountId());
             endRoundVo.setBalance(balance);
-            endRoundVo.setCurrency(dto.getCurrency());
+            endRoundVo.setCurrency(endRoundDto.getCurrency());
             endRoundVo.setErrorCode(ResponseCodes.SUCCESS);
             endRoundVo.setReturnTime(VendorService.returnTime());
         } catch (GameNotSupportedException gameNotSupportedException) {
@@ -95,9 +110,6 @@ public class EndRoundAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             endRoundVo.setErrorCode(ResponseCodes.SEAMLESS_MTCODE_REPEAT);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-        } catch (AuthenticationException authenticationException) {
-            endRoundVo.setErrorCode(ResponseCodes.SEAMLESS_UNKNOWN_PLAYER);
-            httpService.logError(httpRequestLog, authenticationException);
         } catch (DateTimeParseException dateTimeParseException) {
             endRoundVo.setErrorCode(ResponseCodes.SEAMLESS_TIME_FORMAT_ERROR);
             httpService.logError(httpRequestLog, dateTimeParseException);
@@ -107,28 +119,26 @@ public class EndRoundAction {
         } catch (Exception e) {
             endRoundVo.setErrorCode(ResponseCodes.UNKNOWN_ERROR);
         } finally {
-            httpService.end(httpRequestLog, endRoundVo);
+            try {
+                String jsonString = new Gson().toJson(endRoundVo);
+                endRoundVo.setEncrypt(vendorService.encryptResponse(jsonString, dto.getChannelId())); //encrypt the whole vo include error
+                httpService.end(httpRequestLog, endRoundVo);
+            } catch (CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+            }
         }
-        return endRoundVo;
+        return endRoundVo.getEncrypt();
     }
 
-    private void doValidation(EndRoundDto dto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException {
         //basic validation
         ValidationUtils.validateRequest(dto);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Format.DATE_TIME_FORMAT);
-        formatter.parse(dto.getEventTime());
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession) throws CurrencyNotSupportedException, InvalidPlayerException, InvalidVendorLineException, CredentialNotFoundException, GameNotSupportedException {
         //check channel id
         String channelId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CHANNEL_ID);
         ValidationUtils.isEquals(channelId, dto.getChannelId(), InvalidVendorLineException::new);
-
-        //check session gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
-        //check session currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
 }

@@ -6,18 +6,22 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,25 +31,14 @@ import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
+@RequiredArgsConstructor
 public class CancelBetAction {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancelbet(HttpServletRequest request) {
@@ -73,7 +66,9 @@ public class CancelBetAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            String secret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+            String jsonParam = EncryptionUtils.aesDecrypt(Encryption.CIPHER_MODE_AND_PADDING, commonDto.getParams(), secret);
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into cancelBetDto
             CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
@@ -99,6 +94,11 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
             httpService.logError(httpRequestLog, betNotFoundException);
 
+        } catch (RecordNotFoundException recordNotFoundException) {
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(0d);
+            httpService.logError(httpRequestLog, recordNotFoundException);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
                 //if found the bet in settled status
@@ -121,9 +121,9 @@ public class CancelBetAction {
                 //insufficient balance
                 commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
                 commonVo.setMainPoints(0d);
-                
+
                 // check the previous value before go through rollback function to decide keep or cancel transaction from vendor side
-                if(settledBet != null && !settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)){
+                if (settledBet != null && !settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)) {
                     commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
                     commonVo.setMainPoints(0d);
                 }

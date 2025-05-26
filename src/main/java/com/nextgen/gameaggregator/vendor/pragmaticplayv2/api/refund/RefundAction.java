@@ -1,0 +1,169 @@
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.refund;
+
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Component
+@RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@Slf4j
+public class RefundAction {
+    @Autowired
+    private HttpService httpService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
+
+    public ResponseVo refundRequest(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+
+        RefundVo responseVo = new RefundVo();
+        String traceId = httpRequestLog.getId();
+        String transactionId = null;
+        RefundDto dto = new RefundDto();
+        boolean isRequestExists = false;
+
+        try {
+            // Retrieve request body in original string format and convert into dto
+            String body = httpRequestLog.getRequestBody();
+            dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
+
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
+
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 2. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
+
+            // 4. Send refund to Operator
+            walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+
+            transactionId = VendorService.getTransactionId(traceId);
+            responseVo.setTransactionId(transactionId);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            httpService.logError(httpRequestLog, betNotFoundException);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                transactionId = betResultIdempotentViolationException.getTransactionId();
+                responseVo.setTransactionId(VendorService.getTransactionId(transactionId));
+
+            }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (
+                InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            } else {
+                //Other operator errors
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            if (invalidRequestException.getValidation() != null) {
+                String validations = invalidRequestException.getValidation().toString();
+                httpRequestLog.setErrorMessage(validations);
+            }
+            httpService.logError(httpRequestLog, invalidRequestException);
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
+
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+
+        } catch (Exception exception) { // any other exception encountered
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            httpService.logError(httpRequestLog, exception);
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
+            httpService.end(httpRequestLog, responseVo);
+        }
+        return responseVo;
+    }
+
+    private void doValidation(RefundDto dto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
+        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, RefundDto dto, GameSession gameSession) throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 3. Verify request signature is valid
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
+
+    }
+}

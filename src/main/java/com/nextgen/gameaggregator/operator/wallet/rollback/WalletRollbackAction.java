@@ -40,23 +40,25 @@ public class WalletRollbackAction {
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
+    private final HttpService httpService;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
     public WalletRollbackAction(RequestService requestService, AuthenticationService authenticationService,
                                 AgentApiCredentialService agentApiCredentialService,
                                 VendorService vendorService, CurrencyConversionService currencyConversionService,
-                                BetResultRetryLogService betResultRetryLogService) {
+                                BetResultRetryLogService betResultRetryLogService, HttpService httpService) {
         this.requestService = requestService;
         this.authenticationService = authenticationService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
+        this.httpService = httpService;
     }
 
     public WalletBalanceVo
-    call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog)
+    call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog, Integer timeoutTiming)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidFormatException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -106,7 +108,7 @@ public class WalletRollbackAction {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(timeoutTiming))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
                         return Mono.error(e);
@@ -177,6 +179,7 @@ public class WalletRollbackAction {
             if (isError) {
                 responseVo = this.processForceSuccess(gameSession, traceId);
                 if (httpRequestLog != null) {
+                    httpService.logError(httpRequestLog, new InvalidOperatorResponseException(operatorStatus.description));
                     betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(),
                             agentId, dto.getBetId(), dto.getRoundId(), dto.getTransactionId(), EndPoints.WALLET_ROLLBACK);
                 }

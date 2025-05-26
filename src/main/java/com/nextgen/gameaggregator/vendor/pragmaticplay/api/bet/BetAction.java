@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -16,13 +17,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-@RestController
+@Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class BetAction {
@@ -40,8 +40,9 @@ public class BetAction {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
-    @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -49,13 +50,23 @@ public class BetAction {
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
         GameSession gameSession = new GameSession();
+        BetDto dto = new BetDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
-            BetDto dto = HttpService.convertQueryStringToDto(httpRequestLog, BetDto.class);
+            dto = HttpService.convertQueryStringToDto(httpRequestLog, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Retrieve and verify session token
             gameSession = gameSessionService.verifyToken(dto.getToken());
@@ -146,9 +157,12 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
 
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 

@@ -14,13 +14,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
-@RestController
+@Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class AuthenticateAction {
@@ -49,8 +48,7 @@ public class AuthenticateAction {
         this.vendorService = vendorService;
     }
 
-    @PostMapping(path = Endpoints.AUTHENTICATE)
-    public ResponseVo authenticate(HttpServletRequest request) {
+    public ResponseVo authenticateRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         AuthenticateVo responseVo = new AuthenticateVo();

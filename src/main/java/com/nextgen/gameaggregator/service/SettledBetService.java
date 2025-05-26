@@ -7,8 +7,10 @@ import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -140,7 +142,7 @@ public class SettledBetService {
 
     public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException,
-            AmbiguousTimeoutException, UnambiguousTimeoutException {
+            AmbiguousTimeoutException, UnambiguousTimeoutException{
 
         Integer vendorId = gameSession.getVendorId();
         Integer vendorGameId = gameSession.getVendorGameId();
@@ -164,7 +166,7 @@ public class SettledBetService {
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
                     throw new BetResultIdempotentViolationException(settledBet);
 
-                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                }else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
                     settledBet.setOperatorStatus(operatorStatusProcessing);
                     this.save(settledBet, settledBet.getRawData());
                 }

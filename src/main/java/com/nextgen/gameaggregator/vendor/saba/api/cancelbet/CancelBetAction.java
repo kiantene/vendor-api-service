@@ -111,7 +111,7 @@ public class CancelBetAction {
 
         } catch (DuplicateRequestException duplicateRequestException) {
             httpService.logError(httpRequestLog, duplicateRequestException);
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         } catch (Exception e) {

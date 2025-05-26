@@ -72,12 +72,20 @@ public class PointInOutDto extends GeneralActionDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        Long date = null;
+        if (this.getCode().equals(BetType.POINTIN) || this.getCategory().equals(BetType.TIPS)) {
+            date = VendorService.convertDateTimeStringToTimestamp(this.getRequestDate(), Formats.DATE_TIME_FORMAT);
+        }
+        return date;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        Long date = null;
+        if (this.getCode().equals(BetType.POINTIN) || this.getCategory().equals(BetType.TIPS)) {
+            date = VendorService.convertDateTimeStringToTimestamp(this.getRequestDate(), Formats.DATE_TIME_FORMAT);
+        }
+        return date;
     }
 
     @Override

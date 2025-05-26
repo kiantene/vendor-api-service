@@ -1,0 +1,146 @@
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.result;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ResultDto implements BetResultData {
+
+    // Hash code of the request
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    private String hash;
+
+    // Identifier of the user within the Casino Operator’s system.
+    @NotBlank
+    // Size checking is done on each Action
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    private String userId;
+
+    // Id of the game.
+    @NotBlank
+    @Size(min = 1, max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    private String gameId;
+
+    // Id of the round.
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    private String roundId;
+
+    // Amount of the bet. Minimum is 0.00.
+    @Positive
+    @NotNull
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal amount;
+
+    // Unique reference of this transaction.
+    @NotBlank
+    @Size(min = 1, max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    private String reference;
+
+    // Game Provider id.
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
+    private String providerId;
+
+    // Date and time when the transaction is processed on the Pragmatic Play side
+    // (Unix epoch time in milliseconds, for example : 1470926696715)
+    @Positive
+    @NotNull
+    private Long timestamp;
+
+    // Additional information about the current game round.
+    @NotBlank
+    @Size(max = 12000)
+    private String roundDetails;
+
+    // Token of the player from Authenticate response.
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
+    private String token;
+
+    /**
+     * Promo Information
+     */
+    //* Below are not mandatory
+    private BigDecimal promoWinAmount;
+    private String promoWinReference;
+    private String promoCampaignID;
+    private String promoCampaignType;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.reference;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.reference;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        BigDecimal promoActualWinAmount = Optional.ofNullable(promoWinAmount).orElse(BigDecimal.ZERO);
+        BigDecimal actualWinAmount = amount.add(promoActualWinAmount);
+        return actualWinAmount;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return timestamp;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
+}

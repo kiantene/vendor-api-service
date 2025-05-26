@@ -28,11 +28,11 @@ public class ResponseCodes {
     public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(PLAYER_NOT_EXIST, "Player does not exist");
         put(INSUFFICIENT_BALANCE, "Insufficient Balance");
-        put(INVALID_SIGNATURE, "Invalid Signature");
+        put(INVALID_SIGNATURE, "Signature verification error");
         put(INTERNAL_SERVER_ERROR, "Internal Server Error");
 
         put(PLAYER_NOT_EXIST_1, "Player does not exist");
-        put(INVALID_SIGNATURE_1, "Invalid Signature");
+        put(INVALID_SIGNATURE_1, "Signature verification error");
         put(INTERNAL_SERVER_ERROR_1, "Internal Server Error");
 
         put(SUCCESS, "SUCCESS");

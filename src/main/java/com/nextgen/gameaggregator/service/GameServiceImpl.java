@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +11,18 @@ public class GameServiceImpl implements GameService {
 
     public GameServiceImpl(GameSessionService gameSessionService) {
         this.gameSessionService = gameSessionService;
+    }
+
+    @Override
+    public GameSession getGameSessionByUsername(String username) throws AuthenticationException {
+
+        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(username);
+
+        if (gameSession == null) {
+            throw new AuthenticationException();
+        }
+
+        return gameSession;
     }
 
     @Override

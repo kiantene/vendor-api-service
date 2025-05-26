@@ -6,7 +6,9 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
@@ -17,8 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.lang.reflect.InvocationTargetException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -53,7 +53,7 @@ public class ReserveAction {
             this.doValidation(reserveDto);
 
             // Get game session or verify Token
-            gameSession = vendorService.getGameSession(reserveDto);
+            gameSession = vendorService.getGameSessionV2(reserveDto.getExternalGameSessionId(), reserveDto.getExternalId());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, reserveDto);
@@ -72,10 +72,7 @@ public class ReserveAction {
                  GameNotSupportedException |
                  CredentialNotFoundException |
                  JsonProcessingException |
-                 InvalidRequestException |
-                 NoSuchMethodException |
-                 InvocationTargetException |
-                 IllegalAccessException internalErrorException) {
+                 InvalidRequestException internalErrorException) {
             reserveVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -106,7 +103,7 @@ public class ReserveAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
                 vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, reserveVo);
 
