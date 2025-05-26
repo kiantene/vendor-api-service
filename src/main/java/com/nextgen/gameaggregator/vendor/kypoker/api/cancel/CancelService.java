@@ -89,7 +89,7 @@ public class CancelService {
                 walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
                 this.dataMapper(walletRequest,cancelDto,gameSession);
 
-                if (walletTransaction != null) {
+                if(walletTransaction !=null && walletTransaction.getAction() != "credit" ) {
 
                     walletRequest = operatorWalletService.betCredit(walletRequest);
 
