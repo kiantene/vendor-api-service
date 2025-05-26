@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -31,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
-@Slf4j
 public class GameUrlService extends BaseGameUrlService<PGGameUrlVo> {
 
     String apiToken = "api_token";
