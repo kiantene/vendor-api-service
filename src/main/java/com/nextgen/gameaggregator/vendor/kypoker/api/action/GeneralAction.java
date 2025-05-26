@@ -95,6 +95,10 @@ public class GeneralAction {
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
 
+            if (vo==null){
+                throw new InvalidRequestException();
+            }
+
         } catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(5);
@@ -148,6 +152,7 @@ public class GeneralAction {
             if (vo.d == null) {
                 vo.d.setCode(8);
             }
+
         }
         return vo;
     }

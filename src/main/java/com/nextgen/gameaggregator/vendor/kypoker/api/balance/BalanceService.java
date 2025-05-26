@@ -72,19 +72,19 @@ public class BalanceService {
 
         } catch(InvalidPlayerException invalidPlayerException){
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(2);
+            d.setCode(ResponseCodes.CODE2);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
         } catch(InvalidRequestException invalidRequestException){
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
+            d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
-        } catch(AuthenticationException invalidRequestException){
+        } catch(AuthenticationException authenticationException){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(10);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -120,5 +120,6 @@ public class BalanceService {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount());
+        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency());
     }
 }
