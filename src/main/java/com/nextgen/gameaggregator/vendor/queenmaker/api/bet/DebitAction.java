@@ -151,9 +151,7 @@ public class DebitAction {
         }
 
         // 5. Check Transaction is settled
-        
         vendorService.checkBetIsSettled(gameSession, debitTransactionsDto);
-
     }
 
     private void dataMapper(WalletRequest walletRequest, DebitTransactionsDto dto, GameSession gameSession) {
