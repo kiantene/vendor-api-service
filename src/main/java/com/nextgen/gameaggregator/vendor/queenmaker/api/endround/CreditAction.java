@@ -143,9 +143,11 @@ public class CreditAction {
         }
 
         // 4. Validate Debit Transaction is exist, except txtype 590 (End Round)
-        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
-            vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
-        }
+
+//        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+//            vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
+//        }
+
     }
 
     private void dataMapper(WalletRequest walletRequest, CreditTransactionsDto dto, GameSession gameSession) {
