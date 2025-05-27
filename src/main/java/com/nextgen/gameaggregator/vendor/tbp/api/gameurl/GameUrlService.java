@@ -58,25 +58,28 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
                                      GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException, InvalidVendorLineException, TimeoutException {
         //construct API address
-        String launchUrl = Optional.ofNullable(credentials.get(Credentials.API_URL))
+        String baseUrl = Optional.ofNullable(credentials.get(Credentials.API_URL))
+                .orElseThrow(InvalidVendorLineException::new);
+        String launchUrl = Optional.ofNullable(credentials.get(Credentials.LAUNCH_URL))
                 .orElseThrow(InvalidVendorLineException::new);
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-        URI uri = UriComponentsBuilder.fromUriString(launchUrl)
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(EndPoints.AUTHORIZE)
                 .build()
                 .encode()
                 .toUri();
 
         // Trigger doPost to get session id by calling vendor api
-        ResponseEntity<String> apiResponse = this.doPost(launchUrl, uri.toString(), new HttpHeaders(), formData, isTimeout);
+        ResponseEntity<String> apiResponse = this.doPost(baseUrl, uri.toString(), new HttpHeaders(), formData, isTimeout);
 
         this.validateResponse(apiResponse, isTimeout, httpRequestLog, TBPGameUrlVo.class, gameSession);
 
         TBPGameUrlVo responseVo = new Gson().fromJson(apiResponse.getBody(), TBPGameUrlVo.class);
 
-
+        String gameurl = launchUrl + gameSession.getVendorGameCode();
+        responseVo.setGameUrl(gameurl);
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
         return responseVo;

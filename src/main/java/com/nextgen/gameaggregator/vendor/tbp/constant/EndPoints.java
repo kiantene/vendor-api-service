@@ -7,6 +7,8 @@ public class EndPoints {
 
     public static final String PATH = "/api/v1/tbp";
 
+    public static final String GAME_LIST = "/Games";
+
     public static final String LAUNCHER = "/launch/real";
 
     public static final String AUTHORIZE = "/PlayerIdentity/Authorize";
