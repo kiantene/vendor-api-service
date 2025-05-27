@@ -62,7 +62,7 @@ public class BetService {
     private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
-        walletRequest.setExternalTransactionId(dto.getRoundId());
+        walletRequest.setExternalTransactionId(dto.getExternalTransactionId());
         walletRequest.setRoundId(dto.getRoundId());
         walletRequest.setVendorGameCode(dto.getGameId());
         walletRequest.setTimestamp(System.currentTimeMillis());
@@ -77,7 +77,6 @@ public class BetService {
     public CommonVo bet(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo commonVo = new CommonVo();
         WalletRequest walletRequest = null;
-        boolean isRequestExists = false;
         Integer vendorPlayerId;
 
         try {
@@ -95,13 +94,6 @@ public class BetService {
 
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
 
-            if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
-                requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
-
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(messageDto.getGameId()), gameSession);
@@ -115,16 +107,9 @@ public class BetService {
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
 
-        if ("26225469".equals(String.valueOf(gameSession.getVendorPlayerId()))) {
-            // 6. Set response data
-            commonVo.setBalance(null);
-            commonVo.setStatus(null);
 
-        }else {
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
-
-        }
 
         } catch (InsufficientBalanceException e) {
             commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);

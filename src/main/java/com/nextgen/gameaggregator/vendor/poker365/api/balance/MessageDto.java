@@ -11,7 +11,7 @@ import lombok.Data;
 public class MessageDto {
 
     @NotBlank
-    @Size(max = 255)
+    @Size(max = 50)
     @JsonProperty("userId")
     private String userId;
 

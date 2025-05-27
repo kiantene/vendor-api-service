@@ -12,7 +12,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MessageDto implements RollbackData {
     @NotBlank
-    @Size(max = 255)
+    @Size(max = 50)
     @JsonProperty("userId")
     private String userId;
 

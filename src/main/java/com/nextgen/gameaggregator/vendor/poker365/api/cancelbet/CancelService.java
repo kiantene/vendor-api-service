@@ -56,7 +56,7 @@ public class CancelService {
 
     private void dataMapper(WalletRequest walletRequest, MessageDto dto, GameSession gameSession) {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
-        walletRequest.setExternalTransactionId(dto.getRoundId());
+        walletRequest.setExternalTransactionId(dto.getGameNumber());
         walletRequest.setRoundId(dto.getRoundId());
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
@@ -99,17 +99,10 @@ public class CancelService {
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
-            if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
-                requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
-
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-            walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), messageDto.getGameNumber());
+            walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(messageDto.getRoundId(), messageDto.getUserId());
 
             if (walletTransaction != null) {
 

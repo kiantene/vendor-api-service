@@ -64,7 +64,7 @@ public class SettleService {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-        walletRequest.setExternalTransactionId(dto.getRoundId());
+        walletRequest.setExternalTransactionId(dto.getExternalTransactionId());
         walletRequest.setRoundId(dto.getRoundId());
         walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
         walletRequest.setTimestamp(System.currentTimeMillis());

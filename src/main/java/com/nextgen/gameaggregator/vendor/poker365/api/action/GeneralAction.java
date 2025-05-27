@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.poker365.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.poker365.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.poker365.api.cancelbet.CancelService;
@@ -74,7 +75,14 @@ public class GeneralAction {
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
+            this.doValidation(commonDto, messageDto);
+
             commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);
+
+        } catch (InvalidRequestException e) {
+            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
+            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             commonVo.setStatus(ResponseCodes.FAIL.status);
@@ -87,6 +95,11 @@ public class GeneralAction {
         return commonVo;
     }
 
+    private void doValidation(CommonDto commonDto, MessageDto messageDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(commonDto);
+        ValidationUtils.validateRequest(messageDto);
+    }
 
     private CommonVo actionHandling(MessageDto messageDto, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidRequestException, JsonProcessingException {

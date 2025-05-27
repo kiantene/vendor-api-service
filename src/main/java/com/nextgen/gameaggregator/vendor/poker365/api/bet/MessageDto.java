@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -14,13 +15,14 @@ import java.math.BigDecimal;
 public class MessageDto implements BetResultData {
 
     @NotBlank
-    @Size(max = 255)
+    @Size(max = 50)
     @JsonProperty("userId")
     private String userId;
 
     @NotBlank
-    @Size(max = 255)
+    @Size(max = 5)
     @JsonProperty("currency")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String currency;
 
     @NotBlank
@@ -46,7 +48,7 @@ public class MessageDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getGameNumber();
+        return this.getTxId();
     }
 
     @Override
