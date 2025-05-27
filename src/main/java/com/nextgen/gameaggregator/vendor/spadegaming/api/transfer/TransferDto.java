@@ -163,11 +163,10 @@ public class TransferDto implements BetResultData, RollbackData {
 
     public Long convertTimestampToUnix(String transferTime) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[.SSS][.SS][.S]");
             LocalDateTime localDateTime = LocalDateTime.parse(transferTime, formatter);
             ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("GMT+8"));
-            long unixTimestampSeconds = zonedDateTime.toEpochSecond();
-            return unixTimestampSeconds * 1000;
+            return (zonedDateTime.toInstant().toEpochMilli());
         } catch (Exception exception) {
             log.error(transferTime, exception);
             return null;
