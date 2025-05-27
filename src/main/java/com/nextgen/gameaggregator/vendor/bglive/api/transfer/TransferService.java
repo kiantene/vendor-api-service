@@ -157,10 +157,9 @@ public class TransferService {
             InvalidOperatorResponseException,
             InternalServerException,
             InvalidRequestException,
-            BetNotAllowedException, DuplicateRequestException {
-
-        // add request idempotent check
-        httpService.isDuplicateRequest(transferDto);
+            BetNotAllowedException,
+            DuplicateRequestException,
+            BetResultIdempotentViolationException {
 
         if (transferDto.getParamsDto().getAmount().compareTo(BigDecimal.ZERO) < 0) {
             this.dataDebitMapper(walletRequest, transferDto, gameSession);

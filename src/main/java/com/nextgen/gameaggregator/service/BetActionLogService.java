@@ -44,11 +44,17 @@ public class BetActionLogService {
     private final WalletAdjustmentService walletAdjustmentService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
-    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
 
     @Autowired
     public BetActionLogService(RawBetActionLogRepository rawBetActionLogRepository,
-                               GameSessionService gameSessionService, WalletService walletService, AutowireCapableBeanFactory autowireCapableBeanFactory, HttpService httpService, VendorService vendorService, WalletAdjustmentService walletAdjustmentService, WalletRequestService walletRequestService, OperatorWalletService operatorWalletService, WalletTransactionBetHistoryService walletTransactionBetHistoryService) {
+                               GameSessionService gameSessionService,
+                               WalletService walletService,
+                               AutowireCapableBeanFactory autowireCapableBeanFactory,
+                               HttpService httpService,
+                               VendorService vendorService,
+                               WalletAdjustmentService walletAdjustmentService,
+                               WalletRequestService walletRequestService,
+                               OperatorWalletService operatorWalletService) {
         this.rawBetActionLogRepository = rawBetActionLogRepository;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -58,7 +64,6 @@ public class BetActionLogService {
         this.walletAdjustmentService = walletAdjustmentService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
-        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
     }
 
     public void create(String processData, String roundId, String vendorBetId, String externalTransactionId, GameSession gameSession, Integer action, ResultType resultType) {
@@ -136,7 +141,6 @@ public class BetActionLogService {
             WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
             dataCreditMapper(currentWalletRequest, generalCreditDto, gameSession);
             operatorWalletService.betCredit(currentWalletRequest);
-            walletTransactionBetHistoryService.update(currentWalletRequest);
         } catch (Exception e) {
             betActionLog.setRetryCounter(betActionLog.getRetryCounter() + 1);
             betActionLog.setNextRetryTime(this.calculateNextRetryTime(betActionLog.getRetryCounter(), currentTime));

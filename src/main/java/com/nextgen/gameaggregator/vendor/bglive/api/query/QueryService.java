@@ -3,12 +3,13 @@ package com.nextgen.gameaggregator.vendor.bglive.api.query;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.RawWalletTransactionBetHistory;
+import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletTransactionService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.QueryStatus;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -18,7 +19,6 @@ import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -31,13 +31,16 @@ public class QueryService {
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final WalletTransactionService walletTransactionService;
 
     public QueryService(HttpService httpService,
                         GameSessionService gameSessionService,
-                        VendorService vendorService) {
+                        VendorService vendorService,
+                        WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.walletTransactionService = walletTransactionService;
     }
 
     public CommonVo query(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -124,8 +127,8 @@ public class QueryService {
         } catch (BetNotFoundException e) {
             status = vendorService.unsettledBetIdempotentCheck(orderId);
             if (status == null || status.equals(0)) {
-                RawWalletTransactionBetHistory rawWalletTransactionBetHistory = vendorService.getWalletTransactionBetHistory(orderId);
-                status = (rawWalletTransactionBetHistory == null) ? QueryStatus.NO_BET : checkBetHistoryStatus(rawWalletTransactionBetHistory);
+                WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(orderId, gameSession.getVendorPlayerUsername());
+                status = (walletTransaction == null) ? QueryStatus.NO_BET : checkUnsettleBet(walletTransaction);
             } else {
                 status = QueryStatus.NO_BET;
             }
@@ -154,21 +157,12 @@ public class QueryService {
     }
 
     //Verify the status code
-    private Integer checkBetHistoryStatus(RawWalletTransactionBetHistory rawWalletTransactionBetHistory) {
+    private Integer checkUnsettleBet(WalletTransaction walletTransaction) {
         Integer status;
-        BigDecimal winLoss = rawWalletTransactionBetHistory.getWinLoss();
-        Integer betHistoryStatus = rawWalletTransactionBetHistory.getStatus();
+        Integer operatorStatus = walletTransaction.getOperatorStatus();
 
-        if (betHistoryStatus.equals(1)) {
+        if (operatorStatus.equals(1)) {
             status = QueryStatus.UNSETTLE_BET;
-        } else if (betHistoryStatus.equals(2)) {
-            if (winLoss.compareTo(BigDecimal.ZERO) < 0) {
-                status = QueryStatus.SETTLE_LOSE;
-            } else if (winLoss.compareTo(BigDecimal.ZERO) > 0) {
-                status = QueryStatus.SETTLE_WIN;
-            } else {
-                status = QueryStatus.SETTLE_TIE;
-            }
         } else {
             status = QueryStatus.NO_BET;
         }

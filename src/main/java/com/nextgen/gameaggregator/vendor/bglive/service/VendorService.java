@@ -3,7 +3,10 @@ package com.nextgen.gameaggregator.vendor.bglive.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -37,7 +40,6 @@ public class VendorService extends BaseVendorService {
 
     private final WalletRequestService walletRequestService;
     private final BetActionLogService betActionLogService;
-    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private final GameSessionService gameSessionService;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final SettledBetService settledBetService;
@@ -52,7 +54,6 @@ public class VendorService extends BaseVendorService {
                          WalletService walletService,
                          WalletRequestService walletRequestService,
                          BetActionLogService betActionLogService,
-                         WalletTransactionBetHistoryService walletTransactionBetHistoryService,
                          BetNotFoundLogService betNotFoundLogService,
                          VendorLineService vendorLineService) {
         this.gameSessionService = gameSessionService;
@@ -60,7 +61,6 @@ public class VendorService extends BaseVendorService {
         this.settledBetService = settledBetService;
         this.walletRequestService = walletRequestService;
         this.betActionLogService = betActionLogService;
-        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
         this.walletService = walletService;
         this.betNotFoundLogService = betNotFoundLogService;
         this.vendorLineService = vendorLineService;
@@ -163,11 +163,6 @@ public class VendorService extends BaseVendorService {
         } else {
             return QueryStatus.NO_BET;
         }
-    }
-
-    public RawWalletTransactionBetHistory getWalletTransactionBetHistory(String id) {
-
-        return walletTransactionBetHistoryService.findWalletTransactionBetHistory(id);
     }
 
     public Integer settledBetIdempotentCheck(GameSession gameSession, String externalId)

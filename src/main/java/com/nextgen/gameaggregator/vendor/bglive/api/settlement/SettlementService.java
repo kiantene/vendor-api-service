@@ -45,7 +45,6 @@ public class SettlementService {
     private final BetActionLogService betActionLogService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final OperatorWalletService operatorWalletService;
-    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final WalletTransactionService walletTransactionService;
     private final WalletRequestService walletRequestService;
@@ -59,7 +58,6 @@ public class SettlementService {
                              BetActionLogService betActionLogService,
                              RequestIdempotentLogService requestIdempotentLogService,
                              OperatorWalletService operatorWalletService,
-                             WalletTransactionBetHistoryService walletTransactionBetHistoryService,
                              UnsettledBetCachingService unsettledBetCachingService,
                              WalletTransactionService walletTransactionService,
                              WalletRequestService walletRequestService) {
@@ -72,7 +70,6 @@ public class SettlementService {
         this.betActionLogService = betActionLogService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.operatorWalletService = operatorWalletService;
-        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.walletTransactionService = walletTransactionService;
         this.walletRequestService = walletRequestService;
@@ -211,13 +208,9 @@ public class SettlementService {
             if (isBullBullGame) {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 // add request idempotent check
-                httpService.isDuplicateRequest(ordersDto);
-
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
-                //Update walletTransaction Bet History
-                walletTransactionBetHistoryService.update(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter());
             } else {
                 // Process Result
@@ -231,8 +224,7 @@ public class SettlementService {
         } catch (InsufficientBalanceException |
                  InvalidRequestException |
                  TransactionStillProcessingException |
-                 BetResultIdempotentViolationException |
-                 DuplicateRequestException e) {
+                 BetResultIdempotentViolationException e) {
             resultVo = new ResultVo(BigDecimal.ZERO);
         } catch (Exception e) {
             // do nothing, return null

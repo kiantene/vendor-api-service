@@ -44,7 +44,6 @@ public class BetService {
     private final VendorService vendorService;
     private final BetActionLogService betActionLogService;
     private final OperatorWalletService operatorWalletService;
-    private final WalletTransactionBetHistoryService walletTransactionBetHistoryService;
     private final WalletRequestService walletRequestService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
@@ -56,7 +55,6 @@ public class BetService {
                       VendorService vendorService,
                       BetActionLogService betActionLogService,
                       OperatorWalletService operatorWalletService,
-                      WalletTransactionBetHistoryService walletTransactionBetHistoryService,
                       WalletRequestService walletRequestService,
                       RequestIdempotentLogService requestIdempotentLogService) {
 
@@ -68,7 +66,6 @@ public class BetService {
         this.vendorService = vendorService;
         this.betActionLogService = betActionLogService;
         this.operatorWalletService = operatorWalletService;
-        this.walletTransactionBetHistoryService = walletTransactionBetHistoryService;
         this.walletRequestService = walletRequestService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
@@ -204,14 +201,9 @@ public class BetService {
                     ordersDto.setAmount(doublePlayAmount);
                 }
 
-                // add request idempotent check
-                httpService.isDuplicateRequest(ordersDto);
-
                 WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
-                //create wallet transaction bet history
-                walletTransactionBetHistoryService.create(currentWalletRequest, gameSession);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter());
             } else {
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
@@ -222,7 +214,7 @@ public class BetService {
             errorOrderIds.add(ordersDto.getExternalTransactionId());
 
             httpService.logError(httpRequestLog, e);
-        } catch (DuplicateRequestException | BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             resultVo = new ResultVo(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
