@@ -72,7 +72,7 @@ public class TransferService {
 
             commonVo.setSuccessResponse(transferDto.getId(), walletRequest.getBalanceAfter());
 
-        } catch (DuplicateRequestException e) {
+        } catch (BetResultIdempotentViolationException e) {
             commonVo.setSuccessResponse(transferDto.getId(), BigDecimal.ZERO);
 
         } catch (InsufficientBalanceException e) {
@@ -158,7 +158,6 @@ public class TransferService {
             InternalServerException,
             InvalidRequestException,
             BetNotAllowedException,
-            DuplicateRequestException,
             BetResultIdempotentViolationException {
 
         if (transferDto.getParamsDto().getAmount().compareTo(BigDecimal.ZERO) < 0) {
