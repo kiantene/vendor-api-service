@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -18,6 +19,8 @@ import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Objects;
+
 @Service
 public class CancelService {
 
@@ -80,17 +83,21 @@ public class CancelService {
 
             // 4. Send refund to Operator
             try {
-                walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+               walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
             } catch (BetNotFoundException e) {
 
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 String externalTransactionId = cancelDto.getOrderId();
-                walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
+                walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(cancelDto.getGameNo(), cancelDto.getAccount());
                 this.dataMapper(walletRequest,cancelDto,gameSession);
 
-                if(walletTransaction !=null && walletTransaction.getAction() != "credit" ) {
+                String test = walletTransaction.getAction();
 
+                if(walletTransaction == null || (Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
+                    throw new BetNotFoundException();
+
+                } else {
                     walletRequest = operatorWalletService.betCredit(walletRequest);
 
                     ResponseObjectDto d = new ResponseObjectDto();
@@ -99,9 +106,6 @@ public class CancelService {
                     vo.setM(EndPoints.LAUNCH_GAME);
                     vo.setS(ResponseCodes.CANCEL);
                     vo.setD(d);
-
-                } else {
-                    throw new BetNotFoundException();
                 }
             }
 
@@ -120,7 +124,7 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch ( BetResultIdempotentViolationException | BetRefundIdempotentViolationException duplicateRequestException) {
+        } catch ( BetResultIdempotentViolationException  duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -192,6 +196,7 @@ public class CancelService {
         walletRequest.setEffectiveTurnover(BigDecimal.ZERO);
         walletRequest.setJackpotAmount(BigDecimal.ZERO);
         walletRequest.setResultType(resultType.code);
+        walletRequest.setBetStatus(BetStatus.REFUNDED);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
