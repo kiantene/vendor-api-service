@@ -115,10 +115,6 @@ public class BetConfirmAction {
             //MD5 betConfirmDataVo to signature
             String signature = VendorService.getMD5(betConfirmDataVo, md5Key);
             vo.setResponseSuccess(betConfirmDataVo, signature);
-
-            if (vendorPlayerUsername.equals("1e905ywkv93b")) {
-                Thread.sleep(4000); // 30 seconds in milliseconds
-            }
         } catch (
                 DisabledAgentPlayerException |
                 DisabledGameException |
