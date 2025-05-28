@@ -114,33 +114,6 @@ public class CancelBetService {
         return roundPayoutVo;
     }
 
-    /*****
-     *
-     * @param gameSession
-     * @param dto
-     * @throws TransactionInvalidException
-     * @throws BetRefundIdempotentViolationException
-     * This will allow the following test cases to pass
-     * 1. If settled bet is found and already refunded, will throw BetRefundIdempotentViolationException and return success response
-     * 2. If settled bet failed and vendor send cancel bet request, we must return transaction invalid error
-     */
-    private void verifyCancelBet(GameSession gameSession, RoundPayoutDto dto) throws TransactionInvalidException, BetRefundIdempotentViolationException {
-        try {
-            SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), dto.getRoundId());
-
-            if (settledBet != null && settledBet.getStatus() == BetStatus.REFUNDED.code) {
-                // if refunded already, return success
-                throw new BetRefundIdempotentViolationException();
-            }
-
-            // if has not refunded before and bet already settled throw error
-            throw new TransactionInvalidException();
-
-        } catch (BetNotFoundException e) {
-            // does nothing
-        }
-    }
-
     private void verifyUnsettledWinTransaction(GameSession gameSession, RoundPayoutDto dto)
             throws InvalidPlayerException, GameNotSupportedException, BetNotFoundException, JsonProcessingException, TransactionInvalidException {
 
