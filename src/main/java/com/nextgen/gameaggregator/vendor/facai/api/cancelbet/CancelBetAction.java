@@ -81,10 +81,7 @@ public class CancelBetAction {
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
-
-            // get the operatorStatus before process rollback(it will update the value once it go through the rollback function)
-//            settledBet = vendorService.couchBaseCheckSettledRecord(gameSession.getVendorPlayerId(), cancelbetDto.getBankID());
-
+            
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
