@@ -27,18 +27,6 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public SettledBet couchBaseCheckSettledRecord(Long vendorPlayerId, String externalBetId) {
-        SettledBet checkRecord = null;
-
-        try {
-            checkRecord = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalBetId);
-        } catch (BetNotFoundException e) {
-            return null; //if record not found then return null;
-        }
-
-        return checkRecord;
-    }
-
     @Override
     public Integer operatorTimeoutTiming() {
         //fc vendor timeout is 4000, and given 500 buffer timing, then defaultTiming would be 3500.
