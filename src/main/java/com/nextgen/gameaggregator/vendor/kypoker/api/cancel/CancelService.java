@@ -93,8 +93,6 @@ public class CancelService {
                 walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(cancelDto.getGameNo(), cancelDto.getAccount());
                 this.dataMapper(walletRequest,cancelDto,gameSession);
 
-                String test = walletTransaction.getAction();
-
                 if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
                     throw new BetResultIdempotentViolationException();
 
