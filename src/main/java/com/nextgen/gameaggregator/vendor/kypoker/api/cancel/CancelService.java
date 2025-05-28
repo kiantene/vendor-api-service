@@ -95,7 +95,7 @@ public class CancelService {
                 String test = walletTransaction.getAction();
 
                 if(walletTransaction == null || (Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
-                    throw new BetNotFoundException();
+                    throw new BetResultIdempotentViolationException();
 
                 } else {
                     walletRequest = operatorWalletService.betCredit(walletRequest);
@@ -132,15 +132,7 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, duplicateRequestException);
 
-        }catch (BetNotFoundException betNotFoundException) {
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(ResponseCodes.BET_NOT_FOUND);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
-            httpService.logError(httpRequestLog, betNotFoundException);
-
-        } catch (Exception e){
+        }  catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
