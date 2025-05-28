@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.fbsports.api.bet.BetDataVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
@@ -94,8 +95,11 @@ public class CancelService {
 
                 String test = walletTransaction.getAction();
 
-                if(walletTransaction == null || (Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
+                if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
                     throw new BetResultIdempotentViolationException();
+
+                } else if(walletTransaction == null){
+                    throw new BetNotFoundException();
 
                 } else {
                     walletRequest = operatorWalletService.betCredit(walletRequest);
@@ -124,7 +128,15 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch ( BetResultIdempotentViolationException  duplicateRequestException) {
+        } catch (BetNotFoundException betNotFoundException) {
+            ResponseObjectDto d = new ResponseObjectDto();
+            d.setCode(ResponseCodes.BET_NOT_FOUND);
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
+            httpService.logError(httpRequestLog, betNotFoundException);
+
+        } catch (BetResultIdempotentViolationException  duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
             vo.setM(EndPoints.LAUNCH_GAME);
