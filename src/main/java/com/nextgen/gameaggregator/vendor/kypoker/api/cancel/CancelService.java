@@ -93,11 +93,11 @@ public class CancelService {
                 walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(cancelDto.getGameNo(), cancelDto.getAccount());
                 this.dataMapper(walletRequest,cancelDto,gameSession);
 
-                if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
-                    throw new BetResultIdempotentViolationException();
-
-                } else if(walletTransaction == null){
+                if(walletTransaction == null) {
                     throw new BetNotFoundException();
+
+                } else if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)){
+                    throw new BetResultIdempotentViolationException();
 
                 } else {
                     walletRequest = operatorWalletService.betCredit(walletRequest);
