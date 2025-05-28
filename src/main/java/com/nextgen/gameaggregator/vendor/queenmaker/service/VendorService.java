@@ -52,16 +52,6 @@ public class VendorService extends BaseVendorService {
         return prefix + "_" + suffix;
     }
 
-    public void verifyExistDebitTransaction(Integer vendorId, Long vendorPLayerId, String externalTransactionId) throws BetNotFoundException {
-//        try {
-//            // If bet is already settled, continue run
-//            settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPLayerId, externalTransactionId);
-//        } catch (BetNotFoundException e) {
-        // not found settled bet will check unsettled bet
-        unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
-//        }
-    }
-
     public void checkBetIsSettled(GameSession gameSession, DebitTransactionsDto dto) throws BetResultIdempotentViolationException {
         SettledBet settledBet = null;
         try {
