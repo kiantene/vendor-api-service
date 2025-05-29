@@ -38,12 +38,10 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @Positive
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal winloseAmount;
 
     @NotNull
@@ -56,7 +54,6 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal preserve;
 
 
