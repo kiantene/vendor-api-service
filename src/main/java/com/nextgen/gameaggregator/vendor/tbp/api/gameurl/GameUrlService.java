@@ -45,10 +45,9 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
         String token = ValidationUtils.validateCredential(credentials.get(Credentials.TOKEN));
-        String username = ValidationUtils.validateCredential(credentials.get(Credentials.USERNAME));
 
-        formData.add("PlayerToken", username);
-        formData.add("PlayerName", username);
+        formData.add("PlayerToken", gameSession.getVendorPlayerUsername());
+        formData.add("PlayerName", gameSession.getVendorPlayerUsername());
         formData.add("OperatorToken", token);
         formData.add("GameToken", gameSession.getVendorGameCode());
         formData.add("Currency", gameSession.getVendorCurrencyCode());

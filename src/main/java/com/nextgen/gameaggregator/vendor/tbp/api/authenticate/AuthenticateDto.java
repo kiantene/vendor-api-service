@@ -13,21 +13,21 @@ import lombok.Setter;
 public class AuthenticateDto {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String username;
+    private String Username;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String password;
+    private String Password;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String playerId;
+    private String PlayerId;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String defenceCode;
+    private String DefenceCode;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String sessionId;
+    private String SessionId;
 }
