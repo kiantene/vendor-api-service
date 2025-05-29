@@ -51,15 +51,16 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("platform", "SEXYBCRT");
         formData.add("gameType", "LIVE");
-
-        if (toggleVersion.equals("v2")) {
-            String[] gameCodeParts = gameSession.getVendorGameCode().split("_");
+        
+        String vendorGameCode = gameSession.getVendorGameCode();
+        if (vendorGameCode.contains("_")) {
+            String[] gameCodeParts = vendorGameCode.split("_");
             formData.add("gameCode", gameCodeParts[0]);
             formData.add("hall", "SEXY");
             formData.add("isLaunchGameTable", "true");
             formData.add("gameTableId", gameCodeParts[1]);
         } else {
-            formData.add("gameCode", gameSession.getVendorGameCode());
+            formData.add("gameCode", vendorGameCode);
         }
 
         return formData;
