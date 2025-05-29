@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.tbp.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -13,21 +14,26 @@ import lombok.Setter;
 public class AuthenticateDto {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String Username;
+    @JsonProperty("UserName")
+    private String username;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String Password;
+    @JsonProperty("Password")
+    private String password;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String PlayerId;
+    @JsonProperty("PlayerId")
+    private String playerId;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String DefenceCode;
+    @JsonProperty("DefenceCode")
+    private String defenceCode;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String SessionId;
+    @JsonProperty("SessionId")
+    private String sessionId;
 }

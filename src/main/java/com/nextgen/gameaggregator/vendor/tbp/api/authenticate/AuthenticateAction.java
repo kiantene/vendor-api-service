@@ -52,7 +52,8 @@ public class AuthenticateAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSessionId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            gameSession.setVendorToken(dto.getSessionId());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -81,7 +82,7 @@ public class AuthenticateAction {
             responseVo.setErrorCode(ResponseCode.UNAUTHORIZED.code);
             responseVo.setErrorMessage(ResponseCode.UNAUTHORIZED.description);
             responseVo.setSuccessful(false);
-            
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
@@ -107,8 +108,8 @@ public class AuthenticateAction {
         //3. Verify UserId
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), authenticateDto.getPlayerId(), AuthenticationException::new);
 
-        //4. Verify SessionId
-        ValidationUtils.isEquals(gameSession.getToken(), authenticateDto.getSessionId(), AuthenticationException::new);
+        //3. Verify DefenceCode
+        ValidationUtils.isEquals(gameSession.getId(), authenticateDto.getDefenceCode(), AuthenticationException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {

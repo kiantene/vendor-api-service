@@ -84,7 +84,7 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
         TBPGameUrlVo responseVo = new Gson().fromJson(apiResponse.getBody(), TBPGameUrlVo.class);
 
         String gameUrl = UriComponentsBuilder.fromUriString(source)
-                .queryParam("sessionId", gameSession.getId())
+                .queryParam("sessionId", responseVo.getData().getSessionId())
                 .queryParam("homeUrl", gameSession.getLobbyUrl())
                 .queryParam("language", gameSession.getVendorLanguageCode())
                 .build()
