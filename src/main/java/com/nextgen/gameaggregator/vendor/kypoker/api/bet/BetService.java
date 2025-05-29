@@ -87,7 +87,7 @@ public class BetService {
 
             // Normal flow
             if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
-                BigDecimal betAction = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService,httpRequestLog);
+                BigDecimal betAction = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService,httpRequestLog);
 
                 d.setCode(ResponseCodes.SUCCESS);
                 d.setAccount(gameSession.getVendorPlayerUsername());
