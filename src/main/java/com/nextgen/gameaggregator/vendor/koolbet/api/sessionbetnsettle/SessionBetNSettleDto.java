@@ -11,6 +11,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,6 +29,8 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     @NotNull
     @PositiveOrZero
     private BigInteger round;
+    
+    private List<String> betOrder;
 
     @NotNull
     @PositiveOrZero
