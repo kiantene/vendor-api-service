@@ -130,6 +130,24 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
+        }  catch (InvalidOperatorResponseException e) {
+
+            ResponseObjectDto d = new ResponseObjectDto();
+
+            if (e.getOperatorStatus() == 11) {
+                d.setCode(ResponseCodes.INSUFFICIENT_FUNDS);
+                httpService.logError(httpRequestLog, new InsufficientBalanceException());
+                errorMessage = "insufficientBalanceException";
+
+            } else {
+                d.setCode(ResponseCodes.INTERNAL_ERROR);
+                httpService.logError(httpRequestLog, e);
+                errorMessage = e.toString();
+            }
+            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+
         } catch (BetResultIdempotentViolationException duplicateRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
@@ -139,7 +157,7 @@ public class BetService {
             httpService.logError(httpRequestLog, duplicateRequestException);
             errorMessage = duplicateRequestException.toString();
 
-        }catch (InvalidRequestException invalidRequestException) {
+        }   catch (InvalidRequestException invalidRequestException) {
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -148,7 +166,7 @@ public class BetService {
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
 
-        }  catch (Exception e){
+        } catch (Exception e){
             ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setM(EndPoints.LAUNCH_GAME);
@@ -158,10 +176,6 @@ public class BetService {
             errorMessage = e.toString();
 
         }finally {
-            // first request (not request exist) will delete log after process finish.
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(betDto, betDto.getAccount());
-            }
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
