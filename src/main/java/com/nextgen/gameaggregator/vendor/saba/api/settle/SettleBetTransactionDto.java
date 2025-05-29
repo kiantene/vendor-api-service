@@ -6,13 +6,12 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
+import com.nextgen.gameaggregator.vendor.saba.constant.RegexPattern;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -22,12 +21,16 @@ public class SettleBetTransactionDto implements SportBetResultData {
     private Long txId;
     private String updateTime;
     @JsonProperty("winlostDate")
+    @NotNull
+    @Pattern(regexp = RegexPattern.REGEX_PATTERN_WIN_LOST_DATE)
     private String winLostDate;
     private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    @NotNull
+    @Pattern(regexp = RegexPattern.REGEX_PATTERN_SETTLEMENT_TIME)
     private String settlementTime;
     private String operationId;
 
@@ -83,8 +86,8 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE,DateTime.ZONE);
-        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME,DateTime.ZONE);
+        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
+        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
 
         //compare and get the Later Time
         return Math.max(millisWinLostDate, millisSettlementTime);
