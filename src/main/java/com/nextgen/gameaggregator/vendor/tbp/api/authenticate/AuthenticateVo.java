@@ -13,32 +13,32 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthenticateVo implements HttpResponse {
 
-    @JsonProperty("username")
+    @JsonProperty("Username")
     private String username;
 
-    @JsonProperty("password")
+    @JsonProperty("Password")
     private String password;
 
-    @JsonProperty("sessionId")
+    @JsonProperty("SessionId")
     private String sessionId;
 
-    @JsonProperty("userId")
+    @JsonProperty("UserId")
     private String userId;
 
-    @JsonProperty("currency")
+    @JsonProperty("Currency")
     private String currency;
 
-    @JsonProperty("balance")
+    @JsonProperty("Balance")
     private BigDecimal balance;
 
-    @JsonProperty("errorCode")
-    private int errorCode;
+    @JsonProperty("Successful")
+    private Boolean successful;
 
-    @JsonProperty("errorMessage")
+    @JsonProperty("ErrorMessage")
     private String errorMessage;
 
-    @JsonProperty("successful")
-    private Boolean successful;
+    @JsonProperty("ErrorCode")
+    private int errorCode;
 
     @Override
     public boolean hasError() {

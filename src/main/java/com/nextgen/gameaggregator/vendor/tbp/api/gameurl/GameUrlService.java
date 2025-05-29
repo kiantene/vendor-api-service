@@ -13,13 +13,18 @@ import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
@@ -60,8 +65,9 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
         //construct API address
         String baseUrl = Optional.ofNullable(credentials.get(Credentials.API_URL))
                 .orElseThrow(InvalidVendorLineException::new);
-        String launchUrl = Optional.ofNullable(credentials.get(Credentials.LAUNCH_URL))
-                .orElseThrow(InvalidVendorLineException::new);
+
+        // Trigger create Game List function by calling vendor api
+        String source = getSourceProperty(credentials, gameSession.getVendorGameCode());
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
 
@@ -78,10 +84,57 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
 
         TBPGameUrlVo responseVo = new Gson().fromJson(apiResponse.getBody(), TBPGameUrlVo.class);
 
-        String gameurl = launchUrl + gameSession.getVendorGameCode();
-        responseVo.setGameUrl(gameurl);
+        String gameUrl = UriComponentsBuilder.fromUriString(source)
+                .queryParam("sessionId", gameSession.getId())
+                .queryParam("homeUrl", gameSession.getLobbyUrl())
+                .queryParam("language", gameSession.getVendorLanguageCode())
+                .build()
+                .toUriString();
+
+        responseVo.setGameUrl(gameUrl);
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
         return responseVo;
+    }
+
+    private String getSourceProperty(Map<String, String> credentials, String gamecode)
+            throws InvalidVendorLineException, InvalidVendorResponseException {
+        //construct API address & check vendor status in our DB
+        String urlScheme = Optional.of(credentials.get(Credentials.LAUNCH_URL))
+                .orElseThrow(InvalidVendorLineException::new);
+        String token = Optional.ofNullable(credentials.get(Credentials.TOKEN))
+                .orElseThrow(InvalidVendorLineException::new);
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+
+        body.add("Token", token);
+
+        URI uri = UriComponentsBuilder.fromUriString(urlScheme)
+                .path(EndPoints.GAME_LIST)
+                .build()
+                .encode()
+                .toUri();
+
+        ResponseEntity<String> apiResponse = WebClient.create()
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(this.getBody(body))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                .toEntity(String.class)
+                .retry(com.nextgen.gameaggregator.vendor.dreamgaming.constant.EndPoints.RETRY)
+                .timeout(Duration.ofMillis(com.nextgen.gameaggregator.vendor.dreamgaming.constant.EndPoints.TIMEOUT))
+                .block();
+
+        if (apiResponse == null || apiResponse.getBody() == null) {
+            throw new InvalidVendorResponseException("Unable to get Game List");
+        }
+        DataDto dataDto = new Gson().fromJson(apiResponse.getBody(), DataDto.class);
+        String source = "";
+        for (GameDto game : dataDto.getData()) {
+            if (game.getToken().equals(gamecode)) source = game.getSource();
+        }
+
+        return source;
     }
 }
