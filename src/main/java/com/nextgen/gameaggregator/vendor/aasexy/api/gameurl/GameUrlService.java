@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aasexy.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aasexy.constant.EndPoints;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +26,6 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     private String cert;
     private String agentId;
     private String betLimit;
-    @Value("${aasexy-version:v1}") // Default to v1 if not set
-    private String toggleVersion;
 
     public GameUrlService() {
         super(GameUrlVo.class);
@@ -51,7 +48,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("platform", "SEXYBCRT");
         formData.add("gameType", "LIVE");
-        
+
         String vendorGameCode = gameSession.getVendorGameCode();
         if (vendorGameCode.contains("_")) {
             String[] gameCodeParts = vendorGameCode.split("_");
