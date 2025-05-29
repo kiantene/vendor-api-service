@@ -135,7 +135,7 @@ public class BetDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 
     @Override
