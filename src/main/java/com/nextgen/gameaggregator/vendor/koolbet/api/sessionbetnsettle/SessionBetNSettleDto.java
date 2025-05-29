@@ -127,4 +127,13 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
         return type == Formats.SESSION_BET_TYPE_BET ? BetStatus.UNSETTLED : BetStatus.SETTLED;
     }
 
+    @Override
+    public boolean getShouldSettleByBet() {
+        
+        if (betOrder != null && betOrder.size() > 1) {
+            return false;
+        }
+
+        return true;
+    }
 }
