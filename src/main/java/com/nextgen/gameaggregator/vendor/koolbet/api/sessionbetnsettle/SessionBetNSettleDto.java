@@ -11,6 +11,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,6 +29,8 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     @NotNull
     @PositiveOrZero
     private BigInteger round;
+    
+    private List<String> betOrder;
 
     @NotNull
     @PositiveOrZero
@@ -35,12 +38,10 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @Positive
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal winloseAmount;
 
     @NotNull
@@ -53,7 +54,6 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal preserve;
 
 
@@ -127,4 +127,13 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
         return type == Formats.SESSION_BET_TYPE_BET ? BetStatus.UNSETTLED : BetStatus.SETTLED;
     }
 
+    @Override
+    public boolean getShouldSettleByBet() {
+        
+        if (betOrder != null && betOrder.size() > 1) {
+            return false;
+        }
+
+        return true;
+    }
 }
