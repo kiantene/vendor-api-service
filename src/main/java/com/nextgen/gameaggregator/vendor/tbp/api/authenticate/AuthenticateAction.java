@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,14 +25,12 @@ import java.math.BigDecimal;
 public class AuthenticateAction {
     private final HttpService httpService;
     private final VendorLineService vendorLineService;
-    private final VendorService vendorService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
 
-    public AuthenticateAction(HttpService httpService, VendorLineService vendorLineService, VendorService vendorService, GameSessionService gameSessionService, WalletService walletService) {
+    public AuthenticateAction(HttpService httpService, VendorLineService vendorLineService, GameSessionService gameSessionService, WalletService walletService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
-        this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
     }
@@ -95,7 +92,7 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto authenticateDto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException, InvalidPlayerException, InvalidSignatureException {
+    private void doVerification(AuthenticateDto authenticateDto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException {
 
         //1. Verify Username
         String username = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
