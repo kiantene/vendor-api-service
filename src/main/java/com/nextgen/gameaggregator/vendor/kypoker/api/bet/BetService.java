@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
@@ -18,6 +19,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
+
+import java.math.BigDecimal;
 
 @Service
 public class BetService {
@@ -84,11 +87,11 @@ public class BetService {
 
             // Normal flow
             if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
-                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto, httpRequestLog);
+                BigDecimal betAction = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService,httpRequestLog);
 
                 d.setCode(ResponseCodes.SUCCESS);
                 d.setAccount(gameSession.getVendorPlayerUsername());
-                d.setMoney(betEvent.getLastBalance());
+                d.setMoney(betAction);
 
             }
 
