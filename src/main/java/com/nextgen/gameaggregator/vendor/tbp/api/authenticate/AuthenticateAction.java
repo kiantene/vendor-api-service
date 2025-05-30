@@ -74,10 +74,16 @@ public class AuthenticateAction {
             responseVo.setErrorMessage(ResponseCode.UNEXPECTED_INPUT.description);
             responseVo.setSuccessful(false);
 
+        } catch (AuthenticationException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setErrorCode(ResponseCode.PERMISSION_DENIED.code);
+            responseVo.setErrorMessage(ResponseCode.PERMISSION_DENIED.description);
+            responseVo.setSuccessful(false);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setErrorCode(ResponseCode.UNAUTHORIZED.code);
-            responseVo.setErrorMessage(ResponseCode.UNAUTHORIZED.description);
+            responseVo.setErrorCode(ResponseCode.INTERNAL_SERVER_ERROR.code);
+            responseVo.setErrorMessage(ResponseCode.INTERNAL_SERVER_ERROR.description);
             responseVo.setSuccessful(false);
 
         } finally {
@@ -102,10 +108,10 @@ public class AuthenticateAction {
         String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.TOKEN);
         ValidationUtils.isEquals(password, authenticateDto.getPassword(), AuthenticationException::new);
 
-        //3. Verify UserId
+        //3. Verify PlayerId
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), authenticateDto.getPlayerId(), AuthenticationException::new);
 
-        //3. Verify DefenceCode
+        //4. Verify DefenceCode
         ValidationUtils.isEquals(gameSession.getId(), authenticateDto.getDefenceCode(), AuthenticationException::new);
     }
 
