@@ -51,6 +51,7 @@ public class AuthenticateAction {
             // 3. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             gameSession.setVendorToken(dto.getSessionId());
+            gameSessionService.updateSession(gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);

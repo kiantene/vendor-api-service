@@ -16,7 +16,7 @@ public class BalanceDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("Username")
+    @JsonProperty("UserName")
     private String username;
 
     @NotBlank
