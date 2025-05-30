@@ -3,10 +3,16 @@ package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class RefundDto extends CommonDto implements SportRefundData {
     @NotBlank
     @Size(max = 255)
@@ -14,10 +20,17 @@ public class RefundDto extends CommonDto implements SportRefundData {
     private String roundId;
 
     @NotBlank
+    @Size(max = 255)
     @JsonProperty("JanusTransactionID")
     private String janusTransactionId;
 
     @NotBlank
+    @Size(max = 255)
+    @JsonProperty("PlatformTransactionID")
+    private String platformTransactionID;
+
+    @NotBlank
+    @Pattern(regexp = Formats.TIME_REGEX)
     @JsonProperty("TransactionTime")
     private String transactionTime;
 

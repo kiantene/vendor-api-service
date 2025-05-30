@@ -6,8 +6,10 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
-import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,24 +17,42 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResultDto extends CommonDto implements SportBetResultData {
+    @NotBlank
+    @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JsonProperty("RoundID")
     private String roundId;
 
+    @NotBlank
+    @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JsonProperty("GameCode")
     private String gameCode;
 
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("ReturnToWallet")
     private BigDecimal returnToWallet;
 
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("Winloss")
     private BigDecimal winLoss;
 
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("JanusTransactionID")
     private String janusTransactionId;
 
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("PlatformTransactionID")
+    private String platformTransactionID;
+
+    @NotBlank
+    @Pattern(regexp = Formats.TIME_REGEX)
     @JsonProperty("TransactionTime")
     private String transactionTime;
 

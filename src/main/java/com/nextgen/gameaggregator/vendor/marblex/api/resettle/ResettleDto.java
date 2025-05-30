@@ -3,32 +3,57 @@ package com.nextgen.gameaggregator.vendor.marblex.api.resettle;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
-import lombok.Data;
+import jakarta.validation.constraints.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 public class ResettleDto extends CommonDto implements SportAdjustmentData {
 
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("RoundID")
     private String roundId;
 
+    @NotBlank
+    @Size(max = 255)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JsonProperty("GameCode")
     private String gameCode;
 
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("Winloss")
     private BigDecimal winLoss;
 
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("ReturnToWallet")
     private BigDecimal returnToWallet;
 
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
     @JsonProperty("AdjustmentAmount")
     private BigDecimal adjustmentAmount;
 
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("JanusTransactionID")
     private String janusTransactionId;
 
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("PlatformTransactionID")
+    private String platformTransactionID;
+
+    @NotBlank
+    @Pattern(regexp = Formats.TIME_REGEX)
     @JsonProperty("TransactionTime")
     private String transactionTime;
 
