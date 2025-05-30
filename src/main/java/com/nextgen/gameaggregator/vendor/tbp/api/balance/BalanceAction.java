@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,21 +25,19 @@ public class BalanceAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final HttpService httpService;
-    private final VendorService vendorService;
 
     public BalanceAction(GameSessionService gameSessionService,
                          WalletService walletService,
                          VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
-                         HttpService httpService, VendorService vendorService) {
+                         HttpService httpService) {
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.httpService = httpService;
-        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.GETBALANCE)
@@ -99,7 +96,7 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException, InvalidRequestException {
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
