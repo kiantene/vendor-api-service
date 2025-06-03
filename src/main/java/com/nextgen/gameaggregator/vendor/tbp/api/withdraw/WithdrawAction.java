@@ -64,7 +64,7 @@ public class WithdrawAction {
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameNumber(), gameSession);
 
             // Verify parameters (Verify against database values)
-            this.doVerification(dto, gameSession, body);
+            this.doVerification(dto, gameSession);
 
             //Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
@@ -108,7 +108,7 @@ public class WithdrawAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(WithdrawDto dto, GameSession gameSession, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
@@ -124,19 +124,12 @@ public class WithdrawAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
 
         //5. Verify GameNumber
-        ValidationUtils.isEquals(gameSession.getGameCode(), dto.getGameNumber(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
         //6. Verify SessionId
         ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
 
         //7. Verify Currency
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
-    }
-
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
-        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
-
-        // Call the service with the duplicate log
-        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 }
