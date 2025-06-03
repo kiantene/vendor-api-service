@@ -65,19 +65,19 @@ public class AuthenticateAction {
             responseVo.setUserId(dto.getPlayerId());
             responseVo.setCurrency(gameSession.getCurrencyCode());
             responseVo.setBalance(balance);
-            responseVo.setError(ResponseCode.OK, true);
+            responseVo.setError(ResponseCode.OK);
 
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.UNEXPECTED_INPUT, false);
+            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
 
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.PERMISSION_DENIED, false);
+            responseVo.setError(ResponseCode.PERMISSION_DENIED);
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR, false);
+            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);

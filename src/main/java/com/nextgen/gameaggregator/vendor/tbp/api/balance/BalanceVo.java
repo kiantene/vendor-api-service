@@ -29,9 +29,10 @@ public class BalanceVo implements HttpResponse {
         return true;
     }
 
-    public void setError(ResponseCode responseCode, Boolean successful) {
+    public void setError(ResponseCode responseCode) {
         this.errorCode = responseCode.code;
         this.errorMessage = responseCode.description;
-        this.successful = successful;
+        this.successful = responseCode.code == 1000;
     }
+
 }
