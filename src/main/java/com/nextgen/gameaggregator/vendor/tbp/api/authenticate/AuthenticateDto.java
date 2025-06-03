@@ -6,10 +6,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateDto {
     @NotBlank

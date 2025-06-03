@@ -63,27 +63,20 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
-            responseVo.setErrorCode(ResponseCode.OK.code);
-            responseVo.setErrorMessage(ResponseCode.OK.description);
-            responseVo.setSuccessful(true);
+            responseVo.setError(ResponseCode.OK, true);
 
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setErrorCode(ResponseCode.UNEXPECTED_INPUT.code);
-            responseVo.setErrorMessage(ResponseCode.UNEXPECTED_INPUT.description);
-            responseVo.setSuccessful(false);
+            responseVo.setError(ResponseCode.UNEXPECTED_INPUT, false);
 
         } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setErrorCode(ResponseCode.PERMISSION_DENIED.code);
-            responseVo.setErrorMessage(ResponseCode.PERMISSION_DENIED.description);
-            responseVo.setSuccessful(false);
+            responseVo.setError(ResponseCode.PERMISSION_DENIED, false);
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            responseVo.setErrorCode(ResponseCode.INTERNAL_SERVER_ERROR.code);
-            responseVo.setErrorMessage(ResponseCode.INTERNAL_SERVER_ERROR.description);
-            responseVo.setSuccessful(false);
+            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR, false);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

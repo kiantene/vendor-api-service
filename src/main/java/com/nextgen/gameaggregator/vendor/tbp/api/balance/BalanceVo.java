@@ -3,12 +3,11 @@ package com.nextgen.gameaggregator.vendor.tbp.api.balance;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
-import lombok.Getter;
+import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BalanceVo implements HttpResponse {
@@ -28,5 +27,11 @@ public class BalanceVo implements HttpResponse {
     @Override
     public boolean hasError() {
         return true;
+    }
+
+    public void setError(ResponseCode responseCode, Boolean successful) {
+        this.errorCode = responseCode.code;
+        this.errorMessage = responseCode.description;
+        this.successful = successful;
     }
 }

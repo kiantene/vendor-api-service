@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.tbp.api.gameurl;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -81,7 +81,12 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
 
         this.validateResponse(apiResponse, isTimeout, httpRequestLog, TBPGameUrlVo.class, gameSession);
 
-        TBPGameUrlVo responseVo = new Gson().fromJson(apiResponse.getBody(), TBPGameUrlVo.class);
+        TBPGameUrlVo responseVo;
+        try {
+            responseVo = new ObjectMapper().readValue(apiResponse.getBody(), TBPGameUrlVo.class);
+        } catch (Exception e) {
+            throw new InvalidVendorResponseException("Failed to parse vendor response");
+        }
 
         String gameUrl = UriComponentsBuilder.fromUriString(source)
                 .queryParam("sessionId", responseVo.getData().getSessionId())
@@ -121,14 +126,19 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
-                .retry(com.nextgen.gameaggregator.vendor.dreamgaming.constant.EndPoints.RETRY)
-                .timeout(Duration.ofMillis(com.nextgen.gameaggregator.vendor.dreamgaming.constant.EndPoints.TIMEOUT))
+                .retry(EndPoints.RETRY)
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 
         if (apiResponse == null || apiResponse.getBody() == null) {
             throw new InvalidVendorResponseException("Unable to get Game List");
         }
-        DataDto dataDto = new Gson().fromJson(apiResponse.getBody(), DataDto.class);
+        DataDto dataDto;
+        try {
+            dataDto = new ObjectMapper().readValue(apiResponse.getBody(), DataDto.class);
+        } catch (Exception e) {
+            throw new InvalidVendorResponseException("Failed to parse Game List response");
+        }
         String source = "";
         for (GameDto game : dataDto.getData()) {
             if (game.getToken().equals(gamecode)) source = game.getSource();
