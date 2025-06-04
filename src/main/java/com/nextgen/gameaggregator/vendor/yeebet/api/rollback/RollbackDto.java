@@ -1,13 +1,13 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.rollback;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-import java.time.Instant;
-
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackDto implements RollbackData {
     @NotBlank
     private String appid;

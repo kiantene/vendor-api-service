@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.credit;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CreditDto implements BetResultData {
 
     @NotBlank
