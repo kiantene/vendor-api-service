@@ -131,16 +131,11 @@ public class WithdrawAction {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
-        //2. verify Username, Password, PlayerId
-        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
+        //2. verify Username, Password, PlayerId, Currency, SessionId
+        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), dto.getCurrency(), dto.getSessionId(), gameSession);
 
         //3. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
-        //4. Verify SessionId
-        ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
-
-        //5. Verify Currency
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
     }
 }

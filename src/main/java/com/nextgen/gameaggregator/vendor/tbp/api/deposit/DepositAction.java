@@ -136,16 +136,11 @@ public class DepositAction {
         //3. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        //4. verify Username, Password, PlayerId
-        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
+        //4. verify Username, Password, PlayerId, Currency, SessionId
+        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), dto.getCurrency(), dto.getSessionId(), gameSession);
 
         //5. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
-        //6. Verify SessionId
-        ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
-
-        //7. Verify Currency
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
     }
 }

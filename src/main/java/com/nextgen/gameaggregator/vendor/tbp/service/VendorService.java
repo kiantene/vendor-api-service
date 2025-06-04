@@ -22,7 +22,7 @@ public class VendorService extends BaseVendorService {
         this.gameSessionService = gameSessionService;
     }
 
-    public void validate(String usernameDto, String passwordDto, String playerIdDto, GameSession gameSession)
+    public void validate(String usernameDto, String passwordDto, String playerIdDto, String currencyDto, String sessionIdDto, GameSession gameSession)
             throws AuthenticationException, CredentialNotFoundException {
 
         // 1. Verify Username
@@ -35,6 +35,12 @@ public class VendorService extends BaseVendorService {
 
         // 3. Verify PlayerId
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), playerIdDto, AuthenticationException::new);
+
+        // 4. Verify Currency
+        ValidationUtils.isEquals(gameSession.getCurrencyCode(), currencyDto, AuthenticationException::new);
+
+        // 5. Verify SessionId
+        ValidationUtils.isEquals(gameSession.getVendorToken(), sessionIdDto, AuthenticationException::new);
     }
 
     public GameSession checkGameSession(String traceId, String vendorPlayerUsername, String vendorGameCode, String vendorToken) throws VendorCurrencyNotSupportException, InvalidPlayerException, GameNotSupportedException {

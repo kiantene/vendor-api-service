@@ -105,13 +105,7 @@ public class BalanceAction {
         // 3. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // 4. verify Username, Password, PlayerId
-        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
-
-        // 5. Verify Currency
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
-
-        // 6. Verify SessionId
-        ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
+        // 4. verify Username, Password, PlayerId, Currency, SessionId
+        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), dto.getCurrency(), dto.getSessionId(), gameSession);
     }
 }
