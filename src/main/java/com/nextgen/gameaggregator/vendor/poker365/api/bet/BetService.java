@@ -107,7 +107,6 @@ public class BetService {
             //Process full bet data
             walletRequest = operatorWalletService.betDebit(walletRequest);
 
-
             commonVo.setBalance(walletRequest.getBalanceAfter());
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
@@ -126,7 +125,7 @@ public class BetService {
             commonVo.setMsg(ResponseCodes.INVALID_CURRENCY.message);
             httpService.logError(httpRequestLog, e);
 
-        } catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException | NumberFormatException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);

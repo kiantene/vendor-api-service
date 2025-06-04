@@ -77,7 +77,7 @@ public class BalanceService {
             commonVo.setBalance(getWalletBalance);
             commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
-        } catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException | NumberFormatException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);

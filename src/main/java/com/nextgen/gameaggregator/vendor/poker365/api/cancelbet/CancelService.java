@@ -125,7 +125,7 @@ public class CancelService {
 
             }
 
-        } catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException | NumberFormatException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
             commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
             httpService.logError(httpRequestLog, e);
