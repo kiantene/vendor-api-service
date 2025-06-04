@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.security.InvalidParameterException;
 
 @Service
 public class VendorService extends BaseVendorService {
@@ -59,7 +58,7 @@ public class VendorService extends BaseVendorService {
         }
 
         // Verify Currency from dto is equal
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), InvalidParameterException::new);
+        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), InvalidCurrencyException::new);
 
         // Verify player name from dto is equal
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);

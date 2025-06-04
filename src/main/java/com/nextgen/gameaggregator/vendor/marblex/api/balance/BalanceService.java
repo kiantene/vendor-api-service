@@ -53,9 +53,12 @@ public class BalanceService {
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), balance);
 
-        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException |
+        } catch (AuthenticationException | InvalidPlayerException |
                  InvalidAgentApiCredentialException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidCurrencyException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, exception);
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
