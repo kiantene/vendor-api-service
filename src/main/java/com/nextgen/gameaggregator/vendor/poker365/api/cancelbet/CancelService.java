@@ -102,7 +102,7 @@ public class CancelService {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, messageDto, gameSession);
 
-            walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(messageDto.getRoundId(), messageDto.getUserId());
+            walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(messageDto.getRoundId(), gameSession.getVendorPlayerUsername());
 
             if (walletTransaction != null) {
 
