@@ -117,8 +117,8 @@ public class BetService {
             httpService.logError(httpRequestLog, e);
 
         } catch (GameNotSupportedException e) {
-            commonVo.setStatus(ResponseCodes.GAME_ID_NOT_EXIST.status);
-            commonVo.setMsg(ResponseCodes.GAME_ID_NOT_EXIST.message);
+            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
+            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
             httpService.logError(httpRequestLog, e);
 
         } catch (CurrencyNotSupportedException e) {

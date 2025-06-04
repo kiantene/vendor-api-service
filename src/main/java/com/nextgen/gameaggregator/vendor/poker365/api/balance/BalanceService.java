@@ -56,15 +56,12 @@ public class BalanceService {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-
             CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
 
-
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
-
 
             this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
@@ -130,7 +127,7 @@ public class BalanceService {
         String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
 
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(cert, commonDto.getKey(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
         ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), messageDto.getUserId(), InvalidPlayerException::new);
 
