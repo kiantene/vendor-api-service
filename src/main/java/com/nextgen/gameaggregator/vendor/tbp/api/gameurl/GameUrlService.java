@@ -53,6 +53,7 @@ public class GameUrlService extends BaseGameUrlService<TBPGameUrlVo> {
         formData.add("Currency", gameSession.getVendorCurrencyCode());
         formData.add("Language", gameSession.getVendorLanguageCode());
         formData.add("DefenceCode", gameSession.getToken());
+        formData.add("PlatformType", "DESKTOP");
 
         return formData;
     }
