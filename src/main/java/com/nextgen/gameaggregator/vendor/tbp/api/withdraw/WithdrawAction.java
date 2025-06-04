@@ -63,7 +63,7 @@ public class WithdrawAction {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
-            
+
             // Request idempotent checking.
             if (requestIdempotentLogService.checkExists(dto, dto.getPlayerId()) == null) {
                 requestIdempotentLogService.create(dto, dto.getPlayerId());
@@ -123,6 +123,10 @@ public class WithdrawAction {
     private void doValidation(WithdrawDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        if (dto.getPlatformType() != null && dto.getPlatformType().trim().isEmpty()) {
+            throw new InvalidRequestException("PlatformType field is Mandatory.");
+        }
     }
 
     private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {

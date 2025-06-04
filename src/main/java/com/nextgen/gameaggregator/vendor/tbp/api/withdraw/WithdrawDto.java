@@ -72,7 +72,6 @@ public class WithdrawDto implements BetResultData {
     @JsonProperty("Reason")
     private String reason;
 
-    @NotBlank
     @JsonProperty("PlatformType")
     private String platformType;
 
