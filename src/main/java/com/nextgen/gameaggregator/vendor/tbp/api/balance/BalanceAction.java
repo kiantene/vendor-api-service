@@ -5,9 +5,9 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,19 +25,22 @@ public class BalanceAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final HttpService httpService;
+    private final VendorService vendorService;
 
     public BalanceAction(GameSessionService gameSessionService,
                          WalletService walletService,
                          VendorLineService vendorLineService,
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
-                         HttpService httpService) {
+                         HttpService httpService,
+                         VendorService vendorService) {
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.httpService = httpService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.GETBALANCE)
@@ -102,21 +105,13 @@ public class BalanceAction {
         // 3. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // 4. Verify Username
-        String username = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
-        ValidationUtils.isEquals(username, dto.getUsername(), AuthenticationException::new);
+        // 4. verify Username, Password, PlayerId
+        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
 
-        // 5. Verify Password
-        String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.TOKEN);
-        ValidationUtils.isEquals(password, dto.getPassword(), AuthenticationException::new);
-
-        // 6. Verify UserId
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
-
-        // 7. Verify Currency
+        // 5. Verify Currency
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
 
-        // 8. Verify SessionId
+        // 6. Verify SessionId
         ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
     }
 }

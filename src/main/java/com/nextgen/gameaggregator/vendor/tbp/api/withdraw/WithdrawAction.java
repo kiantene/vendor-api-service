@@ -5,9 +5,11 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
@@ -26,7 +28,6 @@ public class WithdrawAction {
     private final HttpService httpService;
     private final ValidationService validationService;
     private final VendorService vendorService;
-    private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
@@ -34,14 +35,12 @@ public class WithdrawAction {
                           HttpService httpService,
                           ValidationService validationService,
                           VendorService vendorService,
-                          VendorLineService vendorLineService,
                           GameSessionService gameSessionService,
                           RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
-        this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
@@ -74,7 +73,6 @@ public class WithdrawAction {
 
             // Get GameSession with username
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameNumber(), gameSession);
 
             // Verify parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -133,24 +131,16 @@ public class WithdrawAction {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
-        //2. Verify Username
-        String username = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
-        ValidationUtils.isEquals(username, dto.getUsername(), AuthenticationException::new);
+        //2. verify Username, Password, PlayerId
+        vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
 
-        //3. Verify Password
-        String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.TOKEN);
-        ValidationUtils.isEquals(password, dto.getPassword(), AuthenticationException::new);
-
-        //4. Verify PlayerId
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
-
-        //5. Verify GameNumber
+        //3. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
-        //6. Verify SessionId
+        //4. Verify SessionId
         ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
 
-        //7. Verify Currency
+        //5. Verify Currency
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
     }
 }
