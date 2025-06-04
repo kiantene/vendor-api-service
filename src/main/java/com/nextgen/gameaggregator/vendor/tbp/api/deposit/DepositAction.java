@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,27 +87,9 @@ public class DepositAction {
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
             responseVo.setError(ResponseCode.OK);
 
-        } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setBalance(e.getBalance().setScale(2, RoundingMode.DOWN));
-            responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setError(ResponseCode.OK);
-
-        } catch (InsufficientBalanceException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
-
-        } catch (InvalidRequestException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
-
-        } catch (AuthenticationException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.PERMISSION_DENIED);
-
         } catch (Exception e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
+            this.handleException(e, responseVo, dto, httpRequestLog);
+
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
@@ -142,5 +125,31 @@ public class DepositAction {
         //5. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
+    }
+
+    @ExceptionHandler({
+            BetResultIdempotentViolationException.class,
+            InsufficientBalanceException.class,
+            InvalidRequestException.class,
+            AuthenticationException.class,
+            Exception.class
+    })
+    private void handleException(Exception e, DepositVo responseVo, DepositDto dto, HttpRequestLog httpRequestLog) {
+
+        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
+            responseVo.setCasinoTransferId(dto.getCasinoTransferId());
+            responseVo.setError(ResponseCode.OK);
+        } else if (e instanceof InsufficientBalanceException) {
+            responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
+        } else if (e instanceof InvalidRequestException) {
+            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
+        } else if (e instanceof AuthenticationException) {
+            responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else {
+            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
+        }
+
+        httpService.logError(httpRequestLog, e);
     }
 }

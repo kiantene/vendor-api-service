@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,18 +69,8 @@ public class BalanceAction {
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setError(ResponseCode.OK);
 
-        } catch (InvalidRequestException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
-
-        } catch (AuthenticationException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.PERMISSION_DENIED);
-
         } catch (Exception e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
-
+            this.handleException(e, responseVo, httpRequestLog);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
@@ -107,5 +98,19 @@ public class BalanceAction {
 
         // 4. verify Username, Password, PlayerId, Currency, SessionId
         vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), dto.getCurrency(), dto.getSessionId(), gameSession);
+    }
+
+
+    @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
+    private void handleException(Exception e, BalanceVo responseVo, HttpRequestLog httpRequestLog) {
+
+        if (e instanceof InvalidRequestException) {
+            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
+        } else if (e instanceof AuthenticationException) {
+            responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else {
+            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
+        }
+        httpService.logError(httpRequestLog, e);
     }
 }
