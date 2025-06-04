@@ -54,7 +54,7 @@ public class DepositAction {
         DepositVo responseVo = new DepositVo();
         DepositDto dto = new DepositDto();
         BigDecimal balance;
-        GameSession gameSession = new GameSession();
+        GameSession gameSession;
         boolean isRequestExists = false;
 
         try {
@@ -72,7 +72,7 @@ public class DepositAction {
             }
 
             // Get GameSession with username
-            vendorService.checkGameSession(traceId, dto.getPlayerId(), dto.getGameNumber(), dto.getSessionId());
+            gameSession = vendorService.checkGameSession(traceId, dto.getPlayerId(), dto.getGameNumber(), dto.getSessionId());
 
             // Verify parameters (Verify against database values)
             this.doVerification(dto, gameSession);
