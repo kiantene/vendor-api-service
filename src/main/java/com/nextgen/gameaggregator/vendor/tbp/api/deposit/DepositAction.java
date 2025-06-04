@@ -5,9 +5,9 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
@@ -24,24 +24,24 @@ import java.math.RoundingMode;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class DepositAction {
+    private final AgentPlayerService agentPlayerService;
     private final WalletService walletService;
     private final HttpService httpService;
-    private final ValidationService validationService;
+    private final VendorLineService vendorLineService;
     private final VendorService vendorService;
-    private final GameSessionService gameSessionService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public DepositAction(WalletService walletService,
+    public DepositAction(AgentPlayerService agentPlayerService,
+                         WalletService walletService,
                          HttpService httpService,
-                         ValidationService validationService,
+                         VendorLineService vendorLineService,
                          VendorService vendorService,
-                         GameSessionService gameSessionService,
                          RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
-        this.validationService = validationService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
-        this.gameSessionService = gameSessionService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
@@ -126,20 +126,26 @@ public class DepositAction {
         }
     }
 
-    private void doVerification(DepositDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
-        //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getPlayerId());
+    private void doVerification(DepositDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException {
+        //1. check session gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), GameNotSupportedException::new);
 
-        //2. verify Username, Password, PlayerId
+        //2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        //3. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        //4. verify Username, Password, PlayerId
         vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), gameSession);
 
-        //3. Verify GameNumber
+        //5. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
-        //4. Verify SessionId
+        //6. Verify SessionId
         ValidationUtils.isEquals(gameSession.getVendorToken(), dto.getSessionId(), AuthenticationException::new);
 
-        //5. Verify Currency
+        //7. Verify Currency
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), AuthenticationException::new);
     }
 }
