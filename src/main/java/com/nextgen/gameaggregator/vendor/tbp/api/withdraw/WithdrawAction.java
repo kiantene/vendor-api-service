@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.tbp.api.withdraw;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -27,37 +28,49 @@ public class WithdrawAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public WithdrawAction(WalletService walletService,
                           HttpService httpService,
                           ValidationService validationService,
                           VendorService vendorService,
                           VendorLineService vendorLineService,
-                          GameSessionService gameSessionService) {
+                          GameSessionService gameSessionService,
+                          RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
-    public WithdrawVo withdrawAction(HttpServletRequest request) {
+    public WithdrawVo betAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         WithdrawVo responseVo = new WithdrawVo();
         WithdrawDto dto = new WithdrawDto();
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
 
         try {
             dto = HttpService.convertJsonToDto(body, WithdrawDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
+            
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(dto, dto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Get GameSession with username
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
@@ -98,6 +111,10 @@ public class WithdrawAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUsername());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
@@ -108,7 +125,7 @@ public class WithdrawAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
