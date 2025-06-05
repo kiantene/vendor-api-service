@@ -65,9 +65,6 @@ public class ResettleService {
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
-        } catch (InvalidOperatorResponseException exception) {
-            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
         } catch (BetAdjustmentIdempotentViolationException exception) {
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getRawBetAdjustmentLog().getBalance());
             httpService.logError(httpRequestLog, exception);

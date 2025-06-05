@@ -63,9 +63,6 @@ public class BalanceService {
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
-        } catch (InvalidOperatorResponseException exception) {
-            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);

@@ -69,9 +69,6 @@ public class ResultService {
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
-        } catch (InvalidOperatorResponseException exception) {
-            commonVo.setStatusCode(StatusCode.UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
         } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
             httpService.logError(httpRequestLog, exception);
