@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.tbp.api.withdraw;
+package com.nextgen.gameaggregator.vendor.tbp.api.deposit;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WithdrawDto implements BetResultData {
+public class DepositDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -81,9 +81,6 @@ public class WithdrawDto implements BetResultData {
     @JsonProperty("CampaignIdFromOperator")
     private String campaignIdFromOperator;
 
-    @JsonProperty("BonusSpinsRemaining")
-    private Integer bonusSpinsRemaining;
-
     @Override
     public String getExternalTransactionId() {
         return this.transferId;
@@ -106,12 +103,12 @@ public class WithdrawDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.amount;
+        return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return null;
+        return this.amount;
     }
 
     @Override
@@ -154,7 +151,7 @@ public class WithdrawDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 
     @Override

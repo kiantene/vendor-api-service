@@ -1,13 +1,13 @@
-package com.nextgen.gameaggregator.vendor.tbp.api.withdraw;
+package com.nextgen.gameaggregator.vendor.tbp.api.deposit;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
@@ -24,42 +24,42 @@ import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class WithdrawAction {
+public class DepositAction {
+    private final AgentPlayerService agentPlayerService;
     private final WalletService walletService;
     private final HttpService httpService;
-    private final ValidationService validationService;
+    private final VendorLineService vendorLineService;
     private final VendorService vendorService;
-    private final GameSessionService gameSessionService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public WithdrawAction(WalletService walletService,
-                          HttpService httpService,
-                          ValidationService validationService,
-                          VendorService vendorService,
-                          GameSessionService gameSessionService,
-                          RequestIdempotentLogService requestIdempotentLogService) {
+    public DepositAction(AgentPlayerService agentPlayerService,
+                         WalletService walletService,
+                         HttpService httpService,
+                         VendorLineService vendorLineService,
+                         VendorService vendorService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
-        this.validationService = validationService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
-        this.gameSessionService = gameSessionService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.WITHDRAW)
-    public WithdrawVo betAction(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.DEPOSIT)
+    public DepositVo settleAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
-        WithdrawVo responseVo = new WithdrawVo();
-        WithdrawDto dto = new WithdrawDto();
+        DepositVo responseVo = new DepositVo();
+        DepositDto dto = new DepositDto();
         BigDecimal balance;
-        GameSession gameSession = new GameSession();
+        GameSession gameSession;
         boolean isRequestExists = false;
 
         try {
-            dto = HttpService.convertJsonToDto(body, WithdrawDto.class);
+            dto = HttpService.convertJsonToDto(body, DepositDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
@@ -73,22 +73,22 @@ public class WithdrawAction {
             }
 
             // Get GameSession with username
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            gameSession = vendorService.checkGameSession(traceId, dto.getPlayerId(), dto.getGameNumber(), dto.getSessionId());
 
             // Verify parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
-            //Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
-            balance = betEvent.getLastBalance();
+            //Settle
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
+
+            balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
             responseVo.setError(ResponseCode.OK);
 
         } catch (Exception e) {
-            this.handleException(e, responseVo, dto, gameSession, httpRequestLog);
+            this.handleException(e, responseVo, dto, httpRequestLog);
 
         } finally {
             // first request (not request exist) will delete log after process finish.
@@ -100,7 +100,7 @@ public class WithdrawAction {
         return responseVo;
     }
 
-    private void doValidation(WithdrawDto dto) throws InvalidRequestException {
+    private void doValidation(DepositDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
 
@@ -109,14 +109,20 @@ public class WithdrawAction {
         }
     }
 
-    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
-        //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getPlayerId());
+    private void doVerification(DepositDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException {
+        //1. check session gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), GameNotSupportedException::new);
 
-        //2. verify Username, Password, PlayerId, Currency, SessionId
+        //2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        //3. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        //4. verify Username, Password, PlayerId, Currency, SessionId
         vendorService.validate(dto.getUsername(), dto.getPassword(), dto.getPlayerId(), dto.getCurrency(), dto.getSessionId(), gameSession);
 
-        //3. Verify GameNumber
+        //5. Verify GameNumber
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), AuthenticationException::new);
 
     }
@@ -128,12 +134,11 @@ public class WithdrawAction {
             AuthenticationException.class,
             Exception.class
     })
-    private void handleException(Exception e, WithdrawVo responseVo, WithdrawDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
+    private void handleException(Exception e, DepositVo responseVo, DepositDto dto, HttpRequestLog httpRequestLog) {
 
         if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
             responseVo.setError(ResponseCode.OK);
         } else if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);

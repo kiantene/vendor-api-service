@@ -5,13 +5,15 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.tbp.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.tbp.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.tbp.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,13 +25,16 @@ import java.math.BigDecimal;
 @Slf4j
 public class AuthenticateAction {
     private final HttpService httpService;
-    private final VendorService vendorService;
+    private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
 
-    public AuthenticateAction(HttpService httpService, VendorService vendorService, GameSessionService gameSessionService, WalletService walletService) {
+    public AuthenticateAction(HttpService httpService,
+                              VendorLineService vendorLineService,
+                              GameSessionService gameSessionService,
+                              WalletService walletService) {
         this.httpService = httpService;
-        this.vendorService = vendorService;
+        this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
     }
@@ -66,18 +71,8 @@ public class AuthenticateAction {
             responseVo.setBalance(balance);
             responseVo.setError(ResponseCode.OK);
 
-        } catch (InvalidRequestException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
-
-        } catch (AuthenticationException e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.PERMISSION_DENIED);
-
         } catch (Exception e) {
-            httpService.logError(httpRequestLog, e);
-            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
-
+            this.handleException(e, responseVo, httpRequestLog);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
@@ -90,12 +85,20 @@ public class AuthenticateAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto authenticateDto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException {
-        //1. verify Username, Password, PlayerId
-        vendorService.validate(authenticateDto.getUsername(), authenticateDto.getPassword(), authenticateDto.getPlayerId(), gameSession);
+    private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException {
+        // 1. Verify Username
+        String username = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
+        ValidationUtils.isEquals(username, dto.getUsername(), AuthenticationException::new);
 
-        //2. Verify DefenceCode
-        ValidationUtils.isEquals(gameSession.getToken(), authenticateDto.getDefenceCode(), AuthenticationException::new);
+        // 2. Verify Password
+        String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.TOKEN);
+        ValidationUtils.isEquals(password, dto.getPassword(), AuthenticationException::new);
+
+        // 3. Verify PlayerId
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
+
+        // 4. Verify DefenceCode
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getDefenceCode(), AuthenticationException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
@@ -103,6 +106,20 @@ public class AuthenticateAction {
 
         // Call the service with the duplicate log
         return walletService.getBalance(traceId, gameSession, httpRequestLogDup);
+    }
+
+
+    @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
+    private void handleException(Exception e, AuthenticateVo responseVo, HttpRequestLog httpRequestLog) {
+
+        if (e instanceof InvalidRequestException) {
+            responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
+        } else if (e instanceof AuthenticationException) {
+            responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else {
+            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
+        }
+        httpService.logError(httpRequestLog, e);
     }
 
 }
