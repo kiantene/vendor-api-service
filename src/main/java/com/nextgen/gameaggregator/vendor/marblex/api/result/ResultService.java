@@ -81,7 +81,6 @@ public class ResultService {
         } finally {
             commonVo.setTraceId(resultDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
-            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }

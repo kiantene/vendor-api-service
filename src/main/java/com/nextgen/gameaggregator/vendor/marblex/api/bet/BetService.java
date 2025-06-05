@@ -86,7 +86,6 @@ public class BetService {
         } finally {
             commonVo.setTraceId(betDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
-            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }

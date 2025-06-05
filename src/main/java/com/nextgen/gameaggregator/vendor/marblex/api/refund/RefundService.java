@@ -83,7 +83,6 @@ public class RefundService {
         } finally {
             commonVo.setTraceId(refundDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
-            httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
     }
