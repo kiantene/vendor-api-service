@@ -137,6 +137,15 @@ public class SportWalletServiceImpl implements SportWalletService {
     }
 
     @Override
+    public WalletRequest refundAll(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidPlayerException, InvalidRequestException {
+
+        return sportRefundProcessor.processV2(walletRequest);
+    }
+
+    @Override
     public WalletRequest settle(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException,
