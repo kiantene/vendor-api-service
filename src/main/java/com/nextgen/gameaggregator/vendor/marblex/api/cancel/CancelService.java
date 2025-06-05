@@ -47,11 +47,11 @@ public class CancelService {
 
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
-            vendorService.doDataMapper(walletRequest, cancelDto);
-            walletRequest = sportWalletService.unsettle(walletRequest);
+            // vendorService.doDataMapper(walletRequest, cancelDto);
+            // walletRequest = sportWalletService.unsettle(walletRequest);
 
             vendorService.doDataMapper(walletRequest, cancelDto);
-            walletRequest = sportWalletService.refund(walletRequest);
+            walletRequest = sportWalletService.refundAll(walletRequest);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
