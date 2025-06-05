@@ -82,6 +82,7 @@ public class RefundService {
             httpService.logError(httpRequestLog, exception);
         } finally {
             commonVo.setTraceId(refundDto.getTraceId());
+            walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;

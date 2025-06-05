@@ -76,7 +76,9 @@ public class CancelService {
             httpService.logError(httpRequestLog, exception);
         } finally {
             commonVo.setTraceId(cancelDto.getTraceId());
+            walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
+
         }
 
         return commonVo;
