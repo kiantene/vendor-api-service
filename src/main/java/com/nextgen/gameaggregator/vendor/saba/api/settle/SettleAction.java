@@ -4,11 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBatchProcessIdempotentLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.service.SportWalletServiceImpl;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -58,6 +57,7 @@ public class SettleAction {
                 throw new BetResultIdempotentViolationException();
 
             for (SettleBetTransactionDto txn : dtos.getMessage().getTxns()) {
+                this.doValidation(txn);
                 txn.setOperationId(dtos.getMessage().getOperationId());
                 sportWalletService.asyncSettle(txn);
             }
@@ -66,6 +66,10 @@ public class SettleAction {
             rawBatchProcessIdempotentLogService.create(rawBatchProcessIdempotentLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCode(ResponseCode.SUCCESS);
@@ -82,5 +86,10 @@ public class SettleAction {
         }
 
         return vo;
+    }
+
+    private void doValidation(SettleBetTransactionDto settleBetTransactionDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(settleBetTransactionDto);
     }
 }

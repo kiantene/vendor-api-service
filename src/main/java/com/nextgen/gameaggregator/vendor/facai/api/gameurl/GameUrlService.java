@@ -5,7 +5,9 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.GameType;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
@@ -60,7 +62,8 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         //encrypt request param
         String encryptParam = "";
         try {
-            encryptParam = vendorService.aesEncrypt(jsonParamString, credentials.get(Credentials.AGENT_KEY));
+            String secret = credentials.get(Credentials.AGENT_KEY);
+            encryptParam = EncryptionUtils.aesEncrypt(Encryption.CIPHER_MODE_AND_PADDING, jsonParamString, secret);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("Param Encrypt Failed");
         }

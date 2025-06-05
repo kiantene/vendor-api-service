@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import jakarta.annotation.Nullable;
@@ -25,12 +24,10 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(max = 255)
-    @Pattern(regexp = "^[\\S]+$") // not allow whitespace
     public String roundId;
 
     @NotBlank
     @Size(max = 255)
-    @Pattern(regexp = "^[\\S]+$")
     public String wagerId;
 
     @NotBlank

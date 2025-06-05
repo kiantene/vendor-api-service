@@ -58,7 +58,7 @@ public class BetDetailService implements BetDetailUrl {
             throws InvalidVendorResponseException, InvalidVendorLineException {
         BetDetailUrlVo responseVo;
         // Retrieve the game domain from the credentials map.
-        String vendorApiUrl = ValidationUtils.validateCredential(credentials.get(Credentials.VENDOR_API_URL));
+        String vendorApiUrl = "https://" + ValidationUtils.validateCredential(credentials.get(Credentials.VENDOR_API_URL));
 
         // Build the URI needed to call the Spadegaming game URL API.
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();

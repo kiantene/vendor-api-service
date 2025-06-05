@@ -71,6 +71,7 @@ public class SessionBetNSettleAction {
 
             //get rawGameSession by token id
             gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetNSettleDto.getGame()), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(sessionBetNSettleDto, gameSession);
@@ -85,6 +86,9 @@ public class SessionBetNSettleAction {
                     //make a ResultType for bet and settle process indicator
                     ResultType resultType = vendorService.calculateResultType(sessionBetNSettleDto.getBetAmount(),
                             sessionBetNSettleDto.getWinAmount(), sessionBetNSettleDto.getJackpotAmount(), false);
+                    if (sessionBetNSettleDto.getBetOrder().size() > 1) {
+                        resultType = ResultType.BET_WIN;
+                    }
 
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetNSettleDto,
                             resultType, vendorService, httpRequestLog);

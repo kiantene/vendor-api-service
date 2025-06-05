@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.service.CustomBooleanDeserializer;
 import jakarta.validation.constraints.*;
@@ -101,17 +102,17 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
     public Long getResultTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
     }
 
     @Override
@@ -134,12 +135,4 @@ public class BetDto implements BetResultData {
         return BetStatus.SETTLED;
     }
 
-
-    private Long getTimestamp() {
-        long timestamp = this.getWagersTime().longValueExact();
-        if (String.valueOf(Math.abs(timestamp)).length() > 10) {
-            return timestamp;
-        }
-        return timestamp * 1000;
-    }
 }
