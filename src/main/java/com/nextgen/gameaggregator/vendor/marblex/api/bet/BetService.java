@@ -58,13 +58,15 @@ public class BetService {
             vendorService.doDataMapper(walletRequest, betDto);
 
             vendorService.doVerification(betDto, gameSession, true);
-
             walletRequest = sportWalletService.placeBet(walletRequest);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
-        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
+        } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
+            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidCurrencyException exception) {
+            commonVo.setStatusCode(StatusCode.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, exception);
         } catch (InsufficientBalanceException exception) {
             commonVo.setStatusCode(StatusCode.INSUFFICIENT_BALANCE);

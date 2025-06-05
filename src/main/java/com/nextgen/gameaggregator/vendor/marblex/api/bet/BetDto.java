@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import jakarta.validation.constraints.*;
@@ -26,7 +25,6 @@ public class BetDto extends CommonDto implements SportBetResultData {
 
     @NotBlank
     @Size(max = 255)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JsonProperty("GameCode")
     private String gameCode;
 
@@ -97,6 +95,7 @@ public class BetDto extends CommonDto implements SportBetResultData {
 
     @Override
     public Long getVendorBetTime() {
+
         return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
     }
 
