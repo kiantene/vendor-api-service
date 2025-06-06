@@ -27,7 +27,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
-    @NotNull
+    //    @NotNull
 //    @Pattern(regexp = RegexPattern.REGEX_PATTERN_SETTLEMENT_TIME)
     private String settlementTime;
     private String operationId;
@@ -84,11 +84,12 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
-        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
+//        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
+//        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
 
         //compare and get the Later Time
-        return Math.max(millisWinLostDate, millisSettlementTime);
+//        return Math.max(millisWinLostDate, millisSettlementTime);
+        return DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
     }
 
     @Override
