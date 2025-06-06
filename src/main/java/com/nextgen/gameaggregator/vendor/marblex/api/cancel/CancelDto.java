@@ -39,7 +39,7 @@ public class CancelDto extends CommonDto implements SportUnsettleData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.platformTransactionID;
+        return this.janusTransactionId;
     }
 
     @Override

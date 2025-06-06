@@ -90,7 +90,7 @@ public class ResultService {
             commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, exception);
         } catch (BetResultIdempotentViolationException exception) {
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
+            commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);

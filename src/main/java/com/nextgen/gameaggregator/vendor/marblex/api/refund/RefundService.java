@@ -90,7 +90,7 @@ public class RefundService {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
         } catch (BetResultIdempotentViolationException exception) {
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
+            commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
         } catch (BetNotFoundException exception) {
             commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);

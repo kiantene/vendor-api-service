@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.marblex.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.service.*;
@@ -23,13 +24,15 @@ public class VendorService extends BaseVendorService {
     public final AgentPlayerService agentPlayerService;
     public final VendorGameService vendorGameService;
     public final ValidationService validationService;
+    public final WalletService walletService;
 
     @Autowired
-    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, ValidationService validationService) {
+    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, ValidationService validationService, WalletService walletService) {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.validationService = validationService;
+        this.walletService = walletService;
     }
 
     public CommonVo mapToSuccess(String currency, BigDecimal balance) {
@@ -38,6 +41,25 @@ public class VendorService extends BaseVendorService {
                 .setData(new CommonDataVo()
                         .setBalance(balance)
                         .setCurrency(currency));
+    }
+
+    public CommonVo mapIdempotentSuccess(BigDecimal balance, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal finalBalance;
+        if (balance == null || balance.compareTo(BigDecimal.ZERO) == 0) {
+            try {
+                finalBalance = walletService.getBalance(gameSession.getTraceId(), gameSession, httpRequestLog);
+            } catch (Exception e) {
+                finalBalance = BigDecimal.ZERO;
+            }
+        } else {
+            finalBalance = balance;
+        }
+        return new CommonVo()
+                .setStatusCode(StatusCode.SUCCESS)
+                .setData(new CommonDataVo()
+                        .setBalance(finalBalance)
+                        .setCurrency(gameSession.getVendorCurrencyCode()));
     }
 
     public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidCurrencyException, AuthenticationException {
@@ -56,7 +78,7 @@ public class VendorService extends BaseVendorService {
             vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         }
-        
+
         // Verify player name from dto is equal
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
     }

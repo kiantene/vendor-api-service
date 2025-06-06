@@ -24,12 +24,12 @@ public class CancelService {
     private final WalletRequestService walletRequestService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public CancelService(SportWalletService sportWalletService, 
-                        HttpService httpService, 
-                        VendorService vendorService, 
-                        GameSessionService gameSessionService, 
-                        WalletRequestService walletRequestService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
+    public CancelService(SportWalletService sportWalletService,
+                         HttpService httpService,
+                         VendorService vendorService,
+                         GameSessionService gameSessionService,
+                         WalletRequestService walletRequestService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.sportWalletService = sportWalletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
@@ -79,9 +79,9 @@ public class CancelService {
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
-            
+
         } catch (BetResultIdempotentViolationException exception) {
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
+            commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
         } catch (BetNotFoundException exception) {
             commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);

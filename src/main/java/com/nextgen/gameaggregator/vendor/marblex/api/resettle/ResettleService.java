@@ -80,7 +80,7 @@ public class ResettleService {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
         } catch (BetAdjustmentIdempotentViolationException exception) {
-            commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getRawBetAdjustmentLog().getBalance());
+            commonVo = vendorService.mapIdempotentSuccess(exception.getRawBetAdjustmentLog().getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
