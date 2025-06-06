@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -36,6 +36,8 @@ public class EndWagerAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
+    private GameServiceImpl gameServiceImpl;
+    @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
@@ -44,9 +46,11 @@ public class EndWagerAction {
     @Autowired
     private UnsettledBetService unsettledBetService;
     @Autowired
-    private SettledBetService settledBetService;
+    private BetIdempotentLogService betIdempotentLogService;
     @Autowired
     private UnsettledBetCachingService unsettledBetCachingService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -58,6 +62,7 @@ public class EndWagerAction {
 
         String traceId = httpRequestLog.getId();
         GameSession gameSession = null;
+        EndWagerDto dto = null;
 
         try {
 
@@ -65,19 +70,20 @@ public class EndWagerAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
+            dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            gameSession = this.getGameSession(traceId, dto);
 
             // Verify data
             this.doVerification(dto, gameSession);
 
             // Process bet
-            BigDecimal balance = this.processEndRoundBet(traceId, dto, gameSession, httpRequestLog);
+            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -87,6 +93,8 @@ public class EndWagerAction {
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
+
+            cachingService.deleteTokenByRoundIdAndVendorPlayerUsernameToRedis(gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
@@ -122,8 +130,8 @@ public class EndWagerAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid((dto.getBrandUid() == null)?"":dto.getBrandUid());
+            responseDataVo.setCurrency(dto.getCurrency());
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
@@ -225,59 +233,40 @@ public class EndWagerAction {
 
     }
 
-    private BigDecimal processEndRoundBet(String traceId, EndWagerDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
-            throws
-            BetNotFoundException,
-            InvalidAgentApiCredentialException,
-            VendorCurrencyNotSupportException,
-            BetResultIdempotentViolationException,
-            MergedBetDataIntegrityException,
-            InsufficientBalanceException,
-            TransactionStillProcessingException,
-            InvalidOperatorResponseException {
+    private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
 
-        /**
-         * Test Case A:
-         * wager > endWager> endWager (same)
-         * expected: BET RECORD DUPLICATE
-         * actual: BET RECORD NOT EXIST -> (bet is settled, unsettled bet record is removed. So threw bet not found exception)
-         *
-         * Test Case B:
-         * endWager (bet not found)
-         * expected: BET RECORD NOT EXIST
-         * actual: Success (balance also updated) - if remove (unsettled bet exist check)
-         *
-         * Added the settled bet check Test Case A may test.
-         * If remove (unsettled bet exist check), Test Case B will fail.
-         */
+        GameSession gameSession;
+
         try {
-            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            String token = cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(dto.getBrandUid(), dto.roundId, null);
 
-            if (settledBet.getOperatorStatus().equals(1)) {
-                throw new BetResultIdempotentViolationException(settledBet);
+            if (token == null) {
+                throw new AuthenticationException();
+
+            } else {
+                gameSession = gameSessionService.verifyToken(token);
             }
 
-        } catch (BetNotFoundException betNotFoundException) {
-            // do nothing
+        } catch (AuthenticationException e) {
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+
+            if (unsettledBet == null) {
+                RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
+                if (rawBetIdempotentLog == null) {
+                    throw new BetNotFoundException();
+                } else {
+                    throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
+                }
+
+            } else {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
+                gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
         }
 
-        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
-
-
-        if (unsettledBet == null) {
-            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-        } else {
-            //fix GA-8574 bug
-            //found unsettled bet and set game session game Id
-            gameSession.setVendorGameId(unsettledBet.getVendorGameId());
-        }
-
-        // Set as BET_WIN / BET_LOST because
-        // vendor's BO has wager and endWager records
-        // endWager's bet id is different from wager's bet id
-        ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
-
-        return walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
+        return gameSession;
     }
 }

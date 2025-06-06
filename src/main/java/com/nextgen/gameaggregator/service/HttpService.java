@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetActionLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
@@ -18,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -40,16 +38,19 @@ public class HttpService {
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
     private final KafkaService kafkaService;
     private final RequestIdempotentLogService requestIdempotentLogService;
-
+    private final LoggingService loggingService;
+    public String traceId;
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
 
     @Autowired
     public HttpService(KafkaService kafkaService,
-                       RequestIdempotentLogService requestIdempotentLogService) {
+                       RequestIdempotentLogService requestIdempotentLogService,
+                       LoggingService loggingService) {
 
         this.kafkaService = kafkaService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.loggingService = loggingService;
     }
 
     public static String getStackTrace(Exception exception) {
@@ -176,6 +177,7 @@ public class HttpService {
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
+        this.traceId = httpRequestLog.getId();
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String requestBody = this.getRawRequestBody(request);
@@ -210,7 +212,6 @@ public class HttpService {
             log.error(exception.getMessage());
             exception.printStackTrace();
         }
-
         return httpRequestLog;
     }
 
@@ -238,6 +239,24 @@ public class HttpService {
 
         try {
             httpRequestLog.setUrl("Retry Request - " + rawBetResultRetryLogItem.getAction());
+            httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public HttpRequestLog startBetActionRequest(RawBetActionLog rawBetActionLogItem) {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("Bet Action Request - " + rawBetActionLogItem.getAction());
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());
@@ -335,14 +354,20 @@ public class HttpService {
             result = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
 
         } else {
-            BufferedReader reader = request.getReader();
             StringBuilder requestBody = new StringBuilder();
-            int value;
-            while ((value = reader.read()) != -1) {
-                requestBody.append((char) value);
+            try {
+                BufferedReader reader = request.getReader();
+                int value;
+                while ((value = reader.read()) != -1) {
+                    requestBody.append((char) value);
+                }
+                result = requestBody.toString();
+            } catch (EOFException exception) {
+                // log request body and details,
+                // because getReader only can use one time
+                loggingService.logRequestDetails(request, requestBody, this.traceId);
+                throw new EOFException();
             }
-
-            result = requestBody.toString();
         }
 
         return result;

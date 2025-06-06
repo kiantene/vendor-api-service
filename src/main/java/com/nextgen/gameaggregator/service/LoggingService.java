@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.util.EnvUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -88,5 +89,21 @@ public class LoggingService {
         jsonObject.put("Data", new Gson().toJson(data));
         jsonObject.put("Time", System.currentTimeMillis());
         log.info(jsonObject.toString());
+    }
+
+    public void logRequestDetails(HttpServletRequest request, StringBuilder requestBody, String traceId) {
+        HashMap<String, Object> logInfo = new HashMap<>();
+
+        // record basic request info
+        logInfo.put("traceId", traceId);
+        logInfo.put("requestUri", request.getRequestURI());
+        logInfo.put("requestMethod", request.getMethod());
+        logInfo.put("requestQueryString", request.getQueryString());
+        logInfo.put("requestAddress", request.getRemoteAddr());
+        logInfo.put("requestHost", request.getRemoteHost());
+        logInfo.put("requestPort", request.getRemotePort());
+        logInfo.put("protocol", request.getProtocol());
+        logInfo.put("requestBody", String.valueOf(requestBody));
+        log.info(new Gson().toJson(logInfo));
     }
 }

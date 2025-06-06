@@ -24,6 +24,10 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     public WalletTransaction prepareEntity(WalletRequest walletRequest, String action) {
         WalletTransaction walletTransaction = new WalletTransaction();
 
+        if (walletRequest.getWinLoss() == null && walletRequest.getBetAmount() != null && walletRequest.getWinAmount() != null) {
+            walletRequest.setWinLoss(walletRequest.getWinAmount().subtract(walletRequest.getBetAmount()));
+        }
+
         walletTransaction.setVendorId(walletRequest.getVendorId());
         walletTransaction.setVendorPlayerUsername(walletRequest.getVendorPlayerUsername());
         walletTransaction.setToken(walletRequest.getToken());

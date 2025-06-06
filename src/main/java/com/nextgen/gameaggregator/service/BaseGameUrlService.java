@@ -137,7 +137,7 @@ public abstract class BaseGameUrlService<T extends GameUrlVo> implements GameUrl
                 .block();
     }
 
-    private ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
+    protected ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
 
         URI getUri = UriComponentsBuilder.fromUriString(baseUrl)
                 .path(uri)

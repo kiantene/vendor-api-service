@@ -89,6 +89,7 @@ public class TransferService {
         String merchantTxId = "";
         boolean isCancel = false;
         boolean requireDebit = false;
+        GameSession gameSession = null;
 
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
@@ -98,10 +99,19 @@ public class TransferService {
             transferVo.setAcctId(dto.getAcctId());
             this.doValidation(dto);
 
-            // User acctId and gameCode to get rawGameSession if gameCode is not null
-            GameSession gameSession = dto.getGameCode() != null
-                    ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
-                    : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            // authenticate game session,verify and regenerate latest game code token
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+                if (dto.getGameCode() != null) {
+                    gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameCode(), gameSession);
+                }
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(dto.getAcctId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameCode());
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             merchantTxId = gameSession.getToken();
@@ -254,7 +264,9 @@ public class TransferService {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getAcctId());
+        if (dto.getType().equals(Actions.PLACE_BET)) {
+            validationService.validateEligibleBet(gameSession, dto.getAcctId());
+        }
 
         // Verify channel
         if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();

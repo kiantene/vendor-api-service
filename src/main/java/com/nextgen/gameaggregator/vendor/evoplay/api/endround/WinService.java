@@ -55,7 +55,7 @@ public class WinService {
             BetNotFoundException,
             InvalidOperatorResponseException,
             TransactionStillProcessingException,
-            VendorCurrencyNotSupportException {
+            VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);

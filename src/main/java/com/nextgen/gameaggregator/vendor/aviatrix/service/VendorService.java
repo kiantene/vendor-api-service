@@ -40,10 +40,4 @@ public class VendorService extends BaseVendorService {
         return resultType;
     }
 
-
-    @Override
-    public boolean shouldSettleByBet() {
-        return true;
-    }
-
 }

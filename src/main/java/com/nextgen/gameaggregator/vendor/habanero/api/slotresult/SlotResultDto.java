@@ -93,6 +93,10 @@ public class SlotResultDto extends FundInfoDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.getGameStateMode().equals(GameStateMode.ENDROUND) || this.getGameStateMode().equals(GameStateMode.EXPIRE)) {
+            //handle settle bet
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
     }
 }

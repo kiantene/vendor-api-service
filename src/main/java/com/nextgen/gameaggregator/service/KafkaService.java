@@ -16,8 +16,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
+import com.nextgen.gameaggregator.util.StackTraceUtils;
 
 import java.math.BigDecimal;
+import java.util.EmptyStackException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -87,7 +89,7 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
-            e.printStackTrace();
+            log.error("BetHistory roundId=[{}], {}, {}", betHistory.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -99,7 +101,7 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
-            e.printStackTrace();
+            log.error("OperatorRequestDlq roundId=[{}], {}, {}", betHistory.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -124,7 +126,7 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
-            e.printStackTrace();
+            log.error("BetResultDlq roundId=[{}], {}, {}", msg.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -167,7 +169,7 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
-            e.printStackTrace();
+            log.error("WarehouseBetHistory roundId=[{}], {}, {}", betHistory.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -203,7 +205,7 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error("PreprocessingBetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
-            e.printStackTrace();
+            log.error("PreprocessBetHistory vendorBetId=[{}], {}, {}", betHistory.getVendorBetId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -274,12 +276,11 @@ public class KafkaService {
 
     public void produceTransferHistory(TransferHistory transferHistory) {
         try {
-
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_HISTORY, transferHistory);
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> referenceId = " + transferHistory.getId() + " data : " + new Gson().toJson(transferHistory));
-            e.printStackTrace();
+            log.error("TransferHistory id=[{}], {}, {}", transferHistory.getId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 
@@ -288,14 +289,14 @@ public class KafkaService {
             try {
                 jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog);
             } catch (Exception e) {
-                log.error("[" + apiRequestLog.getRoundId() + "] " + e.getMessage());
+                log.error("ApiRequestLog roundId=[{}], {}, {}", apiRequestLog.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
                 log.info(new Gson().toJson(apiRequestLog));
+
             }
         } else {
             log.info(new Gson().toJson(apiRequestLog));
         }
     }
-
     public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
         if (this.logToKafka) {
             try {
@@ -306,6 +307,23 @@ public class KafkaService {
             }
         } else {
             log.info(new Gson().toJson(transferWalletRequestLog));
+        }
+    }
+
+    public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
+        try {
+            BetTransactionLog betTransactionLog;
+            if(betResultData!=null){
+                betTransactionLog = new BetTransactionLog(betInformation, betResultData);
+            }else{
+                // set back to original data
+                betTransactionLog = new BetTransactionLog(betInformation);
+            }
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_TRANSACTION_LOG, vendorPlayerUsername, betTransactionLog);
+        } catch (Exception e) {
+            log.error("BetTransactionLog: " + e.getMessage() + " -> vendorBetId = " + betInformation.getVendorBetId() + "& roundId = " + betInformation.getRoundId());
+            log.error("BetTransactionLog roundId=[{}], {}, {}", betInformation.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
         }
     }
 

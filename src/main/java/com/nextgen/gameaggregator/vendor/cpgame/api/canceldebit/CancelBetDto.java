@@ -1,44 +1,24 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.canceldebit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
-import com.nextgen.gameaggregator.service.HttpService;
-import jakarta.validation.constraints.*;
-import lombok.Data;
+import com.nextgen.gameaggregator.vendor.cpgame.dto.CommonDto;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancelBetDto implements RollbackData {
-
-    @NotBlank
-    private String appid;
-    @NotNull
-    @PositiveOrZero(message = "negative number")
-    @Digits(integer = 10, fraction = 0)
-    private Long time;
-    @NotBlank
-    @Size(max = 1000)
-    private String token;
-    @NotBlank
-    private String message;
-    @NotNull
-    private MessageDto messageDto;
-
-    public void convertStringToJsonObject(String message) throws JsonProcessingException {
-        MessageDto subDto = HttpService.convertJsonToDto(message, MessageDto.class);
-
-        setMessageDto(subDto);
-    }
+public class CancelBetDto extends CommonDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return messageDto.getBetId();
+        return super.getMessageDto().getBetId();
     }
 
     @Override
     public Long getVendorSettledTime() {
-        return this.time * 1000;
+        return super.getTime() * 1000;
     }
 
     @Override

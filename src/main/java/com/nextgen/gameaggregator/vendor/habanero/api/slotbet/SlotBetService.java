@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.habanero.api.slotbet;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -20,7 +20,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
@@ -57,7 +56,6 @@ public class SlotBetService {
         String traceId = httpRequestLog.getId();
         httpRequestLog.setRequestBody(new Gson().toJson(fundInfoDto));
 
-        BigDecimal currentBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         try {
             //Retrieve request body in original string format
@@ -67,7 +65,7 @@ public class SlotBetService {
             this.doValidation(fundInfoDto);
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession, currentBalance);
+            this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession);
 
             // Construct bet Dto
             SlotBetDto betDto = new ModelMapper().map(fundInfoDto, SlotBetDto.class);
@@ -75,12 +73,11 @@ public class SlotBetService {
             betDto.setGameId(gameId);
 
             //process unsettle bet data
-            ResultType resultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), true);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             //return success respond
             responseVo.setResponseCode(ResponseCodes.TRANSFER_SUCCESS);
-            responseVo.getFundTransferResponseVo().setBalance(balance.setScale(2, RoundingMode.DOWN));
+            responseVo.getFundTransferResponseVo().setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             responseVo.getFundTransferResponseVo().setCurrencyCode(gameSession.getVendorCurrencyCode());
             if (fundTransferRequestDto.getFundDto().getDebitAndCredit()) {
                 //setup debit and credit bet type respond message
@@ -96,6 +93,7 @@ public class SlotBetService {
                 //setup debit and credit bet type respond message
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessDebit(true);
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -117,23 +115,19 @@ public class SlotBetService {
         }
     }
 
-    private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession, BigDecimal balance) throws
+    private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession) throws
             NoAvailableLineException,
             InvalidPlayerException,
             AuthenticationException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException, InsufficientBalanceException {
+            DisabledVendorLineException, BetResultIdempotentViolationException {
 
         //Verify vendor currency code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
-
-        if (dto.getAmount().abs().compareTo(balance) > 0) {
-            throw new InsufficientBalanceException();
-        }
     }
 
 }

@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.logging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 
 import java.time.Instant;
@@ -12,9 +14,8 @@ import java.util.UUID;
 public abstract class BaseApiLog {
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
 
-    private String ver;
-    private String server;
     private String requestTime;
+    protected String logGroup;
     protected String traceId;
     protected String requestType;
     protected String requestBody;
@@ -29,6 +30,7 @@ public abstract class BaseApiLog {
     protected Long gaTimeTaken;
 
     protected BaseApiLog() {
+        this.logGroup = "general";
         this.traceId = UUID.randomUUID().toString();
         this.start = System.currentTimeMillis();
         this.requestTime = this.formatTimestamp(this.start);
@@ -48,5 +50,13 @@ public abstract class BaseApiLog {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
 
         return dateTime.format(formatter) + "Z";
+    }
+
+    public String toJson() {
+        try {
+            return new ObjectMapper().writeValueAsString(this);
+        } catch (JsonProcessingException jsonProcessingException) {
+            return this.toString();
+        }
     }
 }

@@ -1,46 +1,40 @@
 package com.nextgen.gameaggregator.service;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
 import com.nextgen.gameaggregator.entity.ga.AgentProductDetail;
-import com.nextgen.gameaggregator.exception.ProductAccessDeniedException;
+import com.nextgen.gameaggregator.entity.ga.ProductVendorLine;
 import com.nextgen.gameaggregator.exception.ProductCombinationNotSupportedException;
-import com.nextgen.gameaggregator.repository.ga.reader.AgentProductDetailRepository;
+import com.nextgen.gameaggregator.exception.ProductVendorLineNotFoundException;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AgentProductServiceImpl implements AgentProductService {
-    private final AgentProductDetailRepository agentProductDetailRepository;
+    private final AgentProductDetailService agentProductDetailService;
+    private final ProductVendorLineService productVendorLineService;
 
-    public AgentProductServiceImpl(AgentProductDetailRepository agentProductDetailRepository) {
-        this.agentProductDetailRepository = agentProductDetailRepository;
+    public AgentProductServiceImpl(AgentProductDetailServiceImpl agentProductDetailService,
+                                   ProductVendorLineServiceImpl productVendorLineService) {
+
+        this.agentProductDetailService = agentProductDetailService;
+        this.productVendorLineService = productVendorLineService;
     }
 
-    @Cacheable(value = "ProductAgentVendorLine", key = "{#productId, #gameCategoryId, #currencyId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
-    public AgentProductDetail getProductAgentVendorLine(Integer productId, Integer gameCategoryId, Integer currencyId, Integer agentId) throws 
-        ProductAccessDeniedException, ProductCombinationNotSupportedException {
-        List<AgentProductDetail> agentProductDetailList = agentProductDetailRepository.findVendorLine(productId, agentId);
+    @Override
+    public Integer getProductVendorLineIdByAgent(Integer productId, Integer gameCategoryId, Integer currencyId, Integer agentId)
+            throws ProductCombinationNotSupportedException, ProductVendorLineNotFoundException {
 
-        if (agentProductDetailList.isEmpty()) {
-            throw new ProductAccessDeniedException();
+        AgentProductDetail agentProductDetail = agentProductDetailService.getProductDetailByGameCategoryAndCurrency(productId, gameCategoryId, currencyId, agentId);
+
+        if (agentProductDetail == null) throw new ProductCombinationNotSupportedException();
+
+        Integer vendorLineId = agentProductDetail.getVendorLineId();
+        boolean shouldFindPriorityVendorLine = vendorLineId == null;
+
+        if (shouldFindPriorityVendorLine) {
+            ProductVendorLine productVendorLine = productVendorLineService.getHighestPriorityLine(productId, gameCategoryId, currencyId);
+            if (productVendorLine == null) throw new ProductVendorLineNotFoundException();
+            vendorLineId = productVendorLine.getVendorLineId();
         }
 
-        List<AgentProductDetail> listOfSupportedCategory = agentProductDetailList.stream()
-                .filter(productDetail -> productDetail.getGameCategoryId().equals(gameCategoryId))
-                .toList();
-
-        // means the product combination (eg. game category/currency) not supported for this agent
-        if (listOfSupportedCategory.isEmpty()) {
-            throw new ProductCombinationNotSupportedException();
-        }
-
-        Optional<AgentProductDetail> supportedCurrency = listOfSupportedCategory.stream()
-                .filter(productDetail -> productDetail.getCurrencyId().equals(currencyId))
-                .findFirst();
-
-        return supportedCurrency.orElseThrow(ProductCombinationNotSupportedException::new);
+        return vendorLineId;
     }
 }

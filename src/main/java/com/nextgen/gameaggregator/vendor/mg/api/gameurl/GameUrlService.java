@@ -1,30 +1,29 @@
 package com.nextgen.gameaggregator.vendor.mg.api.gameurl;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-
+import com.google.gson.Gson;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.vendor.mg.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.mg.service.VendorTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.util.RequestLogVo;
-import com.nextgen.gameaggregator.vendor.mg.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.mg.service.VendorTokenService;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import reactor.core.publisher.Mono;
-
-public class GameUrlService implements GameUrl {
+public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     @Autowired
     private RequestService requestService;
     @Autowired
@@ -32,75 +31,57 @@ public class GameUrlService implements GameUrl {
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
-    
+
+    public GameUrlService() {
+        super(GameUrlVo.class);
+        this.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    }
+
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
-            Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
-            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-            try {
-                formData.add("contentCode", gameSession.getVendorGameCode());
-                formData.add("platform", gameSession.getVendorPlatformCode());
-                formData.add("langCode", gameSession.getVendorLanguageCode());
+                                                         Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        try {
+            formData.add("contentCode", gameSession.getVendorGameCode());
+            formData.add("platform", gameSession.getVendorPlatformCode());
+            formData.add("langCode", gameSession.getVendorLanguageCode());
 
-            }  catch (Exception exception) {
-                throw new InvalidFormatException(exception.getMessage());
-            }
+        } catch (Exception exception) {
+            throw new InvalidFormatException(exception.getMessage());
+        }
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
-            GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog)
+            throws InvalidVendorLineException, InvalidVendorResponseException, TimeoutException {
 
-            String apiUrl = credentials.get(Credentials.API_URL)
-                            + "/agents/" + credentials.get(Credentials.AGENT_CODE)
-                            + "/players/" + gameSession.getVendorPlayerUsername()
-                            + "/sessions";
-            Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
+        String apiUrl = credentials.get(Credentials.API_URL);
+        String uri = "/agents/" + credentials.get(Credentials.AGENT_CODE)
+                + "/players/" + gameSession.getVendorPlayerUsername()
+                + "/sessions";
+        Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-            String token = vendorTokenService.getToken(gameSession.getVendorLineId());
-            
-            GameUrlVo responseVo = null;
-            MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-            headerMap.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
-            headerMap.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        String token = vendorTokenService.getToken(gameSession.getVendorLineId());
 
-            long startTime = System.currentTimeMillis();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        headerMap.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+        headerMap.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
-            ResponseEntity<String> apiResponse = WebClient.create()
-                .post()
-                .uri(apiUrl)
-                .headers(httpHeaders -> httpHeaders.addAll(headerMap))
-                .bodyValue(formData)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
-                .block();
+        HttpHeaders httpHeaders = new HttpHeaders(headerMap);
 
-            long endTime = System.currentTimeMillis();
-            RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                "", apiUrl, formData, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
 
-            try {
-                // 1. validate HTTP Response Code
-                requestService.validateVendorHttpStatusResponse(apiResponse);
-                responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
+        GameUrlVo responseVo = null;
 
-                //2. validate vendor response
-                Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
-                RequestService.validateResponse(responseVo);
-                RequestService.successResponseLog(requestLogVo);
+        ResponseEntity<String> response = this.doPost(apiUrl, uri, httpHeaders, formData, isTimeout);
 
-            } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-                RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
-                String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
-                throw new InvalidVendorResponseException(exceptionMsg);
-            }
+        this.validateResponse(response, isTimeout, httpRequestLog, GameUrlVo.class, gameSession);
+
+        responseVo = new Gson().fromJson(response.getBody(), GameUrlVo.class);
+
+        httpRequestLog.setUrl(responseVo.getGameUrl());
 
         return responseVo;
     }
-    
 }
