@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -104,13 +105,21 @@ public class CancelService {
 
             walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(messageDto.getRoundId(), gameSession.getVendorPlayerUsername());
 
-            if (walletTransaction != null) {
+            if(walletTransaction == null) {
+                throw new BetNotFoundException();
+
+            } else if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)){
+                throw new BetResultIdempotentViolationException();
+
+            } else {
 
                 this.dataMapper(walletRequest, messageDto, gameSession);
 
                 walletRequest.setTransferAmount(walletTransaction.getTransferAmount());
 
-                walletRequest.setVendorBetId(messageDto.getGameNumber());
+                walletRequest.setVendorBetId(walletTransaction.getBetId());
+
+                walletRequest.setExternalTransactionId(walletTransaction.getBetId());
 
                 walletRequest = operatorWalletService.betCredit(walletRequest);
 
@@ -119,11 +128,6 @@ public class CancelService {
                 commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
              }
-            else {
-
-                throw new BetNotFoundException();
-
-            }
 
         } catch (InvalidPlayerException | NumberFormatException e) {
             commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
