@@ -107,9 +107,13 @@ public class DepositAction {
         if (dto.getPlatformType() != null && dto.getPlatformType().trim().isEmpty()) {
             throw new InvalidRequestException("PlatformType field is Mandatory.");
         }
+
+        if (dto.getReason() != null && dto.getReason().trim().isEmpty()) {
+            throw new InvalidRequestException("Reason field is Mandatory.");
+        }
     }
 
-    private void doVerification(DepositDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException {
+    private void doVerification(DepositDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException, InvalidTokenException {
         //1. check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), GameNotSupportedException::new);
 
@@ -132,6 +136,7 @@ public class DepositAction {
             InsufficientBalanceException.class,
             InvalidRequestException.class,
             AuthenticationException.class,
+            InvalidTokenException.class,
             Exception.class
     })
     private void handleException(Exception e, DepositVo responseVo, DepositDto dto, HttpRequestLog httpRequestLog) {
@@ -146,6 +151,8 @@ public class DepositAction {
             responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else if (e instanceof InvalidTokenException) {
+            responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         }

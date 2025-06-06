@@ -107,9 +107,13 @@ public class WithdrawAction {
         if (dto.getPlatformType() != null && dto.getPlatformType().trim().isEmpty()) {
             throw new InvalidRequestException("PlatformType field is Mandatory.");
         }
+
+        if (dto.getReason() != null && dto.getReason().trim().isEmpty()) {
+            throw new InvalidRequestException("Reason field is Mandatory.");
+        }
     }
 
-    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException {
+    private void doVerification(WithdrawDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidTokenException {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
@@ -126,6 +130,7 @@ public class WithdrawAction {
             InsufficientBalanceException.class,
             InvalidRequestException.class,
             AuthenticationException.class,
+            InvalidTokenException.class,
             Exception.class
     })
     private void handleException(Exception e, WithdrawVo responseVo, WithdrawDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
@@ -141,6 +146,8 @@ public class WithdrawAction {
             responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else if (e instanceof InvalidTokenException) {
+            responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         }

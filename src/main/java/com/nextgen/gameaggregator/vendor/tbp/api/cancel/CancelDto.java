@@ -67,7 +67,6 @@ public class CancelDto implements RollbackData {
     @JsonProperty("Currency")
     private String currency;
 
-    @NotBlank
     @JsonProperty("Reason")
     private String reason;
 

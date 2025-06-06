@@ -104,9 +104,13 @@ public class CancelAction {
         if (dto.getPlatformType() != null && dto.getPlatformType().trim().isEmpty()) {
             throw new InvalidRequestException("PlatformType field is Mandatory.");
         }
+
+        if (dto.getReason() != null && dto.getReason().trim().isEmpty()) {
+            throw new InvalidRequestException("Reason field is Mandatory.");
+        }
     }
 
-    private void doVerification(CancelDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException {
+    private void doVerification(CancelDto dto, GameSession gameSession) throws AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, CredentialNotFoundException, GameNotSupportedException, InvalidTokenException {
         //1. check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameNumber(), GameNotSupportedException::new);
 
@@ -126,9 +130,7 @@ public class CancelAction {
 
     @ExceptionHandler({
             BetResultIdempotentViolationException.class,
-            InsufficientBalanceException.class,
-            InvalidRequestException.class,
-            AuthenticationException.class,
+            InvalidTokenException.class,
             Exception.class
     })
     private void handleException(Exception e, CancelVo responseVo, CancelDto dto, HttpRequestLog httpRequestLog) {
@@ -137,6 +139,8 @@ public class CancelAction {
             responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
             responseVo.setError(ResponseCode.OK);
+        } else if (e instanceof InvalidTokenException) {
+            responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         }

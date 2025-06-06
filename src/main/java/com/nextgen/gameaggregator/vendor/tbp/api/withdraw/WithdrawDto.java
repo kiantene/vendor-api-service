@@ -68,7 +68,6 @@ public class WithdrawDto implements BetResultData {
     @JsonProperty("Currency")
     private String currency;
 
-    @NotBlank
     @JsonProperty("Reason")
     private String reason;
 
