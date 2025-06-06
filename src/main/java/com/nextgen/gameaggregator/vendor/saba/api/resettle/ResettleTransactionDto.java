@@ -6,15 +6,10 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
-import com.nextgen.gameaggregator.vendor.saba.constant.RegexPattern;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -25,7 +20,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private String updateTime;
     @JsonProperty("winlostDate")
     @NotNull
-    @Pattern(regexp = RegexPattern.REGEX_PATTERN_WIN_LOST_DATE)
+//    @Pattern(regexp = RegexPattern.REGEX_PATTERN_WIN_LOST_DATE)
     private String winLostDate;
     private String status;
     private BigDecimal payout;
@@ -33,7 +28,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private BigDecimal debitAmount;
     private String extraStatus;
     @NotNull
-    @Pattern(regexp = RegexPattern.REGEX_PATTERN_SETTLEMENT_TIME)
+//    @Pattern(regexp = RegexPattern.REGEX_PATTERN_SETTLEMENT_TIME)
     private String settlementTime;
     private String operationId;
 
