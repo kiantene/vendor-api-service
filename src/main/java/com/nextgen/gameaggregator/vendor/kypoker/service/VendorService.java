@@ -27,6 +27,7 @@ import java.util.Arrays;
 @Service
 public class VendorService extends BaseVendorService {
     private final WalletRequestService walletRequestService;
+    private boolean rejectSettleAfterRollback = true;
 
     @Autowired
     public VendorService(WalletRequestService walletRequestService){
@@ -148,5 +149,10 @@ public class VendorService extends BaseVendorService {
         walletRequest.setResultType(resultType.code);
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
+    }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return this.rejectSettleAfterRollback;
     }
 }
