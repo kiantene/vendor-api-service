@@ -57,10 +57,10 @@ public class CancelService {
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
-        } catch (
-                InvalidRequestException exception) {
+        } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
+            
         } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), exception.getBalance());
             httpService.logError(httpRequestLog, exception);

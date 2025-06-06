@@ -27,7 +27,12 @@ public class BetService {
     private final SportWalletService sportWalletService;
 
     @Autowired
-    public BetService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService, WalletRequestService walletRequestService, SportWalletService sportWalletService) {
+    public BetService(HttpService httpService,
+                      GameSessionService gameSessionService,
+                      WalletService walletService,
+                      VendorService vendorService,
+                      WalletRequestService walletRequestService,
+                      SportWalletService sportWalletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;

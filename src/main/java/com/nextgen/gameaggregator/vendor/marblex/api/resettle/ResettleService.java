@@ -62,6 +62,9 @@ public class ResettleService {
         } catch (InsufficientBalanceException exception) {
             commonVo.setStatusCode(StatusCode.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, exception);
+        } catch (BetNotFoundException exception) {
+            commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
