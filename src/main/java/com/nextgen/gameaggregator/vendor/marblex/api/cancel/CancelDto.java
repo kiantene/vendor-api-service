@@ -26,12 +26,7 @@ public class CancelDto extends CommonDto implements SportUnsettleData {
     @Size(max = 255)
     @JsonProperty("JanusTransactionID")
     private String janusTransactionId;
-
-    @NotBlank
-    @Size(max = 255)
-    @JsonProperty("PlatformTransactionID")
-    private String platformTransactionID;
-
+    
     @NotBlank
     @Pattern(regexp = Formats.TIME_REGEX)
     @JsonProperty("TransactionTime")
