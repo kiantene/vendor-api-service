@@ -64,7 +64,7 @@ public class RefundService {
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
 
-            this.doVerification(refundDto.getPlayerId(), gameSession);
+            vendorService.doVerification(refundDto, gameSession, false);
 
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
@@ -110,21 +110,4 @@ public class RefundService {
         return commonVo;
     }
 
-
-    private void doVerification(String playerId, GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidPlayerException {
-
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), playerId, InvalidPlayerException::new);
-    }
 }

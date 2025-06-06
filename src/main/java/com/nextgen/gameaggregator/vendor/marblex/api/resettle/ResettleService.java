@@ -26,7 +26,8 @@ public class ResettleService {
     private final RequestIdempotentLogService requestIdempotentLogService;
 
     public ResettleService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                           VendorService vendorService, SportWalletService sportWalletService, RequestIdempotentLogService requestIdempotentLogService) {
+                           VendorService vendorService, SportWalletService sportWalletService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -66,7 +67,7 @@ public class ResettleService {
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), betEvent.getLastBalance());
 
-        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
+        } catch (AuthenticationException | InvalidPlayerException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
         } catch (InsufficientBalanceException exception) {
@@ -95,4 +96,5 @@ public class ResettleService {
 
         return commonVo;
     }
+
 }

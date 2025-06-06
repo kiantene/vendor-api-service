@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.resettle;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ResettleDto extends CommonDto implements SportAdjustmentData {
 
     @NotBlank

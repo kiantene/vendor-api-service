@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.cancel;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
@@ -13,6 +14,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelDto extends CommonDto implements SportUnsettleData {
 
     @NotBlank

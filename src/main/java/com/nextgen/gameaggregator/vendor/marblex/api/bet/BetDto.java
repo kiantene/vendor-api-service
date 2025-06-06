@@ -20,6 +20,11 @@ import java.math.BigDecimal;
 public class BetDto extends CommonDto implements SportBetResultData {
 
     @NotBlank
+    @JsonProperty("Currency")
+    @Size(max = 5)
+    private String currency;
+
+    @NotBlank
     @Size(max = 255)
     @JsonProperty("RoundID")
     private String roundId;

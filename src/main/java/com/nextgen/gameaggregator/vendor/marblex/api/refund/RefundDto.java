@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
 import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
+import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -12,17 +14,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class RefundDto implements SportRefundData {
-
-    @NotBlank
-    @JsonProperty("TraceID")
-    @Size(max = 255)
-    private String traceId;
-
-    @NotBlank
-    @JsonProperty("PlayerID")
-    @Size(max = 50)
-    private String playerId;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class RefundDto extends CommonDto implements SportRefundData {
 
     @NotBlank
     @Size(max = 255)
