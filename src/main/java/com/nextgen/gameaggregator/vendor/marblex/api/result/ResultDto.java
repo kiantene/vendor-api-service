@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
 import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
-import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +16,17 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto extends CommonDto implements SportBetResultData {
+public class ResultDto implements SportBetResultData {
+
+    @NotBlank
+    @JsonProperty("TraceID")
+    @Size(max = 255)
+    private String traceId;
+
+    @NotBlank
+    @JsonProperty("PlayerID")
+    @Size(max = 50)
+    private String playerId;
 
     @NotBlank
     @Size(max = 255)

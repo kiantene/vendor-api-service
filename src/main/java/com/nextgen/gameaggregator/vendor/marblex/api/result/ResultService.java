@@ -6,9 +6,7 @@ import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
@@ -25,21 +23,31 @@ public class ResultService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final VendorGameService vendorGameService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public ResultService(HttpService httpService, 
-                        GameSessionService gameSessionService, 
-                        WalletService walletService, 
-                        VendorService vendorService, 
-                        WalletRequestService walletRequestService, 
-                        SportWalletService sportWalletService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
+
+    public ResultService(HttpService httpService,
+                         GameSessionService gameSessionService,
+                         WalletService walletService,
+                         VendorService vendorService,
+                         WalletRequestService walletRequestService,
+                         SportWalletService sportWalletService,
+                         VendorGameService vendorGameService,
+                         VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.vendorGameService = vendorGameService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
@@ -65,7 +73,7 @@ public class ResultService {
 
             vendorService.doDataMapper(walletRequest, resultDto);
 
-            vendorService.doVerification(resultDto, gameSession, false);
+            this.doVerification(resultDto.getPlayerId(), gameSession);
 
             // Request idempotent checking
             if (requestIdempotentLogService.checkExists(resultDto, resultDto.getPlayerId()) == null) {
@@ -79,7 +87,7 @@ public class ResultService {
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
-        } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
+        } catch (AuthenticationException | InvalidPlayerException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
         } catch (InvalidRequestException exception) {
@@ -104,5 +112,22 @@ public class ResultService {
             httpService.end(httpRequestLog, commonVo);
         }
         return commonVo;
+    }
+
+    private void doVerification(String playerId, GameSession gameSession) throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidPlayerException {
+
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), playerId, InvalidPlayerException::new);
     }
 }
