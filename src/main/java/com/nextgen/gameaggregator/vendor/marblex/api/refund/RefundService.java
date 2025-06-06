@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -24,14 +25,22 @@ public class RefundService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public RefundService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService, WalletRequestService walletRequestService, SportWalletService sportWalletService) {
+    public RefundService(HttpService httpService,
+                        GameSessionService gameSessionService, 
+                        WalletService walletService, 
+                        VendorService vendorService, 
+                        WalletRequestService walletRequestService, 
+                        SportWalletService sportWalletService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo refund(HttpServletRequest request) {
@@ -42,6 +51,7 @@ public class RefundService {
         CommonVo commonVo = new CommonVo();
         RefundDto refundDto = new RefundDto();
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
 
         try {
             refundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RefundDto.class);
@@ -55,6 +65,14 @@ public class RefundService {
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
             vendorService.doDataMapper(walletRequest, refundDto);
+
+            // Request idempotent checking
+            if (requestIdempotentLogService.checkExists(refundDto, refundDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(refundDto, refundDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new BetResultIdempotentViolationException();
+            }
 
             walletRequest = sportWalletService.refund(walletRequest);
 
@@ -77,6 +95,10 @@ public class RefundService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(refundDto, refundDto.getPlayerId());
+            }
+
             commonVo.setTraceId(refundDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);

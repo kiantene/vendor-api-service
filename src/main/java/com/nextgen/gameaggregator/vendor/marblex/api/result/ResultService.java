@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.result;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -14,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,15 +25,22 @@ public class ResultService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    @Autowired
-    public ResultService(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService, WalletRequestService walletRequestService, SportWalletService sportWalletService) {
+    public ResultService(HttpService httpService, 
+                        GameSessionService gameSessionService, 
+                        WalletService walletService, 
+                        VendorService vendorService, 
+                        WalletRequestService walletRequestService, 
+                        SportWalletService sportWalletService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settleBet(HttpServletRequest request) {
@@ -43,6 +50,7 @@ public class ResultService {
         CommonVo commonVo = new CommonVo();
         ResultDto resultDto = new ResultDto();
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
 
         try {
             resultDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResultDto.class);
@@ -58,6 +66,14 @@ public class ResultService {
             vendorService.doDataMapper(walletRequest, resultDto);
 
             vendorService.doVerification(resultDto, gameSession, false);
+
+            // Request idempotent checking
+            if (requestIdempotentLogService.checkExists(resultDto, resultDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(resultDto, resultDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new BetResultIdempotentViolationException();
+            }
 
             walletRequest = sportWalletService.settle(walletRequest);
 
@@ -79,6 +95,10 @@ public class ResultService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(resultDto, resultDto.getPlayerId());
+            }
+
             commonVo.setTraceId(resultDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);

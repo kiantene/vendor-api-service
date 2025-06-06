@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -14,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,20 +25,22 @@ public class BetService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    @Autowired
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       WalletService walletService,
                       VendorService vendorService,
                       WalletRequestService walletRequestService,
-                      SportWalletService sportWalletService) {
+                      SportWalletService sportWalletService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo placeBet(HttpServletRequest request) {
@@ -48,6 +50,7 @@ public class BetService {
         CommonVo commonVo = new CommonVo();
         BetDto betDto = new BetDto();
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
 
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
@@ -63,6 +66,15 @@ public class BetService {
             vendorService.doDataMapper(walletRequest, betDto);
 
             vendorService.doVerification(betDto, gameSession, true);
+
+            // Request idempotent checking
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new BetResultIdempotentViolationException();
+            }
+
             walletRequest = sportWalletService.placeBet(walletRequest);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
@@ -86,6 +98,10 @@ public class BetService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getPlayerId());
+            }
+
             commonVo.setTraceId(betDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
