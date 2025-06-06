@@ -82,6 +82,6 @@ public class CancelDto implements RollbackData, RequestIdempotency {
 
     @Override
     public String getVendorPlayerUsername() {
-        return getS();
+        return this.account;
     }
 }
