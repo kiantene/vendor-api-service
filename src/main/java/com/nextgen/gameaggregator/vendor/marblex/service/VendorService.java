@@ -151,7 +151,7 @@ public class VendorService extends BaseVendorService {
 
     public void createIdempotentLogIfNeeded(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
         if (state.shouldCreateLog) {
-            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getOperatorHttpStatusCode(), action);
+            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getOperatorResponseStatus().code, action);
         }
     }
 
