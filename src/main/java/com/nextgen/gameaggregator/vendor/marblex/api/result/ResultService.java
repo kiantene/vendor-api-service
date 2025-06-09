@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.result;
 
-import org.springframework.stereotype.Service;
-
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -15,18 +13,18 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ResultService {
+    private static final String RESULT_ACTION = "result";
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
-    private static final String RESULT_ACTION = "result";
 
 
     public ResultService(HttpService httpService,
@@ -62,16 +60,17 @@ public class ResultService {
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
             vendorService.doDataMapper(walletRequest, resultDto);
             vendorService.doVerification(resultDto, gameSession, false);
-
+            //validate gamecode
+            ValidationUtils.isEquals(gameSession.getGameCode(), resultDto.getGameCode(), InvalidPlayerException::new);
             // Handle idempotent request check using VendorService
             idempotentState = vendorService.checkIdempotentRequest(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
-            
+
             // Process the settlement
             walletRequest = sportWalletService.settle(walletRequest);
-            
+
             // Create idempotent log if needed (for new requests)
             vendorService.createIdempotentLogIfNeeded(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), walletRequest, idempotentState, RESULT_ACTION);
-            
+
             // Recreate existing log with OK status if settlement was successful
             vendorService.recreateIdempotentLogWithOkStatus(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), walletRequest, idempotentState, RESULT_ACTION);
 
@@ -96,7 +95,7 @@ public class ResultService {
         } catch (TransactionStillProcessingException exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
-            
+
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -109,7 +108,7 @@ public class ResultService {
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
         }
-        
+
         return commonVo;
     }
 }

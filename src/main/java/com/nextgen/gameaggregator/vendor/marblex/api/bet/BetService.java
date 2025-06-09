@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
-import org.springframework.stereotype.Service;
-
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -15,18 +13,18 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Service;
 
 @Service
 public class BetService {
+    private static final String BET_ACTION = "bet";
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
-    private static final String BET_ACTION = "bet";
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
@@ -61,7 +59,8 @@ public class BetService {
 
             vendorService.doDataMapper(walletRequest, betDto);
             vendorService.doVerification(betDto, gameSession, true);
-
+            //validate currency
+            ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
             // Handle idempotent request check using VendorService
             idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
@@ -70,7 +69,7 @@ public class BetService {
 
             // Create idempotent log if needed (for new requests)
             vendorService.createIdempotentLogIfNeeded(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
-            
+
             // Recreate existing log with OK status if settlement was successful
             vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
 
@@ -80,10 +79,10 @@ public class BetService {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
 
-        } catch (InvalidCurrencyException exception) {
+        } catch (InvalidCurrencyException | CurrencyNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, exception);
-            
+
         } catch (InsufficientBalanceException exception) {
             commonVo.setStatusCode(StatusCode.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, exception);
@@ -109,7 +108,7 @@ public class BetService {
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
         }
-        
+
         return commonVo;
     }
 }
