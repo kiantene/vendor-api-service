@@ -153,6 +153,11 @@ public class VendorService extends BaseVendorService {
         if (state.shouldCreateLog) {
             requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getOperatorResponseStatus().code, action);
         }
+
+        if (walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
+            // If the request was successful, we don't need to create a log again
+            state.shouldSkipCleanup = true; // Don't delete in finally block since we just created with OK status
+        }
     }
 
     public void recreateIdempotentLogWithOkStatus(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
