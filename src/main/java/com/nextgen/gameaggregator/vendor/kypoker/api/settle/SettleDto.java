@@ -171,6 +171,6 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public String getVendorPlayerUsername() {
-        return getS();
+        return this.account;
     }
 }
