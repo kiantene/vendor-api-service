@@ -60,8 +60,6 @@ public class ResultService {
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
             vendorService.doDataMapper(walletRequest, resultDto);
             vendorService.doVerification(resultDto, gameSession, false);
-            //validate gamecode
-            ValidationUtils.isEquals(gameSession.getGameCode(), resultDto.getGameCode(), InvalidPlayerException::new);
             // Handle idempotent request check using VendorService
             idempotentState = vendorService.checkIdempotentRequest(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
 
@@ -76,7 +74,7 @@ public class ResultService {
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
-        } catch (AuthenticationException | InvalidPlayerException exception) {
+        } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
 
