@@ -117,7 +117,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
-    @CacheEvict(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername}", cacheManager = "cacheManager")
+    @CacheEvict(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager")
     public void delete(String externalTransactionId, String vendorPlayerUsername, String prefix) {
         try {
             String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
@@ -128,7 +128,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
-    @CachePut(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername}", cacheManager = "cacheManager")
+    @CachePut(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager")
     public RequestIdempotentLog create(String externalTransactionId, String vendorPlayerUsername, Integer walletRequestStatus, String prefix) {
         String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
         RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
@@ -140,8 +140,8 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
-    @Cacheable(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
-    public RequestIdempotentLog getSportsRequestIdempotentLog(String externalTransactionId, String vendorPlayerUsername,  String prefix) {
+    @Cacheable(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager", unless = "#result == null")
+    public RequestIdempotentLog getSportsRequestIdempotentLog(String externalTransactionId, String vendorPlayerUsername, String prefix) {
         String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
         return requestIdempotentLogRepository.findById(id).orElse(null);
     }
