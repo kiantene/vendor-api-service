@@ -1,9 +1,16 @@
 package com.nextgen.gameaggregator.vendor.marblex.service;
 
+import java.math.BigDecimal;
+
+import org.springframework.stereotype.Service;
+
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -13,10 +20,6 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Service
 public class VendorService extends BaseVendorService {
@@ -25,14 +28,20 @@ public class VendorService extends BaseVendorService {
     public final VendorGameService vendorGameService;
     public final ValidationService validationService;
     public final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    @Autowired
-    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, ValidationService validationService, WalletService walletService) {
+    public VendorService(VendorLineService vendorLineService, 
+                        AgentPlayerService agentPlayerService, 
+                        VendorGameService vendorGameService, 
+                        ValidationService validationService, 
+                        WalletService walletService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.validationService = validationService;
         this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo mapToSuccess(String currency, BigDecimal balance) {
@@ -44,17 +53,16 @@ public class VendorService extends BaseVendorService {
     }
 
     public CommonVo mapIdempotentSuccess(BigDecimal balance, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        BigDecimal finalBalance = balance;
 
-        BigDecimal finalBalance;
-        if (balance == null || balance.compareTo(BigDecimal.ZERO) == 0) {
+        if (finalBalance == null || finalBalance.compareTo(BigDecimal.ZERO) == 0) {
             try {
                 finalBalance = walletService.getBalance(gameSession.getTraceId(), gameSession, httpRequestLog);
             } catch (Exception e) {
                 finalBalance = BigDecimal.ZERO;
             }
-        } else {
-            finalBalance = balance;
         }
+
         return new CommonVo()
                 .setStatusCode(StatusCode.SUCCESS)
                 .setData(new CommonDataVo()
@@ -115,5 +123,58 @@ public class VendorService extends BaseVendorService {
         walletRequest.setVendorBetId(cancelDto.getVendorBetId());
         walletRequest.setRoundId(cancelDto.getRoundId());
         walletRequest.setVendorPlayerUsername(cancelDto.getVendorPlayerUsername());
+    }
+
+    public IdempotentState checkIdempotentRequest(String externalTransactionId, String vendorPlayerUsername, String action) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+        RequestIdempotentLog existingLog = requestIdempotentLogService.getSportsRequestIdempotentLog(externalTransactionId, vendorPlayerUsername, action);
+        
+        IdempotentState state = new IdempotentState();
+
+        if (existingLog == null) {
+            // New request - need to create log later
+            state.shouldCreateLog = true;
+            return state;
+        }
+
+        // Store that we have an existing log
+        state.hasExistingLog = true;
+
+        if (existingLog.getWalletRequestStatus() == ResponseCodes.Status.SC_OK.code) {
+            // Request already processed successfully - idempotent violation
+            state.shouldSkipCleanup = true; 
+            throw new BetResultIdempotentViolationException();
+        }
+
+        // Request exists but not completed (status != OK) - still processing
+        throw new TransactionStillProcessingException();
+    }
+
+    public void createIdempotentLogIfNeeded(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
+        if (state.shouldCreateLog) {
+            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getStatus(), action);
+        }
+    }
+
+    public void recreateIdempotentLogWithOkStatus(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
+        // Only recreate if settlement was successful AND we had an existing log with non-OK status
+        if (state.hasExistingLog && walletRequest.getStatus() == ResponseCodes.Status.SC_OK.code) {
+            // Delete the old log and create new one with OK status
+            requestIdempotentLogService.delete(externalTransactionId, vendorPlayerUsername, action);
+            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, ResponseCodes.Status.SC_OK.code, action);
+            state.shouldSkipCleanup = true; // Don't delete in finally block since we just created with OK status
+        }
+    }
+
+    public void cleanupIdempotentLog(String externalTransactionId, String vendorPlayerUsername, IdempotentState state, String action) {
+        // Only delete if it's a successful new request AND we shouldn't skip cleanup
+        if (!state.shouldSkipCleanup) {
+            requestIdempotentLogService.delete(externalTransactionId, vendorPlayerUsername, action);
+        }
+    }
+
+    public static class IdempotentState {
+        public boolean shouldCreateLog = false;
+        public boolean hasExistingLog = false;
+        public boolean shouldSkipCleanup = false;
     }
 }

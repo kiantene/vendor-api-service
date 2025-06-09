@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.cancel;
 
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import org.springframework.stereotype.Service;
+
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -12,8 +13,8 @@ import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
+
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Service;
 
 @Service
 public class CancelService {
@@ -22,20 +23,17 @@ public class CancelService {
     public final GameSessionService gameSessionService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public CancelService(SportWalletService sportWalletService,
                          HttpService httpService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
-                         WalletRequestService walletRequestService,
-                         RequestIdempotentLogService requestIdempotentLogService) {
+                         WalletRequestService walletRequestService) {
         this.sportWalletService = sportWalletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
         this.walletRequestService = walletRequestService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo cancel(HttpServletRequest request) {
@@ -45,37 +43,36 @@ public class CancelService {
         CommonVo commonVo = new CommonVo();
         CancelDto cancelDto = new CancelDto();
         GameSession gameSession = new GameSession();
-        boolean isRequestExists = false;
+        VendorService.IdempotentState idempotentState = null;
+        String action = "refundAll";
 
         try {
 
             cancelDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CancelDto.class);
-
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelDto.getPlayerId());
-
             vendorService.doVerification(cancelDto, gameSession, false);
-
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-
-            // vendorService.doDataMapper(walletRequest, cancelDto);
-            // walletRequest = sportWalletService.unsettle(walletRequest);
 
             vendorService.doDataMapper(walletRequest, cancelDto);
 
-            // Request idempotent checking
-            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getPlayerId()) == null) {
-                requestIdempotentLogService.create(cancelDto, cancelDto.getPlayerId());
-            } else {
-                isRequestExists = true;
-                throw new BetResultIdempotentViolationException();
-            }
+            // Handle idempotent request check using VendorService
+            idempotentState = vendorService.checkIdempotentRequest(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), action);
 
+            // Process the refund all
             walletRequest = sportWalletService.refundAll(walletRequest);
 
+            // Create idempotent log if needed (for new requests)
+            vendorService.createIdempotentLogIfNeeded(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, action);
+            
+            // Recreate existing log with OK status if settlement was successful
+            vendorService.recreateIdempotentLogWithOkStatus(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, action);
+
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
+
         } catch (AuthenticationException | InvalidPlayerException | InvalidCurrencyException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
+
         } catch (InvalidRequestException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, exception);
@@ -83,15 +80,18 @@ public class CancelService {
         } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
+
         } catch (BetNotFoundException exception) {
             commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, exception);
+
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(cancelDto, cancelDto.getPlayerId());
+            if (idempotentState != null) {
+                vendorService.cleanupIdempotentLog(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), idempotentState, action);
             }
 
             commonVo.setTraceId(cancelDto.getTraceId());
@@ -101,6 +101,4 @@ public class CancelService {
 
         return commonVo;
     }
-
-
 }
