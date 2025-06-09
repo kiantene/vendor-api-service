@@ -49,7 +49,7 @@ public class BetService {
         BetDto betDto = new BetDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-        String action = "betResult";
+        String action = "bet";
 
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
