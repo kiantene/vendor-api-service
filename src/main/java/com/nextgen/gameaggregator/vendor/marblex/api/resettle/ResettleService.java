@@ -24,6 +24,7 @@ public class ResettleService {
     public final WalletService walletService;
     public final VendorService vendorService;
     private final SportWalletService sportWalletService;
+    private static final String RESETTLE_ACTION = "resettle";
 
     public ResettleService(HttpService httpService, 
                            GameSessionService gameSessionService, 
@@ -44,7 +45,6 @@ public class ResettleService {
         ResettleDto resettleDto = new ResettleDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-        String action = "resettle";
 
         try {
             resettleDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResettleDto.class);
@@ -55,16 +55,16 @@ public class ResettleService {
             vendorService.doVerification(resettleDto, gameSession, false);
 
             // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), action);
+            idempotentState = vendorService.checkIdempotentRequest(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), RESETTLE_ACTION);
 
             // Process the adjustment
             BetEvent betEvent = sportWalletService.adjustment(resettleDto.getTraceId(), resettleDto, httpRequestLog);
 
             // Create idempotent log if needed (for new requests)
-            //vendorService.createIdempotentLogIfNeeded(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), walletRequest, idempotentState, action);
+            //vendorService.createIdempotentLogIfNeeded(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), walletRequest, idempotentState, RESETTLE_ACTION);
             
             // Recreate existing log with OK status if settlement was successful
-            // vendorService.recreateIdempotentLogWithOkStatus(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), walletRequest, idempotentState, action);
+            // vendorService.recreateIdempotentLogWithOkStatus(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), walletRequest, idempotentState, RESETTLE_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), betEvent.getLastBalance());
 
@@ -94,7 +94,7 @@ public class ResettleService {
 
         } finally {
             if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), idempotentState, action);
+                vendorService.cleanupIdempotentLog(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), idempotentState, RESETTLE_ACTION);
             }
 
             commonVo.setTraceId(resettleDto.getTraceId());

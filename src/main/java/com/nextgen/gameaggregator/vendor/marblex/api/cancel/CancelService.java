@@ -23,6 +23,7 @@ public class CancelService {
     public final GameSessionService gameSessionService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
+    private static final String CANCEL_ACTION = "refundAll";
 
     public CancelService(SportWalletService sportWalletService,
                          HttpService httpService,
@@ -44,7 +45,6 @@ public class CancelService {
         CancelDto cancelDto = new CancelDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-        String action = "refundAll";
 
         try {
 
@@ -56,16 +56,16 @@ public class CancelService {
             vendorService.doDataMapper(walletRequest, cancelDto);
 
             // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), action);
+            idempotentState = vendorService.checkIdempotentRequest(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), CANCEL_ACTION);
 
             // Process the refund all
             walletRequest = sportWalletService.refundAll(walletRequest);
 
             // Create idempotent log if needed (for new requests)
-            vendorService.createIdempotentLogIfNeeded(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, action);
+            vendorService.createIdempotentLogIfNeeded(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, CANCEL_ACTION);
             
             // Recreate existing log with OK status if settlement was successful
-            vendorService.recreateIdempotentLogWithOkStatus(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, action);
+            vendorService.recreateIdempotentLogWithOkStatus(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, CANCEL_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
@@ -91,7 +91,7 @@ public class CancelService {
 
         } finally {
             if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), idempotentState, action);
+                vendorService.cleanupIdempotentLog(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), idempotentState, CANCEL_ACTION);
             }
 
             commonVo.setTraceId(cancelDto.getTraceId());

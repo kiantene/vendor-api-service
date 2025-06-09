@@ -26,6 +26,7 @@ public class BetService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private static final String BET_ACTION = "bet";
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
@@ -49,7 +50,6 @@ public class BetService {
         BetDto betDto = new BetDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-        String action = "bet";
 
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
@@ -63,16 +63,16 @@ public class BetService {
             vendorService.doVerification(betDto, gameSession, true);
 
             // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), action);
+            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
             // Process the bet
             walletRequest = sportWalletService.placeBet(walletRequest);
 
             // Create idempotent log if needed (for new requests)
-            vendorService.createIdempotentLogIfNeeded(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, action);
+            vendorService.createIdempotentLogIfNeeded(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
             
             // Recreate existing log with OK status if settlement was successful
-            vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, action);
+            vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
@@ -102,7 +102,7 @@ public class BetService {
 
         } finally {
             if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, action);
+                vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
             }
 
             commonVo.setTraceId(betDto.getTraceId());
