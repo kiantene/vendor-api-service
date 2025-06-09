@@ -16,6 +16,8 @@ import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
+import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -201,4 +203,5 @@ public class CancelService {
         walletRequest.setVendorBetTime(System.currentTimeMillis());
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
+
 }
