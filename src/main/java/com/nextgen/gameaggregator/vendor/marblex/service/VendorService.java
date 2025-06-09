@@ -157,7 +157,7 @@ public class VendorService extends BaseVendorService {
 
     public void recreateIdempotentLogWithOkStatus(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
         // Only recreate if settlement was successful AND we had an existing log with non-OK status
-        if (state.hasExistingLog && walletRequest.getStatus() == ResponseCodes.Status.SC_OK.code) {
+        if (state.hasExistingLog && walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
             // Delete the old log and create new one with OK status
             requestIdempotentLogService.delete(externalTransactionId, vendorPlayerUsername, action);
             requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, ResponseCodes.Status.SC_OK.code, action);
