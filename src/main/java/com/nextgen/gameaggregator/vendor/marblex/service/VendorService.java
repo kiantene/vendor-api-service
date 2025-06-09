@@ -139,7 +139,7 @@ public class VendorService extends BaseVendorService {
         // Store that we have an existing log
         state.hasExistingLog = true;
 
-        if (existingLog.getWalletRequestStatus() == ResponseCodes.Status.SC_OK.code) {
+        if (existingLog.getOperatorResponseStatus() == ResponseCodes.Status.SC_OK.code) {
             // Request already processed successfully - idempotent violation
             state.shouldSkipCleanup = true; 
             throw new BetResultIdempotentViolationException();
@@ -151,7 +151,7 @@ public class VendorService extends BaseVendorService {
 
     public void createIdempotentLogIfNeeded(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
         if (state.shouldCreateLog) {
-            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getStatus(), action);
+            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getOperatorHttpStatusCode(), action);
         }
     }
 

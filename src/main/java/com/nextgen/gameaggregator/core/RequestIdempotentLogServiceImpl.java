@@ -134,7 +134,7 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
         RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
         createRequestIdempotentLog.setId(id);
         createRequestIdempotentLog.setCreateTime(System.currentTimeMillis());
-        createRequestIdempotentLog.setWalletRequestStatus(walletRequestStatus);
+        createRequestIdempotentLog.setOperatorResponseStatus(walletRequestStatus);
         requestIdempotentLogRepository.save(createRequestIdempotentLog);
         return createRequestIdempotentLog;
     }
