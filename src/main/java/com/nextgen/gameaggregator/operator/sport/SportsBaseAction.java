@@ -53,7 +53,6 @@ public class SportsBaseAction {
                     .body(BodyInserters.fromValue(dto))
                     .retrieve()
                     .toEntity(String.class)
-                    .retry(EndPoints.RETRY_COUNT)
                     .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
