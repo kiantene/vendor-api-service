@@ -124,6 +124,8 @@ public class CancelService {
 
                 walletRequest.setExternalTransactionId(walletTransaction.getExternalTransactionId());
 
+                walletRequest.setEffectiveTurnover(walletTransaction.getTransferAmount());
+
                 walletRequest.setBetStatus(BetStatus.REFUNDED);
 
                 walletRequest = operatorWalletService.betCredit(walletRequest);
