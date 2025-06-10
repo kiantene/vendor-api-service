@@ -76,7 +76,7 @@ public class GetOrderStatusService {
 
                 ResponseObjectDto d = new ResponseObjectDto();
                 d.setCode(ResponseCodes.SUCCESS);
-                d.setStatus(ResponseCodes.CODE1);
+                d.setStatus(ResponseCodes.STATUS_SUCCESS);
                 vo.setM(EndPoints.LAUNCH_GAME);
                 vo.setS(ResponseCodes.GET_ORDER_STATUS);
                 vo.setD(d);
@@ -87,7 +87,7 @@ public class GetOrderStatusService {
 
                     ResponseObjectDto d = new ResponseObjectDto();
                     d.setCode(ResponseCodes.SUCCESS);
-                    d.setStatus(ResponseCodes.CODE1);
+                    d.setStatus(ResponseCodes.STATUS_SUCCESS);
                     vo.setM(EndPoints.LAUNCH_GAME);
                     vo.setS(ResponseCodes.GET_ORDER_STATUS);
                     vo.setD(d);

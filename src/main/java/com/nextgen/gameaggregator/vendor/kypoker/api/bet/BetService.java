@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -122,7 +121,7 @@ public class BetService {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(ResponseCodes.CODE1);
+            d.setCode(ResponseCodes.STATUS_SUCCESS);
             vo.setM(EndPoints.LAUNCH_GAME);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
