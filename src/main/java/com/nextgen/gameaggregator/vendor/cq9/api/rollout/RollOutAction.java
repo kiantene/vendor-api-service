@@ -77,11 +77,6 @@ public class RollOutAction {
         walletRequest.setToken(dto.getSession());
         walletRequest.setVendorBetId(dto.getMtcode());
         walletRequest.setTransferAmount(dto.getAmount());
-
-        // Add test
-        if (gameSession.getAgentPlayerUsername().startsWith("cq9fishv1")) {
-            walletRequest.setVendorBetId(dto.getRoundId());
-        }
     }
 
     @PostMapping(path = EndPoints.ROLLOUT, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
