@@ -126,7 +126,7 @@ public class CancelService {
 
                 walletRequest.setBetStatus(BetStatus.REFUNDED);
 
-                walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
+                walletRequest = operatorWalletService.betCredit(walletRequest);
 
                 commonVo.setBalance(walletRequest.getBalanceAfter());
 
