@@ -59,7 +59,6 @@ public class BetService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Integer roomMode = null;
         BetDto betDto = null;
-        Boolean isRequestExists = false;
         String errorMessage = "";
 
         try {

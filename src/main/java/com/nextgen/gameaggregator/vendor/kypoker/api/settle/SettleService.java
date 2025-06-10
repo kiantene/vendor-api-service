@@ -62,7 +62,6 @@ public class SettleService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         WalletTransaction walletTransaction = null;
         Integer roomMode = 0;
-        Boolean isRequestExists = false;
         SettleDto settleDto = null;
         String errorMessage = "";
 
@@ -75,7 +74,6 @@ public class SettleService {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
-
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
@@ -173,9 +171,6 @@ public class SettleService {
             errorMessage = e.toString();
 
         } finally {
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(settleDto, settleDto.getAccount());
-            }
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);

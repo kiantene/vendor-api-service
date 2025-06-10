@@ -65,7 +65,6 @@ public class CancelService {
         CancelDto cancelDto = null;
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        Boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
@@ -151,13 +150,7 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
 
-        } finally {
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(cancelDto, cancelDto.getAccount());
-            }
-            httpService.end(httpRequestLog, vo);
         }
-
         return vo;
     }
 
