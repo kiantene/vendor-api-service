@@ -1,10 +1,9 @@
-package com.nextgen.gameaggregator.vendor.tbp.api.deposit;
+package com.nextgen.gameaggregator.vendor.tbp.api.cancel;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
@@ -13,7 +12,7 @@ import java.math.BigDecimal;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DepositDto implements BetResultData {
+public class CancelDto implements RollbackData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -74,87 +73,18 @@ public class DepositDto implements BetResultData {
     @JsonProperty("PlatformType")
     private String platformType;
 
-    @JsonProperty("IsBonusSpin")
-    private Boolean isBonusSpin;
-
-    @JsonProperty("CampaignIdFromOperator")
-    private String campaignIdFromOperator;
-
     @Override
-    public String getExternalTransactionId() {
+    public String getRollbackId() {
         return this.transferId;
     }
 
     @Override
-    public String getVendorBetId() {
-        return this.transferId;
+    public Long getVendorSettledTime() {
+        return System.currentTimeMillis();
     }
 
     @Override
     public String getRoundId() {
         return this.roundIdBI;
-    }
-
-    @Override
-    public String getGameId() {
-        return this.gameNumber;
-    }
-
-    @Override
-    public BigDecimal getBetAmount() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getWinAmount() {
-        return this.amount;
-    }
-
-    @Override
-    public BigDecimal getWinLoss() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover() {
-        return null;
-    }
-
-    @Override
-    public Long getVendorBetTime() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public Long getResultTime() {
-        return null;
-    }
-
-    @Override
-    public Long getVendorSettleTime() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public Integer getIsFreespin() {
-        if (Boolean.TRUE.equals(this.isBonusSpin)) {
-            return 1;
-        }
-        return 0;
-    }
-
-    @Override
-    public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
-    }
-
-    @Override
-    public boolean getShouldSettleByBet() {
-        return BetResultData.super.getShouldSettleByBet();
     }
 }

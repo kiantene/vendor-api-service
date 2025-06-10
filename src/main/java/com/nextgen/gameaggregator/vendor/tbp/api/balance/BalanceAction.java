@@ -83,7 +83,7 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException {
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, CredentialNotFoundException, InvalidTokenException {
 
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
@@ -101,13 +101,15 @@ public class BalanceAction {
     }
 
 
-    @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
+    @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, InvalidTokenException.class, Exception.class})
     private void handleException(Exception e, BalanceVo responseVo, HttpRequestLog httpRequestLog) {
 
         if (e instanceof InvalidRequestException) {
             responseVo.setError(ResponseCode.UNEXPECTED_INPUT);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.PERMISSION_DENIED);
+        } else if (e instanceof InvalidTokenException) {
+            responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         }
