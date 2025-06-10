@@ -117,6 +117,8 @@ public class CancelService {
 
                 walletRequest.setTransferAmount(walletTransaction.getTransferAmount());
 
+                walletRequest.setBetAmount(walletTransaction.getTransferAmount());
+
                 walletRequest.setVendorBetId(walletTransaction.getBetId());
 
                 walletRequest.setExternalTransactionId(walletTransaction.getBetId());
