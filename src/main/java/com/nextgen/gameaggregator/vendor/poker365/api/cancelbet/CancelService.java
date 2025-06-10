@@ -120,13 +120,13 @@ public class CancelService {
 
                 walletRequest.setBetAmount(walletTransaction.getTransferAmount());
 
-                walletRequest.setVendorBetId(walletTransaction.getTransactionId());
+                walletRequest.setVendorBetId(walletTransaction.getExternalTransactionId());
 
-                walletRequest.setExternalTransactionId(walletTransaction.getTransactionId());
+                walletRequest.setExternalTransactionId(walletTransaction.getExternalTransactionId());
 
                 walletRequest.setBetStatus(BetStatus.REFUNDED);
 
-                walletRequest = operatorWalletService.betCredit(walletRequest);
+                walletRequest = operatorWalletService.debitRefundByExternalTransactionId(walletRequest);
 
                 commonVo.setBalance(walletRequest.getBalanceAfter());
 
