@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
@@ -122,6 +123,8 @@ public class CancelService {
                 walletRequest.setVendorBetId(walletTransaction.getBetId());
 
                 walletRequest.setExternalTransactionId(walletTransaction.getBetId());
+
+                walletRequest.setBetStatus(BetStatus.REFUNDED);
 
                 walletRequest = operatorWalletService.betCredit(walletRequest);
 
