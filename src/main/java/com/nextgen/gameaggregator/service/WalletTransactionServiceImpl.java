@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InternalServerException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.repository.ga.writer.WalletTransactionRepository;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.cache.annotation.CachePut;
@@ -18,6 +20,10 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
 
     public WalletTransactionServiceImpl(WalletTransactionRepository walletTransactionRepository) {
         this.walletTransactionRepository = walletTransactionRepository;
+    }
+
+    public String generateId(WalletRequest walletRequest, String action) {
+        return walletRequest.getVendorBetId() + "_" + walletRequest.getRoundId() + "_" + walletRequest.getVendorGameId() + "_" + walletRequest.getVendorPlayerId() + "_" + action;
     }
 
     @Override
@@ -43,7 +49,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         walletTransaction.setBetId(walletRequest.getBetId());
         walletTransaction.setTimestamp(walletRequest.getTimestamp());
         walletTransaction.setCreatedDate(System.currentTimeMillis());
-        walletTransaction.setId(walletRequest.getTraceId());
+        walletTransaction.setId(this.generateId(walletRequest, action));
 
         return walletTransaction;
     }
@@ -85,5 +91,20 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Cacheable(value = "WalletTransaction", key = "{#vendorId, #externalTransactionId}", cacheManager = "cacheManager")
     public WalletTransaction getByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId) {
         return walletTransactionRepository.findByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+    }
+
+    @Override
+    public void idempotentCheck(WalletRequest walletRequest, String action) throws BetResultIdempotentViolationException {
+        String id = this.generateId(walletRequest, action);
+        WalletTransaction walletTransaction = this.getById(id);
+        if (walletTransaction != null && walletTransaction.getOperatorStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+            throw new BetResultIdempotentViolationException(walletTransaction);
+        }
+    }
+
+    @Override
+    @Cacheable(value = "WalletTransaction", key = "{#id}", cacheManager = "cacheManager", unless = "#result == null")
+    public WalletTransaction getById(String id) {
+        return walletTransactionRepository.findById(id).orElse(null);
     }
 }
