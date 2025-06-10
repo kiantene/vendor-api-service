@@ -110,7 +110,11 @@ public class CancelService {
                 throw new BetNotFoundException();
 
             } else if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)){
-                throw new BetResultIdempotentViolationException();
+                this.dataMapper(walletRequest, messageDto, gameSession);
+
+                commonVo.setBalance(walletTransaction.getBalance());
+
+                commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
 
             } else {
 
