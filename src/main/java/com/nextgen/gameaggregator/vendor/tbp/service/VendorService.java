@@ -7,11 +7,9 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.tbp.constant.Credentials;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
 public class VendorService extends BaseVendorService {
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
