@@ -108,41 +108,34 @@ public class SettleService {
             balance = walletRequest.getBalanceAfter();
             // 6. Set response data
             commonVo.setBalance(balance);
-            commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+            commonVo.setResponseCodesandMessage(ResponseCodes.SUCCESS_200);
 
         } catch (InsufficientBalanceException e) {
-            commonVo.setStatus(ResponseCodes.INSUFFICIENT_BALANCE.status);
-            commonVo.setMsg(ResponseCodes.INSUFFICIENT_BALANCE.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
 
         } catch (GameNotSupportedException e) {
-            commonVo.setStatus(ResponseCodes.GAME_ID_NOT_EXIST.status);
-            commonVo.setMsg(ResponseCodes.GAME_ID_NOT_EXIST.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
 
         } catch (CurrencyNotSupportedException e) {
-            commonVo.setStatus(ResponseCodes.INVALID_CURRENCY.status);
-            commonVo.setMsg(ResponseCodes.INVALID_CURRENCY.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidPlayerException | NumberFormatException e) {
-            commonVo.setStatus(ResponseCodes.USERNAME_INVALID.status);
-            commonVo.setMsg(ResponseCodes.USERNAME_INVALID.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.USERNAME_INVALID);
             httpService.logError(httpRequestLog, e);
 
         } catch (AuthenticationException e) {
-            commonVo.setStatus(ResponseCodes.NOT_AUTHORIZED.status);
-            commonVo.setMsg(ResponseCodes.NOT_AUTHORIZED.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.NOT_AUTHORIZED);
             httpService.logError(httpRequestLog, e);
 
         } catch (InvalidRequestException e) {
-            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
-            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.INVALID_PARAMETERS);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
-            commonVo.setStatus(ResponseCodes.FAIL.status);
-            commonVo.setMsg(ResponseCodes.FAIL.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.FAIL);
             httpService.logError(httpRequestLog, e);
 
         } finally {

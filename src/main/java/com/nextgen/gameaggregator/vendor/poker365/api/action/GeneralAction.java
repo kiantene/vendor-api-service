@@ -61,13 +61,11 @@ public class GeneralAction {
             commonVo = this.actionHandling(messageDto, traceId, httpRequestLog);
 
         } catch (InvalidRequestException e) {
-            commonVo.setStatus(ResponseCodes.INVALID_PARAMETERS.status);
-            commonVo.setMsg(ResponseCodes.INVALID_PARAMETERS.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.INVALID_PARAMETERS);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
-            commonVo.setStatus(ResponseCodes.FAIL.status);
-            commonVo.setMsg(ResponseCodes.FAIL.message);
+            commonVo.setResponseCodesandMessage(ResponseCodes.FAIL);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, commonVo);
