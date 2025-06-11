@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,37 +29,19 @@ public class GeneralAction {
     private final BetService betService;
     private final CancelService cancelService;
     private final SettleService settleService;
-    private final AgentPlayerService agentPlayerService;
-    private final VendorLineService vendorLineService;
-    private final GameSessionService gameSessionService;
-    private final VendorService vendorService;
     private final HttpService httpService;
-    private final WalletService walletService;
-    private final VendorPlayerService vendorPlayerService;
 
-    @Autowired
     public GeneralAction(BalanceService balanceService,
                          BetService betService,
                          CancelService cancelService,
                          SettleService settleService,
-                         HttpService httpService,
-                         WalletService walletService,
-                         VendorService vendorService,
-                         GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService,
-                         VendorPlayerService vendorPlayerService) {
+                         HttpService httpService)
+    {
         this.balanceService = balanceService;
         this.betService = betService;
         this.cancelService = cancelService;
         this.settleService = settleService;
-        this.walletService = walletService;
-        this.vendorService = vendorService;
         this.httpService = httpService;
-        this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
-        this.agentPlayerService = agentPlayerService;
-        this.vendorPlayerService = vendorPlayerService;
     }
 
     @PostMapping

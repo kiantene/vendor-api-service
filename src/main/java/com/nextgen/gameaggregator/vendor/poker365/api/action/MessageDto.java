@@ -13,7 +13,4 @@ public class MessageDto {
     @JsonProperty("action")
     private String action;
 
-//    @Size(max = 255)
-//    @JsonProperty("transactions")
-//    private List<TransactionMessageDto> transactionMessageDto;
 }
