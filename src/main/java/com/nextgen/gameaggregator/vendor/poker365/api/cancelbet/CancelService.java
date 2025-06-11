@@ -114,7 +114,7 @@ public class CancelService {
 
                 commonVo.setBalance(walletTransaction.getBalance());
 
-                commonVo.setStatus(ResponseCodes.SUCCESS_200.status);
+                commonVo.setResponseCodesandMessage(ResponseCodes.SUCCESS_200);
 
             } else {
 

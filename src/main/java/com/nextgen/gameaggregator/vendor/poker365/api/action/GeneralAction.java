@@ -85,9 +85,9 @@ public class GeneralAction {
 
             return switch (messageDto.getAction()) {
                 case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
-                case "bet" -> betService.bet(httpRequestLog, traceId);
+                case "bet" -> betService.bet(httpRequestLog);
                 case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
-                case "settle" -> settleService.settle(httpRequestLog, traceId);
+                case "settle" -> settleService.settle(httpRequestLog);
                 default -> throw new InvalidRequestException();
             };
     }
