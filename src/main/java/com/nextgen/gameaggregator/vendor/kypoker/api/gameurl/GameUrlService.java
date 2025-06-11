@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Setter
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
-    @Autowired
     private WalletService walletService;
 
     public GameUrlService() {

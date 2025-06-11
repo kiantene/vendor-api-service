@@ -60,6 +60,8 @@ public class GeneralAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
+        ResponseObjectDto d = new ResponseObjectDto();
+
         // Construct VO
         CommonVo vo = new CommonVo();
 
@@ -91,39 +93,32 @@ public class GeneralAction {
 
             actionDto.setHttpRequestLog(httpRequestLog);
 
-            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setM(EndPoints.API_ENDPOINT);
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
 
             if (vo==null){
                 throw new InvalidRequestException();
+
             }
 
         } catch (InvalidRequestException invalidRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(5);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INVALID_REQUEST);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(10);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INVALID_CREDENTIAL);
 
         } catch(InvalidDecryptionException invalidDecryptionException){
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(6);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BALANCE);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INVALID_DECRYPTION);
 
         } catch (Exception e) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            vo.setM(EndPoints.LAUNCH_GAME);
+
+        }
+        finally {
+            vo.setM(EndPoints.API_ENDPOINT);
             vo.setD(d);
-            
+
         }
         return vo;
     }
@@ -150,7 +145,7 @@ public class GeneralAction {
             vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
         }  else {
             if (vo.d == null) {
-                vo.d.setCode(8);
+                vo.d.setCode(ResponseCodes.INVALID_ACTION);
             }
 
         }

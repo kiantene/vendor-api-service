@@ -65,6 +65,7 @@ public class CancelService {
         CancelDto cancelDto = null;
         WalletTransaction walletTransaction = null;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        ResponseObjectDto d = new ResponseObjectDto();
 
         try {
             // Convert original request body into dto
@@ -102,56 +103,38 @@ public class CancelService {
                 } else {
                     walletRequest = operatorWalletService.betCredit(walletRequest);
 
-                    ResponseObjectDto d = new ResponseObjectDto();
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);
-                    vo.setM(EndPoints.LAUNCH_GAME);
+                    vo.setM(EndPoints.API_ENDPOINT);
                     vo.setS(ResponseCodes.CANCEL);
                     vo.setD(d);
                 }
             }
 
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.SUCCESS);
             d.setStatus(ResponseCodes.STATUS_SUCCESS);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
 
         } catch (InvalidRequestException invalidRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INVALID_REQUEST);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.BET_NOT_FOUND);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException  duplicateRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
             httpService.logError(httpRequestLog, duplicateRequestException);
 
         }  catch (Exception e){
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.CANCEL);
-            vo.setD(d);
             httpService.logError(httpRequestLog, e);
 
         } finally {
+            vo.setM(EndPoints.API_ENDPOINT);
             httpService.end(httpRequestLog, vo);
+            vo.setS(ResponseCodes.CANCEL);
+            vo.setD(d);
 
         }
         return vo;

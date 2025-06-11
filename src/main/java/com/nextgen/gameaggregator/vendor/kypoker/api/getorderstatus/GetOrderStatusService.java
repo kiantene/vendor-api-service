@@ -47,6 +47,7 @@ public class GetOrderStatusService {
         VendorPlayer vendorPlayer = null;
         Integer vendorId = 0;
         String externalTransactionId = null;
+        ResponseObjectDto d = new ResponseObjectDto();
 
         try {
 
@@ -64,47 +65,33 @@ public class GetOrderStatusService {
 
             unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, getOrderStatusDto.getOrderId());
 
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(ResponseCodes.CODE3);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_ORDER_STATUS);
-            vo.setD(d);
+            d.setCode(ResponseCodes.STATUS_PROCESSING);
 
         } catch (BetNotFoundException e){
             try {
                 settleBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayer.getId(),externalTransactionId);
-
-                ResponseObjectDto d = new ResponseObjectDto();
                 d.setCode(ResponseCodes.SUCCESS);
                 d.setStatus(ResponseCodes.STATUS_SUCCESS);
-                vo.setM(EndPoints.LAUNCH_GAME);
-                vo.setS(ResponseCodes.GET_ORDER_STATUS);
-                vo.setD(d);
 
             } catch (BetNotFoundException ex) {
                 {
                     walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
-
-                    ResponseObjectDto d = new ResponseObjectDto();
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);
-                    vo.setM(EndPoints.LAUNCH_GAME);
-                    vo.setS(ResponseCodes.GET_ORDER_STATUS);
-                    vo.setD(d);
 
                 }
             }
 
         } catch (Exception e){
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            d.setStatus(ResponseCodes.CODE2);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_ORDER_STATUS);
-            vo.setD(d);
+            d.setStatus(ResponseCodes.STATUS_FAILED);
 
         }finally {
+            vo.setM(EndPoints.API_ENDPOINT);
+            vo.setS(ResponseCodes.GET_ORDER_STATUS);
+            vo.setD(d);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
+
         }
 
         return vo;

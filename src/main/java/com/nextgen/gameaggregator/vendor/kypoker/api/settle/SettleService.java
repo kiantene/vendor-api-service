@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.settle;
 
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -30,7 +29,6 @@ public class SettleService {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
     private final WalletTransactionService walletTransactionService;
 
 
@@ -42,7 +40,6 @@ public class SettleService {
             OperatorWalletService operatorWalletService,
             WalletRequestService walletRequestService,
             HttpService httpService,
-            RequestIdempotentLogService requestIdempotentLogService,
             WalletTransactionService walletTransactionService) {
 
         this.walletService = walletService;
@@ -52,7 +49,6 @@ public class SettleService {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
         this.walletTransactionService = walletTransactionService;
     }
     public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -64,6 +60,7 @@ public class SettleService {
         Integer roomMode = 0;
         SettleDto settleDto = null;
         String errorMessage = "";
+        ResponseObjectDto d = new ResponseObjectDto();
 
         try {
             // Convert original request body into dto
@@ -79,7 +76,6 @@ public class SettleService {
             this.doVerification(settleDto, gameSession);
 
             settleDto.setTimeStamp(timeStamp);
-            ResponseObjectDto d = new ResponseObjectDto();
 
             // Check game code to use normal flow or credit debit
             roomMode = settleDto.getRoomMode();
@@ -110,67 +106,40 @@ public class SettleService {
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
 
-            // Construct VO
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
-
-            if (gameSession.getVendorPlayerId().equals(26225523)){
-                vo.setM(null);
-                vo.setS(null);
-                vo.setD(null);
-            }
-
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             errorMessage = betResultIdempotentViolationException.toString();
 
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.PROCESSING);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
             errorMessage = transactionStillProcessingException.toString();
 
 
         } catch (BetNotFoundException betNotFoundException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.BET_NOT_FOUND);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
             httpService.logError(httpRequestLog, betNotFoundException);
             errorMessage = betNotFoundException.toString();
 
 
         } catch (InvalidRequestException invalidRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INVALID_REQUEST);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
 
 
         } catch (Exception e){
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.RETURN_BALANCE);
-            vo.setD(d);
             httpService.logError(httpRequestLog, e);
             errorMessage = e.toString();
 
         } finally {
+            vo.setS(ResponseCodes.RETURN_BALANCE);
+            vo.setM(EndPoints.API_ENDPOINT);
+            vo.setD(d);
+
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);

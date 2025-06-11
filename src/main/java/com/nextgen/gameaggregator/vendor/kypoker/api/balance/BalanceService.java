@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.balance;
 
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -16,32 +15,27 @@ import java.math.BigDecimal;
 @Service
 public class BalanceService {
 
-    private final GameService gameService;
     private final WalletService walletService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
-    private final WalletRequestService walletRequestService;
     private final HttpService httpService;
 
-    public BalanceService(GameServiceImpl gameService,
+    public BalanceService(
                           WalletService walletService,
                           ValidationService validationService,
                           GameSessionService gameSessionService,
-                          WalletRequestService walletRequestService,
                           HttpService httpService) {
 
-        this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
-        this.walletRequestService = walletRequestService;
         this.httpService = httpService;
     }
 
     public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
-
+        ResponseObjectDto d = new ResponseObjectDto();
 
         try {
             // Convert original request body into dto
@@ -59,46 +53,31 @@ public class BalanceService {
             // 4. Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            ResponseObjectDto d = new ResponseObjectDto();
-
             d.setCode(ResponseCodes.SUCCESS);
             d.setAccount(gameSession.getVendorPlayerUsername());
             d.setMoney(balance);
 
             // Construct VO
-            vo.setM(EndPoints.LAUNCH_GAME);
+            vo.setM(EndPoints.API_ENDPOINT);
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
         } catch(InvalidPlayerException invalidPlayerException){
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(ResponseCodes.CODE2);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BALANCE);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INVALID_USER);
 
         } catch(InvalidRequestException invalidRequestException){
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INVALID_REQUEST);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BALANCE);
-            vo.setD(d);
 
         } catch(AuthenticationException authenticationException){
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(10);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BALANCE);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INVALID_AUTHENTICATION);
 
         } catch (Exception e){
-            ResponseObjectDto d = new ResponseObjectDto();
-            d.setCode(13);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BALANCE);
-            vo.setD(d);
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
 
         } finally {
+            vo.setM(EndPoints.API_ENDPOINT);
+            vo.setS(ResponseCodes.GET_BALANCE);
+            vo.setD(d);
             httpService.end(httpRequestLog, vo);
         }
         return vo;

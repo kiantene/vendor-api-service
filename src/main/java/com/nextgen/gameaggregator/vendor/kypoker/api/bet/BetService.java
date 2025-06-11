@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -31,7 +30,6 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(
                       WalletService walletService,
@@ -40,8 +38,7 @@ public class BetService {
                       VendorService vendorService,
                       OperatorWalletService operatorWalletService,
                       WalletRequestService walletRequestService,
-                      HttpService httpService,
-                      RequestIdempotentLogService requestIdempotentLogService) {
+                      HttpService httpService) {
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -49,7 +46,6 @@ public class BetService {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -59,6 +55,7 @@ public class BetService {
         Integer roomMode = null;
         BetDto betDto = null;
         String errorMessage = "";
+        ResponseObjectDto d = new ResponseObjectDto();
 
         try {
             // Convert original request body into dto
@@ -79,9 +76,6 @@ public class BetService {
 
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
-
-            // Determine game mode to use normal bet flow or Credit/Debit
-            ResponseObjectDto d = new ResponseObjectDto();
 
             // Normal flow
             if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
@@ -108,29 +102,12 @@ public class BetService {
                 d.setRoomMode(betDto.getRoomMode());
             }
 
-            // Construct VO
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
-            if (gameSession.getVendorPlayerId().equals(26225516)){
-                vo.setM(null);
-                vo.setS(null);
-                vo.setD(null);
-            }
-
-
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.STATUS_SUCCESS);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
         }  catch (InvalidOperatorResponseException e) {
-
-            ResponseObjectDto d = new ResponseObjectDto();
 
             if (e.getOperatorStatus() == 11) {
                 d.setCode(ResponseCodes.INSUFFICIENT_FUNDS);
@@ -142,38 +119,27 @@ public class BetService {
                 httpService.logError(httpRequestLog, e);
                 errorMessage = e.toString();
             }
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
 
         } catch (BetResultIdempotentViolationException duplicateRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.DUPLICATE);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
             httpService.logError(httpRequestLog, duplicateRequestException);
             errorMessage = duplicateRequestException.toString();
 
         }   catch (InvalidRequestException invalidRequestException) {
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INVALID_REQUEST);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
 
         } catch (Exception e){
-            ResponseObjectDto d = new ResponseObjectDto();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-            vo.setM(EndPoints.LAUNCH_GAME);
-            vo.setS(ResponseCodes.GET_BET);
-            vo.setD(d);
             httpService.logError(httpRequestLog, e);
             errorMessage = e.toString();
 
         }finally {
+            vo.setM(EndPoints.API_ENDPOINT);
+            vo.setS(ResponseCodes.GET_BET);
+            vo.setD(d);
+
             if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
