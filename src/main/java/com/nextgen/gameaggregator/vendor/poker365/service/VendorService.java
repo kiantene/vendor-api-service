@@ -2,16 +2,15 @@ package com.nextgen.gameaggregator.vendor.poker365.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,25 +18,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@Slf4j
 public class VendorService extends BaseVendorService {
 
 
+    private ValidationService validationService;
     private VendorLineService vendorLineService;
-    private GameSessionService gameSessionService;
-    private VendorGameCodeService vendorGameCodeService;
-    private WalletService walletService;
-    private HttpService httpService;
+    private AgentPlayerService agentPlayerService;
 
-    private boolean rejectSettleAfterRollback = true;
+    private VendorService(ValidationService validationService,
+                          VendorLineService vendorLineService,
+                          AgentPlayerService agentPlayerService) {
 
-    @Autowired
-    private VendorService(VendorLineService vendorLineService, GameSessionService gameSessionService, VendorGameCodeService vendorGameCodeService, WalletService walletService, HttpService httpService) {
+        this.validationService = validationService;
         this.vendorLineService = vendorLineService;
-        this.gameSessionService = gameSessionService;
-        this.vendorGameCodeService = vendorGameCodeService;
-        this.walletService = walletService;
-        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
     }
 
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
@@ -89,39 +83,39 @@ public class VendorService extends BaseVendorService {
     }
 
 
-    public void validateExternalGameSessionId(String externalGameSessionId) throws InvalidRequestException {
-        if (!externalGameSessionId.matches("^[a-zA-Z0-9_-]+$")) {
-            throw new InvalidRequestException();
-        }
-    }
+    public void doVerification(CommonDto commonDto, GameSession gameSession, String userId, String currency, String gameId)
+            throws AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            CredentialNotFoundException,
+            InvalidVendorLineException,
+            InvalidPlayerException,
+            DisabledGameException,
+            CurrencyNotSupportedException,
+            GameNotSupportedException {
 
-    public <T> GameSession getGameSession(T dto)
-            throws
-            AuthenticationException,
-            InvalidRequestException,
-            NoSuchMethodException,
-            InvocationTargetException,
-            IllegalAccessException {
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
-        GameSession gameSession;
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
-        Method getExternalGameSessionIdMethod = dto.getClass().getMethod("getExternalGameSessionId");
-        String externalGameSessionId = (String) getExternalGameSessionIdMethod.invoke(dto);
+        // FindVendorLine
+        VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
+        Integer vendorLineId = vendorLine.getId();
+        String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
+        ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
 
-        if (externalGameSessionId == null || externalGameSessionId.isEmpty()) {
-            Method getExternalId = dto.getClass().getMethod("getExternalId");
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername((String) getExternalId.invoke(dto));
+        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), String.valueOf(userId), InvalidPlayerException::new);
 
-        } else {
-            // validate extern game session id
-            this.validateExternalGameSessionId(externalGameSessionId);
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-            // Verify session token
-            gameSession = gameSessionService.verifyToken(externalGameSessionId);
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        }
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, CurrencyNotSupportedException::new);
 
-        return gameSession;
-
+        // Verify vendor gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameId, GameNotSupportedException::new);
     }
 }

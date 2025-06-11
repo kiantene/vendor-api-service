@@ -5,56 +5,41 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@Slf4j
 public class SettleService {
-    private final AgentPlayerService agentPlayerService;
-    private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final HttpService httpService;
     private final RequestIdempotentLogService requestIdempotentLogService;
-    private final ValidationService validationService;
     private final VendorPlayerService vendorPlayerService;
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
 
-    @Autowired
     public SettleService(HttpService httpService,
-                         ValidationService validationService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService,
                          RequestIdempotentLogService requestIdempotentLogService,
                          VendorPlayerService vendorPlayerService,
                          OperatorWalletService operatorWalletService,
                          WalletRequestService walletRequestService) {
-        this.validationService = validationService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorService = vendorService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
-        this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
@@ -89,11 +74,10 @@ public class SettleService {
 
     }
 
-    public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
+    public CommonVo settle(HttpRequestLog httpRequestLog) {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        boolean isRequestExists = false;
         Integer vendorPlayerId;
 
         try {
@@ -113,12 +97,11 @@ public class SettleService {
             if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
                 requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
             } else {
-                isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, messageDto, gameSession);
+            vendorService.doVerification(commonDto, gameSession, messageDto.getUserId(), messageDto.getCurrency(), messageDto.getGameId());
 
             this.dataMapper(walletRequest, messageDto, gameSession);
             walletRequest = operatorWalletService.betCredit(walletRequest);
@@ -175,39 +158,5 @@ public class SettleService {
         ValidationUtils.validateRequest(messageDto);
     }
 
-    private void doVerification(CommonDto commonDto, MessageDto messageDto, GameSession gameSession)
-            throws AuthenticationException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            CredentialNotFoundException,
-            InvalidVendorLineException,
-            InvalidPlayerException,
-            DisabledGameException,
-            CurrencyNotSupportedException,
-            GameNotSupportedException {
 
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
-
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
-
-        // FindVendorLine
-        VendorLine vendorLine = vendorLineService.getVendorLineById(gameSession.getVendorLineId());
-        Integer vendorLineId = vendorLine.getId();
-        String cert = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CERT);
-        ValidationUtils.isEquals(cert, commonDto.getKey(), AuthenticationException::new);
-
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorPlayerId()), String.valueOf(messageDto.getUserId()), InvalidPlayerException::new);
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), messageDto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify vendor gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), messageDto.getGameId(), GameNotSupportedException::new);
-    }
 }

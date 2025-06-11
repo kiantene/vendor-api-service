@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.poker365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.poker365.constant.EndPoints;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Service
-@Slf4j
 @Getter
 @Setter
 public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
@@ -67,7 +65,6 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
         formData.add("extension1", account);
         formData.add("userName", gameSession.getVendorPlayerUsername());
         formData.add("gameId", gameSession.getVendorGameCode());
-        //need discuss
         formData.add("jackpot", "1");
 
         return formData;

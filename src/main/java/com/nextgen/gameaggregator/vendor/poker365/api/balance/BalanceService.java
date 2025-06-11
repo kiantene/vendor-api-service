@@ -25,24 +25,20 @@ public class BalanceService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
-    private final VendorService vendorService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
     private final HttpService httpService;
 
     Integer vendorPlayerId;
 
-    @Autowired
     public BalanceService(
             WalletService walletService,
-            VendorService vendorService,
             GameSessionService gameSessionService,
             VendorLineService vendorLineService,
             AgentPlayerService agentPlayerService,
             VendorPlayerService vendorPlayerService,
             HttpService httpService) {
         this.walletService = walletService;
-        this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
