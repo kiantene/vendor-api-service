@@ -44,6 +44,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("cert", this.cert);
         formData.add("agentId", this.agentId);
         formData.add("userId", gameSession.getVendorPlayerUsername());
+        formData.add("isMobileLogin", gameSession.getPlatformId().equals(1) ? "true" : "false");
         formData.add("externalURL", gameSession.getLobbyUrl());
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("platform", "SEXYBCRT");
