@@ -150,6 +150,9 @@ public class CancelService {
             vo.setD(d);
             httpService.logError(httpRequestLog, e);
 
+        } finally {
+            httpService.end(httpRequestLog, vo);
+
         }
         return vo;
     }
