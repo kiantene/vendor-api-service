@@ -54,8 +54,9 @@ public class BetDetailService implements BetDetailUrl {
         formData.add("secureLogin", secureLogin);
         formData.add("playerId", iBetDetailUrlInfo.getVendorUsername());
 
-        // PP SLOT and LIVE are calling different API methods
-        if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE)) {
+        // PP SLOT and LIVE, MINI are calling different API methods
+        if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE)
+                || iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.MINI_GAMES)) {
             String[] vendorGameCode = iBetDetailUrlInfo.getGameCode().split("_");
             formData.add("gameId", vendorGameCode[vendorGameCode.length - 1]);
         }
@@ -74,8 +75,10 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.REPORT_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        // PP SLOT and LIVE are calling different API methods
-        String apiPath = iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE) ? Endpoints.OPEN_HISTORY_EXTENDED : Endpoints.OPEN_HISTORY;
+        // PP SLOT and LIVE, MINI are calling different API methods
+        String apiPath = iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE)
+                || iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.MINI_GAMES)
+                ? Endpoints.OPEN_HISTORY_EXTENDED : Endpoints.OPEN_HISTORY;
 
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
