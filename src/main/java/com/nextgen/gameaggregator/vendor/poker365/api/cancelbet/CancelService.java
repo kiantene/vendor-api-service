@@ -71,7 +71,6 @@ public class CancelService {
         CommonVo commonVo = new CommonVo();
         WalletTransaction walletTransaction;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        Integer vendorPlayerId;
 
         try {
             String body = httpRequestLog.getRequestBody();
@@ -85,9 +84,7 @@ public class CancelService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-            vendorPlayerId = Integer.valueOf(messageDto.getUserId());
-
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(messageDto.getUserId()), null);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 

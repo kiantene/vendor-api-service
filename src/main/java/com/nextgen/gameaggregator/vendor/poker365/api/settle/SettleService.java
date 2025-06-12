@@ -78,7 +78,6 @@ public class SettleService {
         CommonVo commonVo = new CommonVo();
         BigDecimal balance;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        Integer vendorPlayerId;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -90,8 +89,7 @@ public class SettleService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-            vendorPlayerId = Integer.valueOf(messageDto.getUserId());
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(messageDto.getUserId()), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {

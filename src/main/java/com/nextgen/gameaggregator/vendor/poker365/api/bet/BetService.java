@@ -92,7 +92,7 @@ public class BetService {
             commonVo.setResponseCodesandMessage(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
 
-        } catch (GameNotSupportedException e) {
+        } catch (GameNotSupportedException | InvalidRequestException e) {
             commonVo.setResponseCodesandMessage(ResponseCodes.INVALID_PARAMETERS);
             httpService.logError(httpRequestLog, e);
 
@@ -106,10 +106,6 @@ public class BetService {
 
         } catch (AuthenticationException e) {
             commonVo.setResponseCodesandMessage(ResponseCodes.NOT_AUTHORIZED);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (InvalidRequestException e) {
-            commonVo.setResponseCodesandMessage(ResponseCodes.INVALID_PARAMETERS);
             httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
