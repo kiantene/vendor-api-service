@@ -86,9 +86,6 @@ public class SessionBetNSettleAction {
                     //make a ResultType for bet and settle process indicator
                     ResultType resultType = vendorService.calculateResultType(sessionBetNSettleDto.getBetAmount(),
                             sessionBetNSettleDto.getWinAmount(), sessionBetNSettleDto.getJackpotAmount(), false);
-                    if (sessionBetNSettleDto.getBetOrder().size() > 1) {
-                        resultType = ResultType.BET_WIN;
-                    }
 
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetNSettleDto,
                             resultType, vendorService, httpRequestLog);
