@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class GeneralAction {
 
     @Autowired
@@ -143,10 +141,7 @@ public class GeneralAction {
         }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
             vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
         }  else {
-            if (vo.d == null) {
-                vo.d.setCode(ResponseCodes.INVALID_ACTION);
-            }
-
+            vo.d.setCode(ResponseCodes.INVALID_REQUEST);
         }
         return vo;
     }
