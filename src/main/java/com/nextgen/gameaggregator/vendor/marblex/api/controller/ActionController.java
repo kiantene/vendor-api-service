@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.controller;
 
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.marblex.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetService;
@@ -45,7 +44,7 @@ public class ActionController {
     public CommonVo balance(HttpServletRequest request) {
         return this.balanceService.getBalance(request);
     }
-    
+
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         return this.betService.placeBet(request);
@@ -58,10 +57,7 @@ public class ActionController {
 
     @PostMapping(path = EndPoints.CANCEL)
     public CommonVo cancel(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        CommonVo commonVo = this.refundService.refund(request);
-        httpService.end(httpRequestLog, commonVo);
-        return commonVo;
+        return this.refundService.refund(request);
     }
 
     @PostMapping(path = EndPoints.RESETTLE)
