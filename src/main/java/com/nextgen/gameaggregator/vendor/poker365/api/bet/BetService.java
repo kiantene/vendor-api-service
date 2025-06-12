@@ -62,7 +62,7 @@ public class BetService {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CommonDto commonDto = VendorService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
             String formatedMessageDto = commonDto.getMessage();
             MessageDto messageDto = HttpService.convertJsonToDto(formatedMessageDto, MessageDto.class);
             walletRequest = WalletRequestService.init(httpRequestLog);
