@@ -93,7 +93,7 @@ public class WithdrawAction {
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
-                requestIdempotentLogService.delete(dto, dto.getUsername());
+                requestIdempotentLogService.delete(dto, dto.getPlayerId());
             }
             httpService.end(httpRequestLog, responseVo);
         }
