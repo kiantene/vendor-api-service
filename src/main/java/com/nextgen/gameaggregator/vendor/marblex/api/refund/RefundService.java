@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RefundService {
     private static final String REFUND_ACTION = "refund";
-    private static final String LOG_ACTION = "log";
+    private static final String LOG_ACTION = "log_refund";
 
     public final HttpService httpService;
     public final GameSessionService gameSessionService;

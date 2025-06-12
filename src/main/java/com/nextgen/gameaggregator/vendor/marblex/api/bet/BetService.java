@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class BetService {
     private static final String BET_ACTION = "bet";
-    private static final String LOG_ACTION = "log";
+    private static final String LOG_ACTION = "log_bet";
 
     public final HttpService httpService;
     public final GameSessionService gameSessionService;

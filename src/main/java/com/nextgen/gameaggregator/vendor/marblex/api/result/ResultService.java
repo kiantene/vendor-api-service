@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ResultService {
     private static final String RESULT_ACTION = "result";
-    private static final String LOG_ACTION = "log";
+    private static final String LOG_ACTION = "log_result";
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;

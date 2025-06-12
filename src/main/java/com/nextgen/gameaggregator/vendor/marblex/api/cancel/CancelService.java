@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class CancelService {
     private static final String CANCEL_ACTION = "refundAll";
-    private static final String LOG_ACTION = "log";
+    private static final String LOG_ACTION = "log_cancel";
 
     public final HttpService httpService;
     public final VendorService vendorService;
