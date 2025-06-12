@@ -140,7 +140,16 @@ public class VendorService extends BaseVendorService {
         state.hasExistingLog = true;
 
         if (existingLog.getOperatorResponseStatus() == ResponseCodes.Status.SC_OK.code) {
-            // Request already processed successfully - idempotent violation
+            // Check if enough time has passed since creation
+            long currentTime = System.currentTimeMillis();
+            long timeSinceCreation = currentTime - existingLog.getCreateTime();
+            
+            // If less than 1 second has passed, still consider it processing
+            if (timeSinceCreation < 1000) {
+                throw new TransactionStillProcessingException();
+            }
+            
+            // Enough time has passed means this is a true duplicate
             state.shouldSkipCleanup = true; 
             throw new BetResultIdempotentViolationException();
         }
