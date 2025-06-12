@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.controller;
 
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.marblex.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelService;
@@ -25,10 +27,12 @@ public class ActionController {
     public final ResettleService resettleService;
     public final RefundService refundService;
     public final CancelService cancelService;
+    private final HttpService httpService;
 
     @Autowired
-    public ActionController(BalanceService balanceService, BetService betService, ResultService resultService,
+    public ActionController(HttpService httpService, BalanceService balanceService, BetService betService, ResultService resultService,
                             ResettleService resettleService, RefundService refundService, CancelService cancelService) {
+        this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
         this.resultService = resultService;
@@ -41,7 +45,7 @@ public class ActionController {
     public CommonVo balance(HttpServletRequest request) {
         return this.balanceService.getBalance(request);
     }
-
+    
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         return this.betService.placeBet(request);
@@ -54,7 +58,10 @@ public class ActionController {
 
     @PostMapping(path = EndPoints.CANCEL)
     public CommonVo cancel(HttpServletRequest request) {
-        return this.refundService.refund(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        CommonVo commonVo = this.refundService.refund(request);
+        httpService.end(httpRequestLog, commonVo);
+        return commonVo;
     }
 
     @PostMapping(path = EndPoints.RESETTLE)
