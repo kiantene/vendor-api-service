@@ -26,8 +26,6 @@ public class BalanceService {
     private final VendorPlayerService vendorPlayerService;
     private final HttpService httpService;
 
-    Integer vendorPlayerId;
-
     public BalanceService(
             WalletService walletService,
             GameSessionService gameSessionService,
@@ -56,8 +54,7 @@ public class BalanceService {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto, messageDto);
 
-            this.vendorPlayerId = Integer.valueOf(messageDto.getUserId());
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(vendorPlayerId), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(messageDto.getUserId()), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // 4. Verify remaining parameters (Verify against database values)

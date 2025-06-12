@@ -75,7 +75,7 @@ public class CancelService {
         try {
             String body = httpRequestLog.getRequestBody();
 
-            CommonDto commonDto = httpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
 
             String formatedMessageDto = commonDto.getMessage();
 
