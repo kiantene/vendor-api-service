@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -25,19 +26,21 @@ public class BetService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       WalletService walletService,
                       VendorService vendorService,
                       WalletRequestService walletRequestService,
-                      SportWalletService sportWalletService) {
+                      SportWalletService sportWalletService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo placeBet(HttpServletRequest request) {
@@ -46,12 +49,22 @@ public class BetService {
 
         CommonVo commonVo = new CommonVo();
         BetDto betDto = new BetDto();
+        BetImpotentDto betImpotentDto = new BetImpotentDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-
+        boolean isRequestExists = false;
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
+            betImpotentDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetImpotentDto.class);
             ValidationUtils.validateRequest(betDto);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(betImpotentDto, betImpotentDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(betImpotentDto, betImpotentDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
@@ -103,7 +116,9 @@ public class BetService {
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
             }
-
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betImpotentDto, betImpotentDto.getPlayerId());
+            }
             commonVo.setTraceId(betDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
