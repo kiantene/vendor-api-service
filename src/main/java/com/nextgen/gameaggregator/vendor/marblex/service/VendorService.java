@@ -1,9 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.service;
 
-import java.math.BigDecimal;
-
-import org.springframework.stereotype.Service;
-
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -20,6 +16,9 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class VendorService extends BaseVendorService {
@@ -30,12 +29,12 @@ public class VendorService extends BaseVendorService {
     public final WalletService walletService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public VendorService(VendorLineService vendorLineService, 
-                        AgentPlayerService agentPlayerService, 
-                        VendorGameService vendorGameService, 
-                        ValidationService validationService, 
-                        WalletService walletService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
+    public VendorService(VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService,
+                         ValidationService validationService,
+                         WalletService walletService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
@@ -127,7 +126,7 @@ public class VendorService extends BaseVendorService {
 
     public IdempotentState checkIdempotentRequest(String externalTransactionId, String vendorPlayerUsername, String action) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
         RequestIdempotentLog existingLog = requestIdempotentLogService.getSportsRequestIdempotentLog(externalTransactionId, vendorPlayerUsername, action);
-        
+
         IdempotentState state = new IdempotentState();
 
         if (existingLog == null) {
@@ -141,16 +140,16 @@ public class VendorService extends BaseVendorService {
 
         if (existingLog.getOperatorResponseStatus() == ResponseCodes.Status.SC_OK.code) {
             // Check if enough time has passed since creation
-            long currentTime = System.currentTimeMillis();
-            long timeSinceCreation = currentTime - existingLog.getCreateTime();
-            
-            // If less than 1 second has passed, still consider it processing
-            if (timeSinceCreation < 1000) {
-                throw new TransactionStillProcessingException();
-            }
-            
+//            long currentTime = System.currentTimeMillis();
+//            long timeSinceCreation = currentTime - existingLog.getCreateTime();
+//
+//            // If less than 1 second has passed, still consider it processing
+//            if (timeSinceCreation < 1000) {
+//                throw new TransactionStillProcessingException();
+//            }
+//
             // Enough time has passed means this is a true duplicate
-            state.shouldSkipCleanup = true; 
+            state.shouldSkipCleanup = true;
             throw new BetResultIdempotentViolationException();
         }
 
