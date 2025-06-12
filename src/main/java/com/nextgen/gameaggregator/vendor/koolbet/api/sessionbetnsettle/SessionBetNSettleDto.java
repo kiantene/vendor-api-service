@@ -29,7 +29,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
     @NotNull
     @PositiveOrZero
     private BigInteger round;
-    
+
     private List<String> betOrder;
 
     @NotNull
@@ -59,12 +59,12 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return String.valueOf(this.round);
+        return betOrder != null && betOrder.size() == 1 ? this.betOrder.get(0) : String.valueOf(this.round);
     }
 
     @Override
     public String getVendorBetId() {
-        return String.valueOf(this.round);
+        return betOrder != null && betOrder.size() == 1 ? this.betOrder.get(0) : String.valueOf(this.round);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public boolean getShouldSettleByBet() {
-        
+
         if (betOrder != null && betOrder.size() > 1) {
             return false;
         }
