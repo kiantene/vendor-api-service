@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.cancel;
 
-import org.springframework.stereotype.Service;
-
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -10,31 +9,36 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CancelService {
+    private static final String CANCEL_ACTION = "refundAll";
+    private static final String LOG_ACTION = "log";
+
     public final HttpService httpService;
     public final VendorService vendorService;
     public final GameSessionService gameSessionService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
-    private static final String CANCEL_ACTION = "refundAll";
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public CancelService(SportWalletService sportWalletService,
                          HttpService httpService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
-                         WalletRequestService walletRequestService) {
+                         WalletRequestService walletRequestService, RequestIdempotentLogService requestIdempotentLogService) {
         this.sportWalletService = sportWalletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
         this.walletRequestService = walletRequestService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo cancel(HttpServletRequest request) {
@@ -45,10 +49,25 @@ public class CancelService {
         CancelDto cancelDto = new CancelDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
+        boolean isRequestExists = false;
 
         try {
 
             cancelDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CancelDto.class);
+            ValidationUtils.validateRequest(cancelDto);
+
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(cancelDto.getExternalTransactionId(),
+                    cancelDto.getVendorPlayerUsername(),
+                    LOG_ACTION) == null) {
+                requestIdempotentLogService.create(cancelDto.getExternalTransactionId(),
+                        cancelDto.getVendorPlayerUsername(),
+                        walletRequest.getOperatorResponseStatus().code,
+                        LOG_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelDto.getPlayerId());
             vendorService.doVerification(cancelDto, gameSession, false);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
@@ -63,7 +82,7 @@ public class CancelService {
 
             // Create idempotent log if needed (for new requests)
             vendorService.createIdempotentLogIfNeeded(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, CANCEL_ACTION);
-            
+
             // Recreate existing log with OK status if settlement was successful
             vendorService.recreateIdempotentLogWithOkStatus(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), walletRequest, idempotentState, CANCEL_ACTION);
 
@@ -90,6 +109,13 @@ public class CancelService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelDto.getExternalTransactionId(),
+                        cancelDto.getVendorPlayerUsername(),
+                        LOG_ACTION);
+            }
+
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), idempotentState, CANCEL_ACTION);
             }

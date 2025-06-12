@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.result;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -19,26 +20,28 @@ import org.springframework.stereotype.Service;
 @Service
 public class ResultService {
     private static final String RESULT_ACTION = "result";
+    private static final String LOG_ACTION = "log";
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
-
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public ResultService(HttpService httpService,
                          GameSessionService gameSessionService,
                          WalletService walletService,
                          VendorService vendorService,
                          WalletRequestService walletRequestService,
-                         SportWalletService sportWalletService) {
+                         SportWalletService sportWalletService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settleBet(HttpServletRequest request) {
@@ -49,10 +52,23 @@ public class ResultService {
         ResultDto resultDto = new ResultDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
+        boolean isRequestExists = false;
 
         try {
             resultDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResultDto.class);
             ValidationUtils.validateRequest(resultDto);
+
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(resultDto.getExternalTransactionId(),
+                    resultDto.getVendorPlayerUsername(),
+                    LOG_ACTION) == null) {
+                requestIdempotentLogService.create(resultDto.getExternalTransactionId(),
+                        resultDto.getVendorPlayerUsername(),
+                        walletRequest.getOperatorResponseStatus().code,
+                        LOG_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
@@ -98,6 +114,13 @@ public class ResultService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(resultDto.getExternalTransactionId(),
+                        resultDto.getVendorPlayerUsername(),
+                        LOG_ACTION);
+            }
+
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), idempotentState, RESULT_ACTION);
             }
