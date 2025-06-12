@@ -91,6 +91,8 @@ public class GeneralAction {
 
             actionDto.setHttpRequestLog(httpRequestLog);
 
+            ValidationUtils.validateRequest(actionDto);
+
             vo.setM(EndPoints.API_ENDPOINT);
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
@@ -126,9 +128,9 @@ public class GeneralAction {
     }
 
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
-            throws AuthenticationException
-    {
+            throws AuthenticationException, InvalidRequestException {
         CommonVo vo = new CommonVo();
+
 
         if (Actions.BALANCE.equals(actionDto.getS())) {
             vo = balanceService.balance(body, traceId, httpRequestLog, decryptedString);
@@ -141,7 +143,7 @@ public class GeneralAction {
         }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
             vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
         }  else {
-            vo.d.setCode(ResponseCodes.INVALID_REQUEST);
+            throw new InvalidRequestException();
         }
         return vo;
     }

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.api.cancel;
 
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 

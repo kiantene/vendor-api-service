@@ -117,8 +117,8 @@ public class VendorService extends BaseVendorService {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setExternalTransactionId(betDto.getOrderId());
-        walletRequest.setRoundId(betDto.getRoundId());
-        walletRequest.setVendorGameCode(betDto.getGameId());
+        walletRequest.setRoundId(betDto.getGameNo());
+        walletRequest.setVendorGameCode(String.valueOf(betDto.getKindId()));
         walletRequest.setTimestamp(betDto.getTimeStamp());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(betDto.getVendorBetId());

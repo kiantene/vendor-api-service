@@ -124,7 +124,7 @@ public class SettleService {
             errorMessage = betNotFoundException.toString();
 
 
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException | CurrencyNotSupportedException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();

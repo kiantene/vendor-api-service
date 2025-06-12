@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -68,7 +69,7 @@ public class BetDto implements BetResultData, RequestIdempotency {
 
     @Override
     public String getGameId() {
-        return String.valueOf(this.gameId);
+        return String.valueOf(this.kindId);
     }
 
     @Override
@@ -123,7 +124,7 @@ public class BetDto implements BetResultData, RequestIdempotency {
 
     @Override
     public String getTransactionId() {
-        return getExternalTransactionId();
+        return this.orderId;
     }
 
     @Override
