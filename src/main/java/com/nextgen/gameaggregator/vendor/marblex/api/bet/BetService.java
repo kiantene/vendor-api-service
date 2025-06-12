@@ -55,16 +55,16 @@ public class BetService {
         boolean isRequestExists = false;
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
-            betImpotentDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetImpotentDto.class);
+            //betImpotentDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetImpotentDto.class);
             ValidationUtils.validateRequest(betDto);
 
-            //check for idempotent request
-            if (requestIdempotentLogService.checkExists(betImpotentDto, betImpotentDto.getPlayerId()) == null) {
-                requestIdempotentLogService.create(betImpotentDto, betImpotentDto.getPlayerId());
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
+//            //check for idempotent request
+//            if (requestIdempotentLogService.checkExists(betImpotentDto, betImpotentDto.getPlayerId()) == null) {
+//                requestIdempotentLogService.create(betImpotentDto, betImpotentDto.getPlayerId());
+//            } else {
+//                isRequestExists = true;
+//                throw new TransactionStillProcessingException();
+//            }
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
@@ -116,9 +116,9 @@ public class BetService {
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
             }
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(betImpotentDto, betImpotentDto.getPlayerId());
-            }
+//            if (!isRequestExists) {
+//                requestIdempotentLogService.delete(betImpotentDto, betImpotentDto.getPlayerId());
+//            }
             commonVo.setTraceId(betDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);
