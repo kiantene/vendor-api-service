@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class BetService {
     private static final String BET_ACTION = "bet";
+    private static final String LOG_ACTION = "log";
+
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
@@ -57,6 +59,19 @@ public class BetService {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
             //betImpotentDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetImpotentDto.class);
             ValidationUtils.validateRequest(betDto);
+
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(betDto.getExternalTransactionId(),
+                    betDto.getVendorPlayerUsername(),
+                    LOG_ACTION) == null) {
+                requestIdempotentLogService.create(betDto.getExternalTransactionId(),
+                        betDto.getVendorPlayerUsername(),
+                        walletRequest.getOperatorResponseStatus().code,
+                        LOG_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
 
 //            //check for idempotent request
 //            if (requestIdempotentLogService.checkExists(betImpotentDto, betImpotentDto.getPlayerId()) == null) {
@@ -113,6 +128,12 @@ public class BetService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto.getExternalTransactionId(),
+                        betDto.getVendorPlayerUsername(),
+                        LOG_ACTION);
+            }
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
             }
