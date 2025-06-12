@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.poker365.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -15,38 +14,31 @@ import com.nextgen.gameaggregator.vendor.poker365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 
 @Service
-@Slf4j
 public class CancelService {
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorPlayerService vendorPlayerService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionService walletTransactionService;
 
-    @Autowired
     public CancelService(HttpService httpService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
                          VendorLineService vendorLineService,
-                         RequestIdempotentLogService requestIdempotentLogService,
                          VendorPlayerService vendorPlayerService,
                          WalletRequestService walletRequestService,
                          OperatorWalletService operatorWalletService,
                          WalletTransactionService walletTransactionService) {
         this.httpService = httpService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorLineService = vendorLineService;
@@ -75,12 +67,10 @@ public class CancelService {
 
     }
 
-    public CommonVo cancel(HttpRequestLog httpRequestLog, String traceId) throws JsonProcessingException {
+    public CommonVo cancel(HttpRequestLog httpRequestLog) throws JsonProcessingException {
         CommonVo commonVo = new CommonVo();
-        BigDecimal balance;
-        WalletTransaction walletTransaction = null;
+        WalletTransaction walletTransaction;
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        boolean isRequestExists = false;
         Integer vendorPlayerId;
 
         try {

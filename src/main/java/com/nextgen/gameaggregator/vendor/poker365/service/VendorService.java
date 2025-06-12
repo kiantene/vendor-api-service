@@ -21,14 +21,14 @@ import java.util.Map;
 public class VendorService extends BaseVendorService {
 
 
-    private ValidationService validationService;
-    private VendorLineService vendorLineService;
-    private AgentPlayerService agentPlayerService;
+    private final ValidationService validationService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
 
     private VendorService(ValidationService validationService,
                           VendorLineService vendorLineService,
-                          AgentPlayerService agentPlayerService) {
-
+                          AgentPlayerService agentPlayerService)
+    {
         this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -37,7 +37,6 @@ public class VendorService extends BaseVendorService {
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
         Map<String, Object> queryParameterMap = new HashMap<>();
 
-        // TODO: To review on this exception handling
         try {
             queryString = URLDecoder.decode(queryString, StandardCharsets.UTF_8.name());
         } catch (UnsupportedEncodingException e) {

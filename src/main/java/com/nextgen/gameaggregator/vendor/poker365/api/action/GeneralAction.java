@@ -15,14 +15,12 @@ import com.nextgen.gameaggregator.vendor.poker365.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.poker365.service.VendorService;
 import com.nextgen.gameaggregator.vendor.poker365.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class GeneralAction {
 
     private final BalanceService balanceService;
@@ -86,7 +84,7 @@ public class GeneralAction {
             return switch (messageDto.getAction()) {
                 case "getBalance" -> balanceService.balance(httpRequestLog, traceId);
                 case "bet" -> betService.bet(httpRequestLog);
-                case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog, traceId);
+                case "cancelBet", "voidGame" -> cancelService.cancel(httpRequestLog);
                 case "settle" -> settleService.settle(httpRequestLog);
                 default -> throw new InvalidRequestException();
             };

@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.poker365.constant;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class Credentials {
 
     public static final String API_URL = "apiUrl";
@@ -7,7 +10,4 @@ public class Credentials {
     public static final String WEBSITE = "website";
     public static final String ACCOUNT = "account";
 
-    private Credentials() {
-        throw new UnsupportedOperationException("Cannot instantiate utility class.");
-    }
 }

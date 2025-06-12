@@ -37,14 +37,5 @@ public enum ResponseCodes {
     public String getMessage() {
         return message;
     }
-
-    public static ResponseCodes fromStatus(Integer status) {
-        for (ResponseCodes code : ResponseCodes.values()) {
-            if (code.getStatus().equals(status)) {
-                return code;
-            }
-        }
-        return null;
-    }
 }
 

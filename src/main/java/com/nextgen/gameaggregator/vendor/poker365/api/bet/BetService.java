@@ -58,7 +58,6 @@ public class BetService {
     public CommonVo bet(HttpRequestLog httpRequestLog) {
         CommonVo commonVo = new CommonVo();
         WalletRequest walletRequest = null;
-        Integer vendorPlayerId;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
