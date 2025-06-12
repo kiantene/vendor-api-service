@@ -105,11 +105,7 @@ public class ResultService {
         } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);
             httpService.logError(httpRequestLog, exception);
-
-        } catch (TransactionStillProcessingException exception) {
-            commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
-            httpService.logError(httpRequestLog, exception);
-
+            
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
