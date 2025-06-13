@@ -124,14 +124,14 @@ public class VendorService extends BaseVendorService {
         walletRequest.setVendorPlayerUsername(cancelDto.getVendorPlayerUsername());
     }
 
+
     public IdempotentState checkIdempotentRequest(String externalTransactionId, String vendorPlayerUsername, String action) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
         RequestIdempotentLog existingLog = requestIdempotentLogService.getSportsRequestIdempotentLog(externalTransactionId, vendorPlayerUsername, action);
-
         IdempotentState state = new IdempotentState();
 
         if (existingLog == null) {
-            // New request - need to create log later
-            state.shouldCreateLog = true;
+            // Create a new idempotent log with response status SC_TRANSACTION_STILL_PROCESSING when no existing log found
+            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code, action);
             return state;
         }
 
@@ -139,16 +139,7 @@ public class VendorService extends BaseVendorService {
         state.hasExistingLog = true;
 
         if (existingLog.getOperatorResponseStatus() == ResponseCodes.Status.SC_OK.code) {
-            // Check if enough time has passed since creation
-//            long currentTime = System.currentTimeMillis();
-//            long timeSinceCreation = currentTime - existingLog.getCreateTime();
-//
-//            // If less than 1 second has passed, still consider it processing
-//            if (timeSinceCreation < 1000) {
-//                throw new TransactionStillProcessingException();
-//            }
-//
-            // Enough time has passed means this is a true duplicate
+            // Request already processed successfully - idempotent violation
             state.shouldSkipCleanup = true;
             throw new BetResultIdempotentViolationException();
         }
@@ -156,6 +147,7 @@ public class VendorService extends BaseVendorService {
         // Request exists but not completed (status != OK) - still processing
         throw new TransactionStillProcessingException();
     }
+
 
     public void createIdempotentLogIfNeeded(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
         if (state.shouldCreateLog) {
@@ -175,6 +167,13 @@ public class VendorService extends BaseVendorService {
             requestIdempotentLogService.delete(externalTransactionId, vendorPlayerUsername, action);
             requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, ResponseCodes.Status.SC_OK.code, action);
             state.shouldSkipCleanup = true; // Don't delete in finally block since we just created with OK status
+        }
+    }
+
+    public void setSkipCleanupIfSuccess(WalletRequest walletRequest, IdempotentState state) {
+        // Don't delete in finally block when we have a successful response
+        if (walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
+            state.shouldSkipCleanup = true;
         }
     }
 

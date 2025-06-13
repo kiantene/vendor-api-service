@@ -53,23 +53,9 @@ public class BetService {
         BetDto betDto = new BetDto();
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
-        boolean isRequestExists = false;
-
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
             ValidationUtils.validateRequest(betDto);
-
-            if (requestIdempotentLogService.getSportsRequestIdempotentLog(betDto.getExternalTransactionId(),
-                    betDto.getVendorPlayerUsername(),
-                    LOG_ACTION) == null) {
-                requestIdempotentLogService.create(betDto.getExternalTransactionId(),
-                        betDto.getVendorPlayerUsername(),
-                        walletRequest.getOperatorResponseStatus().code,
-                        LOG_ACTION);
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
@@ -77,22 +63,23 @@ public class BetService {
 
             vendorService.doDataMapper(walletRequest, betDto);
             vendorService.doVerification(betDto, gameSession, true);
-            //validate currency
+
+            // Validate currency
             ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
+
             // Handle idempotent request check using VendorService
             idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
             // Process the bet
             walletRequest = sportWalletService.placeBet(walletRequest);
 
-            // Create idempotent log if needed (for new requests)
-            vendorService.createIdempotentLogIfNeeded(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
+            // Check if we need to skip cleanup
+            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState);
 
             // Recreate existing log with OK status if settlement was successful
             vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
-
         } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
@@ -118,12 +105,6 @@ public class BetService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-
-            if (!isRequestExists) {
-                requestIdempotentLogService.delete(betDto.getExternalTransactionId(),
-                        betDto.getVendorPlayerUsername(),
-                        LOG_ACTION);
-            }
             if (idempotentState != null) {
                 vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
             }
