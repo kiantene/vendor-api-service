@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
-import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -20,29 +19,25 @@ import org.springframework.stereotype.Service;
 @Service
 public class BetService {
     private static final String BET_ACTION = "bet";
-    private static final String LOG_ACTION = "log_bet";
-
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       WalletService walletService,
                       VendorService vendorService,
                       WalletRequestService walletRequestService,
-                      SportWalletService sportWalletService, RequestIdempotentLogService requestIdempotentLogService) {
+                      SportWalletService sportWalletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo placeBet(HttpServletRequest request) {
@@ -57,6 +52,9 @@ public class BetService {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
             ValidationUtils.validateRequest(betDto);
 
+            // Handle idempotent request check using VendorService
+            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
@@ -67,14 +65,11 @@ public class BetService {
             // Validate currency
             ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
-
             // Process the bet
             walletRequest = sportWalletService.placeBet(walletRequest);
 
             // Check if we need to skip cleanup
-            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState);
+            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, BET_ACTION);
 
             // Recreate existing log with OK status if settlement was successful
             vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
@@ -84,7 +79,7 @@ public class BetService {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);
             httpService.logError(httpRequestLog, exception);
 
-        } catch (InvalidCurrencyException | CurrencyNotSupportedException exception) {
+        } catch (CurrencyNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, exception);
 

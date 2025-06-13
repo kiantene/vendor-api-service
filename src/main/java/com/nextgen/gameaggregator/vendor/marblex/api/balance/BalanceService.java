@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.marblex.constant.Formats;
 import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
@@ -38,7 +37,6 @@ public class BalanceService {
 
     public CommonVo getBalance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String authentication = request.getHeader(Formats.AUTHORIZATION);
 
         CommonVo commonVo = new CommonVo();
         BalanceDto balanceDto = new BalanceDto();

@@ -69,7 +69,7 @@ public class VendorService extends BaseVendorService {
                         .setCurrency(gameSession.getVendorCurrencyCode()));
     }
 
-    public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidCurrencyException, AuthenticationException {
+    public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException {
 
         if (checkBet) {
             // validate vendor username, agent vendor line, player status, and game status
@@ -148,18 +148,6 @@ public class VendorService extends BaseVendorService {
         throw new TransactionStillProcessingException();
     }
 
-
-    public void createIdempotentLogIfNeeded(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
-        if (state.shouldCreateLog) {
-            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, walletRequest.getOperatorResponseStatus().code, action);
-        }
-
-        if (walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
-            // If the request was successful, we don't need to create a log again
-            state.shouldSkipCleanup = true; // Don't delete in finally block since we just created with OK status
-        }
-    }
-
     public void recreateIdempotentLogWithOkStatus(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
         // Only recreate if settlement was successful AND we had an existing log with non-OK status
         if (state.hasExistingLog && walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
@@ -170,9 +158,10 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public void setSkipCleanupIfSuccess(WalletRequest walletRequest, IdempotentState state) {
+    public void setSkipCleanupIfSuccess(WalletRequest walletRequest, IdempotentState state, String prefix) {
         // Don't delete in finally block when we have a successful response
         if (walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
+            requestIdempotentLogService.save(walletRequest.getExternalTransactionId(), walletRequest.getVendorPlayerUsername(), ResponseCodes.Status.SC_OK.code, prefix);
             state.shouldSkipCleanup = true;
         }
     }
@@ -185,7 +174,6 @@ public class VendorService extends BaseVendorService {
     }
 
     public static class IdempotentState {
-        public boolean shouldCreateLog = false;
         public boolean hasExistingLog = false;
         public boolean shouldSkipCleanup = false;
     }

@@ -140,9 +140,27 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     }
 
     @Override
+    @CachePut(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager", unless = "#result == null")
+    public RequestIdempotentLog save(String externalTransactionId, String vendorPlayerUsername, Integer walletRequestStatus, String prefix) {
+        String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
+
+        RequestIdempotentLog requestIdempotentLog = requestIdempotentLogRepository.findById(id)
+                .orElse(null);
+        if (requestIdempotentLog != null) {
+
+            requestIdempotentLog.setId(id);
+            requestIdempotentLog.setCreateTime(System.currentTimeMillis());
+            requestIdempotentLog.setOperatorResponseStatus(walletRequestStatus);
+            return requestIdempotentLogRepository.save(requestIdempotentLog);
+        }
+        return null;
+    }
+
+    @Override
     @Cacheable(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager", unless = "#result == null")
     public RequestIdempotentLog getSportsRequestIdempotentLog(String externalTransactionId, String vendorPlayerUsername, String prefix) {
         String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
         return requestIdempotentLogRepository.findById(id).orElse(null);
     }
 }
+

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.controller;
 
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.marblex.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.marblex.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelService;
@@ -10,7 +9,6 @@ import com.nextgen.gameaggregator.vendor.marblex.api.result.ResultService;
 import com.nextgen.gameaggregator.vendor.marblex.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class ActionController {
     public final BalanceService balanceService;
     public final BetService betService;
@@ -26,12 +23,10 @@ public class ActionController {
     public final ResettleService resettleService;
     public final RefundService refundService;
     public final CancelService cancelService;
-    private final HttpService httpService;
 
     @Autowired
-    public ActionController(HttpService httpService, BalanceService balanceService, BetService betService, ResultService resultService,
+    public ActionController(BalanceService balanceService, BetService betService, ResultService resultService,
                             ResettleService resettleService, RefundService refundService, CancelService cancelService) {
-        this.httpService = httpService;
         this.balanceService = balanceService;
         this.betService = betService;
         this.resultService = resultService;
