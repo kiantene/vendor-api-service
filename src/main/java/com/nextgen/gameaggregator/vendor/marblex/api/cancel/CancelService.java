@@ -49,13 +49,13 @@ public class CancelService {
             cancelDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CancelDto.class);
             ValidationUtils.validateRequest(cancelDto);
 
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), CANCEL_ACTION);
-
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelDto.getPlayerId());
             vendorService.doVerification(cancelDto, gameSession, false);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
+            // Handle idempotent request check using VendorService
+            idempotentState = vendorService.checkIdempotentRequest(cancelDto.getExternalTransactionId(), cancelDto.getPlayerId(), CANCEL_ACTION);
+            
             vendorService.doDataMapper(walletRequest, cancelDto);
 
             // Process the refund all

@@ -63,12 +63,12 @@ public class RefundService {
             refundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RefundDto.class);
             ValidationUtils.validateRequest(refundDto);
 
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION);
-
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
 
+            // Handle idempotent request check using VendorService
+            idempotentState = vendorService.checkIdempotentRequest(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION);
+            
             vendorService.doVerification(refundDto, gameSession, false);
             vendorService.doDataMapper(walletRequest, refundDto);
 

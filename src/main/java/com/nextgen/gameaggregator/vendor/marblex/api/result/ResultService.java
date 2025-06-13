@@ -53,13 +53,13 @@ public class ResultService {
             resultDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResultDto.class);
             ValidationUtils.validateRequest(resultDto);
 
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
+            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
+
             // Handle idempotent request check using VendorService
             idempotentState = vendorService.checkIdempotentRequest(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
-
-            walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
             vendorService.doDataMapper(walletRequest, resultDto);
             vendorService.doVerification(resultDto, gameSession, false);
 

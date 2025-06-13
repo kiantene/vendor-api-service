@@ -52,12 +52,12 @@ public class BetService {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
             ValidationUtils.validateRequest(betDto);
 
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
+            // Handle idempotent request check using VendorService
+            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
             vendorService.doDataMapper(walletRequest, betDto);
             vendorService.doVerification(betDto, gameSession, true);
