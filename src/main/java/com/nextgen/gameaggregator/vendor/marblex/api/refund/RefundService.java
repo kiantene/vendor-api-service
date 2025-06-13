@@ -13,9 +13,11 @@ import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
 import com.nextgen.gameaggregator.vendor.marblex.service.VendorService;
 import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class RefundService {
     private static final String REFUND_ACTION = "refund";
     private static final String LOG_ACTION = "log_refund";
@@ -62,7 +64,7 @@ public class RefundService {
         GameSession gameSession = new GameSession();
         VendorService.IdempotentState idempotentState = null;
         boolean isRequestExists = false;
-
+        log.info("Nickson-Marblex Refund Request: " + httpRequestLog.getRequestBody());
         try {
             refundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RefundDto.class);
             ValidationUtils.validateRequest(refundDto);
