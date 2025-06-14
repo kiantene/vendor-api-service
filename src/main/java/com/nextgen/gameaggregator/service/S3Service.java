@@ -28,14 +28,26 @@ public class S3Service {
     private String awsFolder;
     @Value("${aws.s3.gameUrl}")
     private String gameUrl;
+    @Value("${aws.s3.huawei:false}")
+    private Boolean huawei;
 
     private AmazonS3 createS3Client() {
-        AWSCredentialsProvider doCred = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessId, accessSecret));
-        //generate credentials
-        AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withRegion(Regions.fromName(awsRegion))
-                .withCredentials(doCred)
-                .build();
+        AmazonS3 s3Client;
+
+        if(!huawei) {
+            AWSCredentialsProvider doCred = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessId, accessSecret));
+            s3Client = AmazonS3ClientBuilder.standard()
+                    .withRegion(Regions.fromName(awsRegion))
+                    .withCredentials(doCred)
+                    .build();
+
+        } else {
+            s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessId, accessSecret)))
+                    .withEndpointConfiguration(new AmazonS3ClientBuilder.EndpointConfiguration(gameUrl, awsRegion))
+                    .build();
+            
+        }
 
         return s3Client;
     }
