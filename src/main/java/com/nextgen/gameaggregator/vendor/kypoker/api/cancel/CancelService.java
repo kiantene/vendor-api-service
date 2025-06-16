@@ -150,7 +150,8 @@ public class CancelService {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidPlayerException,
-            AuthenticationException {
+            AuthenticationException,
+            InvalidRequestException {
 
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
