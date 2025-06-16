@@ -125,7 +125,7 @@ public class BetService {
             httpService.logError(httpRequestLog, duplicateRequestException);
             errorMessage = duplicateRequestException.toString();
 
-        }   catch (InvalidRequestException | CurrencyNotSupportedException invalidRequestException) {
+        }   catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
