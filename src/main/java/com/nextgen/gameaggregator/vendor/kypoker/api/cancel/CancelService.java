@@ -114,7 +114,7 @@ public class CancelService {
             d.setCode(ResponseCodes.SUCCESS);
             d.setStatus(ResponseCodes.STATUS_SUCCESS);
 
-        } catch (InvalidRequestException | CurrencyNotSupportedException invalidRequestException) {
+        } catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
