@@ -130,6 +130,7 @@ public class GeneralAction {
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
             throws AuthenticationException, InvalidRequestException {
         CommonVo vo = new CommonVo();
+        ResponseObjectDto d = new ResponseObjectDto();
 
 
         if (Actions.BALANCE.equals(actionDto.getS())) {
@@ -143,7 +144,8 @@ public class GeneralAction {
         }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
             vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
         }  else {
-            throw new InvalidRequestException();
+            d.setCode(ResponseCodes.INVALID_REQUEST);
+            vo.setD(d);
         }
         return vo;
     }

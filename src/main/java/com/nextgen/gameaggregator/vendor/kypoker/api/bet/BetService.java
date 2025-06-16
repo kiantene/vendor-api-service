@@ -107,17 +107,17 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
-        }  catch (InvalidOperatorResponseException e) {
+        }  catch (InvalidOperatorResponseException insufficientBalanceException) {
 
-            if (e.getOperatorStatus() == 11) {
+            if (insufficientBalanceException.getOperatorStatus() == 11) {
                 d.setCode(ResponseCodes.INSUFFICIENT_FUNDS);
                 httpService.logError(httpRequestLog, new InsufficientBalanceException());
-                errorMessage = "insufficientBalanceException";
+                errorMessage = insufficientBalanceException.toString();
 
             } else {
                 d.setCode(ResponseCodes.INTERNAL_ERROR);
-                httpService.logError(httpRequestLog, e);
-                errorMessage = e.toString();
+                httpService.logError(httpRequestLog, insufficientBalanceException);
+                errorMessage = insufficientBalanceException.toString();
             }
 
         } catch (BetResultIdempotentViolationException duplicateRequestException) {
