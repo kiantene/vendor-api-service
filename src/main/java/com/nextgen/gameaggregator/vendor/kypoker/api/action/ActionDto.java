@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.kypoker.api.action;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -10,7 +12,8 @@ import lombok.Data;
 public class ActionDto {
 
     @NotNull
-    Integer s;
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    private Integer s;
 
     private HttpRequestLog httpRequestLog;
 

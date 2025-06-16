@@ -100,5 +100,6 @@ public class BalanceService {
         validationService.validateEligibleBet(gameSession, dto.getAccount());
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount());
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency());
+
     }
 }

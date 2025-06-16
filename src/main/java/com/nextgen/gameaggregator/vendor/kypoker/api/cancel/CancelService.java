@@ -145,9 +145,12 @@ public class CancelService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelDto dto, GameSession gameSession) throws DisabledVendorLineException,
-            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-            InvalidPlayerException, AuthenticationException {
+    private void doVerification(CancelDto dto, GameSession gameSession) throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidPlayerException,
+            AuthenticationException {
 
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
@@ -155,8 +158,9 @@ public class CancelService {
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");
         int mType = Integer.parseInt(parts[0]);
-        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getKindId()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidRequestException::new);
+        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getKindId()), InvalidRequestException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidRequestException::new);
 
     }
 

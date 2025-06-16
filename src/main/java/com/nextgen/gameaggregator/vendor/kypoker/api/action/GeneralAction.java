@@ -89,6 +89,8 @@ public class GeneralAction {
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
+            ValidationUtils.validateRequest(actionDto);
+
             actionDto.setHttpRequestLog(httpRequestLog);
 
             ValidationUtils.validateRequest(actionDto);
