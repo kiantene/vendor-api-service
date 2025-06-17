@@ -69,9 +69,6 @@ public class ResultService {
             // Check if we need to skip cleanup
             vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, RESULT_ACTION);
 
-            // Recreate existing log with OK status if settlement was successful
-            vendorService.recreateIdempotentLogWithOkStatus(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), walletRequest, idempotentState, RESULT_ACTION);
-
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
         } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {

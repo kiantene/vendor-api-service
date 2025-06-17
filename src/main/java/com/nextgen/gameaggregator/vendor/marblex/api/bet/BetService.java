@@ -71,9 +71,6 @@ public class BetService {
             // Check if we need to skip cleanup
             vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, BET_ACTION);
 
-            // Recreate existing log with OK status if settlement was successful
-            vendorService.recreateIdempotentLogWithOkStatus(betDto.getExternalTransactionId(), betDto.getPlayerId(), walletRequest, idempotentState, BET_ACTION);
-
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
         } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {
             commonVo.setStatusCode(StatusCode.INVALID_AUTHENTICATION);

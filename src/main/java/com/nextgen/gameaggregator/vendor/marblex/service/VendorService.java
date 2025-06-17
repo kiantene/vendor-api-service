@@ -148,16 +148,6 @@ public class VendorService extends BaseVendorService {
         throw new TransactionStillProcessingException();
     }
 
-    public void recreateIdempotentLogWithOkStatus(String externalTransactionId, String vendorPlayerUsername, WalletRequest walletRequest, IdempotentState state, String action) {
-        // Only recreate if settlement was successful AND we had an existing log with non-OK status
-        if (state.hasExistingLog && walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
-            // Delete the old log and create new one with OK status
-            requestIdempotentLogService.delete(externalTransactionId, vendorPlayerUsername, action);
-            requestIdempotentLogService.create(externalTransactionId, vendorPlayerUsername, ResponseCodes.Status.SC_OK.code, action);
-            state.shouldSkipCleanup = true; // Don't delete in finally block since we just created with OK status
-        }
-    }
-
     public void setSkipCleanupIfSuccess(WalletRequest walletRequest, IdempotentState state, String prefix) {
         // Don't delete in finally block when we have a successful response
         if (walletRequest.getOperatorResponseStatus().code == ResponseCodes.Status.SC_OK.code) {
