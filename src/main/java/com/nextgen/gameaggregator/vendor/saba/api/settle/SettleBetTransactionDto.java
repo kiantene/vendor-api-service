@@ -83,13 +83,18 @@ public class SettleBetTransactionDto implements SportBetResultData {
     public Long getVendorSettleTime() {
         long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
 
-        if (this.settlementTime != null) {
-            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
-
-//            compare and get the Later Time
-            return Math.max(millisWinLostDate, millisSettlementTime);
+        if (this.settlementTime == null) {
+            return millisWinLostDate;
         }
-        return millisWinLostDate;
+
+        try {
+            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
+            //compare and get the Later Time
+            return Math.max(millisWinLostDate, millisSettlementTime);
+        } catch (Exception e) {
+            //if any error in converting，return milliswinlostDate
+            return millisWinLostDate;
+        }
     }
 
     @Override
