@@ -69,6 +69,10 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getAccount());
 
+            if(gameSession == null){
+                throw new InvalidPlayerException();
+            }
+
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getKindId()), gameSession);
 
             // Verify remaining parameters (Verify against database values)

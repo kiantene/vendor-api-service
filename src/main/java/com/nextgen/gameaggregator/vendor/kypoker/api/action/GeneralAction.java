@@ -119,6 +119,7 @@ public class GeneralAction {
         }
         finally {
             vo.setM(EndPoints.API_ENDPOINT);
+            vo.setD(d);
 
         }
         return vo;
