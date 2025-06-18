@@ -96,6 +96,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     @Override
     public void idempotentCheck(WalletRequest walletRequest, String action) throws BetResultIdempotentViolationException {
         String id = this.generateId(walletRequest, action);
+        //TODO MOVE IDEMPOTENT CHECK OUTSIDE FROM WALLET TRANSACTION SERVICE IF NOT CACHEABLE WONT WORK
         WalletTransaction walletTransaction = this.getById(id);
         if (walletTransaction != null && walletTransaction.getOperatorStatus().equals(ResponseCodes.Status.SC_OK.code)) {
             throw new BetResultIdempotentViolationException(walletTransaction);
