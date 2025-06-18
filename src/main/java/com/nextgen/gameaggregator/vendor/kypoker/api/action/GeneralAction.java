@@ -106,21 +106,22 @@ public class GeneralAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
+            vo.setD(d);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             d.setCode(ResponseCodes.INVALID_CREDENTIAL);
+            vo.setD(d);
 
         } catch(InvalidDecryptionException invalidDecryptionException){
             d.setCode(ResponseCodes.INVALID_DECRYPTION);
+            vo.setD(d);
 
         } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
-
+            vo.setD(d);
         }
         finally {
             vo.setM(EndPoints.API_ENDPOINT);
-            vo.setD(d);
-
         }
         return vo;
     }

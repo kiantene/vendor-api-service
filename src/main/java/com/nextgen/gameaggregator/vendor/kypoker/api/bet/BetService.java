@@ -59,7 +59,7 @@ public class BetService {
 
         try {
             // Convert original request body into dto
-            betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
+            betDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, BetDto.class);
 
             roomMode = betDto.getRoomMode();
 
@@ -160,12 +160,12 @@ public class BetService {
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
+            InvalidRequestException,
             InvalidPlayerException,
             AuthenticationException,
-            InvalidRequestException {
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException {
 
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
@@ -173,9 +173,11 @@ public class BetService {
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");
         int mType = Integer.parseInt(parts[0]);
+
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidRequestException::new);
         ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getKindId()), InvalidRequestException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidRequestException::new);
+
 
     }
 }
