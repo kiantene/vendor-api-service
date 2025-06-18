@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -25,19 +26,22 @@ public class BetService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       WalletService walletService,
                       VendorService vendorService,
                       WalletRequestService walletRequestService,
-                      SportWalletService sportWalletService) {
+                      SportWalletService sportWalletService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo placeBet(HttpServletRequest request) {
@@ -47,17 +51,22 @@ public class BetService {
         CommonVo commonVo = new CommonVo();
         BetDto betDto = new BetDto();
         GameSession gameSession = new GameSession();
-        VendorService.IdempotentState idempotentState = null;
+        boolean isRequestExists = false;
+
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
             ValidationUtils.validateRequest(betDto);
 
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION) == null) {
+                requestIdempotentLogService.create(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
 
             vendorService.doDataMapper(walletRequest, betDto);
             vendorService.doVerification(betDto, gameSession, true);
@@ -67,9 +76,6 @@ public class BetService {
 
             // Process the bet
             walletRequest = sportWalletService.placeBet(walletRequest);
-
-            // Check if we need to skip cleanup
-            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, BET_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
         } catch (AuthenticationException | InvalidPlayerException | GameNotSupportedException exception) {
@@ -97,9 +103,10 @@ public class BetService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(betDto.getExternalTransactionId(), betDto.getPlayerId(), idempotentState, BET_ACTION);
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto.getExternalTransactionId(), betDto.getPlayerId(), BET_ACTION);
             }
+
             commonVo.setTraceId(betDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);

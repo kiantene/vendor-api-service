@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.result;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -25,19 +26,22 @@ public class ResultService {
     public final VendorService vendorService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public ResultService(HttpService httpService,
                          GameSessionService gameSessionService,
                          WalletService walletService,
                          VendorService vendorService,
                          WalletRequestService walletRequestService,
-                         SportWalletService sportWalletService) {
+                         SportWalletService sportWalletService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settleBet(HttpServletRequest request) {
@@ -47,27 +51,28 @@ public class ResultService {
         CommonVo commonVo = new CommonVo();
         ResultDto resultDto = new ResultDto();
         GameSession gameSession = new GameSession();
-        VendorService.IdempotentState idempotentState = null;
+        boolean isRequestExists = false;
 
         try {
             resultDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResultDto.class);
             ValidationUtils.validateRequest(resultDto);
 
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION) == null) {
+                requestIdempotentLogService.create(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
 
             vendorService.doDataMapper(walletRequest, resultDto);
             vendorService.doVerification(resultDto, gameSession, false);
 
             // Process the settlement
             walletRequest = sportWalletService.settle(walletRequest);
-
-            // Check if we need to skip cleanup
-            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, RESULT_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
@@ -91,9 +96,10 @@ public class ResultService {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), idempotentState, RESULT_ACTION);
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(resultDto.getExternalTransactionId(), resultDto.getPlayerId(), RESULT_ACTION);
             }
+
             commonVo.setTraceId(resultDto.getTraceId());
             walletRequestService.end(walletRequest, httpRequestLog, commonVo);
             httpService.end(httpRequestLog, commonVo);

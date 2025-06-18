@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.marblex.api.refund;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -28,6 +29,7 @@ public class RefundService {
     public final VendorGameService vendorGameService;
     private final WalletRequestService walletRequestService;
     private final SportWalletService sportWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public RefundService(HttpService httpService,
                          GameSessionService gameSessionService,
@@ -37,7 +39,8 @@ public class RefundService {
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
                          WalletRequestService walletRequestService,
-                         SportWalletService sportWalletService) {
+                         SportWalletService sportWalletService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -47,6 +50,7 @@ public class RefundService {
         this.vendorGameService = vendorGameService;
         this.walletRequestService = walletRequestService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo refund(HttpServletRequest request) {
@@ -57,26 +61,27 @@ public class RefundService {
         CommonVo commonVo = new CommonVo();
         RefundDto refundDto = new RefundDto();
         GameSession gameSession = new GameSession();
-        VendorService.IdempotentState idempotentState = null;
-        log.info("Nickson-Marblex Refund Request: " + httpRequestLog.getRequestBody());
+        boolean isRequestExists = false;
+
         try {
             refundDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RefundDto.class);
             ValidationUtils.validateRequest(refundDto);
 
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION) == null) {
+                requestIdempotentLogService.create(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
-
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION);
             
             vendorService.doVerification(refundDto, gameSession, false);
             vendorService.doDataMapper(walletRequest, refundDto);
 
             // Process the refund
             walletRequest = sportWalletService.refund(walletRequest);
-
-            // Check if we need to skip cleanup
-            vendorService.setSkipCleanupIfSuccess(walletRequest, idempotentState, REFUND_ACTION);
 
             commonVo = vendorService.mapToSuccess(gameSession.getVendorCurrencyCode(), walletRequest.getBalanceAfter());
 
@@ -101,8 +106,8 @@ public class RefundService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), idempotentState, REFUND_ACTION);
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(refundDto.getExternalTransactionId(), refundDto.getPlayerId(), REFUND_ACTION);
             }
 
             commonVo.setTraceId(refundDto.getTraceId());

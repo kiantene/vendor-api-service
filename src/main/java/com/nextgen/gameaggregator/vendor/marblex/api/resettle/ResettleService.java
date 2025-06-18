@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.marblex.api.resettle;
 
 import org.springframework.stereotype.Service;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -19,23 +20,26 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class ResettleService {
+    private static final String RESETTLE_ACTION = "resettle";
     public final HttpService httpService;
     public final GameSessionService gameSessionService;
     public final WalletService walletService;
     public final VendorService vendorService;
     private final SportWalletService sportWalletService;
-    private static final String RESETTLE_ACTION = "resettle";
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public ResettleService(HttpService httpService, 
                            GameSessionService gameSessionService, 
                            WalletService walletService,
                            VendorService vendorService, 
-                           SportWalletService sportWalletService) {
+                           SportWalletService sportWalletService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.sportWalletService = sportWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo resettle(HttpServletRequest request) {
@@ -44,18 +48,22 @@ public class ResettleService {
         CommonVo commonVo = new CommonVo();
         ResettleDto resettleDto = new ResettleDto();
         GameSession gameSession = new GameSession();
-        VendorService.IdempotentState idempotentState = null;
+        boolean isRequestExists = false;
 
         try {
             resettleDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), ResettleDto.class);
             ValidationUtils.validateRequest(resettleDto);
 
+            if (requestIdempotentLogService.getSportsRequestIdempotentLog(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), RESETTLE_ACTION) == null) {
+                requestIdempotentLogService.create(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), RESETTLE_ACTION);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resettleDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resettleDto.getGameCode(), gameSession);
             vendorService.doVerification(resettleDto, gameSession, false);
-
-            // Handle idempotent request check using VendorService
-            idempotentState = vendorService.checkIdempotentRequest(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), RESETTLE_ACTION);
 
             // Process the adjustment
             BetEvent betEvent = sportWalletService.adjustment(resettleDto.getTraceId(), resettleDto, httpRequestLog);
@@ -93,8 +101,8 @@ public class ResettleService {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            if (idempotentState != null) {
-                vendorService.cleanupIdempotentLog(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), idempotentState, RESETTLE_ACTION);
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(resettleDto.getExternalTransactionId(), resettleDto.getPlayerId(), RESETTLE_ACTION);
             }
 
             commonVo.setTraceId(resettleDto.getTraceId());

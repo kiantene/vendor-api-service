@@ -32,10 +32,7 @@ public interface RequestIdempotentLogService {
 
     void delete(String externalTransactionId, String vendorPlayerUsername, String prefix);
 
-    RequestIdempotentLog create(String externalTransactionId, String vendorPlayerUsername, Integer walletRequestStatus, String prefix);
+    RequestIdempotentLog create(String externalTransactionId, String vendorPlayerUsername, String prefix);
 
     RequestIdempotentLog getSportsRequestIdempotentLog(String externalTransactionId, String vendorPlayerUsername, String prefix);
-
-    RequestIdempotentLog save(String externalTransactionId, String vendorPlayerUsername, Integer walletRequestStatus, String prefix);
-
 }
