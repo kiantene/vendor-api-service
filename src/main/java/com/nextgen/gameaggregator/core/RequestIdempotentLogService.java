@@ -28,6 +28,8 @@ public interface RequestIdempotentLogService {
     RequestIdempotentLog get(String id);
 
     // Sportsbook specific methods
+    // To differentiate between different types of requests, we use a prefix which pass in from class files (Discussed with Jeff, 18 Jun 2025)
+    // TODO: Consider improving this by using a more structured approach
     String generateBetResultRequestIdempotentLogId(String externalTransactionId, String vendorPlayerUsername, String prefix);
 
     void delete(String externalTransactionId, String vendorPlayerUsername, String prefix);

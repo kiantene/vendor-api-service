@@ -74,6 +74,10 @@ public class RefundService {
                 throw new TransactionStillProcessingException();
             }
 
+            // Temporary solution: Check settled bet status using KV search.
+            // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
+            vendorService.checkSettledBetStatus(refundDto.getPlayerId(), refundDto.getVendorBetId());
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
             

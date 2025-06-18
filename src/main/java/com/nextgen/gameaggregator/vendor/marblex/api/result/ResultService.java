@@ -64,6 +64,10 @@ public class ResultService {
                 throw new TransactionStillProcessingException();
             }
 
+            // Temporary solution: Check settled bet status using KV search.
+            // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
+            vendorService.checkSettledBetStatus(resultDto.getPlayerId(), resultDto.getVendorBetId());
+
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
