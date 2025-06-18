@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.betdetails;
+package com.nextgen.gameaggregator.vendor.koolbet.api.betdetail;
 
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
