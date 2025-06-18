@@ -142,7 +142,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             InvalidOperatorResponseException, TransactionStillProcessingException,
             InvalidPlayerException, InvalidRequestException {
 
-        return sportRefundProcessor.processV2(walletRequest);
+        return sportRefundProcessor.processRefundSettledBet(walletRequest);
     }
 
     @Override
