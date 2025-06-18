@@ -12,7 +12,6 @@ import lombok.Data;
 public class ActionDto {
 
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private Integer s;
 
     private HttpRequestLog httpRequestLog;
