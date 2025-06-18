@@ -86,8 +86,19 @@ public class CancelService {
             httpService.logError(httpRequestLog, exception);
 
         } catch (BetNotFoundException exception) {
-            commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, exception);
+            try {
+                // Temporary solution: Check settled bet status using KV search.
+                // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
+                vendorService.checkSettledBetStatus(cancelDto.getPlayerId(), cancelDto.getVendorBetId());
+
+            } catch (BetNotFoundException e) {
+                commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
+                httpService.logError(httpRequestLog, exception);
+
+            } catch (BetResultIdempotentViolationException e) {
+                commonVo = vendorService.mapIdempotentSuccess(e.getBalance(), gameSession, httpRequestLog);
+                httpService.logError(httpRequestLog, exception);
+            }
 
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
