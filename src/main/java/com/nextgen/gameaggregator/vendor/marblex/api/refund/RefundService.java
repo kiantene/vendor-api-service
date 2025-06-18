@@ -113,9 +113,6 @@ public class RefundService {
                 httpService.logError(httpRequestLog, exception);
             }
 
-            commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, exception);
-
         } catch (Exception exception) {
             commonVo.setStatusCode(StatusCode.VENDOR_API_ERROR);
             httpService.logError(httpRequestLog, exception);
