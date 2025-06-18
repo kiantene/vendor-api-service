@@ -67,8 +67,8 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
-        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1));
-        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75));
+        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1, 86));
+        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75, 86));
     }
 
     public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
