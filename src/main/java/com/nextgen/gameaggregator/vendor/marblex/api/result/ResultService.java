@@ -64,10 +64,6 @@ public class ResultService {
                 throw new TransactionStillProcessingException();
             }
 
-            // Temporary solution: Check settled bet status using KV search.
-            // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
-            vendorService.checkSettledBetStatus(resultDto.getPlayerId(), resultDto.getVendorBetId());
-
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(resultDto.getPlayerId());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(resultDto.getGameCode(), gameSession);
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
@@ -89,8 +85,19 @@ public class ResultService {
             httpService.logError(httpRequestLog, exception);
 
         } catch (BetNotFoundException exception) {
-            commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, exception);
+            
+            try {
+                // Temporary solution: Check settled bet status using KV search.
+                // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
+                vendorService.checkSettledBetStatus(resultDto.getPlayerId(), resultDto.getVendorBetId());
+            } catch (BetNotFoundException e) {
+                commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
+                httpService.logError(httpRequestLog, exception);
+
+            } catch (BetResultIdempotentViolationException e) {
+                commonVo = vendorService.mapIdempotentSuccess(e.getBalance(), gameSession, httpRequestLog);
+                httpService.logError(httpRequestLog, exception);
+            }
 
         } catch (BetResultIdempotentViolationException exception) {
             commonVo = vendorService.mapIdempotentSuccess(exception.getBalance(), gameSession, httpRequestLog);

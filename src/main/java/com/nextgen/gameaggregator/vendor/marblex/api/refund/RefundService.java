@@ -74,10 +74,6 @@ public class RefundService {
                 throw new TransactionStillProcessingException();
             }
 
-            // Temporary solution: Check settled bet status using KV search.
-            // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
-            vendorService.checkSettledBetStatus(refundDto.getPlayerId(), refundDto.getVendorBetId());
-
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(refundDto.getPlayerId());
             walletRequest = walletRequestService.updateByGameSession(walletRequest, gameSession);
             
@@ -102,6 +98,21 @@ public class RefundService {
             httpService.logError(httpRequestLog, exception);
 
         } catch (BetNotFoundException exception) {
+
+            try {
+                // Temporary solution: Check settled bet status using KV search.
+                // TODO: Replace with a more robust mechanism in the future. (Discussed with Jeff, 18 Jun 2025)
+                vendorService.checkSettledBetStatus(refundDto.getPlayerId(), refundDto.getVendorBetId());
+
+            } catch (BetNotFoundException e) {
+                commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
+                httpService.logError(httpRequestLog, exception);
+
+            } catch (BetResultIdempotentViolationException e) {
+                commonVo = vendorService.mapIdempotentSuccess(e.getBalance(), gameSession, httpRequestLog);
+                httpService.logError(httpRequestLog, exception);
+            }
+
             commonVo.setStatusCode(StatusCode.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, exception);
 
