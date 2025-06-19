@@ -101,17 +101,29 @@ public class ResultDto extends CommonDto implements SportBetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        try {
+            return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        } catch (Exception e) {
+            return System.currentTimeMillis();
+        }
     }
 
     @Override
     public Long getResultTime() {
-        return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        try {
+            return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        } catch (Exception e) {
+            return System.currentTimeMillis();
+        }
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        try {
+            return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        } catch (Exception e) {
+            return System.currentTimeMillis();
+        }
     }
 
     @Override

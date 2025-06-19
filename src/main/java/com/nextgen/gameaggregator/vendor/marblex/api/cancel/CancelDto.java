@@ -59,6 +59,10 @@ public class CancelDto extends CommonDto implements SportUnsettleData {
 
     @Override
     public Long getTimestamp() {
-        return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        try {
+            return DateTimeConverter.convertToTimestamp(this.transactionTime, DateTimeConverter.ISO_8601);
+        } catch (Exception e) {
+            return System.currentTimeMillis();
+        }
     }
 }
