@@ -119,6 +119,12 @@ public class CreditAction {
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            httpService.logError(httpRequestLog, gameNotSupportedException);
+
+            statusVo.setCode(ResponseCodes.INVALID_GAME_ID);
+            statusVo.setMessage(ResponseCodes.INVALID_GAME_MSG);
+
         } catch (InvalidCredentialsException e) {
             httpService.logError(httpRequestLog, e);
 
@@ -127,7 +133,6 @@ public class CreditAction {
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
-                 GameNotSupportedException |
                  CurrencyNotSupportedException |
                  BetNotFoundException |
                  InvalidSignatureException |

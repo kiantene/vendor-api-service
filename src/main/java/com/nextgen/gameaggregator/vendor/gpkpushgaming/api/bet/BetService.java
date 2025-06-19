@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -22,7 +21,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 @Service
-@Slf4j
 public class BetService {
 
     private final GameSessionService gameSessionService;
@@ -69,11 +67,11 @@ public class BetService {
             this.doVerification(betDto, gameSession);
 
             //pushgaming
-            if (betDto.getFinished() == null) {
+            if (betDto.getCode().equals(BetType.POINTIN)) {
                 //BET
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                 balance = betEvent.getLastBalance();
-            } else if (betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)) {
+            } else {
                 //SETTLE
                 ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);

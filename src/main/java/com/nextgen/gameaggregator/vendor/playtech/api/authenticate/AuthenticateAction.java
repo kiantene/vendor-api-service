@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
@@ -50,7 +49,6 @@ public class AuthenticateAction {
     @PostMapping(path = EndPoints.AUTH_PATH)
     public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         AuthenticateVo authenticateVo = new AuthenticateVo();
         CommonDto commonDto = new CommonDto();
         try {
@@ -63,7 +61,7 @@ public class AuthenticateAction {
             // Validate DTO.
             ValidationUtils.validateRequest(commonDto);
 
-            String removedPrefix = vendorService.removePrefix(commonDto.getExternalToken(), removePrefix);
+            String removedPrefix = vendorService.getExtractToken(commonDto.getExternalToken());
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(removedPrefix);
 

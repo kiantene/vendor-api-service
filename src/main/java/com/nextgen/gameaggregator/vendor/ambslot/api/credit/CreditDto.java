@@ -132,7 +132,7 @@ public class CreditDto implements BetResultData {
     public Integer getIsFreespin() {
         int status = 0;
 
-        if(this.isFreespin.equals(true)){
+        if (this.isFreespin.equals(true)) {
             status = 1;
         }
 
@@ -142,5 +142,10 @@ public class CreditDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public boolean getShouldSettleByBet() {
+        return true;
     }
 }

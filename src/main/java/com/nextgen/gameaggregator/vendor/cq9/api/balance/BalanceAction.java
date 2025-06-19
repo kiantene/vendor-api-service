@@ -99,6 +99,7 @@ public class BalanceAction {
 
             commonVo.setBalance(BigDecimal.ZERO);
             responseVo.setData(commonVo);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException | InvalidPlayerException |
                  InvalidVendorLineException playerNotFoundException) { // any other exception encountered

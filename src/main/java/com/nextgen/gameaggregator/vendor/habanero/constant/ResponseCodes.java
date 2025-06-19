@@ -13,7 +13,7 @@ public enum ResponseCodes {
     AUTHENTICATE_ERROR(false, true, null, null, null, "Authentication failed."),
     TRANSFER_ERROR(false, true, null, null, null, "Invalid transfer."),
     INSUFFICIENT_ERROR(false, null, true, null, null, "Invalid transfer."),
-    RETRY_ERROR(false, null, null, true, null, null);
+    RETRY_ERROR(false, null, null, null, null, null);
 
 
     public final Boolean success;
