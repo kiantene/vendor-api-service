@@ -228,8 +228,9 @@ public class SportRefundProcessor {
         try {
             sportSettledBet = sportSettledBetService.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
 
-            //check is idempotent when externalTransactionId is matched
-            if (sportSettledBet.getExternalTransactionId().equals(walletRequest.getExternalTransactionId())) {
+            //check is idempotent when externalTransactionId is matched and bet status is REFUNDED
+            if (Objects.equals(sportSettledBet.getExternalTransactionId(), walletRequest.getExternalTransactionId())
+                    && Objects.equals(sportSettledBet.getStatus(), BetStatus.REFUNDED.code)) {
                 if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                     throw new BetResultIdempotentViolationException("Process refund idempotent: " + walletRequest.getVendorPlayerUsername() + '_' + walletRequest.getExternalTransactionId());
                 } else {
