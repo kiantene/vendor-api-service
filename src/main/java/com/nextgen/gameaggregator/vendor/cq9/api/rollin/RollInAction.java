@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollin;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -17,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,33 +41,36 @@ public class RollInAction {
     private final VendorLineService vendorLineService;
     private final OperatorWalletService operatorWalletService;
     private final WalletTransactionService walletTransactionService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
+    @Autowired
     public RollInAction(HttpService httpService,
                         VendorLineService vendorLineService,
                         WalletRequestService walletRequestService,
                         OperatorWalletService operatorWalletService,
-                        WalletTransactionService walletTransactionService) {
+                        WalletTransactionService walletTransactionService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
         this.vendorLineService = vendorLineService;
         this.walletTransactionService = walletTransactionService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     private void dataMapper(WalletRequest walletRequest, RollInDto dto) throws InvalidPlayerException, BetNotAllowedException, InternalServerException {
 
         // TODO: check updateByVendorUsername should verify agent credential status for credit?
-        walletRequestService.updateByVendorUsername(walletRequest, dto.getVendorPlayerUsername());
+        walletRequestService.updateByVendorUsername(walletRequest, dto.getAccount());
         walletRequestService.updateByVendorGameCode(walletRequest, dto.getGamecode(), false);
         walletRequestService.updateByCurrencyId(walletRequest, walletRequest.getCurrencyId());
 
         walletRequest.setExternalTransactionId(dto.getMtcode());
-        walletRequest.setRoundId(dto.getRoundid());
+        walletRequest.setRoundId(dto.getRoundId());
         walletRequest.setTimestamp(dto.getTimestamp());
-        walletRequest.setVendorBetId(dto.getRoundid());
+        walletRequest.setVendorBetId(dto.getMtcode());
         walletRequest.setTransferAmount(dto.getAmount());
-        walletRequest.setVendorBetId(dto.getRoundid());
         walletRequest.setBetAmount(dto.getBet());
         walletRequest.setWinAmount(dto.getWin());
         walletRequest.setEffectiveTurnover(dto.getEffectiveTurnover());
@@ -92,6 +97,7 @@ public class RollInAction {
             walletRequest.setToken(walletRequest.getTraceId());
         } else {
             walletRequest.setToken(walletTransaction.getToken());
+            walletRequest.setBetId(walletTransaction.getBetId());
         }
 
     }
@@ -109,19 +115,26 @@ public class RollInAction {
         responseVo.setStatus(statusVo);
 
         String errorMessage = "";
+        boolean isRequestExists = false;
+        RollInDto rollInDto = new RollInDto();
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            RollInDto rollInDto = HttpService.convertQueryStringToDtoUrlDecode(body, RollInDto.class);
+            rollInDto = HttpService.convertQueryStringToDtoUrlDecode(body, RollInDto.class);
 
             // 1. Validate request parameters from vendor
             this.doValidation(rollInDto, wToken);
 
-            // add request idempotent check
-            httpService.isDuplicateRequest(rollInDto);
+            // 2. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(rollInDto, rollInDto.getAccount()) == null) {
+                requestIdempotentLogService.create(rollInDto, rollInDto.getAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             this.dataMapper(walletRequest, rollInDto);
 
@@ -136,9 +149,9 @@ public class RollInAction {
             commonVo.setCurrency(walletRequest.getCurrencyCode());
             responseVo.setData(commonVo);
 
-        } catch (DuplicateRequestException duplicateRequestException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             statusVo.setCode(ResponseCodes.SUCCESS); // vendor requested to return success
-            errorMessage = duplicateRequestException.toString();
+            errorMessage = betResultIdempotentViolationException.toString();
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -162,6 +175,10 @@ public class RollInAction {
             errorMessage = exception.toString();
 
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(rollInDto, rollInDto.getAccount());
+            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             if (StringUtils.hasText(errorMessage)) {
@@ -203,4 +220,3 @@ public class RollInAction {
         }
     }
 }
-

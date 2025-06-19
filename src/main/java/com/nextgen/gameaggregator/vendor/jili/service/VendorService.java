@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.time.ZoneId;
+import java.util.Objects;
 
 @Service
 @Getter
@@ -19,6 +20,7 @@ public class VendorService extends BaseVendorService {
 
     private String agentId;
     private String agentKey;
+    private Integer operatorTiming;
 
     public static String urlQueryStringGenerator(MultiValueMap<String, String> params) {
 
@@ -48,5 +50,10 @@ public class VendorService extends BaseVendorService {
 
     public String keyGenerator(MultiValueMap<String, String> params) {
         return randomStringGenerator(Formats.RANDOM_STRING_LENGTH) + md5Generator(urlQueryStringGenerator(params) + gKeyGenerator()) + randomStringGenerator(Formats.RANDOM_STRING_LENGTH);
+    }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        return Objects.requireNonNullElse(this.operatorTiming, 5000);
     }
 }

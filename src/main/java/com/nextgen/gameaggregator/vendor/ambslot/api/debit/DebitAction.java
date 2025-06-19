@@ -41,18 +41,22 @@ public class DebitAction {
 
     private final ValidationService validationService;
 
+    private final VendorService vendorService;
+
+
     @Autowired
     public DebitAction(HttpService httpService,
                        VendorLineService vendorLineService,
                        GameSessionService gameSessionService,
                        WalletService walletService,
-                       ValidationService validationService){
+                       ValidationService validationService,
+                       VendorService vendorService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
-
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
+        this.vendorService = vendorService;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -80,6 +84,7 @@ public class DebitAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitDto.getUsername());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, signature, body);
@@ -127,12 +132,17 @@ public class DebitAction {
                  InvalidPlayerException |
                  AuthenticationException |
                  CurrencyNotSupportedException |
-                 InvalidSignatureException |
-                 GameNotSupportedException e) {
+                 InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
+
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            httpService.logError(httpRequestLog, gameNotSupportedException);
+
+            statusVo.setCode(ResponseCodes.INVALID_GAME_ID);
+            statusVo.setMessage(ResponseCodes.INVALID_GAME_MSG);
 
         } catch (InvalidAgentApiCredentialException |
                  VendorCurrencyNotSupportException |
