@@ -13,14 +13,12 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
 public class GeneralAction {
 
     private final HttpService httpService;
