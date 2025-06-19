@@ -48,18 +48,18 @@ public class BetService {
         this.httpService = httpService;
     }
 
-    public CommonVo bet(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
+    public CommonVo bet(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Integer roomMode = null;
-        BetDto betDto = null;
+        BetDto betDto;
         String errorMessage = "";
         ResponseObjectDto d = new ResponseObjectDto();
 
         try {
             // Convert original request body into dto
-            betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
+            betDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, BetDto.class);
 
             roomMode = betDto.getRoomMode();
 
@@ -129,7 +129,7 @@ public class BetService {
             httpService.logError(httpRequestLog, duplicateRequestException);
             errorMessage = duplicateRequestException.toString();
 
-        }   catch (InvalidRequestException invalidRequestException) {
+        }  catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();

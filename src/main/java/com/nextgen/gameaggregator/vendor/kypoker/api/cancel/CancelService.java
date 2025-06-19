@@ -57,14 +57,14 @@ public class CancelService {
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    public CommonVo cancel(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp)
+    public CommonVo cancel(String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp)
             throws AuthenticationException
     {
         // Construct VO
         CommonVo vo = new CommonVo();
-        CancelDto cancelDto = null;
-        WalletTransaction walletTransaction = null;
-        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        CancelDto cancelDto;
+        WalletTransaction walletTransaction;
+        WalletRequest walletRequest;
         ResponseObjectDto d = new ResponseObjectDto();
 
         try {

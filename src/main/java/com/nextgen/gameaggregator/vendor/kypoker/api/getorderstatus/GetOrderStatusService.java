@@ -26,6 +26,8 @@ public class GetOrderStatusService {
     private final VendorPlayerService vendorPlayerService;
     private final ValidationService validationService;
     private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+
 
     public GetOrderStatusService(WalletRequestService walletRequestService,
                                  UnsettledBetService unsettledBetService,
@@ -34,7 +36,8 @@ public class GetOrderStatusService {
                                  WalletTransactionService walletTransactionService,
                                  VendorPlayerService vendorPlayerService,
                                  ValidationService validationService,
-                                 GameSessionService gameSessionService) {
+                                 GameSessionService gameSessionService,
+                                 HttpService httpService) {
 
         this.walletRequestService = walletRequestService;
         this.unsettledBetService = unsettledBetService;
@@ -44,9 +47,10 @@ public class GetOrderStatusService {
         this.vendorPlayerService = vendorPlayerService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
+        this.httpService = httpService;
     }
 
-    public CommonVo getOrderStatus(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
+    public CommonVo getOrderStatus(String actionDto,HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
@@ -64,17 +68,17 @@ public class GetOrderStatusService {
 
             GetOrderStatusAgentDto getOrderStatusAgentDto = HttpService.convertQueryStringToDtoUrlDecode(actionDto, GetOrderStatusAgentDto.class);
 
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(getOrderStatusDto.getAccount()); //token check
+
+            this.doVerification(getOrderStatusDto, gameSession);
+
             externalTransactionId = getOrderStatusDto.getOrderId();
 
             vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(getOrderStatusDto.getAccount());
 
-            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(getOrderStatusDto.getAccount()); //token check
-
             vendorId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_ID,getOrderStatusAgentDto.getAgent());
 
             unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, getOrderStatusDto.getOrderId());
-
-            this.doVerification(getOrderStatusDto, gameSession);
 
             d.setCode(ResponseCodes.STATUS_PROCESSING);
 
@@ -93,9 +97,14 @@ public class GetOrderStatusService {
                 }
             }
 
+        } catch (InvalidRequestException invalidRequestException) {
+            d.setCode(ResponseCodes.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (Exception e){
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             d.setStatus(ResponseCodes.STATUS_FAILED);
+            httpService.logError(httpRequestLog, e);
 
         }finally {
             vo.setM(EndPoints.API_ENDPOINT);

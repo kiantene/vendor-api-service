@@ -81,6 +81,10 @@ public class GeneralAction {
 
             String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
+            if(decryptedBody == null){
+                throw new InvalidRequestException();
+            }
+
             httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
 
             String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
@@ -127,7 +131,7 @@ public class GeneralAction {
     }
 
     private void doVerification(CommonDto dto,String encryptedMd5)
-            throws InvalidTokenException, InvalidRequestException {
+            throws InvalidRequestException {
         ValidationUtils.isEquals(dto.getKey(), encryptedMd5);
     }
 
@@ -138,15 +142,15 @@ public class GeneralAction {
 
 
         if (Actions.BALANCE.equals(actionDto.getS())) {
-            vo = balanceService.balance(body, traceId, httpRequestLog, decryptedString);
+            vo = balanceService.balance(traceId, httpRequestLog, decryptedString);
         } else if (Actions.BET.equals(actionDto.getS())) {
-            vo = betService.bet(body, traceId, httpRequestLog, decryptedString, timeStamp);
+            vo = betService.bet(traceId, httpRequestLog, decryptedString, timeStamp);
         } else if (Actions.SETTLE.equals(actionDto.getS())) {
-            vo = settleService.settle(body, traceId, httpRequestLog, decryptedString, timeStamp);
+            vo = settleService.settle(traceId, httpRequestLog, decryptedString, timeStamp);
         } else if (Actions.CANCEL.equals(actionDto.getS())) {
-            vo = cancelService.cancel(body, traceId, httpRequestLog, decryptedString, timeStamp);
+            vo = cancelService.cancel(traceId, httpRequestLog, decryptedString, timeStamp);
         }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
-            vo = getOrderStatusService.getOrderStatus(body, traceId, httpRequestLog, decryptedString, timeStamp);
+            vo = getOrderStatusService.getOrderStatus(body, httpRequestLog, decryptedString);
         }  else {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setD(d);

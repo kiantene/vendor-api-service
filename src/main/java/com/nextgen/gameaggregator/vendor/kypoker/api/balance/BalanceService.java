@@ -32,7 +32,7 @@ public class BalanceService {
         this.httpService = httpService;
     }
 
-    public CommonVo balance(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
+    public CommonVo balance(String traceId, HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
         ResponseObjectDto d = new ResponseObjectDto();

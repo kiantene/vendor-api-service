@@ -51,14 +51,14 @@ public class SettleService {
         this.httpService = httpService;
         this.walletTransactionService = walletTransactionService;
     }
-    public CommonVo settle(String actionDto, String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
+    public CommonVo settle(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
         // Construct VO
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        WalletTransaction walletTransaction = null;
+        WalletTransaction walletTransaction;
         Integer roomMode = 0;
-        SettleDto settleDto = null;
+        SettleDto settleDto;
         String errorMessage = "";
         ResponseObjectDto d = new ResponseObjectDto();
 
