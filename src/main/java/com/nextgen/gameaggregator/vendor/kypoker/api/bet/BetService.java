@@ -59,7 +59,7 @@ public class BetService {
 
         try {
             // Convert original request body into dto
-            betDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, BetDto.class);
+            betDto = HttpService.convertQueryStringToDto(decryptedParam, BetDto.class);
 
             roomMode = betDto.getRoomMode();
 
