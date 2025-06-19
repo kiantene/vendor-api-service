@@ -68,7 +68,7 @@ public class GeneralAction {
             String body = request.getQueryString();
 
             // Convert original request body into dto
-            CommonDto commonDto = HttpService.convertQueryStringToDto(body, CommonDto.class);
+            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
 
             // Validate request parameters (Non-database related)
             ValidationUtils.validateRequest(commonDto);

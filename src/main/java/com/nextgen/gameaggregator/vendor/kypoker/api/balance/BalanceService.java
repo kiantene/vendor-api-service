@@ -39,7 +39,7 @@ public class BalanceService {
 
         try {
             // Convert original request body into dto
-            BalanceDto balanceDto = HttpService.convertQueryStringToDto(decryptedParam, BalanceDto.class);
+            BalanceDto balanceDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, BalanceDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto, traceId);

@@ -69,7 +69,7 @@ public class CancelService {
 
         try {
             // Convert original request body into dto
-            cancelDto = HttpService.convertQueryStringToDto(decryptedParam, CancelDto.class);
+            cancelDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, CancelDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelDto);
