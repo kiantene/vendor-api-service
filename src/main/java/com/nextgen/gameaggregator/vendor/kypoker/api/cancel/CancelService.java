@@ -90,7 +90,6 @@ public class CancelService {
             } catch (BetNotFoundException e) {
 
                 walletRequest = WalletRequestService.init(httpRequestLog);
-                String externalTransactionId = cancelDto.getOrderId();
                 walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(cancelDto.getGameNo(), cancelDto.getAccount());
                 this.dataMapper(walletRequest,cancelDto,gameSession);
 
@@ -101,7 +100,7 @@ public class CancelService {
                     throw new BetResultIdempotentViolationException();
 
                 } else {
-                    walletRequest = operatorWalletService.betCredit(walletRequest);
+                    operatorWalletService.betCredit(walletRequest);
 
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);

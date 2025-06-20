@@ -9,9 +9,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Actions;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,9 +27,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
-@Slf4j
-@Getter
-@Setter
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
     private WalletService walletService;
