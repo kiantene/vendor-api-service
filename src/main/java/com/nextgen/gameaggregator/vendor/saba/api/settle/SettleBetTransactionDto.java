@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -19,7 +18,6 @@ public class SettleBetTransactionDto implements SportBetResultData {
     private Long txId;
     private String updateTime;
     @JsonProperty("winlostDate")
-    @NotNull
     private String winLostDate;
     private String status;
     private BigDecimal payout;
@@ -81,19 +79,42 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
+        Long millisSettlementTime = null;
+        Long millisWinLostDate = null;
 
-        if (this.settlementTime == null) {
-            return millisWinLostDate;
+        // Try converting settlementTime
+        if (this.settlementTime != null) {
+            try {
+                millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(
+                        this.settlementTime,
+                        DateTime.PATTERN_SETTLEMENT_TIME,
+                        DateTime.ZONE
+                );
+            } catch (Exception ignored) {
+                // Leave as null if format error
+            }
         }
 
-        try {
-            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
-            //compare and get the Later Time
-            return Math.max(millisWinLostDate, millisSettlementTime);
-        } catch (Exception e) {
-            //if any error in converting，return milliswinlostDate
-            return millisWinLostDate;
+        // Try converting winLostDate
+        if (this.winLostDate != null) {
+            try {
+                millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(
+                        this.winLostDate,
+                        DateTime.PATTERN_WIN_LOST_DATE,
+                        DateTime.ZONE
+                );
+            } catch (Exception ignored) {
+                // Leave as null if format error
+            }
+        }
+
+        // Decision logic
+        if (millisSettlementTime != null && millisWinLostDate != null) {
+            return Math.max(millisSettlementTime, millisWinLostDate); // both valid → return later
+
+        } else {
+            // only winlostdate missing and both missing
+            return millisSettlementTime != null ? millisSettlementTime : System.currentTimeMillis();
         }
     }
 
