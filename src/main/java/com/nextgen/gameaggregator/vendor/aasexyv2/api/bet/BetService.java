@@ -111,6 +111,7 @@ public class BetService {
             vo.setResponseCodes(ResponseCodes.INVALID_TOKEN);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
+            processFailed = true;
             vo.setResponseCodes(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
         } catch (GameNotSupportedException e) {
