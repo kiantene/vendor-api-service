@@ -89,7 +89,14 @@ public class GetOrderStatusService {
 
             } catch (BetNotFoundException ex) {
                 {
-                    walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
+                    WalletTransaction walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
+
+                    if (walletTransaction == null){
+                        d.setCode(ResponseCodes.INTERNAL_ERROR);
+                        d.setStatus(ResponseCodes.STATUS_FAILED);
+                        httpService.logError(httpRequestLog, e);
+                    }
+
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);
 
@@ -136,5 +143,4 @@ public class GetOrderStatusService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidRequestException::new);
 
     }
-
 }

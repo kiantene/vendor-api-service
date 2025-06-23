@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.settle;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -30,6 +31,7 @@ public class SettleService {
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
     private final WalletTransactionService walletTransactionService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
 
     public SettleService(
@@ -40,7 +42,8 @@ public class SettleService {
             OperatorWalletService operatorWalletService,
             WalletRequestService walletRequestService,
             HttpService httpService,
-            WalletTransactionService walletTransactionService) {
+            WalletTransactionService walletTransactionService,
+            RequestIdempotentLogService requestIdempotentLogService) {
 
         this.walletService = walletService;
         this.validationService = validationService;
@@ -50,6 +53,7 @@ public class SettleService {
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
         this.walletTransactionService = walletTransactionService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
     public CommonVo settle(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
@@ -58,9 +62,10 @@ public class SettleService {
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         WalletTransaction walletTransaction;
         Integer roomMode = 0;
-        SettleDto settleDto;
+        SettleDto settleDto = null;
         String errorMessage = "";
         ResponseObjectDto d = new ResponseObjectDto();
+        Boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
@@ -68,6 +73,15 @@ public class SettleService {
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getAccount()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getAccount());
+
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
@@ -80,27 +94,38 @@ public class SettleService {
             // Check game code to use normal flow or credit debit
             roomMode = settleDto.getRoomMode();
 
-            //Normal Flow
-            if(settleDto.getRoomMode() == RoomCode.CODE2 || settleDto.getRoomMode() == RoomCode.CODE3) {
-                ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
-                BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
-                d.setMoney(balance);
-            }
-            //Credit Debit flow
-            else if(settleDto.getRoomMode() == RoomCode.CODE1 || settleDto.getRoomMode() == RoomCode.CODE4){
-                walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(settleDto.getGameNo(), settleDto.getAccount());
+            switch (settleDto.getRoomMode()) {
 
-                if(walletTransaction !=null ) {
-                    WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-                    vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
-                    walletRequest = operatorWalletService.betCredit(currentWalletRequest);
-                    d.setMoney(walletRequest.getBalanceAfter());
+                // Bet action using normal flow
+                case RoomCode.CODE2:
+                case RoomCode.CODE3:
+                    ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0)
+                            ? ResultType.BET_WIN
+                            : ResultType.BET_LOSE;
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+                    d.setMoney(balance);
+                    break;
 
-                }
-                else{
-                    throw new BetNotFoundException() ;
+                // Bet action using credit debit flow
+                case RoomCode.CODE1:
+                case RoomCode.CODE4:
+                    walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(
+                            settleDto.getGameNo(), settleDto.getAccount());
 
-                }
+                    if (walletTransaction != null) {
+                        WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                        vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+                        walletRequest = operatorWalletService.betCredit(currentWalletRequest);
+                        d.setMoney(walletRequest.getBalanceAfter());
+
+                    } else {
+                        throw new BetNotFoundException();
+
+                    }
+                    break;
+
+                default:
+                    throw new InvalidRequestException();
             }
 
             d.setCode(ResponseCodes.SUCCESS);
@@ -136,6 +161,11 @@ public class SettleService {
             errorMessage = e.toString();
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(settleDto, settleDto.getAccount());
+            }
+
             vo.setS(ResponseCodes.RETURN_BALANCE);
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setD(d);

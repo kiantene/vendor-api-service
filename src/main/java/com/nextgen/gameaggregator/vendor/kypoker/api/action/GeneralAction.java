@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.PATH)
 public class GeneralAction {
 
-    @Autowired
     private final HttpService httpService;
     private final BalanceService balanceService;
     private final BetService betService;
@@ -75,18 +73,20 @@ public class GeneralAction {
 
             Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.AGENT_ID, commonDto.getAgent());
 
+            //Assign variables used in blocks
             String aesKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
-
             String md5Key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.MD5_KEY);
-
             String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
+            //Check for decryption error
             if(decryptedBody == null){
                 throw new InvalidRequestException();
             }
 
+            //Adding logging readability on open serach
             httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
 
+            //Md5 Hashing
             String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
 
             doVerification(commonDto,encryptedMd5);
@@ -103,29 +103,35 @@ public class GeneralAction {
 
             vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
 
+            //Catch stray error from action services
             if (vo==null){
                 throw new InvalidRequestException();
 
             }
 
         } catch (InvalidRequestException invalidRequestException) {
+            vo = new CommonVo();
             d.setCode(ResponseCodes.INVALID_REQUEST);
             vo.setD(d);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
+            vo = new CommonVo();
             d.setCode(ResponseCodes.INVALID_CREDENTIAL);
             vo.setD(d);
 
         } catch(InvalidDecryptionException invalidDecryptionException){
+            vo = new CommonVo();
             d.setCode(ResponseCodes.INVALID_DECRYPTION);
             vo.setD(d);
 
         } catch (Exception e) {
+            vo = new CommonVo();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
         }
         finally {
             vo.setM(EndPoints.API_ENDPOINT);
+
         }
         return vo;
     }
@@ -138,22 +144,29 @@ public class GeneralAction {
     private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
             throws AuthenticationException, InvalidRequestException {
         CommonVo vo = new CommonVo();
-        ResponseObjectDto d = new ResponseObjectDto();
 
+        switch (actionDto.getS()) {
 
-        if (Actions.BALANCE.equals(actionDto.getS())) {
-            vo = balanceService.balance(traceId, httpRequestLog, decryptedString);
-        } else if (Actions.BET.equals(actionDto.getS())) {
-            vo = betService.bet(traceId, httpRequestLog, decryptedString, timeStamp);
-        } else if (Actions.SETTLE.equals(actionDto.getS())) {
-            vo = settleService.settle(traceId, httpRequestLog, decryptedString, timeStamp);
-        } else if (Actions.CANCEL.equals(actionDto.getS())) {
-            vo = cancelService.cancel(traceId, httpRequestLog, decryptedString, timeStamp);
-        }else if (Actions.GET_ORDER_STATUS.equals(actionDto.getS())) {
-            vo = getOrderStatusService.getOrderStatus(body, httpRequestLog, decryptedString);
-        }  else {
-            d.setCode(ResponseCodes.INVALID_REQUEST);
-            vo.setD(d);
+            case Actions.BALANCE:
+                vo = balanceService.balance(traceId, httpRequestLog, decryptedString);
+                break;
+            case Actions.BET:
+                vo = betService.bet(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.SETTLE:
+                vo = settleService.settle(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.CANCEL:
+                vo = cancelService.cancel(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.GET_ORDER_STATUS:
+                vo = getOrderStatusService.getOrderStatus(body, httpRequestLog, decryptedString);
+                break;
+            default:
+                ResponseObjectDto d = new ResponseObjectDto();
+                d.setCode(ResponseCodes.INVALID_REQUEST);
+                vo.setD(d);
+                break;
         }
         return vo;
     }

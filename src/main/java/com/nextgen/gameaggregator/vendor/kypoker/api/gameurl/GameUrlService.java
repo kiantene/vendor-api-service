@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
-import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.Actions;
@@ -28,8 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
-
-    private WalletService walletService;
 
     public GameUrlService() {
         super(GameUrlVo.class);

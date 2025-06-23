@@ -46,6 +46,7 @@ public class CancelService {
             WalletRequestService walletRequestService,
             OperatorWalletService operatorWalletService,
             RequestIdempotentLogService requestIdempotentLogService) {
+
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -62,14 +63,24 @@ public class CancelService {
     {
         // Construct VO
         CommonVo vo = new CommonVo();
-        CancelDto cancelDto;
+        CancelDto cancelDto = null;
         WalletTransaction walletTransaction;
         WalletRequest walletRequest;
         ResponseObjectDto d = new ResponseObjectDto();
+        Boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
             cancelDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, CancelDto.class);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
+                requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
+
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelDto);
@@ -101,9 +112,6 @@ public class CancelService {
 
                 } else {
                     operatorWalletService.betCredit(walletRequest);
-
-                    d.setCode(ResponseCodes.SUCCESS);
-                    d.setStatus(ResponseCodes.STATUS_SUCCESS);
                     vo.setM(EndPoints.API_ENDPOINT);
                     vo.setS(ResponseCodes.CANCEL);
                     vo.setD(d);
@@ -130,10 +138,15 @@ public class CancelService {
             httpService.logError(httpRequestLog, e);
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelDto, cancelDto.getAccount());
+            }
+
             vo.setM(EndPoints.API_ENDPOINT);
-            httpService.end(httpRequestLog, vo);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
+            httpService.end(httpRequestLog, vo);
 
         }
         return vo;

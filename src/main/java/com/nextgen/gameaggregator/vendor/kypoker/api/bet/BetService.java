@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -30,15 +31,18 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final HttpService httpService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(
-                      WalletService walletService,
-                      ValidationService validationService,
-                      GameSessionService gameSessionService,
-                      VendorService vendorService,
-                      OperatorWalletService operatorWalletService,
-                      WalletRequestService walletRequestService,
-                      HttpService httpService) {
+            WalletService walletService,
+            ValidationService validationService,
+            GameSessionService gameSessionService,
+            VendorService vendorService,
+            OperatorWalletService operatorWalletService,
+            WalletRequestService walletRequestService,
+            HttpService httpService, 
+            RequestIdempotentLogService requestIdempotentLogService) {
+        
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -46,6 +50,7 @@ public class BetService {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.httpService = httpService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo bet(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
@@ -53,9 +58,10 @@ public class BetService {
         CommonVo vo = new CommonVo();
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         Integer roomMode = null;
-        BetDto betDto;
+        BetDto betDto = null;
         String errorMessage = "";
         ResponseObjectDto d = new ResponseObjectDto();
+        boolean isRequestExists = false;
 
         try {
             // Convert original request body into dto
@@ -65,6 +71,15 @@ public class BetService {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
+
+            // request idempotent checking.
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getAccount());
+
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getAccount());
@@ -81,29 +96,36 @@ public class BetService {
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
 
-            // Normal flow
-            if(betDto.getRoomMode() == RoomCode.CODE2 || betDto.getRoomMode() == RoomCode.CODE3){
-                BigDecimal betAction = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService,httpRequestLog);
+            switch (betDto.getRoomMode()) {
 
-                d.setCode(ResponseCodes.SUCCESS);
-                d.setAccount(gameSession.getVendorPlayerUsername());
-                d.setMoney(betAction);
+                case RoomCode.CODE2:
+                case RoomCode.CODE3:
+                    // Normal flow
+                    BigDecimal betAction = walletService.processBetResult(
+                            traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
 
-            }
+                    d.setCode(ResponseCodes.SUCCESS);
+                    d.setAccount(gameSession.getVendorPlayerUsername());
+                    d.setMoney(betAction);
+                    break;
 
-            // Credit Debit flow
-            else if(betDto.getRoomMode() == RoomCode.CODE1 || betDto.getRoomMode() == RoomCode.CODE4){
+                case RoomCode.CODE1:
+                case RoomCode.CODE4:
+                    // Credit Debit flow
+                    walletRequest = WalletRequestService.init(httpRequestLog);
+                    WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
+                    vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
 
-                walletRequest = WalletRequestService.init(httpRequestLog);
-                WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-                vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
+                    walletRequest = operatorWalletService.betDebit(currentWalletRequest);
 
-                walletRequest = operatorWalletService.betDebit(currentWalletRequest);
+                    d.setCode(ResponseCodes.SUCCESS);
+                    d.setAccount(gameSession.getVendorPlayerUsername());
+                    d.setMoney(walletRequest.getBalanceAfter());
+                    d.setRoomMode(betDto.getRoomMode());
+                    break;
 
-                d.setCode(ResponseCodes.SUCCESS);
-                d.setAccount(gameSession.getVendorPlayerUsername());
-                d.setMoney(walletRequest.getBalanceAfter());
-                d.setRoomMode(betDto.getRoomMode());
+                default:
+                    throw new InvalidRequestException();
             }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -140,6 +162,11 @@ public class BetService {
             errorMessage = e.toString();
 
         }finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getAccount());
+            }
+            
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);

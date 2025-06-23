@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.kypoker.vo;
 
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
