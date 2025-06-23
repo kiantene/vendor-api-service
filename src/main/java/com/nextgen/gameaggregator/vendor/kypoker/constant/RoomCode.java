@@ -1,10 +1,26 @@
 package com.nextgen.gameaggregator.vendor.kypoker.constant;
 
-public class RoomCode {
-    public static final int CODE1 = 1;
-    public static final int CODE2 = 2;
-    public static final int CODE3 = 3;
-    public static final int CODE4 = 4;
+
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public enum RoomCode {
+
+    MATCHING(1),
+    BONUS(2),
+    SINGLE(3),
+    FISHING(4);
+
+    public final int code;
+
+
+    public static RoomCode fromCode(int code) {
+        for (RoomCode rc : values()) {
+            if (rc.code == code) return rc;
+        }
+        throw new IllegalArgumentException();
+    }
+
 
 
 }

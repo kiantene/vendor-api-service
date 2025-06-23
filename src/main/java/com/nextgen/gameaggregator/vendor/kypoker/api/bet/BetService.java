@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.RoomCode;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -17,7 +18,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
+import scala.Int;
 
 import java.math.BigDecimal;
 
@@ -96,10 +97,12 @@ public class BetService {
             // Vendor does not provide bet timestamp
             betDto.setTimeStamp(timeStamp);
 
-            switch (betDto.getRoomMode()) {
+            RoomCode roomCode = RoomCode.fromCode(betDto.getRoomMode());
 
-                case RoomCode.CODE2:
-                case RoomCode.CODE3:
+            switch (roomCode) {
+
+                case BONUS:
+                case SINGLE:
                     // Normal flow
                     BigDecimal betAction = walletService.processBetResult(
                             traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
@@ -109,8 +112,8 @@ public class BetService {
                     d.setMoney(betAction);
                     break;
 
-                case RoomCode.CODE1:
-                case RoomCode.CODE4:
+                case MATCHING:
+                case FISHING:
                     // Credit Debit flow
                     walletRequest = WalletRequestService.init(httpRequestLog);
                     WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
@@ -171,7 +174,7 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
-            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4) {
+            if (roomMode != null & (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code) ) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {

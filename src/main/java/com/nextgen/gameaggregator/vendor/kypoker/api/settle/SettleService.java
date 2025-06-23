@@ -94,11 +94,13 @@ public class SettleService {
             // Check game code to use normal flow or credit debit
             roomMode = settleDto.getRoomMode();
 
-            switch (settleDto.getRoomMode()) {
+            RoomCode roomCode = RoomCode.fromCode(settleDto.getRoomMode());
+
+            switch (roomCode) {
 
                 // Bet action using normal flow
-                case RoomCode.CODE2:
-                case RoomCode.CODE3:
+                case BONUS:
+                case SINGLE:
                     ResultType resultType = (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0)
                             ? ResultType.BET_WIN
                             : ResultType.BET_LOSE;
@@ -107,8 +109,8 @@ public class SettleService {
                     break;
 
                 // Bet action using credit debit flow
-                case RoomCode.CODE1:
-                case RoomCode.CODE4:
+                case MATCHING:
+                case FISHING:
                     walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(
                             settleDto.getGameNo(), settleDto.getAccount());
 
@@ -170,7 +172,7 @@ public class SettleService {
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setD(d);
 
-            if (roomMode == RoomCode.CODE1 || roomMode == RoomCode.CODE4){
+            if (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code){
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             }else {

@@ -88,7 +88,7 @@ public class GetOrderStatusService {
                 d.setStatus(ResponseCodes.STATUS_SUCCESS);
 
             } catch (BetNotFoundException ex) {
-                {
+
                     WalletTransaction walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
 
                     if (walletTransaction == null){
@@ -100,7 +100,6 @@ public class GetOrderStatusService {
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);
 
-                }
             }
 
         } catch (InvalidRequestException invalidRequestException) {
