@@ -18,7 +18,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
-import scala.Int;
 
 import java.math.BigDecimal;
 
@@ -174,7 +173,7 @@ public class BetService {
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
-            if (roomMode != null & (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code) ) {
+            if (roomMode != null && (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code) ) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {
