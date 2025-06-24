@@ -79,42 +79,24 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public Long getVendorSettleTime() {
-        Long millisSettlementTime = null;
-        Long millisWinLostDate = null;
+        try {
+            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(
+                    this.settlementTime,
+                    DateTime.PATTERN_SETTLEMENT_TIME,
+                    DateTime.ZONE
+            );
 
-        // Try converting settlementTime
-        if (this.settlementTime != null) {
-            try {
-                millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(
-                        this.settlementTime,
-                        DateTime.PATTERN_SETTLEMENT_TIME,
-                        DateTime.ZONE
-                );
-            } catch (Exception ignored) {
-                // Leave as null if format error
-            }
-        }
+            long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(
+                    this.winLostDate,
+                    DateTime.PATTERN_WIN_LOST_DATE,
+                    DateTime.ZONE
+            );
 
-        // Try converting winLostDate
-        if (this.winLostDate != null) {
-            try {
-                millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(
-                        this.winLostDate,
-                        DateTime.PATTERN_WIN_LOST_DATE,
-                        DateTime.ZONE
-                );
-            } catch (Exception ignored) {
-                // Leave as null if format error
-            }
-        }
+            return Math.max(millisSettlementTime, millisWinLostDate);
 
-        // Decision logic
-        if (millisSettlementTime != null && millisWinLostDate != null) {
-            return Math.max(millisSettlementTime, millisWinLostDate); // both valid → return later
-
-        } else {
-            // only winlost valid or both missing
-            return millisSettlementTime != null ? millisSettlementTime : System.currentTimeMillis();
+        } catch (Exception ex) {
+            //regardless any of above conditions is failed, will fallback to use system generated current time.
+            return System.currentTimeMillis();
         }
     }
 
