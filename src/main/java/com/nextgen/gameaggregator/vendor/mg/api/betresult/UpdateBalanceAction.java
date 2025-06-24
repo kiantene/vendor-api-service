@@ -173,7 +173,7 @@ public class UpdateBalanceAction {
 
     private ResultType determineResultType(UpdateBalanceDto dto) {
         // Completed True also will happen in Win Situation
-        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
+        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : dto.getCompleted() ? ResultType.END : ResultType.BET_LOSE;
     }
 
     private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message, VendorService vendorService) throws BetNotFoundException, BetResultIdempotentViolationException {
