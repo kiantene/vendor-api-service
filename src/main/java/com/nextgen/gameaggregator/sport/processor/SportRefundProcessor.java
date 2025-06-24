@@ -173,7 +173,7 @@ public class SportRefundProcessor {
     }
 
     private void sendToKafkaForSettledBet(SportSettledBet settledBet, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal fromVendorRate) {
-        BetHistory betHistory = settledBet.toBetHistory(BetStatus.REFUNDED.code, BetResultType.ADJUSTMENT.code);
+        BetHistory betHistory = settledBet.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code);
 
         BigDecimal newBetAmount = Optional.ofNullable(betHistory.getBetAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
         BigDecimal newWinAmount = Optional.ofNullable(betHistory.getWinAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
