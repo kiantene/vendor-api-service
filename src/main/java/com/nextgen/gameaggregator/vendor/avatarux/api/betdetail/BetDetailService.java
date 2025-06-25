@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.koolbet.api.betdetails;
+package com.nextgen.gameaggregator.vendor.avatarux.api.betdetail;
 
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
@@ -15,18 +15,15 @@ import java.util.Map;
 public class BetDetailService implements BetDetailUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials,
-                                                         IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
+    public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
 
         return new LinkedMultiValueMap<>();
     }
 
     @Override
-    public KoolbetBetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
-                                      IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
+    public AvatarUxBetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-
-        return new KoolbetBetDetailUrlVo();
+        return new AvatarUxBetDetailUrlVo();
     }
 }
