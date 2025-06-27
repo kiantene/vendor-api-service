@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static com.nextgen.gameaggregator.vendor.mg.constant.TxnType.DEBIT;
+
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class UpdateBalanceAction {
@@ -73,9 +75,22 @@ public class UpdateBalanceAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Get GameSession by vendor player username
-            gameSession = gameSessionService.verifyToken(dto.getExtOperatorToken());
-            // Switch game from lobby, update game code
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getExtOperatorToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
+            } catch (AuthenticationException e) {
+                if (dto.getTxnType() == DEBIT) {
+                    //DEBIT request token will not be regenerated.
+                    throw new AuthenticationException(e.getMessage());
+                } else {
+                    gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerId());
+                    gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
+                    gameSession.setToken(traceId);
+                    gameSession.setVendorToken(traceId);
+                }
+            }
+
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
