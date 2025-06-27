@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -21,6 +22,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,14 +45,16 @@ public class RollOutAction {
     private final VendorLineService vendorLineService;
     private final ValidationService validationService;
     private final OperatorWalletService operatorWalletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-
+    @Autowired
     public RollOutAction(HttpService httpService,
                          WalletRequestService walletRequestService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
                          ValidationService validationService,
-                         OperatorWalletServiceImpl operatorWalletService
+                         OperatorWalletServiceImpl operatorWalletService,
+                         RequestIdempotentLogService requestIdempotentLogService
     ) {
 
         this.httpService = httpService;
@@ -59,6 +63,7 @@ public class RollOutAction {
         this.vendorLineService = vendorLineService;
         this.validationService = validationService;
         this.operatorWalletService = operatorWalletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     private void dataMapper(WalletRequest walletRequest, RollOutDto dto, GameSession gameSession) {
@@ -66,11 +71,11 @@ public class RollOutAction {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(dto.getAccount());
         walletRequest.setExternalTransactionId(dto.getMtcode());
-        walletRequest.setRoundId(dto.getRoundid());
+        walletRequest.setRoundId(dto.getRoundId());
         walletRequest.setVendorGameCode(dto.getGamecode());
         walletRequest.setTimestamp(dto.getTimestamp());
         walletRequest.setToken(dto.getSession());
-        walletRequest.setVendorBetId(dto.getRoundid());
+        walletRequest.setVendorBetId(dto.getMtcode());
         walletRequest.setTransferAmount(dto.getAmount());
     }
 
@@ -87,26 +92,33 @@ public class RollOutAction {
         responseVo.setStatus(statusVo);
 
         String errorMessage = "";
+        boolean isRequestExists = false;
+        RollOutDto rollOutDto = new RollOutDto();
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            RollOutDto rollOutDto = HttpService.convertQueryStringToDtoUrlDecode(body, RollOutDto.class);
+            rollOutDto = HttpService.convertQueryStringToDtoUrlDecode(body, RollOutDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(rollOutDto, wToken);
 
-            // add request idempotent check
-            httpService.isDuplicateRequest(rollOutDto);
+            // 2. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(rollOutDto, rollOutDto.getAccount()) == null) {
+                requestIdempotentLogService.create(rollOutDto, rollOutDto.getAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
-            // 2. Verify session token
+            // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(rollOutDto.getSession());
 
             this.dataMapper(walletRequest, rollOutDto, gameSession);
 
-            // 3. Verify remaining parameters (Verify against database values)
+            // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(walletRequest, gameSession, wToken);
 
             walletRequest = operatorWalletService.betDebit(walletRequest);
@@ -116,9 +128,9 @@ public class RollOutAction {
             commonVo.setCurrency(walletRequest.getCurrencyCode());
             responseVo.setData(commonVo);
 
-        } catch (DuplicateRequestException duplicateRequestException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             statusVo.setCode(ResponseCodes.SUCCESS); // vendor requested to return success
-            errorMessage = duplicateRequestException.toString();
+            errorMessage = betResultIdempotentViolationException.toString();
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -151,6 +163,10 @@ public class RollOutAction {
             errorMessage = exception.toString();
 
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(rollOutDto, rollOutDto.getAccount());
+            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             if (StringUtils.hasText(errorMessage)) {

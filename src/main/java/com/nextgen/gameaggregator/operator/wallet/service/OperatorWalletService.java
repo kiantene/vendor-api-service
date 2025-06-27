@@ -8,9 +8,9 @@ public interface OperatorWalletService {
     String DEBIT = "debit";
     String CREDIT = "credit";
 
-    WalletRequest betDebit(WalletRequest walletRequest) throws InvalidRequestException, VendorCurrencyNotSupportException, BetNotAllowedException, InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException;
+    WalletRequest betDebit(WalletRequest walletRequest) throws InvalidRequestException, VendorCurrencyNotSupportException, BetNotAllowedException, InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException;
 
-    WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotAllowedException;
+    WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException;
 
     WalletRequest debitRefundByExternalTransactionId(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotFoundException, BetNotAllowedException;
 }

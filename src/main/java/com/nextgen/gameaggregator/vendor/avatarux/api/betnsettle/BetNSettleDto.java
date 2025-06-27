@@ -1,86 +1,91 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
+package com.nextgen.gameaggregator.vendor.avatarux.api.betnsettle;
+
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
-@Data
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RollOutDto implements BetResultData {
-    @NotBlank
-    @Size(min = 1, max = 36)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    private String account;
+public class BetNSettleDto implements BetResultData {
 
     @NotBlank
-    private String eventTime;
+    private String authorization;
 
     @NotBlank
-    @Size(min = 1, max = 36)
-    private String gamehall;
+    private String xServerAuthorization;
 
     @NotBlank
-    @Size(min = 1, max = 36)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    private String gamecode;
-
-    @NotBlank
-    @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    private String roundid;
-
-    @NotNull
-    @Positive
-    @Digits(integer = 12, fraction = 10)
-    private BigDecimal amount;
-
-    @NotBlank
-    @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
-    private String mtcode;
+    @Size(max = 255)
+    private String nativeId;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String session;
+    @Size(max = 255)
+    private String transactionId;
 
-    public Long getTimestamp() {
-        Instant instant = Instant.parse(this.getEventTime());
-        return instant.toEpochMilli();
-    }
+    @NotBlank
+    @Size(max = 255)
+    private String type;
+
+    @NotBlank
+    @Size(max = 255)
+    private String provider;
+
+    @NotNull
+    @Digits(integer = 20, fraction = 8)
+    private BigDecimal amount;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max = 255)
+    private String roundId;
+
+    @NotBlank
+    private String game;
+
+    private String campaignType;
 
     @Override
     public String getExternalTransactionId() {
-        return this.mtcode;
+        return this.transactionId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.mtcode;
+        return this.transactionId;
     }
 
     @Override
     public String getRoundId() {
-        return this.roundid;
+        return this.roundId;
     }
 
     @Override
     public String getGameId() {
-        return null;
+        return "";
     }
 
     @Override
     public BigDecimal getBetAmount() {
+        if (this.type.equals("withdraw")) {
+            return this.amount;
+        }
         return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
+        if (this.type.equals("deposit")) {
+            return this.amount;
+        }
         return null;
     }
 
@@ -96,7 +101,7 @@ public class RollOutDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -111,16 +116,22 @@ public class RollOutDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return null;
+        if ("freeBets".equals(this.campaignType)) {
+            return 1;
+        }
+        return 0;
     }
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        if (this.type.equals("deposit")) {
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
     }
 }
