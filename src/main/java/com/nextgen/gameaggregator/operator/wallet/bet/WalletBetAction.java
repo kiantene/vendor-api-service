@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -94,7 +95,7 @@ public class WalletBetAction {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .timeout(Duration.ofMillis(this.operatorTimeoutConfig(gameSession)))
                     .block();
 
             long endTime = System.currentTimeMillis();
@@ -190,4 +191,15 @@ public class WalletBetAction {
 
         return walletBetDto;
     }
+
+    private Integer operatorTimeoutConfig(GameSession gameSession) {
+        //ambs vendor operator timeout
+        Set<Integer> vendorsWithTwoPointFiveSecondTimeout = Set.of(38);
+
+        if (vendorsWithTwoPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+            return 2500;
+        }
+        return EndPoints.TIMEOUT;
+    }
+
 }
