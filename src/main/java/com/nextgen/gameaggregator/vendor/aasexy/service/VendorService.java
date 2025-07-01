@@ -4,6 +4,7 @@ import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingE
 import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.JsonNode;
 import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
 import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -196,5 +197,18 @@ public class VendorService extends BaseVendorService {
             balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
         } catch (Exception ignored) {}
         return balance;
+    }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //if in the end betData still have null/0 effectiveTurnover, will be using 0 as effectiveTurnover
+        if (effectiveTurnover == null) {
+            effectiveTurnover = BigDecimal.ZERO;
+        }
+
+        return effectiveTurnover;
     }
 }
