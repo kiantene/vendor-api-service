@@ -73,6 +73,10 @@ public class CancelService {
             // Convert original request body into dto
             cancelDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, CancelDto.class);
 
+            // 1. Validate request parameters from vendor (Non-database related)
+            this.doValidation(cancelDto);
+
+
             // request idempotent checking.
             if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
                 requestIdempotentLogService.create(cancelDto, cancelDto.getAccount());
@@ -81,9 +85,6 @@ public class CancelService {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-
-            // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(cancelDto);
 
             // 2. Verify session token
             GameSession gameSession;
@@ -139,7 +140,7 @@ public class CancelService {
 
         } finally {
 
-            if (!isRequestExists) {
+            if (!isRequestExists && cancelDto!=null) {
                 requestIdempotentLogService.delete(cancelDto, cancelDto.getAccount());
             }
 

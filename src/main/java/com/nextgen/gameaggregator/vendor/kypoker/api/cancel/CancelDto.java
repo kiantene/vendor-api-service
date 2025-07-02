@@ -15,7 +15,7 @@ public class CancelDto implements RollbackData, RequestIdempotency {
     private String s;
 
     @NotBlank
-    @Size(min = 1, max = 36)
+    @Size(min = 1, max = 20)
     private String account;
 
     @NotBlank

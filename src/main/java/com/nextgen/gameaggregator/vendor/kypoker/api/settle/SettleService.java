@@ -164,7 +164,7 @@ public class SettleService {
 
         } finally {
 
-            if (!isRequestExists) {
+            if (!isRequestExists && settleDto!=null) {
                 requestIdempotentLogService.delete(settleDto, settleDto.getAccount());
             }
 

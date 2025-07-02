@@ -62,6 +62,7 @@ public class BetService {
         String errorMessage = "";
         ResponseObjectDto d = new ResponseObjectDto();
         boolean isRequestExists = false;
+        String playerUserId = null;
 
         try {
             // Convert original request body into dto
@@ -165,7 +166,7 @@ public class BetService {
 
         }finally {
 
-            if (!isRequestExists) {
+            if (!isRequestExists && betDto!=null) {
                 requestIdempotentLogService.delete(betDto, betDto.getAccount());
             }
             
