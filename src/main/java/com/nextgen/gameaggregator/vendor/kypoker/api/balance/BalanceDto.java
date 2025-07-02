@@ -13,7 +13,7 @@ public class BalanceDto {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 3)
+    @Size(min = 1, max = 4)
     private String currency;
 
     @NotBlank
