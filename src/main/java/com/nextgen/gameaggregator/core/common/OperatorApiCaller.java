@@ -39,8 +39,8 @@ public class OperatorApiCaller {
     }
 
     public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object requestBody) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.put("operatorUrl", baseUrl + path);
+//        LogContext logContext = LogContextHolder.get();
+//        logContext.put("operatorUrl", baseUrl + path);
 
         WebClient.RequestBodySpec request = builder
                 .baseUrl(baseUrl)
@@ -63,7 +63,7 @@ public class OperatorApiCaller {
 
         try {
             long startTime = System.currentTimeMillis();
-            logContext.put("operatorStart", startTime);
+//            logContext.put("operatorStart", startTime);
 
             ClientBalanceResponse clientBalanceResponse = requestHeadersSpec
                     .retrieve()
@@ -74,8 +74,8 @@ public class OperatorApiCaller {
             ;
             long endTime = System.currentTimeMillis();
             long timeTaken = endTime - startTime;
-            logContext.put("operatorEnd", endTime);
-            logContext.put("operatorTimeTaken", timeTaken);
+//            logContext.put("operatorEnd", endTime);
+//            logContext.put("operatorTimeTaken", timeTaken);
 
             return clientBalanceResponse;
 
