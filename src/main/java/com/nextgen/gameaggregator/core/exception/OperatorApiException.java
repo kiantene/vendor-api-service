@@ -52,4 +52,12 @@ public class OperatorApiException extends RuntimeException {
     public String getUrl() {
         return url;
     }
+
+    public Throwable getRootCause() {
+        Throwable cause = this;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
 }

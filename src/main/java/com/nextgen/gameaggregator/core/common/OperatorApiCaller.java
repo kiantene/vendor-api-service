@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
@@ -8,13 +9,11 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -39,7 +38,7 @@ public class OperatorApiCaller {
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 
-    public <T> T post(String baseUrl, String path, Object requestBody, ParameterizedTypeReference<T> typeRef, Map<String, String> headers) {
+    public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object requestBody) {
         LogContext logContext = LogContextHolder.get();
         logContext.put("operatorUrl", baseUrl + path);
 
@@ -66,11 +65,11 @@ public class OperatorApiCaller {
             long startTime = System.currentTimeMillis();
             logContext.put("operatorStart", startTime);
 
-            T apiResponse = requestHeadersSpec
+            ClientBalanceResponse clientBalanceResponse = requestHeadersSpec
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
                     .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
-                    .bodyToMono(typeRef)
+                    .bodyToMono(ClientBalanceResponse.class)
                     .block()
             ;
             long endTime = System.currentTimeMillis();
@@ -78,7 +77,7 @@ public class OperatorApiCaller {
             logContext.put("operatorEnd", endTime);
             logContext.put("operatorTimeTaken", timeTaken);
 
-            return apiResponse;
+            return clientBalanceResponse;
 
         } catch (WebClientRequestException ex) {
             throw new OperatorNetworkException(ex.getMessage(), url);

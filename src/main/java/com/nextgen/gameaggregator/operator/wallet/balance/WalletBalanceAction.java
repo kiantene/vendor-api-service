@@ -1,7 +1,12 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.common.OperatorApiCaller;
+import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -12,7 +17,6 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -26,6 +30,8 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -35,16 +41,29 @@ public class WalletBalanceAction {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    @Autowired
-    private RequestService requestService;
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
+    private final RequestService requestService;
+    private final AgentApiCredentialService agentApiCredentialService;
+    private final AuthenticationService authenticationService;
+    private final VendorService vendorService;
+    private final CurrencyConversionService currencyConversionService;
+    private final OperatorApiCaller operatorApiCaller;
+
+
+    public WalletBalanceAction(RequestService requestService,
+                               AgentApiCredentialService agentApiCredentialService,
+                               AuthenticationService authenticationService,
+                               VendorService vendorService,
+                               CurrencyConversionService currencyConversionService,
+                               OperatorApiCaller operatorApiCaller) {
+
+        this.requestService = requestService;
+        this.agentApiCredentialService = agentApiCredentialService;
+        this.authenticationService = authenticationService;
+        this.vendorService = vendorService;
+        this.currencyConversionService = currencyConversionService;
+        this.operatorApiCaller = operatorApiCaller;
+    }
+
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
@@ -79,31 +98,59 @@ public class WalletBalanceAction {
             return requestService.responseOperatorSub();
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
-                .post()
-                .uri(EndPoints.WALLET_BALANCE)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .retry(3)
-                .block();
+        ResponseEntity<String> apiResponse;
+        long endTime;
 
-        long endTime = System.currentTimeMillis();
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+        try {
+            ClientBalanceResponse clientBalanceResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, Map.of(
+                    EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
+                    EndPoints.HEADER_SIGNATURE, signature
+            ), dto);
 
+            String jsonResponseBody = new ObjectMapper().writeValueAsString(clientBalanceResponse);
+
+            apiResponse = ResponseEntity.ok(jsonResponseBody);
+            endTime = System.currentTimeMillis();
+
+            if (httpRequestLog != null) {
+                httpRequestLog.setOperatorResponse(jsonResponseBody);
+                httpRequestLog.setOperatorEnd(endTime);
             }
-            httpRequestLog.setOperatorEnd(endTime);
+
+        } catch (OperatorApiException operatorApiException) {
+            Throwable rootCause = operatorApiException.getRootCause();
+            log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
+            throw operatorApiException;
+
+        } catch (JsonProcessingException e) {
+            throw new OperatorApiException("cannot convert balance response object to string", e);
         }
 
+//        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
+//                .post()
+//                .uri(EndPoints.WALLET_BALANCE)
+//                .header(EndPoints.HEADER_SIGNATURE, signature)
+//                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .accept(MediaType.APPLICATION_JSON)
+//                .body(BodyInserters.fromValue(dto))
+//                .retrieve()
+//                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+//                .toEntity(String.class)
+//                .retry(3)
+//                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+//                .retry(3)
+//                .block();
+//
+//        long endTime = System.currentTimeMillis();
+//        if (httpRequestLog != null) {
+//            if (apiResponse != null) {
+//                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+//
+//            }
+//            httpRequestLog.setOperatorEnd(endTime);
+//        }
+//
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 EndPoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
