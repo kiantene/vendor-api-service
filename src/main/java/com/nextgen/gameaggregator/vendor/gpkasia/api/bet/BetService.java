@@ -119,7 +119,7 @@ public class BetService {
             try {
                 // Verify session
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
-                
+
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getUser()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, gameCode);
@@ -464,11 +464,11 @@ public class BetService {
                     }
                 } else {
                     //middle of bonus game
-                    if (dto.getCode().equals(BetType.POINTOUT)) {
-                        //only use pointout(no matter win or lose)
-                        //no bet amount so just use money to define win or lose
-                        resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-                    }
+                    //if (dto.getCode().equals(BetType.POINTOUT)) {
+                    //only use pointout(no matter win or lose)
+                    //no bet amount so just use money to define win or lose
+                    resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                    //}
                 }
             }
         }
