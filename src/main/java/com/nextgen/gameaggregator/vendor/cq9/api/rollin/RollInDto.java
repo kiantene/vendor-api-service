@@ -31,7 +31,6 @@ public class RollInDto implements BetResultData {
     private String gamecode;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 50)
     private String roundid;
 
@@ -59,7 +58,6 @@ public class RollInDto implements BetResultData {
     private BigDecimal amount;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @Size(min = 1, max = 70)
     private String mtcode;
 

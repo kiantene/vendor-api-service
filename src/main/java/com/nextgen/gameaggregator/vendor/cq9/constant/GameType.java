@@ -7,8 +7,10 @@ public class GameType {
     public static final String SLOT = "slot";
     public static final String FISH = "fish";
     public static final String TABLE = "table";
-    public static final String LIVE = "live";
+    public static final String LIVEGAME = "livegame";
     public static final String ARCADE = "arcade";
+    public static final String DEALERGAME = "dealergame";
+    public static final String ANIMAL = "animal";
 
-    public static final List<String> GameTypeList = Arrays.asList(SLOT, FISH, TABLE, LIVE, ARCADE);
+    public static final List<String> GameTypeList = Arrays.asList(SLOT, FISH, TABLE, LIVEGAME, ARCADE, DEALERGAME, ANIMAL);
 }
