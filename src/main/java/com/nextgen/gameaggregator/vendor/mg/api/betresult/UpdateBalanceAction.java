@@ -78,7 +78,7 @@ public class UpdateBalanceAction {
             try {
                 gameSession = gameSessionService.verifyToken(dto.getExtOperatorToken());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
-            } catch (AuthenticationException e) {
+            } catch (Exception e) {
                 if (dto.getTxnType() == DEBIT) {
                     //DEBIT request token will not be regenerated.
                     throw new AuthenticationException(e.getMessage());
