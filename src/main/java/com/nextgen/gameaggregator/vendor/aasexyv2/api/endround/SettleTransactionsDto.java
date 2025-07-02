@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SettleTransactionsDto implements BetResultData {
     @NotBlank
-    @Size(max=255)
+    @Size(max = 255)
     private String platformTxId;
 
     private String refPlatformTxId;
@@ -83,7 +83,7 @@ public class SettleTransactionsDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameCode+"_"+this.gameInfo.getTableId();
+        return this.gameCode + "_" + this.gameInfo.getTableId();
     }
 
     @Override
@@ -103,7 +103,7 @@ public class SettleTransactionsDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return this.turnover;
     }
 
     @Override
@@ -137,7 +137,7 @@ public class SettleTransactionsDto implements BetResultData {
     }
 
     @Override
-    public boolean getShouldSettleByBet()  {
+    public boolean getShouldSettleByBet() {
         return settleType.equals("platformTxId");
     }
 }

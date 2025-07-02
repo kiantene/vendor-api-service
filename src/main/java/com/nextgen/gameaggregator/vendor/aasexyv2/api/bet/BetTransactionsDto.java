@@ -92,7 +92,7 @@ public class BetTransactionsDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.betAmount;
+        return BigDecimal.ZERO;
     }
 
     @Override
