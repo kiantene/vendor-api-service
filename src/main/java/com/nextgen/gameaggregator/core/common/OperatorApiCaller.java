@@ -4,6 +4,8 @@ import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.core.ParameterizedTypeReference;
@@ -25,7 +27,6 @@ import java.util.Map;
 
 @Component
 public class OperatorApiCaller {
-    public static final int MAX_IN_MEMORY_SIZE = 5 * 1024 * 1024; // 5MB
     private final WebClient.Builder builder;
 
     public OperatorApiCaller() {
@@ -35,13 +36,12 @@ public class OperatorApiCaller {
                 .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3))); // 3s read timeout (low-level)
 
         this.builder = WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE));
+                .clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 
-    public <T> T post(String baseUrl, String path, MediaType contentType, Object requestBody, ParameterizedTypeReference<T> typeRef, Map<String, String> headers) {
-//        LogContext logContext = LogContextHolder.get();
-//        logContext.put("url", baseUrl + path);
+    public <T> T post(String baseUrl, String path, Object requestBody, ParameterizedTypeReference<T> typeRef, Map<String, String> headers) {
+        LogContext logContext = LogContextHolder.get();
+        logContext.put("operatorUrl", baseUrl + path);
 
         WebClient.RequestBodySpec request = builder
                 .baseUrl(baseUrl)
@@ -57,41 +57,41 @@ public class OperatorApiCaller {
             }
         }
 
-        WebClient.RequestHeadersSpec<?> requestHeadersSpec;
-
-        if (contentType.equals(MediaType.APPLICATION_FORM_URLENCODED)) {
-            requestHeadersSpec = request
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(BodyInserters.fromFormData((MultiValueMap<String, String>) requestBody));
-        } else {
-            requestHeadersSpec = request
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromValue(requestBody));
-        }
+        WebClient.RequestHeadersSpec<?> requestHeadersSpec = request
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(requestBody));
 
         try {
-            return requestHeadersSpec
+            long startTime = System.currentTimeMillis();
+            logContext.put("operatorStart", startTime);
+
+            T apiResponse = requestHeadersSpec
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
                     .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
                     .bodyToMono(typeRef)
                     .block()
-                    ;
+            ;
+            long endTime = System.currentTimeMillis();
+            long timeTaken = endTime - startTime;
+            logContext.put("operatorEnd", endTime);
+            logContext.put("operatorTimeTaken", timeTaken);
+
+            return apiResponse;
 
         } catch (WebClientRequestException ex) {
             throw new OperatorNetworkException(ex.getMessage(), url);
 
         } catch (DecodingException ex) {
-
             throw new OperatorApiException("Invalid response format", ex);
 
-        } catch (Http4xxException e) {
-            throw e;
-        } catch (Http5xxException e) {
-            throw e;
+        } catch (Http4xxException | Http5xxException ex) {
+            throw new OperatorApiException(ex.getMessage(), ex);
+
         } catch (Exception e) {
 
-            throw new RuntimeException("Unexpected client error", e);
+            throw new OperatorApiException("Unexpected client error", e);
         }
     }
 
@@ -105,7 +105,7 @@ public class OperatorApiCaller {
                 .map(body -> new Http5xxException(response.statusCode().value(), body));
     }
 
-    public static String removeTrailingSlash(String url) {
+    private String removeTrailingSlash(String url) {
         if (url != null && url.endsWith("/")) {
             return url.substring(0, url.length() - 1);
         }
