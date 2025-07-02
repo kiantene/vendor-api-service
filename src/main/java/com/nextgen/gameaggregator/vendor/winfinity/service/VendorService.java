@@ -79,14 +79,13 @@ public class VendorService extends BaseVendorService {
         return accessToken;
     }
 
-    public String decodeRequestBody(Integer vendorLineId, String requestBody, String qa,
-                                    HttpRequestLog httpRequestLog) {
+    public String decodeRequestBody(Integer vendorLineId, String requestBody, String id,  HttpRequestLog httpRequestLog) {
         String publicKey = "";
         String decodedString = "";
 
         try {
-            publicKey = (qa == null) ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY)
-                    : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA);
+            publicKey = (id != null && id == "qa") ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA)
+                    : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY);
 
             decodedString = this.decodeRsaJwt(requestBody, publicKey);
 
