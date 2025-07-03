@@ -5,4 +5,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EndPoints {
     public static final String LAUNCH_GAME = "/v1/exp/launch/real";
+    public static final String PATH = "/api/v1/crystal";
+    public static final String BALANCE = "/balance";
 }
