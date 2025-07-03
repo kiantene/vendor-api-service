@@ -80,12 +80,27 @@ public class OperatorApiCaller {
             return clientBalanceResponse;
 
         } catch (WebClientRequestException ex) {
+            /*
+            Possible exceptions:
+            1. ConnectException - cannot connect to the given host/port
+            2. UnknownHostException - host cannot be resolved
+            3. SocketTimeoutException/ReadTimeoutException - connection established, but no data received within x seconds
+            4. Any other network exception
+             */
             throw new OperatorNetworkException(ex.getMessage(), url);
 
         } catch (DecodingException ex) {
+            /*
+            Thrown by ".bodyToMono(ClientBalanceResponse.class)"
+            If client responded a format that cannot be decoded to a proper json object
+             */
+
             throw new OperatorApiException("Invalid response format", ex);
 
         } catch (Http4xxException | Http5xxException ex) {
+            /*
+            Client connection succeed, but returned 4xx or 5xx status code
+             */
             throw new OperatorApiException(ex.getMessage(), ex);
 
         } catch (Exception e) {

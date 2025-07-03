@@ -15,31 +15,17 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 @Slf4j
 public class WalletBalanceAction {
-
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     private final RequestService requestService;
     private final AgentApiCredentialService agentApiCredentialService;
@@ -76,11 +62,8 @@ public class WalletBalanceAction {
 
         WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
-        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -120,10 +103,10 @@ public class WalletBalanceAction {
         } catch (OperatorApiException operatorApiException) {
             Throwable rootCause = operatorApiException.getRootCause();
             log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
-            throw operatorApiException;
+            throw new InvalidOperatorResponseException(rootCause.getClass().getSimpleName() + " : " + rootCause.getMessage());
 
         } catch (JsonProcessingException e) {
-            throw new OperatorApiException("cannot convert balance response object to string", e);
+            throw new InvalidOperatorResponseException("cannot convert balance response object to string");
         }
 
 //        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
@@ -151,9 +134,6 @@ public class WalletBalanceAction {
 //            httpRequestLog.setOperatorEnd(endTime);
 //        }
 //
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
 
         try {
 
@@ -188,15 +168,15 @@ public class WalletBalanceAction {
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
+
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            //RequestService.failResponseLog(requestLogVo, exception);
+
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
 
