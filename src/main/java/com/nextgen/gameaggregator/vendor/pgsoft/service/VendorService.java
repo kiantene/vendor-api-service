@@ -8,19 +8,19 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorCurrencyService;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.GameCodes;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 
 @Service
-@Slf4j
 public class VendorService extends BaseVendorService {
 
-    @Autowired
-    private VendorCurrencyService vendorCurrencyService;
+    private final VendorCurrencyService vendorCurrencyService;
+
+    public VendorService(VendorCurrencyService vendorCurrencyService) {
+        this.vendorCurrencyService = vendorCurrencyService;
+    }
 
     public static void validateOperatorTokenAndSecretKey(String operatorTokenFromRequest, String secretKeyFromRequest, String operatorTokenFromDb, String secretKeyFromDb) throws NoAvailableLineException {
         if (!operatorTokenFromRequest.equals(operatorTokenFromDb) || !secretKeyFromRequest.equals(secretKeyFromDb)) {
@@ -49,11 +49,6 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String generateGameUrl(String urlTemplate, String gameCode, String languageCode, String operatorToken, String playerGameSessionToken, String lobbyUrl) {
-        // https://m.pg-redirect.net/{gameID}/index.html?l={0}&btt=1&ot={2}&ops={3}&f={4}
-        return MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken, lobbyUrl);
-    }
-
     public static String generateBetDetailUrl(String urlTemplate, String traceUd, String operatorToken, String parentId, String betId, String languageCode) {
         // https://public.pg-redirect.net/history/redirect.html?trace_id={0}&t={1}&psid={2}&sid={3}&lang={4}&type=operator
         return MessageFormat.format(urlTemplate, traceUd, operatorToken, parentId, betId, languageCode);
@@ -67,5 +62,9 @@ public class VendorService extends BaseVendorService {
                 throw new BetFailedException();
             }
         }
+    }
+
+    public boolean isPromoPayout(CashTransferInOutDto dto) {
+        return false;
     }
 }

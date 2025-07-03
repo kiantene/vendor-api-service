@@ -1,6 +1,11 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.promo.PromoPayoutContext;
+import com.nextgen.gameaggregator.core.engine.promo.PromoPayoutService;
+import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
+import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
@@ -40,6 +45,9 @@ public class CashTransferInOutAction {
     private final LoggingService loggingService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorGameCodeService vendorGameCodeService;
+    private final VendorRequestMapper<CashTransferInOutDto, PromoPayoutContext> requestMapper;
+    private final VendorResponseMapper<PromoPayoutContext, CashTransferInOutVo> responseMapper;
+    private final PromoPayoutService promoPayoutService;
 
     public CashTransferInOutAction(HttpService httpService,
                                    GameSessionService gameSessionService,
@@ -50,7 +58,10 @@ public class CashTransferInOutAction {
                                    ValidationService validationService,
                                    LoggingService loggingService,
                                    RequestIdempotentLogService requestIdempotentLogService,
-                                   VendorGameCodeService vendorGameCodeService) {
+                                   VendorGameCodeService vendorGameCodeService,
+                                   BetRequestMapper requestMapper,
+                                   BetResponseMapper responseMapper,
+                                   PromoPayoutService promoPayoutService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -62,6 +73,9 @@ public class CashTransferInOutAction {
         this.loggingService = loggingService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorGameCodeService = vendorGameCodeService;
+        this.requestMapper = requestMapper;
+        this.responseMapper = responseMapper;
+        this.promoPayoutService = promoPayoutService;
     }
 
     @PostMapping(path = Endpoints.BET)
@@ -76,6 +90,16 @@ public class CashTransferInOutAction {
 
         try {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
+
+            if (vendorService.isPromoPayout(dto)) {
+                PromoPayoutContext promoPayoutContext = requestMapper.toInternal(dto);
+                PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
+                responseVo = responseMapper.toVendor(promoPayoutContext, playerBalanceData);
+                parentResponseVo.setData(responseVo);
+
+                return parentResponseVo;
+            }
+
             vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
