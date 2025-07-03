@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -31,18 +32,32 @@ import java.util.Set;
 @Slf4j
 public class WalletBetAction {
 
-    @Autowired
-    RequestService requestService;
-    @Autowired
-    AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    AuthenticationService authenticationService;
-    @Autowired
-    VendorService vendorService;
+    private final RequestService requestService;
+    private final AgentApiCredentialService agentApiCredentialService;
+    private final AuthenticationService authenticationService;
+    private final VendorService vendorService;
+    private final CurrencyConversionService currencyConversionService;
+    private final Set<Integer> vendorsWithTwoPointFiveSecondTimeout;
+    private final Set<Integer> vendorsWithThreePointFiveSecondTimeout;
+    private final Set<Integer> vendorsWithFourPointFiveSecondTimeout;
     @Value("${spring.profiles.active}")
     private String profilesActive;
+
     @Autowired
-    private CurrencyConversionService currencyConversionService;
+    public WalletBetAction(RequestService requestService, AgentApiCredentialService agentApiCredentialService, AuthenticationService authenticationService, VendorService vendorService, CurrencyConversionService currencyConversionService, Set<Integer> vendorsWithTwoPointFiveSecondTimeout, Set<Integer> vendorsWithThreePointFiveSecondTimeout, Set<Integer> vendorsWithFourPointFiveSecondTimeout) {
+        this.requestService = requestService;
+        this.agentApiCredentialService = agentApiCredentialService;
+        this.authenticationService = authenticationService;
+        this.vendorService = vendorService;
+        this.currencyConversionService = currencyConversionService;
+        this.vendorsWithTwoPointFiveSecondTimeout = new HashSet<>();
+        this.vendorsWithThreePointFiveSecondTimeout = new HashSet<>();
+        this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
+        //ambs
+        this.vendorsWithTwoPointFiveSecondTimeout.add(38);
+        //cpgame
+        this.vendorsWithFourPointFiveSecondTimeout.add(48);
+    }
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
             throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -193,12 +208,18 @@ public class WalletBetAction {
     }
 
     private Integer operatorTimeoutConfig(GameSession gameSession) {
-        //ambs vendor operator timeout
-        Set<Integer> vendorsWithTwoPointFiveSecondTimeout = Set.of(38);
 
-        if (vendorsWithTwoPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+        if (this.vendorsWithTwoPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 2.5sec
             return 2500;
+        } else if (this.vendorsWithThreePointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 3.5sec
+            return 3500;
+        } else if (this.vendorsWithFourPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 4.5sec
+            return 4500;
         }
+        //default operator timeout (5sec)
         return EndPoints.TIMEOUT;
     }
 
