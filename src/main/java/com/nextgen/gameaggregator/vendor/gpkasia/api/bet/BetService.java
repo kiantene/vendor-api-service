@@ -464,11 +464,14 @@ public class BetService {
                     }
                 } else {
                     //middle of bonus game
-                    //if (dto.getCode().equals(BetType.POINTOUT)) {
-                    //only use pointout(no matter win or lose)
-                    //no bet amount so just use money to define win or lose
-                    resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-                    //}
+                    if (dto.getCode().equals(BetType.POINTOUT)) {
+                        //only use pointout(no matter win or lose)
+                        //no bet amount so just use money to define win or lose
+                        resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                    } else {
+                        // did not lose all money or exactly lose (gamble lose)
+                        resultType = (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                    }
                 }
             }
         }
