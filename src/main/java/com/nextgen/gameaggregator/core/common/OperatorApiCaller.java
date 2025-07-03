@@ -62,7 +62,7 @@ public class OperatorApiCaller {
                 .body(BodyInserters.fromValue(requestBody));
 
         try {
-            long startTime = System.currentTimeMillis();
+//            long startTime = System.currentTimeMillis();
 //            logContext.put("operatorStart", startTime);
 
             ClientBalanceResponse clientBalanceResponse = requestHeadersSpec
@@ -72,8 +72,8 @@ public class OperatorApiCaller {
                     .bodyToMono(ClientBalanceResponse.class)
                     .block()
             ;
-            long endTime = System.currentTimeMillis();
-            long timeTaken = endTime - startTime;
+//            long endTime = System.currentTimeMillis();
+//            long timeTaken = endTime - startTime;
 //            logContext.put("operatorEnd", endTime);
 //            logContext.put("operatorTimeTaken", timeTaken);
 
@@ -87,7 +87,7 @@ public class OperatorApiCaller {
             3. SocketTimeoutException/ReadTimeoutException - connection established, but no data received within x seconds
             4. Any other network exception
              */
-            throw new OperatorNetworkException(ex.getMessage(), url);
+            throw new OperatorNetworkException(ex.getMessage(), url, ex);
 
         } catch (DecodingException ex) {
             /*

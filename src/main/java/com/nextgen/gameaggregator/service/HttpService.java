@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.entity.ga.RawBetActionLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import jakarta.servlet.http.HttpServletRequest;
@@ -321,6 +322,12 @@ public class HttpService {
         if (requestLog != null) {
             requestLog.setStatus(ERROR);
             requestLog.setErrorMessage(exception.toString());
+
+            if (exception instanceof InvalidOperatorResponseException) {
+                String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
+                requestLog.setExceptionMessage(exception.getMessage());
+                requestLog.setRootCause(rootCause);
+            }
         } else {
             log.warn("HttpService.logError: requestLog is null");
             exception.printStackTrace();

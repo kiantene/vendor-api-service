@@ -102,8 +102,10 @@ public class WalletBalanceAction {
 
         } catch (OperatorApiException operatorApiException) {
             Throwable rootCause = operatorApiException.getRootCause();
-            log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
-            throw new InvalidOperatorResponseException(rootCause.getClass().getSimpleName() + " : " + rootCause.getMessage());
+//            log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
+            InvalidOperatorResponseException exception = new InvalidOperatorResponseException(operatorApiException.getMessage());
+            exception.setRootCause(operatorApiException.getClass().getSimpleName() + " - " + rootCause.getClass().getSimpleName());
+            throw exception;
 
         } catch (JsonProcessingException e) {
             throw new InvalidOperatorResponseException("cannot convert balance response object to string");

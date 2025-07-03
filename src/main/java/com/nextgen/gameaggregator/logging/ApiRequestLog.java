@@ -27,6 +27,8 @@ public class ApiRequestLog {
     private String operatorResponse;
     private Integer operatorHttpCode;
     private String error;
+    private String errorMessage;
+    private String rootCause;
     private Integer status;
     private Long start;
     private Long end;
@@ -53,7 +55,9 @@ public class ApiRequestLog {
         this.operatorData = httpRequestLog.getOperatorData();
         this.operatorResponse = httpRequestLog.getOperatorResponse();
         this.operatorHttpCode = httpRequestLog.getOperatorHttpStatusCode();
-        this.error = httpRequestLog.getErrorMessage();
+        this.error = httpRequestLog.getErrorMessage(); // this is intentional, for backward compatibility
+        this.errorMessage = httpRequestLog.getExceptionMessage(); // this is intentional, for backward compatibility, httpRequestLog will be deprecated in the future
+        this.rootCause = httpRequestLog.getRootCause();
         this.status = httpRequestLog.getStatus();
         this.start = httpRequestLog.getStartTime();
         this.end = httpRequestLog.getEndTime();

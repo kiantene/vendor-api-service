@@ -27,6 +27,13 @@ public class OperatorApiException extends RuntimeException {
         this.responseBody = null;
     }
 
+    public OperatorApiException(String message, String url, Throwable cause) {
+        super(message, cause);
+        this.url = url;
+        this.statusCode = null;
+        this.responseBody = null;
+    }
+
     public OperatorApiException(String message, String url, Integer statusCode, String responseBody) {
         super(message);
         this.url = url;
