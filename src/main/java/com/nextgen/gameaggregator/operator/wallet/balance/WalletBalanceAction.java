@@ -89,18 +89,18 @@ public class WalletBalanceAction {
                     EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
                     EndPoints.HEADER_SIGNATURE, signature
             ), dto);
+            this.setEndTime(httpRequestLog);
 
             String jsonResponseBody = new ObjectMapper().writeValueAsString(clientBalanceResponse);
 
             apiResponse = ResponseEntity.ok(jsonResponseBody);
-            endTime = System.currentTimeMillis();
 
             if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(jsonResponseBody);
-                httpRequestLog.setOperatorEnd(endTime);
             }
 
         } catch (OperatorApiException operatorApiException) {
+            this.setEndTime(httpRequestLog);
             Throwable rootCause = operatorApiException.getRootCause();
 //            log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
             InvalidOperatorResponseException exception = new InvalidOperatorResponseException(operatorApiException.getMessage());
@@ -108,6 +108,7 @@ public class WalletBalanceAction {
             throw exception;
 
         } catch (JsonProcessingException e) {
+            this.setEndTime(httpRequestLog);
             throw new InvalidOperatorResponseException("cannot convert balance response object to string");
         }
 
@@ -194,5 +195,12 @@ public class WalletBalanceAction {
         walletBalanceDto.setToken(gameSession.getToken());
 
         return walletBalanceDto;
+    }
+
+    private void setEndTime(HttpRequestLog httpRequestLog) {
+        if (httpRequestLog != null) {
+            long endTime = System.currentTimeMillis();
+            httpRequestLog.setOperatorEnd(endTime);
+        }
     }
 }
