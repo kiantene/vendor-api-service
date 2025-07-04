@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.crystal.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
@@ -54,25 +52,17 @@ public class BalanceAction {
 
         CommonDto commonDto;
         try {
-            // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
             commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
-            // 2. Validate request parameters (Non-database calls)
             this.doValidation(commonDto);
 
-
-            // 3. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getPlayerId());
+
             vendorService.doCompareSignature(request, httpRequestLog, gameSession);
+            this.doVerification(gameSession);
 
-//            // 4. Verify remaining parameters (Verify against database values)
-//            this.doVerification(commonDto, gameSession,encryption);
-
-            // 5. Retrieve the latest wallet balance from Operator
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 6. Set response data
             commonDataVo = this.prepareBalanceVo(getWalletBalance);
 
         } catch (Exception e) {
@@ -88,18 +78,15 @@ public class BalanceAction {
         ValidationUtils.validateRequest(commonDto);
     }
 
-//    private void doVerification(CommonDto commonDto, GameSession gameSession) throws AuthenticationException,
-//            DisabledVendorLineException,
-//            DisabledAgentPlayerException,
-//            CredentialNotFoundException,
-//            InvalidPlayerException {
-//
-//        vendorService.validate(commonDto.getApiId(), commonDto.getApiKey(), commonDto.getHashKey(), gameSession);
-//        // Verify vendor line is active
-//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-//        // Verify agent player is active
-//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-//    }
+    private void doVerification(GameSession gameSession) throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException {
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    }
 
 
     private CommonDataVo prepareBalanceVo(BigDecimal walletBalance) {
@@ -116,6 +103,11 @@ public class BalanceAction {
             commonDataVo.setError(new ErrorVo(
                     ResponseCodes.INVALID_PARAMETERS.code,
                     ResponseCodes.INVALID_PARAMETERS.message
+            ));
+        } else if (e instanceof AuthenticationException) {
+            commonDataVo.setError(new ErrorVo(
+                    ResponseCodes.INVALID_SIGNATURE.code,
+                    ResponseCodes.INVALID_SIGNATURE.message
             ));
         } else {
             commonDataVo.setError(new ErrorVo(

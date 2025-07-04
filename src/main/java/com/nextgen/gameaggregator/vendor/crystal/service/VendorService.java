@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
@@ -67,42 +68,27 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-
-//    public void validate(String apiIdDto, String apiKeyDto, String hashKeyDto, GameSession gameSession)
-//            throws AuthenticationException, CredentialNotFoundException, InvalidPlayerException {
-//
-//        String apiId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_ID);
-//        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
-//
-//
-//        ValidationUtils.isEquals(apiId, apiIdDto, AuthenticationException::new);
-//        ValidationUtils.isEquals(apiKey, apiKeyDto, AuthenticationException::new);
-//        ValidationUtils.isEquals(hashedKey, hashKeyDto, InvalidPlayerException::new);
-//    }
-
     public void doCompareSignature(HttpServletRequest request, HttpRequestLog httpRequestLog, GameSession gameSession)
             throws AuthenticationException, CredentialNotFoundException {
 
-        String secretkey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        // 1. 获取请求头中的签名
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String operatorCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_CODE);
+
         String signatureHeader = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
+        String operatorHeader = request.getHeader(WalletServiceEndpoints.HEADER_OPERATOR);
+
         if (signatureHeader == null || signatureHeader.isEmpty()) {
             throw new AuthenticationException("Missing signature header");
         }
-
-        // 2. 获取请求体
+        
         String body = httpRequestLog.getRequestBody();
         if (body == null || body.isEmpty()) {
             throw new AuthenticationException("Empty request body");
         }
-
-        // 3. 将body转换为紧凑JSON格式（移除所有空格）
+        ValidationUtils.isEquals(operatorHeader, operatorCode, AuthenticationException::new);
         String compactJsonBody = convertToJson(body);
+        String computedSignature = hashHMACSha256(compactJsonBody, secretKey);
 
-        // 4. 使用HMAC-SHA256加密
-        String computedSignature = hashHMACSha256(compactJsonBody, secretkey);
-
-        // 5. 比较签名
         if (!computedSignature.equalsIgnoreCase(signatureHeader)) {
             throw new AuthenticationException("Invalid signature");
         }
