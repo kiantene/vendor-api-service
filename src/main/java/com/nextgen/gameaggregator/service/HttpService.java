@@ -325,6 +325,7 @@ public class HttpService {
 
             if (exception instanceof InvalidOperatorResponseException) {
                 String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
+                requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
                 requestLog.setRootCause(rootCause);
             }
