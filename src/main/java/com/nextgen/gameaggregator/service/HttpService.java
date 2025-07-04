@@ -13,7 +13,9 @@ import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.logging.ApiRequestBalanceLog;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -306,7 +308,17 @@ public class HttpService {
 
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
+                    if (requestLog.getRequestType().equals(WalletBalanceAction.class.getSimpleName())) {
+                        ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
+                        String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
+                        if (balanceLog.getRootCause().isEmpty()) {
+                            log.info(balanceLogJson);
+                        } else {
+                            log.error(balanceLogJson);
+                        }
+                    } else {
+                        kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
+                    }
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());
@@ -323,7 +335,7 @@ public class HttpService {
             requestLog.setStatus(ERROR);
             requestLog.setErrorMessage(exception.toString());
 
-            if (exception instanceof InvalidOperatorResponseException) {
+            if (exception instanceof InvalidOperatorResponseException && requestLog.getRequestType().equals(WalletBalanceAction.class.getSimpleName())) {
                 String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
                 requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
