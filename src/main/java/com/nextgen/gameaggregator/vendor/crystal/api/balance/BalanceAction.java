@@ -51,6 +51,7 @@ public class BalanceAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         CommonDataVo commonDataVo = new CommonDataVo();
+
         CommonDto commonDto;
         try {
             // 1. Retrieve request body in original string format and convert into dto

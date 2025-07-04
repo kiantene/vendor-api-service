@@ -45,7 +45,7 @@ public class GameUrlService extends BaseGameUrlService<CrystalGameUrlVo> {
         formData.add("gameCode", gameSession.getVendorGameCode());
         formData.add("brandCode", brandCode);
         formData.add("currencyCode", gameSession.getVendorCurrencyCode());
-        formData.add("playerId", String.valueOf(gameSession.getVendorPlayerUsername()));
+        formData.add("playerId", gameSession.getVendorPlayerUsername());
         return formData;
     }
 }

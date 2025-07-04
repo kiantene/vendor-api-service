@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class CommonDataVo implements HttpResponse {
-    private CommonVo data;
+    private CommonVo data = new CommonVo();
     private ErrorVo error;
 
     @Override
