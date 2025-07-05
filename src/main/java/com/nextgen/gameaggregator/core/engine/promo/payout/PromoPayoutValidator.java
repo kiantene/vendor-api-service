@@ -1,23 +1,22 @@
-package com.nextgen.gameaggregator.core.engine.promo;
+package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.core.common.ContextValidator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
-public class PromoPayoutValidator {
+@Component
+public class PromoPayoutValidator implements ContextValidator<PromoPayoutContext> {
     private final DuplicateRequestGuard duplicateRequestGuard;
-
 
     public PromoPayoutValidator(DuplicateRequestGuard duplicateRequestGuard) {
         this.duplicateRequestGuard = duplicateRequestGuard;
     }
 
-    public void validateOrThrow(String vendorClassName, PromoPayoutContext context) throws DuplicateRequestException {
+    public void validateOrThrow(PromoPayoutContext context) {
+        final String vendorClassName = context.getVendorClassName();
         final String ACTION = "promopayout";
         final String idempotencyKey = context.getIdempotencyKey();
 
         duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
     }
-
 }

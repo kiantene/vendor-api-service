@@ -21,6 +21,7 @@ public class LogContext {
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
     private String type;
+    private String url;
     private String traceId;
     private String logGroup;
     private String body;
@@ -31,6 +32,7 @@ public class LogContext {
     private String exception;
     private String errorMessage;
     private int status;
+    private String vendorClassName;
 
     public LogContext() {
         this.logGroup = "general";
@@ -66,6 +68,7 @@ public class LogContext {
             base.put("logGroup", logGroup);
             base.put("traceId", traceId);
             base.put("type", type);
+            base.put("url", url);
             base.put("start", start);
             base.put("end", end);
             base.put("timeTaken", timeTaken);

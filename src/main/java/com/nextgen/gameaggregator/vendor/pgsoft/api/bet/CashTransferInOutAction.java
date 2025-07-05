@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.promo.PromoPayoutContext;
-import com.nextgen.gameaggregator.core.engine.promo.PromoPayoutService;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
 import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
 import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -45,8 +45,8 @@ public class CashTransferInOutAction {
     private final LoggingService loggingService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorGameCodeService vendorGameCodeService;
-    private final VendorRequestMapper<CashTransferInOutDto, PromoPayoutContext> requestMapper;
-    private final VendorResponseMapper<PromoPayoutContext, CashTransferInOutVo> responseMapper;
+    private final VendorRequestMapper<PromoPayoutContext, CashTransferInOutDto> promoRequestMapper;
+    private final VendorResponseMapper<PromoPayoutContext, CashTransferInOutVo> promoResponseMapper;
     private final PromoPayoutService promoPayoutService;
 
     public CashTransferInOutAction(HttpService httpService,
@@ -59,8 +59,8 @@ public class CashTransferInOutAction {
                                    LoggingService loggingService,
                                    RequestIdempotentLogService requestIdempotentLogService,
                                    VendorGameCodeService vendorGameCodeService,
-                                   BetRequestMapper requestMapper,
-                                   BetResponseMapper responseMapper,
+                                   PromoRequestMapper promoRequestMapper,
+                                   PromoResponseMapper promoResponseMapper,
                                    PromoPayoutService promoPayoutService) {
 
         this.httpService = httpService;
@@ -73,8 +73,8 @@ public class CashTransferInOutAction {
         this.loggingService = loggingService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorGameCodeService = vendorGameCodeService;
-        this.requestMapper = requestMapper;
-        this.responseMapper = responseMapper;
+        this.promoRequestMapper = promoRequestMapper;
+        this.promoResponseMapper = promoResponseMapper;
         this.promoPayoutService = promoPayoutService;
     }
 
@@ -92,9 +92,9 @@ public class CashTransferInOutAction {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
 
             if (vendorService.isPromoPayout(dto)) {
-                PromoPayoutContext promoPayoutContext = requestMapper.toInternal(dto);
+                PromoPayoutContext promoPayoutContext = promoRequestMapper.toInternal(dto);
                 PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
-                responseVo = responseMapper.toVendor(promoPayoutContext, playerBalanceData);
+                responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
                 parentResponseVo.setData(responseVo);
 
                 return parentResponseVo;

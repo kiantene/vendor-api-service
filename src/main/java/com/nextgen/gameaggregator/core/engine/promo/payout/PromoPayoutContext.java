@@ -1,9 +1,11 @@
-package com.nextgen.gameaggregator.core.engine.promo;
+package com.nextgen.gameaggregator.core.engine.promo.payout;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
+@Builder
 @Data
 public class PromoPayoutContext {
 
@@ -15,5 +17,9 @@ public class PromoPayoutContext {
     private Long timestamp;
 
     private String traceId;
+    private String transactionId;
+    private String currency;
+    private String type;
     private String vendorClassName;
+    private Integer agentId;
 }
