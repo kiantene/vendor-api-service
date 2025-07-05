@@ -14,7 +14,7 @@ public class PromoPayoutValidator implements ContextValidator<PromoPayoutContext
 
     public void validateOrThrow(PromoPayoutContext context) {
         final String vendorClassName = context.getVendorClassName();
-        final String ACTION = "promopayout";
+        final String ACTION = "promo.payout";
         final String idempotencyKey = context.getIdempotencyKey();
 
         duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
