@@ -13,6 +13,11 @@ public class ClientRequestAuth {
     public ClientRequestAuth(Integer agentId, Object requestObject) {
         this.agentId = agentId;
         this.requestObject = requestObject;
+        this.init();
+    }
+
+    private void init() {
+
     }
 
     public Map<String, String> getHeaders() {

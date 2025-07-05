@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.common.*;
+import com.nextgen.gameaggregator.core.common.ClientRequestAuth;
+import com.nextgen.gameaggregator.core.common.ContextEnricher;
+import com.nextgen.gameaggregator.core.common.ContextValidator;
+import com.nextgen.gameaggregator.core.common.OperatorApiCaller;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -19,14 +22,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     public PromoPayoutServiceImpl(PromoPayoutValidator validator,
                                   PromoPayoutContextEnricher enricher,
                                   PromoPayoutProcessor processor,
-                                  PromoPayoutMapper mapper,
-                                  OperatorApiCaller operatorApiCaller) {
+                                  PromoPayoutMapper mapper) {
 
         this.validator = validator;
         this.enricher = enricher;
         this.processor = processor;
         this.mapper = mapper;
-        this.operatorApiCaller = operatorApiCaller;
+        this.operatorApiCaller = new OperatorApiCaller(EndPoints.PROMO_PAYOUT);
     }
 
     @Override
@@ -39,11 +41,11 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         ClientRequestAuth clientRequestAuth = new ClientRequestAuth(context.getAgentId(), clientRequest);
 
         try {
-            ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth.getCallback(), EndPoints.PROMO_PAYOUT, clientRequestAuth.getHeaders(), clientRequest);
+            ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth, clientRequest);
             processor.onSuccess(context, response);
             return response.getData();
         } catch (Exception ex) {
-            processor.onError(context);
+            processor.onError(context, ex);
             throw ex;
         }
     }

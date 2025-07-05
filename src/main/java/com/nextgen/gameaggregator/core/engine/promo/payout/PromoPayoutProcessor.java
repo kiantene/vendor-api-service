@@ -20,7 +20,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
     }
 
     @Override
-    public void onError(PromoPayoutContext context) {
+    public void onError(PromoPayoutContext context, Exception ex) {
 
     }
 }

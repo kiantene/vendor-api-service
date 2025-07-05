@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutMapper;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -14,7 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class PromoPayoutMapperTest {
 
-    private final PromoPayoutMapper mapper = Mappers.getMapper(PromoPayoutMapper.class);
+    private final PromoPayoutMapper mapper;
+
+    public PromoPayoutMapperTest() {
+        this.mapper = new PromoPayoutMapper();
+    }
 
     @Test
     @DisplayName("Should correctly map PromoPayoutContext to PromoPayoutRequest")

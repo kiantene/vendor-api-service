@@ -1,17 +1,22 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring")
-public interface PromoPayoutMapper {
+@Component
+public class PromoPayoutMapper {
+    public PromoPayoutRequest toPromoPayoutRequest(PromoPayoutContext context) {
+        if (context == null) {
+            return null;
+        }
 
-    @Mapping(source = "traceId", target = "traceId")
-    @Mapping(source = "vendorPlayerUsername", target = "username")
-    @Mapping(source = "transactionId", target = "transactionId")
-    @Mapping(source = "currency", target = "currency")
-    @Mapping(source = "amount", target = "amount")
-    @Mapping(source = "type", target = "type")
-    @Mapping(source = "timestamp", target = "timestamp")
-    PromoPayoutRequest toPromoPayoutRequest(PromoPayoutContext context);
+        return PromoPayoutRequest.builder()
+                .traceId(context.getTraceId())
+                .username(context.getVendorPlayerUsername())
+                .transactionId(context.getTransactionId())
+                .currency(context.getCurrency())
+                .amount(context.getAmount())
+                .type(context.getType())
+                .timestamp(context.getTimestamp())
+                .build();
+    }
 }
