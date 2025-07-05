@@ -27,6 +27,7 @@ import java.util.Map;
 @Component
 public class OperatorApiCaller {
     private final WebClient.Builder builder;
+    private String path;
 
     public OperatorApiCaller() {
         HttpClient httpClient = HttpClient.create()
@@ -36,6 +37,15 @@ public class OperatorApiCaller {
 
         this.builder = WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
+    }
+
+    public OperatorApiCaller(String path) {
+        this();
+        this.path = path;
+    }
+
+    public ClientBalanceResponse post(String baseUrl, Map<String, String> headers, Object requestBody) {
+        return post(baseUrl, this.path, headers, requestBody);
     }
 
     public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object requestBody) {
