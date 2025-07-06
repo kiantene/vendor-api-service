@@ -12,6 +12,8 @@ public class PromoPayoutRequest {
     /**
      * A unique identifier for tracing the request throughout the system.
      * This can be used for logging, debugging, and correlating related operations.
+     * Client system can use this ID to trace requests across different systems/services/components.
+     * This value will remain the same during retries.
      */
     @NotBlank(message = "Trace ID is required and cannot be blank.")
     @Size(min = 1, max = 64, message = "Trace ID must be between 1 and 64 characters.")
@@ -19,7 +21,6 @@ public class PromoPayoutRequest {
 
     /**
      * The username of the user for whom the promotion payout is being made.
-     * This identifies the recipient of the payout.
      */
     @NotBlank(message = "Username is required and cannot be blank.")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters.")
@@ -27,7 +28,8 @@ public class PromoPayoutRequest {
 
     /**
      * A unique identifier for the specific payout transaction.
-     * This helps in identifying and tracking individual payout events.
+     * Client system should use this ID for idempotency checks.
+     * This value will remain the same during retries.
      */
     @NotBlank(message = "Transaction ID is required and cannot be blank.")
     @Size(min = 1, max = 128, message = "Transaction ID must be between 1 and 128 characters.")
@@ -35,14 +37,12 @@ public class PromoPayoutRequest {
 
     /**
      * The currency in which the promotion payout is being made (e.g., "USD", "SGD", "EUR").
-     * This ensures the correct currency is associated with the amount.
      */
     @NotBlank(message = "Currency is required and cannot be blank.")
     private final String currency;
 
     /**
      * The amount of the promotion payout.
-     * Using BigDecimal is recommended for financial calculations to avoid precision issues.
      */
     @NotNull(message = "Amount is required.")
     @Positive
@@ -50,14 +50,12 @@ public class PromoPayoutRequest {
 
     /**
      * The type of promotion payout (e.g., "BONUS", "REBATE", "CASHBACK").
-     * This categorizes the nature of the payout.
      */
     @NotBlank(message = "Payout type is required and cannot be blank.")
     private final String type;
 
     /**
      * The timestamp indicating when the promotion payout request was initiated, in milliseconds since the Unix epoch.
-     * This provides a chronological record of the request.
      */
     @NotNull(message = "Timestamp is required.")
     private final Long timestamp;

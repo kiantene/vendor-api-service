@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
+import com.nextgen.gameaggregator.core.util.UuidUtil;
 
 public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> {
 
@@ -11,7 +12,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
 
     @Override
     public void process(PromoPayoutContext context) {
-
+        context.setTransactionId(UuidUtil.newUuidV7StringRaw());
     }
 
     @Override

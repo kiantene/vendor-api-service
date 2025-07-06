@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutServiceImpl;
 import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
 import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -61,7 +62,7 @@ public class CashTransferInOutAction {
                                    VendorGameCodeService vendorGameCodeService,
                                    PromoRequestMapper promoRequestMapper,
                                    PromoResponseMapper promoResponseMapper,
-                                   PromoPayoutService promoPayoutService) {
+                                   PromoPayoutServiceImpl promoPayoutService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -93,6 +94,7 @@ public class CashTransferInOutAction {
 
             if (vendorService.isPromoPayout(dto)) {
                 PromoPayoutContext promoPayoutContext = promoRequestMapper.toInternal(dto);
+                httpRequestLog.setId(promoPayoutContext.getTraceId()); // promo payout will start sending traceId without hyphens
                 PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
                 responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
                 parentResponseVo.setData(responseVo);

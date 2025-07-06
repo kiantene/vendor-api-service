@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
+import com.nextgen.gameaggregator.core.util.UuidUtil;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,7 @@ public class PromoRequestMapper implements VendorRequestMapper<PromoPayoutContex
     @Override
     public PromoPayoutContext toInternal(CashTransferInOutDto vendorRequest) {
         return PromoPayoutContext.builder()
+                .traceId(UuidUtil.newUuidV7StringRaw())
                 .vendorClassName(Endpoints.CLASS_NAME)
                 .idempotencyKey(vendorRequest.getBetId())
                 .vendorPlayerUsername(vendorRequest.getPlayerName())
