@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class ClientRequestAuth<T> {
     @Getter
     private Integer agentId;
+    @Getter
     private T requestObject;
     @Getter
     private String apiKey;

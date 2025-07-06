@@ -7,6 +7,10 @@ import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 public class PromoResponseMapper implements VendorResponseMapper<PromoPayoutContext, CashTransferInOutVo> {
     @Override
     public CashTransferInOutVo toVendor(PromoPayoutContext context, PlayerBalanceData balanceData) {
-        return null;
+        CashTransferInOutVo vo = new CashTransferInOutVo();
+        vo.setCurrencyCode(context.getVendorCurrency());
+        vo.setBalanceAmount(balanceData.getBalance());
+        vo.setUpdatedTime(balanceData.getTimestamp());
+        return vo;
     }
 }

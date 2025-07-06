@@ -44,8 +44,12 @@ public class OperatorApiCaller {
         this.path = path;
     }
 
-    public ClientBalanceResponse post(ClientRequestAuth clientRequestAuth, Object requestBody) {
-        return post(clientRequestAuth.getCallback(), clientRequestAuth.getHeaders(), requestBody);
+    public <T> ClientBalanceResponse post(ClientRequestAuth<T> requestAuth) {
+        return post(
+                requestAuth.getCallback(),
+                requestAuth.getHeaders(),
+                requestAuth.getRequestObject()
+        );
     }
 
     public ClientBalanceResponse post(String baseUrl, Map<String, String> headers, Object requestBody) {
