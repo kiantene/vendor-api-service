@@ -8,41 +8,41 @@ import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
-import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PromoPayoutServiceImpl implements PromoPayoutService {
 
-    private final ContextValidator<PromoPayoutContext> contextValidator;
+    private final ContextValidator<PromoPayoutContext> validator;
     private final ContextEnricher<PromoPayoutContext> enricher;
     private final CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> processor;
     private final PromoPayoutMapper mapper;
-    private final Validator requestValidator;
+    private final ClientRequestAuth<PromoPayoutRequest> clientRequestAuth;
     private final OperatorApiCaller operatorApiCaller;
 
-    public PromoPayoutServiceImpl(PromoPayoutValidator contextValidator,
+    public PromoPayoutServiceImpl(PromoPayoutValidator validator,
                                   PromoPayoutContextEnricher enricher,
                                   PromoPayoutProcessor processor,
                                   PromoPayoutMapper mapper,
-                                  Validator requestValidator) {
+                                  ClientRequestAuth<PromoPayoutRequest> clientRequestAuth
+                                  ) {
 
-        this.contextValidator = contextValidator;
+        this.validator = validator;
         this.enricher = enricher;
         this.processor = processor;
         this.mapper = mapper;
-        this.requestValidator = requestValidator;
+        this.clientRequestAuth = clientRequestAuth;
         this.operatorApiCaller = new OperatorApiCaller(EndPoints.PROMO_PAYOUT);
     }
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
-        contextValidator.validateOrThrow(context);
+        validator.validateOrThrow(context);
         enricher.enrich(context);
         processor.process(context);
 
         PromoPayoutRequest clientRequest = mapper.toPromoPayoutRequest(context);
-        ClientRequestAuth<PromoPayoutRequest> clientRequestAuth = new ClientRequestAuth<>(context.getAgentId(), clientRequest, requestValidator);
+        clientRequestAuth.initialise(context.getAgentId(), clientRequest);
 
         try {
             ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth, clientRequest);

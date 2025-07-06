@@ -1,5 +1,9 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.exception.InternalValidationException;
+import com.nextgen.gameaggregator.core.service.AgentApiCredentialService;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -8,38 +12,65 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ClientRequestAuth<T> {
-    private final Integer agentId;
-    private final T requestObject;
+    @Getter
+    private Integer agentId;
+    private T requestObject;
+    @Getter
     private String apiKey;
     private String apiSecret;
     @Getter
     private String callback;
     private final Validator validator;
+    private final AgentApiCredentialService credentialService;
 
-    public ClientRequestAuth(Integer agentId, T requestObject, Validator validator) {
-        this.agentId = agentId;
-        this.requestObject = requestObject;
+    public ClientRequestAuth(Validator validator, AgentApiCredentialService credentialService) {
         this.validator = validator;
-        this.init();
+        this.credentialService = credentialService;
     }
 
-    private void init() {
-        this.validateRequest(requestObject);
+    public void initialise(Integer agentId, T requestObject) throws
+            InternalValidationException, InternalConfigurationException {
+
+        this.agentId = agentId;
+        this.requestObject = requestObject;
+        this.validateRequest();
         this.loadClientCredentials();
     }
 
-    private void validateRequest(T requestObject) {
+    private void validateRequest() throws InternalValidationException {
+        if (requestObject == null) {
+            throw new InternalValidationException(this.getClass().getName() + ": validateRequest -> requestObject is null");
+        }
+
         Set<ConstraintViolation<T>> violations = validator.validate(requestObject);
         if (!violations.isEmpty()) {
-            // throw internal error
+            String errorMessage = violations.stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(Collectors.joining(", "));
+
+            throw new InternalValidationException("Validation failed: " + errorMessage);
         }
     }
 
-    private void loadClientCredentials() {
+    private void loadClientCredentials() throws InternalValidationException, InternalConfigurationException {
 
+        String logPrefix = this.getClass().getName() + ": loadClientCredentials -> ";
+
+        if (agentId == null) {
+            throw new InternalValidationException(logPrefix + "agentId is null");
+        }
+
+        AgentApiCredential credential = credentialService.getActiveCredential(agentId);
+        if (credential == null)
+            throw new InternalConfigurationException(logPrefix + "cannot find AgentApiCredential for agentId: " + agentId);
+
+        apiKey = requireNonEmpty(credential.getApiKey(), logPrefix + "apiKey is empty for agentId: " + agentId);
+        apiSecret = requireNonEmpty(credential.getApiSecret(), logPrefix + "apiSecret is empty for agentId: " + agentId);
+        callback = requireNonEmpty(credential.getCallbackUrl(), logPrefix + "callback is empty for agentId: " + agentId);
     }
 
     public Map<String, String> getHeaders() {
@@ -49,5 +80,12 @@ public class ClientRequestAuth<T> {
                 Map.entry(EndPoints.HEADER_API_KEY, this.apiKey),
                 Map.entry(EndPoints.HEADER_SIGNATURE, signature)
         );
+    }
+
+    private String requireNonEmpty(String value, String errorMessage) {
+        if (value == null || value.isEmpty()) {
+            throw new InternalConfigurationException(errorMessage);
+        }
+        return value;
     }
 }
