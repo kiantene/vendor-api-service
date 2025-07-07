@@ -131,11 +131,11 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
 
-        } catch (InvalidSignatureException exception) {
+        } catch (InvalidSignatureException | AuthenticationException exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
 
-        } catch (AuthenticationException exception) {
+        } catch (GameTerminatedException exception) {
             httpService.logError(httpRequestLog, exception);
             if (transferDto != null && transferDto.getTradeType() == TradeType.BET) {
                 //GA-10441 this return insufficient error is preventing vendor resend same request
@@ -164,11 +164,11 @@ public class TransferAction {
 
     private void doVerification(TransferDto dto, GameSession gameSession, CommonDto commonDto) throws
             InvalidPlayerException, DisabledVendorLineException, CurrencyNotSupportedException, CredentialNotFoundException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException {
+            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, GameTerminatedException {
 
         if (dto.getTradeType() == TradeType.BET) {
             //validate vendor username, agent vendor line, player status, and game status
-            validationService.validateEligibleBet(gameSession, dto.getMemberId());
+            validationService.isBetAllowed(gameSession, dto.getMemberId());
         }
 
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
