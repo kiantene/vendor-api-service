@@ -25,6 +25,8 @@ import java.util.Map;
 @Component
 public class WebClientApiCaller {
     private final WebClient.Builder builder;
+    private String path;
+    private MediaType contentType;
 
     public WebClientApiCaller() {
         HttpClient httpClient = HttpClient.create()
@@ -36,7 +38,17 @@ public class WebClientApiCaller {
                 .clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 
-    public <T> T post(String baseUrl, String path, MediaType contentType, Object requestBody, ParameterizedTypeReference<T> typeRef, Map<String, String> headers) {
+    public WebClientApiCaller(String path, MediaType contentType) {
+        this();
+        this.path = path;
+        this.contentType = contentType;
+    }
+
+    public <T> T post(String baseUrl, Map<String, String> headers, Object requestBody, ParameterizedTypeReference<T> typeRef) {
+        return post(baseUrl, path, contentType, headers, requestBody, typeRef);
+    }
+
+    public <T> T post(String baseUrl, String path, MediaType contentType, Map<String, String> headers, Object requestBody, ParameterizedTypeReference<T> typeRef) {
         LogContext logContext = LogContextHolder.get();
         logContext.put("url", baseUrl + path);
 
