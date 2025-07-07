@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class VendorService extends BaseVendorService {
@@ -65,6 +67,14 @@ public class VendorService extends BaseVendorService {
     }
 
     public boolean isPromoPayout(CashTransferInOutDto dto) {
-        return false;
+        // Transaction type:
+        // 106: BetPayout
+        // 400: BonusToCash
+        // 403: FreeGameToCash
+        String input = dto.getTransactionId();
+
+        Pattern pattern = Pattern.compile("-403-");
+        Matcher matcher = pattern.matcher(input);
+        return matcher.find();
     }
 }

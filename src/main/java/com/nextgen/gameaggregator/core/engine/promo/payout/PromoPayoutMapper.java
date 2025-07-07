@@ -15,7 +15,7 @@ public class PromoPayoutMapper {
                 .transactionId(context.getTransactionId())
                 .currency(context.getCurrency())
                 .amount(context.getAmount())
-                .type(context.getType())
+                .type("1") // TODO :
                 .timestamp(context.getTimestamp())
                 .build();
     }
