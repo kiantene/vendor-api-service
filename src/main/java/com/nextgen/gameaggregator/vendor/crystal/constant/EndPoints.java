@@ -7,4 +7,6 @@ public class EndPoints {
     public static final String LAUNCH_GAME = "/v1/exp/launch/real";
     public static final String PATH = "/api/v1/crystal";
     public static final String BALANCE = "/v1/wallet/balance";
+    public static final String BET = "/v1/wallet/debit";
+
 }
