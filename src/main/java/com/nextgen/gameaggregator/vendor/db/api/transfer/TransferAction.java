@@ -60,7 +60,7 @@ public class TransferAction {
 
         String traceId = httpRequestLog.getId();
 
-        TransferDto transferDto;
+        TransferDto transferDto = null;
         BigDecimal balance;
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
@@ -131,9 +131,19 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
 
-        } catch (InvalidSignatureException | AuthenticationException exception) {
+        } catch (InvalidSignatureException exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
+
+        } catch (AuthenticationException exception) {
+            httpService.logError(httpRequestLog, exception);
+            if (transferDto != null && transferDto.getTradeType() == TradeType.BET) {
+                //GA-10441 this return insufficient error is preventing vendor resend same request
+                //only apply on bet
+                vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
+            }
 
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
