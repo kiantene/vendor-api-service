@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,7 +12,6 @@ import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -41,6 +42,8 @@ public class GameUrlService {
     private final VendorGameCodeService vendorGameCodeService;
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
 
+    private final Map<String, GameLaunchHandler> gameLaunchHandlerMap;
+
     //remove request service
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
@@ -57,7 +60,8 @@ public class GameUrlService {
                           VendorLineService vendorLineService,
                           VendorGameCodeService vendorGameCodeService,
                           VendorGameDeactivatedService vendorGameDeactivatedService,
-                          TestSupportService testSupportService) {
+                          TestSupportService testSupportService,
+                          Map<String, GameLaunchHandler> gameLaunchHandlerMap) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -74,6 +78,7 @@ public class GameUrlService {
         this.vendorGameCodeService = vendorGameCodeService;
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.testSupportService = testSupportService;
+        this.gameLaunchHandlerMap = gameLaunchHandlerMap;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -82,6 +87,15 @@ public class GameUrlService {
 
         GameUrlData gameUrlData = new GameUrlData();
         gameUrlData.setToken(gameSession.getToken());
+
+        GameLaunchContext gameLaunchContext = GameLaunchContext.builder()
+                .token(gameSession.getToken())
+                .gameCode(gameCode)
+                .vendorId(gameSession.getVendorId())
+                .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
+                .vendorLanguageCode(gameSession.getVendorLanguageCode())
+                .build();
 
         try {
             String vendorClassName = vendorService.getById(vendorLine.getVendorId()).getClassName();
