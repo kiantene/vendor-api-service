@@ -2,9 +2,10 @@ package com.nextgen.gameaggregator.core.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.exception.*;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.exception.Http4xxException;
+import com.nextgen.gameaggregator.core.exception.Http5xxException;
+import com.nextgen.gameaggregator.core.exception.VendorApiException;
+import com.nextgen.gameaggregator.core.exception.VendorNetworkException;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.core.ParameterizedTypeReference;
@@ -53,8 +54,9 @@ public class WebClientApiCaller {
     }
 
     public <T> T post(String baseUrl, String path, MediaType contentType, Map<String, String> headers, Object requestBody, ParameterizedTypeReference<T> typeRef) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.put("url", baseUrl + path);
+        //TODO LOG CONTEXT DETAILS
+//        LogContext logContext = LogContextHolder.get();
+//        logContext.put("url", baseUrl + path);
 
         WebClient.RequestBodySpec request = builder
                 .baseUrl(baseUrl)
