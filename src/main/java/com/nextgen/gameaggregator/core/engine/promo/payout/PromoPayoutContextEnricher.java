@@ -22,8 +22,12 @@ public class PromoPayoutContextEnricher implements ContextEnricher<PromoPayoutCo
     public void enrich(PromoPayoutContext context) {
         try {
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(context.getVendorPlayerUsername());
+            context.setVendorPlayerId(vendorPlayer.getId());
+
             AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
             context.setAgentId(agentPlayer.getAgentId());
+            context.setAgentPlayerId(agentPlayer.getId());
+            context.setAgentPlayerUsername(agentPlayer.getUsername());
             Currency currency = currencyService.get(vendorPlayer.getCurrencyId());
             context.setCurrency(currency.getCode());
         } catch (Exception e) {

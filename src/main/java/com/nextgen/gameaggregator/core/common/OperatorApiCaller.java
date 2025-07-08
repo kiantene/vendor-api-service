@@ -5,10 +5,9 @@ import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -29,6 +28,7 @@ public class OperatorApiCaller {
     private final WebClient.Builder builder;
     private String path;
 
+    @Autowired
     public OperatorApiCaller() {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
@@ -88,8 +88,7 @@ public class OperatorApiCaller {
                     .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
                     .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
                     .bodyToMono(ClientBalanceResponse.class)
-                    .block()
-            ;
+                    .block();
 //            long endTime = System.currentTimeMillis();
 //            long timeTaken = endTime - startTime;
 //            logContext.put("operatorEnd", endTime);

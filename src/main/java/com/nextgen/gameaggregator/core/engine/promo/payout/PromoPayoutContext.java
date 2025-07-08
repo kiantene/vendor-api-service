@@ -11,9 +11,14 @@ public class PromoPayoutContext {
 
     private String idempotencyKey;
 
+    // GA
+    private Long agentPlayerId;
+    private Long vendorPlayerId;
+    private String agentPlayerUsername;
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private BigDecimal amount;
+
     private Long timestamp;
 
     private String traceId;
@@ -22,4 +27,14 @@ public class PromoPayoutContext {
     private String type;
     private String vendorClassName;
     private Integer agentId;
+
+    // Vendor Class
+    private BigDecimal betAmount;
+    private BigDecimal winAmount;
+    private BigDecimal winLoss;
+    private BigDecimal effectiveTurnover;
+    private Long vendorBetTime;
+    private Long vendorSettleTime;
+    private Long resultTime;
+
 }

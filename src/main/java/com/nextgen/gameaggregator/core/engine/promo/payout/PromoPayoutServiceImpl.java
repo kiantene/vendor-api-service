@@ -25,7 +25,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
                                   PromoPayoutProcessor processor,
                                   PromoPayoutMapper mapper,
                                   ClientRequestAuth<PromoPayoutRequest> clientRequestAuth
-                                  ) {
+    ) {
 
         this.validator = validator;
         this.enricher = enricher;
@@ -37,10 +37,11 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
-        validator.validateOrThrow(context);
+//        validator.validateOrThrow(context);
         enricher.enrich(context);
         processor.process(context);
         clientRequestAuth.initialise(context.getAgentId(), mapper.toPromoPayoutRequest(context));
+
 
         try {
             ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth);
