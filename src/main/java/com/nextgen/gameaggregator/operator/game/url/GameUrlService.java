@@ -112,6 +112,7 @@ public class GameUrlService {
                         .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
                         .vendorCredentials(credentials)
+                        .platformId(gameSession.getPlatformId())
                         .build();
 
                 gameLaunchService.process(vendorGameLauncher, gameLaunchContext);

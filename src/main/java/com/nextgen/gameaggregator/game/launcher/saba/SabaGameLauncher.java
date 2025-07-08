@@ -70,7 +70,7 @@ public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, Ga
         return GameLaunchRequest.builder()
                 .vendorId(vendorId)
                 .vendorMemberId(context.getVendorPlayerUsername())
-                .platform(context.getPlatformId().equals(1) ? PLATFORM_H5 : PLATFORM_WEB)
+                .platform(context.getPlatformId() == 1 ? PLATFORM_H5 : PLATFORM_WEB)
                 .build();
     }
 
