@@ -70,7 +70,7 @@ public class SettleAction {
                 gameSession.setVendorToken(traceId);
             }
 
-            this.doVerification(settleDto.getGameId(), gameSession);
+            this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
 
             if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
                 requestIdempotentLogService.create(settleDto, settleDto.getPlayerId());
@@ -100,13 +100,13 @@ public class SettleAction {
         return commonDataVo;
     }
 
-    private void doVerification(String gameId, GameSession gameSession)
+    private void doVerification(String gameId, String currency, GameSession gameSession)
             throws DisabledAgentPlayerException,
             DisabledVendorLineException,
             GameNotSupportedException,
             CurrencyNotSupportedException {
 
-        vendorService.validate(gameId, gameSession);
+        vendorService.validate(currency, gameSession);
         //check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameId, GameNotSupportedException::new);
 
