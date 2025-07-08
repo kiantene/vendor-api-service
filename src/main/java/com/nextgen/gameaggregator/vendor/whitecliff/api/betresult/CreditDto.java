@@ -54,7 +54,6 @@ public class CreditDto implements BetResultData, RollbackData {
     @Max(value = 1)
     private Integer isCancel;
 
-    @NotBlank
     @JsonProperty("table_id")
     @Size(max = 255)
     private String tableId;

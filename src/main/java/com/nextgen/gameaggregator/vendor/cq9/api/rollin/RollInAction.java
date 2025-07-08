@@ -81,8 +81,8 @@ public class RollInAction {
 
         String gameType = dto.getGametype();
 
-        // for Live and Table games,
-        if (gameType.equals(GameType.LIVE) || gameType.equals(GameType.TABLE)) {
+        // for liveGame, Table, dealerGame, and Animal
+        if (gameType.equals(GameType.LIVEGAME) || gameType.equals(GameType.TABLE) || gameType.equals(GameType.DEALERGAME) || gameType.equals(GameType.ANIMAL)) {
             BigDecimal rake = dto.getRake();
             BigDecimal winLoss = dto.getWin().subtract(rake);
             BigDecimal winAmount = winLoss.add(dto.getBet());

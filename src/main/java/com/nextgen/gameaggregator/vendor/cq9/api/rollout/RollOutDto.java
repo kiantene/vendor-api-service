@@ -32,7 +32,6 @@ public class RollOutDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
 
     @NotNull
@@ -42,7 +41,6 @@ public class RollOutDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank
