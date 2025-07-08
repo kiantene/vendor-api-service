@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.custodianseamless.constant;
 public class WalletServiceEndpoints {
 
 
-
+    public static final String HEADER_OPERATOR = "OPERATOR";
     public static final String HEADER_API_KEY = "X-API-Key";
     public static final String HEADER_SIGNATURE = "X-Signature";
 
