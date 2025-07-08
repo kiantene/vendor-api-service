@@ -12,11 +12,11 @@ public class ApiRequestBalanceLog extends ApiRequestLog {
     public ApiRequestBalanceLog(HttpRequestLog httpRequestLog) {
         super(httpRequestLog);
 
-        if (!httpRequestLog.getRootCause().isEmpty()) {
+        if (httpRequestLog.getRootCause() != null && !httpRequestLog.getRootCause().isEmpty()) {
             this.rootCause = httpRequestLog.getRootCause();
         }
 
-        if (!httpRequestLog.getExceptionMessage().isEmpty()) {
+        if (httpRequestLog.getExceptionMessage() != null && !httpRequestLog.getExceptionMessage().isEmpty()) {
             this.errorMessage = httpRequestLog.getExceptionMessage();
         }
     }
