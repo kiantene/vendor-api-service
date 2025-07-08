@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class SabaGameLauncher implements GameLaunchHandler<GameLaunchResponse> {
+public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
     private static final ParameterizedTypeReference<GameLaunchResponse> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
     private static final String PLATFORM_WEB = "1";
     private static final String PLATFORM_H5 = "2";
@@ -47,14 +47,12 @@ public class SabaGameLauncher implements GameLaunchHandler<GameLaunchResponse> {
     @Override
     public String getBaseUrl(GameLaunchContext context) {
         Map<String, String> credentials = context.getVendorCredentials();
-        String baseUrl = credentials.get(Credentials.API_URL);
-        if (baseUrl == null) throw new InternalConfigurationException(Credentials.API_URL + " cannot be found.");
 
-        return baseUrl;
+        return credentials.get(Credentials.API_URL);
     }
 
     @Override
-    public Object onPrepareRequestBody(GameLaunchContext context) {
+    public GameLaunchRequest onPrepareRequestBody(GameLaunchContext context) {
 
         Map<String, String> credentials = context.getVendorCredentials();
         String vendorId = credentials.get(Credentials.VENDOR_ID);

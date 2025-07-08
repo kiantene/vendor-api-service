@@ -8,6 +8,7 @@ import java.util.Map;
 @Builder
 @Data
 public class GameLaunchContext {
+    private String vendorClassName;
     private String token;
     private String gameCode;
     private Integer vendorId;
