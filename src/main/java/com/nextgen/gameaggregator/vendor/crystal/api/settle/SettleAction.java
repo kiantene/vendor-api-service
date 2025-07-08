@@ -59,6 +59,14 @@ public class SettleAction {
             settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
             GameSession gameSession;
             VendorService.doValidation(settleDto);
+
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+            
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getGameId(), gameSession);
@@ -71,13 +79,6 @@ public class SettleAction {
             }
 
             this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
-
-            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
-                requestIdempotentLogService.create(settleDto, settleDto.getPlayerId());
-            } else {
-                isRequestExists = true;
-                throw new TransactionStillProcessingException();
-            }
 
             ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
 
