@@ -14,9 +14,9 @@ public class PromoPayoutMapper {
                 .username(context.getAgentPlayerUsername())
                 .transactionId(context.getTransactionId())
                 .currency(context.getCurrency())
-                .amount(context.getAmount())
+                .amount(context.getWinAmount()) // TODO : TBC
                 .type("1") // TODO :
-                .timestamp(context.getTimestamp())
+                .timestamp(context.getVendorSettleTime())  // TODO : TBC
                 .build();
     }
 }

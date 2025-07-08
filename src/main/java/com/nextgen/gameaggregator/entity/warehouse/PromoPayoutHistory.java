@@ -17,12 +17,6 @@ public class PromoPayoutHistory {
     @JsonProperty("external_transaction_id")
     private String externalTransactionId;
 
-    @JsonProperty("vendor_bet_id")
-    private String vendorBetId;
-
-    @JsonProperty("round_id")
-    private String roundId;
-
     @JsonProperty("vendor_game_id")
     private Integer vendorGameId;
 
@@ -52,9 +46,6 @@ public class PromoPayoutHistory {
 
     @JsonProperty("agent_id")
     private Integer agentId;
-
-    @JsonProperty("operator_status")
-    private Integer operatorStatus;
 
     @JsonProperty("game_category_id")
     private Integer gameCategoryId;

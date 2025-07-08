@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -26,7 +25,6 @@ public class OperatorApiCaller {
     private final WebClient.Builder builder;
     private String path;
 
-    @Autowired
     public OperatorApiCaller() {
         HttpClient httpClient = HttpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout

@@ -8,27 +8,35 @@ import java.math.BigDecimal;
 @Builder
 @Data
 public class PromoPayoutContext {
-
+    // Request
+    private String traceId;
     private String idempotencyKey;
 
-    // GA
-    private Long agentPlayerId;
-    private Long vendorPlayerId;
-    private String agentPlayerUsername;
-    private String vendorPlayerUsername;
-    private String vendorCurrency;
-    private BigDecimal amount;
-
-    private Long timestamp;
-
-    private String traceId;
-    private String transactionId;
-    private String currency;
+    // Promo
     private String type;
     private String vendorClassName;
+
+    // GA
     private Integer agentId;
+    private Integer vendorId;
+    private String vendorCode;
+    private Integer vendorLineId;
+    private Long agentPlayerId;
+    private String agentPlayerUsername;
+    private Long vendorPlayerId;
+    private String vendorPlayerUsername;
+    private String vendorCurrency;
+    private Integer currencyId;
+    private String currency;
+    private String vendorGameCode;
+    private Integer vendorGameId;
+    private String gameCode;
+    private Integer gameCategoryId;
+    private String gameCategoryCode;
 
     // Vendor Class
+    private String transactionId;
+    private String externalTransactionId;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winLoss;
