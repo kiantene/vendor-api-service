@@ -24,7 +24,9 @@ public class ClientRequestAuth<T> {
     private String apiKey;
     private String apiSecret;
     @Getter
-    private String callback;
+    private String baseUrl;
+    @Getter
+    private String path;
     private final Validator validator;
     private final AgentApiCredentialService credentialService;
 
@@ -33,10 +35,11 @@ public class ClientRequestAuth<T> {
         this.credentialService = credentialService;
     }
 
-    public void initialise(Integer agentId, T requestObject) throws
+    public void initialise(Integer agentId, String path, T requestObject) throws
             InternalValidationException, InternalConfigurationException {
 
         this.agentId = agentId;
+        this.path = path;
         this.requestObject = requestObject;
         this.validateRequest();
         this.loadClientCredentials();
@@ -71,7 +74,7 @@ public class ClientRequestAuth<T> {
 
         apiKey = requireNonEmpty(credential.getApiKey(), logPrefix + "apiKey is empty for agentId: " + agentId);
         apiSecret = requireNonEmpty(credential.getApiSecret(), logPrefix + "apiSecret is empty for agentId: " + agentId);
-        callback = requireNonEmpty(credential.getCallbackUrl(), logPrefix + "callback is empty for agentId: " + agentId);
+        baseUrl = requireNonEmpty(credential.getCallbackUrl(), logPrefix + "callback is empty for agentId: " + agentId);
     }
 
     public Map<String, String> getHeaders() {

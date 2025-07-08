@@ -12,7 +12,6 @@ import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -45,7 +44,8 @@ public class OperatorApiCaller {
 
     public <T> ClientBalanceResponse post(ClientRequestAuth<T> requestAuth) {
         return post(
-                requestAuth.getCallback(),
+                requestAuth.getBaseUrl(),
+                requestAuth.getPath(),
                 requestAuth.getHeaders(),
                 requestAuth.getRequestObject()
         );
