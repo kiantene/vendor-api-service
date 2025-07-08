@@ -311,7 +311,7 @@ public class HttpService {
                     if (requestLog.getRequestType().equals(WalletBalanceAction.class.getSimpleName())) {
                         ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
                         String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
-                        if (balanceLog.getRootCause().isEmpty()) {
+                        if (balanceLog.getRootCause() == null || balanceLog.getRootCause().isEmpty()) {
                             log.info(balanceLogJson);
                         } else {
                             log.error(balanceLogJson);
