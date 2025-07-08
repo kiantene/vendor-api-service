@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import lombok.Builder;
+import lombok.Data;
+
+import java.util.Map;
 
 @Builder
+@Data
 public class GameLaunchContext {
     private String token;
     private String gameCode;
@@ -12,4 +16,9 @@ public class GameLaunchContext {
     private String vendorLanguageCode;
     private Integer platformId;
     private String lobbyUrl;
+
+    Map<String, String> vendorCredentials;
+
+    private String vendorToken;
+    private String gameUrl;
 }

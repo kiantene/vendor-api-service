@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -20,6 +23,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Map;
 
 @Component
@@ -69,9 +73,10 @@ public class WebClientApiCaller {
         WebClient.RequestHeadersSpec<?> requestHeadersSpec;
 
         if (contentType.equals(MediaType.APPLICATION_FORM_URLENCODED)) {
+            MultiValueMap<String, String> formData = this.convertToMultiValueMap(requestBody);
             requestHeadersSpec = request
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(BodyInserters.fromFormData((MultiValueMap<String, String>) requestBody));
+                    .body(BodyInserters.fromFormData(formData));
         } else {
             requestHeadersSpec = request
                     .contentType(MediaType.APPLICATION_JSON)
@@ -132,5 +137,22 @@ public class WebClientApiCaller {
             return url.substring(0, url.length() - 1);
         }
         return url;
+    }
+
+    private MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap<>();
+        Map<String, Object> map = objectMapper.convertValue(dto, new TypeReference<>() {});
+
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof Collection<?> collection) {
+                collection.forEach(item -> multiValueMap.add(entry.getKey(), String.valueOf(item)));
+            } else if (value != null) {
+                multiValueMap.add(entry.getKey(), String.valueOf(value));
+            }
+        }
+
+        return multiValueMap;
     }
 }
