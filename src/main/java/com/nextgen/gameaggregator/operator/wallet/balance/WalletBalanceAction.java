@@ -34,20 +34,18 @@ public class WalletBalanceAction {
     private final CurrencyConversionService currencyConversionService;
     private final OperatorApiCaller operatorApiCaller;
 
-
     public WalletBalanceAction(RequestService requestService,
                                AgentApiCredentialService agentApiCredentialService,
                                AuthenticationService authenticationService,
                                VendorService vendorService,
-                               CurrencyConversionService currencyConversionService,
-                               OperatorApiCaller operatorApiCaller) {
+                               CurrencyConversionService currencyConversionService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
-        this.operatorApiCaller = operatorApiCaller;
+        this.operatorApiCaller = new OperatorApiCaller(EndPoints.WALLET_BALANCE);
     }
 
 
@@ -85,7 +83,7 @@ public class WalletBalanceAction {
         long endTime;
 
         try {
-            ClientBalanceResponse clientBalanceResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, Map.of(
+            ClientBalanceResponse clientBalanceResponse = operatorApiCaller.post(apiUrl, Map.of(
                     EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
                     EndPoints.HEADER_SIGNATURE, signature
             ), dto);

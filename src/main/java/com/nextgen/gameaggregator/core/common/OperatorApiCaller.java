@@ -24,7 +24,6 @@ import reactor.netty.http.client.HttpClient;
 import java.time.Duration;
 import java.util.Map;
 
-@Component
 public class OperatorApiCaller {
     private final WebClient.Builder builder;
     private String path;
