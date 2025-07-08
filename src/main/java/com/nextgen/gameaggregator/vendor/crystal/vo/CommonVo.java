@@ -8,8 +8,9 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class CommonVo {
     private BigDecimal balance;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String actionId;
 
 }

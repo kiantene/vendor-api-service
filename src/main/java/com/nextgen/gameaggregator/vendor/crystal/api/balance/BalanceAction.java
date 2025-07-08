@@ -2,8 +2,12 @@ package com.nextgen.gameaggregator.vendor.crystal.api.balance;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.crystal.dto.CommonDto;
@@ -22,8 +26,6 @@ import java.math.RoundingMode;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class BalanceAction {
-    private final AgentPlayerService agentPlayerService;
-    private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final WalletService walletService;
@@ -32,14 +34,10 @@ public class BalanceAction {
     public BalanceAction(HttpService httpService,
                          WalletService walletService,
                          GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService,
                          VendorService vendorService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
-        this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
     }
 
@@ -58,7 +56,7 @@ public class BalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getPlayerId());
 
             vendorService.doCompareSignature(request, httpRequestLog, gameSession);
-            this.doVerification(gameSession);
+            vendorService.validate(commonDto.getCurrencyCode(), gameSession);
 
             BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -71,17 +69,6 @@ public class BalanceAction {
         }
         return commonDataVo;
     }
-
-    private void doVerification(GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException {
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-    }
-
 
     private CommonDataVo prepareBalanceVo(BigDecimal walletBalance) {
         CommonDataVo commonDataVo = new CommonDataVo();

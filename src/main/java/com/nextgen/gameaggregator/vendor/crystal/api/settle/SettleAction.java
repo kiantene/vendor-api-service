@@ -1,13 +1,14 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.bet;
+package com.nextgen.gameaggregator.vendor.crystal.api.settle;
 
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
@@ -21,89 +22,94 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class BetAction {
-    private final GameSessionService gameSessionService;
+public class SettleAction {
     private final HttpService httpService;
-    private final WalletService walletService;
-    private final ValidationService validationService;
     private final VendorService vendorService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public BetAction(HttpService httpService,
-                     ValidationService validationService,
-                     WalletService walletService,
-                     GameSessionService gameSessionService,
-                     VendorService vendorService,
-                     RequestIdempotentLogService requestIdempotentLogService) {
-        this.validationService = validationService;
-        this.walletService = walletService;
+    public SettleAction(HttpService httpService,
+                        GameSessionService gameSessionService,
+                        VendorService vendorService,
+                        WalletService walletService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
+
         this.httpService = httpService;
-        this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.BET)
-    public CommonDataVo bet(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.SETTLE)
+    public CommonDataVo settle(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
+        SettleDto settleDto = new SettleDto();
         CommonDataVo commonDataVo = new CommonDataVo();
-        BetDto betDto = new BetDto();
         boolean isRequestExists = false;
+
         try {
             String body = httpRequestLog.getRequestBody();
-            betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
+            GameSession gameSession;
+            VendorService.doValidation(settleDto);
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getGameId(), gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(settleDto.getPlayerId());
+                gameSessionService.updateByVendorGameCode(gameSession, settleDto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
-            VendorService.doValidation(betDto);
+            this.doVerification(settleDto.getGameId(), gameSession);
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
-
-            vendorService.doCompareSignature(request, httpRequestLog, gameSession);
-            this.doVerification(betDto.getGameId(), betDto.getCurrencyCode(), gameSession);
-
-            if (requestIdempotentLogService.checkExists(betDto, betDto.getPlayerId()) == null) {
-                requestIdempotentLogService.create(betDto, betDto.getPlayerId());
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getPlayerId());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-            // Process Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
-                    httpRequestLog.getRequestBody(), httpRequestLog);
 
-            //Set response data
-            commonDataVo = vendorService.prepareVo(betEvent.getLastBalance(), betDto.getExternalTransactionId());
+            ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
+
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType,
+                    vendorService, httpRequestLog);
+
+            commonDataVo = vendorService.prepareVo(balance, settleDto.getExternalTransactionId());
 
         } catch (BetResultIdempotentViolationException e) {
-            commonDataVo = vendorService.prepareVo(e.getBalance(), betDto.getExternalTransactionId());
+            commonDataVo = vendorService.prepareVo(e.getBalance(), settleDto.getExternalTransactionId());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             this.handleException(e, commonDataVo, httpRequestLog);
         } finally {
-            // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
-                requestIdempotentLogService.delete(betDto, betDto.getPlayerId());
+                requestIdempotentLogService.delete(settleDto, settleDto.getPlayerId());
             }
             httpService.end(httpRequestLog, commonDataVo);
         }
         return commonDataVo;
     }
 
-    private void doVerification(String gameId, String currency, GameSession gameSession) throws AuthenticationException,
+    private void doVerification(String gameId, GameSession gameSession)
+            throws DisabledAgentPlayerException,
             DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            InvalidPlayerException,
-            DisabledGameException,
             GameNotSupportedException,
             CurrencyNotSupportedException {
 
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
-
+        vendorService.validate(gameId, gameSession);
         //check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameId, GameNotSupportedException::new);
-        vendorService.validate(currency, gameSession);
+
     }
 
     @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
