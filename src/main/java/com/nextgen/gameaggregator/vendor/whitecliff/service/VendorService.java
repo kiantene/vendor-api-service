@@ -44,7 +44,11 @@ public class VendorService extends BaseVendorService {
         PrdDto prdDto = new PrdDto();
         prdDto.setId(Integer.valueOf(productId));
 
-        if (gameSession.getGameCategoryId() == 5 && !gameSession.getVendorGameCode().equals("0")) {
+        // default lobby code
+        String lobbyCode = "0";
+
+        // if is live game and not lobby game then map to table id
+        if (gameSession.getGameCategoryId() == 5 && !gameSession.getVendorGameCode().equals(lobbyCode)) {
             prdDto.setTable_id(gameSession.getVendorGameCode());
         } else {
             prdDto.setType(Integer.valueOf(gameSession.getVendorGameCode()));
