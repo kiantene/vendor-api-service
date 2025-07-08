@@ -62,7 +62,7 @@ public class BetAction {
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
 
-            this.doValidation(betDto);
+            VendorService.doValidation(betDto);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
 
@@ -95,11 +95,6 @@ public class BetAction {
             httpService.end(httpRequestLog, commonDataVo);
         }
         return commonDataVo;
-    }
-
-    private void doValidation(BetDto betDto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(betDto);
     }
 
     private void doVerification(String gameId, GameSession gameSession) throws AuthenticationException,

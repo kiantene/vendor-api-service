@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.crystal.dto.CommonDto;
@@ -54,7 +53,7 @@ public class BalanceAction {
         try {
             String body = httpRequestLog.getRequestBody();
             commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
-            this.doValidation(commonDto);
+            VendorService.doValidation(commonDto);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getPlayerId());
 
@@ -71,11 +70,6 @@ public class BalanceAction {
             httpService.end(httpRequestLog, commonDataVo);
         }
         return commonDataVo;
-    }
-
-    private void doValidation(CommonDto commonDto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(commonDto);
     }
 
     private void doVerification(GameSession gameSession) throws

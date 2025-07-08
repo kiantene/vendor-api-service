@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -68,6 +69,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public static <T> void doValidation(T dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
     public void doCompareSignature(HttpServletRequest request, HttpRequestLog httpRequestLog, GameSession gameSession)
             throws AuthenticationException, CredentialNotFoundException {
 
@@ -80,7 +86,7 @@ public class VendorService extends BaseVendorService {
         if (signatureHeader == null || signatureHeader.isEmpty()) {
             throw new AuthenticationException("Missing signature header");
         }
-        
+
         String body = httpRequestLog.getRequestBody();
         if (body == null || body.isEmpty()) {
             throw new AuthenticationException("Empty request body");
