@@ -308,7 +308,7 @@ public class HttpService {
 
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    if (requestLog.getRequestType().equals(WalletBalanceAction.class.getSimpleName())) {
+                    if (WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
                         ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
                         String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
                         if (balanceLog.getRootCause() == null || balanceLog.getRootCause().isEmpty()) {
@@ -335,7 +335,7 @@ public class HttpService {
             requestLog.setStatus(ERROR);
             requestLog.setErrorMessage(exception.toString());
 
-            if (exception instanceof InvalidOperatorResponseException && requestLog.getRequestType().equals(WalletBalanceAction.class.getSimpleName())) {
+            if (exception instanceof InvalidOperatorResponseException && WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
                 String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
                 requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
