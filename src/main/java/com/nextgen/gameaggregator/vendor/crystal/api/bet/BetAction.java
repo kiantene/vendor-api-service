@@ -1,12 +1,14 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.balance;
+package com.nextgen.gameaggregator.vendor.crystal.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.crystal.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.crystal.service.VendorService;
 import com.nextgen.gameaggregator.vendor.crystal.vo.CommonDataVo;
 import com.nextgen.gameaggregator.vendor.crystal.vo.ErrorVo;
@@ -21,72 +23,96 @@ import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class BalanceAction {
+public class BetAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final WalletService walletService;
+    private final ValidationService validationService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public BalanceAction(HttpService httpService,
-                         WalletService walletService,
-                         GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
-                         AgentPlayerService agentPlayerService,
-                         VendorService vendorService) {
+    public BetAction(HttpService httpService,
+                     ValidationService validationService,
+                     WalletService walletService,
+                     GameSessionService gameSessionService,
+                     VendorLineService vendorLineService,
+                     AgentPlayerService agentPlayerService,
+                     VendorService vendorService,
+                     RequestIdempotentLogService requestIdempotentLogService) {
+        this.validationService = validationService;
         this.walletService = walletService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.BALANCE)
-    public CommonDataVo balance(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.BET)
+    public CommonDataVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         CommonDataVo commonDataVo = new CommonDataVo();
-
-        CommonDto commonDto;
+        BetDto betDto = new BetDto();
+        boolean isRequestExists = false;
         try {
             String body = httpRequestLog.getRequestBody();
-            commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
-            VendorService.doValidation(commonDto);
+            betDto = HttpService.convertJsonToDto(body, BetDto.class);
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getPlayerId());
+            VendorService.doValidation(betDto);
+
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
 
             vendorService.doCompareSignature(request, httpRequestLog, gameSession);
-            this.doVerification(gameSession);
+            this.doVerification(betDto.getGameId(), gameSession);
 
-            BigDecimal getWalletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getPlayerId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+            // Process Bet
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
+                    httpRequestLog.getRequestBody(), httpRequestLog);
 
-            commonDataVo = this.prepareBalanceVo(getWalletBalance);
+            //Set response data
+            commonDataVo = this.prepareBetVo(betEvent.getLastBalance());
 
+        } catch (BetResultIdempotentViolationException e) {
+            commonDataVo = this.prepareBetVo(e.getBalance());
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             this.handleException(e, commonDataVo, httpRequestLog);
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getPlayerId());
+            }
             httpService.end(httpRequestLog, commonDataVo);
         }
         return commonDataVo;
     }
 
-    private void doVerification(GameSession gameSession) throws
+    private void doVerification(String gameId, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException,
-            DisabledAgentPlayerException {
+            DisabledAgentPlayerException,
+            InvalidPlayerException,
+            DisabledGameException,
+            GameNotSupportedException {
+
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
+        //check session gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameId, GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-    }
-
-
-    private CommonDataVo prepareBalanceVo(BigDecimal walletBalance) {
-        CommonDataVo commonDataVo = new CommonDataVo();
-        commonDataVo.getData().setBalance(walletBalance.setScale(2, RoundingMode.DOWN));
-        return commonDataVo;
     }
 
     @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
@@ -111,5 +137,11 @@ public class BalanceAction {
         }
         commonDataVo.setData(null);
         httpService.logError(httpRequestLog, e);
+    }
+
+    private CommonDataVo prepareBetVo(BigDecimal balance) {
+        CommonDataVo commonDataVo = new CommonDataVo();
+        commonDataVo.getData().setBalance(balance.setScale(2, RoundingMode.DOWN));
+        return commonDataVo;
     }
 }
