@@ -55,8 +55,6 @@ public class WalletBetAction {
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
         //ambs
         this.vendorsWithTwoPointFiveSecondTimeout.add(38);
-        //cpgame
-        this.vendorsWithFourPointFiveSecondTimeout.add(48);
     }
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
