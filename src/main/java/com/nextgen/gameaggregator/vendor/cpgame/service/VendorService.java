@@ -137,7 +137,7 @@ public class VendorService extends BaseVendorService {
 
     @Override
     public Integer operatorTimeoutTiming() {
-        Integer defaultTiming = 4500;
+        Integer defaultTiming = 4000;
         return defaultTiming;
     }
 }
