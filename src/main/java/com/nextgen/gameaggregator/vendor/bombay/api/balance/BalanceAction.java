@@ -5,11 +5,11 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +21,11 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class BalanceAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -36,10 +38,8 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
 
-    @PostMapping (EndPoints.BALANCE)
+    @PostMapping(EndPoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
@@ -51,13 +51,13 @@ public class BalanceAction {
 
         GameSession gameSession = new GameSession();
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             // get x-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -66,11 +66,11 @@ public class BalanceAction {
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // check db game code is stg or not
-            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
                 balanceDto.setGame_id(balanceDto.getGame_id() + "_stg");
             }
 
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(balanceDto.getGame_id(),gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(balanceDto.getGame_id(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession, header.get("x-signature"), body);
@@ -80,19 +80,19 @@ public class BalanceAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(balance.toBigIntegerExact());
+            responseVo.setBalance(balance.toBigInteger());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
-        } catch(GameNotSupportedException e){
+        } catch (GameNotSupportedException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
-        } catch(AuthenticationException e){
+        } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
-        } catch(CurrencyNotSupportedException e){
+        } catch (CurrencyNotSupportedException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
 
             if (e.getValidation() != null) {
@@ -104,21 +104,21 @@ public class BalanceAction {
                         .orElse(ResponseCodes.RS_ERROR_UNKNOWN); // if there's no value, set it to the default value
                 responseVo.setStatus(violation);
             }
-        } catch(InvalidSignatureException e){
+        } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
-        } catch(InvalidAgentApiCredentialException |
-                VendorCurrencyNotSupportException |
-                DisabledAgentPlayerException |
-                DisabledGameException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException e){
+        } catch (InvalidAgentApiCredentialException |
+                 VendorCurrencyNotSupportException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } finally{
+        } finally {
             responseVo.setRequest_uuid(balanceDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
@@ -154,7 +154,7 @@ public class BalanceAction {
         Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
 
         // validateSignature not equal to true mean credential problem or this data is not from vendor
-        if(!validateSignature){
+        if (!validateSignature) {
             throw new InvalidSignatureException();
         }
     }
