@@ -32,13 +32,11 @@ public class TakeAllDto implements BetData {
     private String gamecode;
 
     @NotBlank
-    @Size(min = 1, max = 30)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
 
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank

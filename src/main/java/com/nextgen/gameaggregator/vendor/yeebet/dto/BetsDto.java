@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yeebet.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BetsDto {
 
     @NotBlank
@@ -82,4 +84,6 @@ public class BetsDto {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String foregift;
+
+    private Boolean closeRound;
 }

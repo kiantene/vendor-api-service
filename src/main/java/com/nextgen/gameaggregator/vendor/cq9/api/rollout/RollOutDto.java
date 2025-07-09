@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.core.RequestIdempotency;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RollOutDto implements RequestIdempotency {
+public class RollOutDto implements BetResultData {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -31,7 +32,6 @@ public class RollOutDto implements RequestIdempotency {
 
     @NotBlank
     @Size(min = 1, max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
 
     @NotNull
@@ -41,7 +41,6 @@ public class RollOutDto implements RequestIdempotency {
 
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank
@@ -54,12 +53,72 @@ public class RollOutDto implements RequestIdempotency {
     }
 
     @Override
-    public String getTransactionId() {
+    public String getExternalTransactionId() {
         return this.mtcode;
     }
 
     @Override
-    public String getVendorPlayerUsername() {
-        return this.account;
+    public String getVendorBetId() {
+        return this.mtcode;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.roundid;
+    }
+
+    @Override
+    public String getGameId() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return null;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return null;
     }
 }

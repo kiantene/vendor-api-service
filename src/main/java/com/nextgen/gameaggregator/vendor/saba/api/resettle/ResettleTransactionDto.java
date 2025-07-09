@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -19,16 +18,12 @@ public class ResettleTransactionDto implements SportResettleData {
     private Long txId;
     private String updateTime;
     @JsonProperty("winlostDate")
-    @NotNull
-//    @Pattern(regexp = RegexPattern.REGEX_PATTERN_WIN_LOST_DATE)
     private String winLostDate;
     private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
-    //    @NotNull
-//    @Pattern(regexp = RegexPattern.REGEX_PATTERN_SETTLEMENT_TIME)
     private String settlementTime;
     private String operationId;
 
@@ -84,12 +79,25 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public Long getVendorSettleTime() {
-//        long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
-//        long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(this.settlementTime, DateTime.PATTERN_SETTLEMENT_TIME, DateTime.ZONE);
+        try {
+            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(
+                    this.settlementTime,
+                    DateTime.PATTERN_SETTLEMENT_TIME,
+                    DateTime.ZONE
+            );
 
-        //compare and get the Later Time
-//        return Math.max(millisWinLostDate, millisSettlementTime);
-        return DateTimeConversionUtils.toUnixTimestamp(this.winLostDate, DateTime.PATTERN_WIN_LOST_DATE, DateTime.ZONE);
+            long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(
+                    this.winLostDate,
+                    DateTime.PATTERN_WIN_LOST_DATE,
+                    DateTime.ZONE
+            );
+
+            return Math.max(millisSettlementTime, millisWinLostDate);
+
+        } catch (Exception ex) {
+            //regardless any of above conditions is failed, will fallback to use system generated current time.
+            return System.currentTimeMillis();
+        }
     }
 
     @Override

@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WalletTransactionServiceTest {
 
@@ -61,7 +60,9 @@ class WalletTransactionServiceTest {
         String walletRequestId = walletTransaction.getExternalTransactionId() + "_" + walletTransaction.getAction() + "_" +
                 walletTransaction.getVendorPlayerUsername() + "_" + walletTransaction.getVendorGameCode();
 
-        assertEquals(walletRequest.getTraceId(), walletTransaction.getId());
+        String id = walletRequest.getVendorBetId() + "_" + walletRequest.getRoundId() + "_" + walletRequest.getVendorGameId() + "_" + walletRequest.getVendorPlayerId() + "_" + OperatorWalletService.DEBIT;
+
+        assertEquals(id, walletTransaction.getId());
         assertEquals(BigDecimal.ZERO, walletTransaction.getBalance());
         assertEquals(0, walletTransaction.getOperatorStatus());
         assertEquals(true, walletTransaction.getCreatedDate() != null);
