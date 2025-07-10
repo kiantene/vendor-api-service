@@ -31,7 +31,7 @@ public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, Ga
 
     @Override
     public String getVendorClassName() {
-        return EndPoints.CLASS_NAME;
+        return EndPoints.CLASS_NAME; // return null to disable this launcher
     }
 
     @Override

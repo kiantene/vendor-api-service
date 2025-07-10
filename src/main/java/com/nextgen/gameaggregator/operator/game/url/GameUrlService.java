@@ -85,7 +85,8 @@ public class GameUrlService {
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.testSupportService = testSupportService;
         this.gameLaunchHandlerMap = gameLaunchHandlerList.stream()
-                        .collect(Collectors.toMap(GameLaunchHandler::getVendorClassName, Function.identity()));
+                .filter(handler -> handler.getVendorClassName() != null)
+                .collect(Collectors.toMap(GameLaunchHandler::getVendorClassName, Function.identity()));
         this.gameLaunchService = gameLaunchService;
     }
 
