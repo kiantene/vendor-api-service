@@ -30,7 +30,7 @@ public class RefundDto extends CommonDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.transactionId;
+        return this.roundId;
     }
 
     @Override
@@ -38,8 +38,4 @@ public class RefundDto extends CommonDto implements RollbackData {
         return System.currentTimeMillis();
     }
 
-    @Override
-    public String getRoundId() {
-        return this.roundId;
-    }
 }

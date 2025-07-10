@@ -36,7 +36,7 @@ public class BetDto extends CommonDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.transactionId;
+        return this.roundId;
     }
 
     @Override
