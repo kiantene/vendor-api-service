@@ -80,34 +80,30 @@ public class WalletBalanceAction {
         }
 
         ResponseEntity<String> apiResponse;
-        long endTime;
 
         try {
-            ClientBalanceResponse clientBalanceResponse = operatorApiCaller.post(apiUrl, Map.of(
+            apiResponse = operatorApiCaller.post(apiUrl, Map.of(
                     EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
                     EndPoints.HEADER_SIGNATURE, signature
             ), dto);
             this.setEndTime(httpRequestLog);
 
-            String jsonResponseBody = new ObjectMapper().writeValueAsString(clientBalanceResponse);
-
-            apiResponse = ResponseEntity.ok(jsonResponseBody);
-
-            if (httpRequestLog != null) {
-                httpRequestLog.setOperatorResponse(jsonResponseBody);
-            }
-
         } catch (OperatorApiException operatorApiException) {
             this.setEndTime(httpRequestLog);
             Throwable rootCause = operatorApiException.getRootCause();
-//            log.error("Exception = {}, rootCause = {}, error = {}", operatorApiException.getMessage(), rootCause.getClass().getSimpleName(), rootCause.getMessage());
             InvalidOperatorResponseException exception = new InvalidOperatorResponseException(operatorApiException.getMessage());
             exception.setRootCause(operatorApiException.getClass().getSimpleName() + " - " + rootCause.getClass().getSimpleName());
+            String responseBody = operatorApiException.getResponseBody();
+
+            if (httpRequestLog != null) {
+                if (responseBody != null && !responseBody.isEmpty()) {
+                    httpRequestLog.setOperatorResponse(responseBody);
+                    httpRequestLog.setOperatorHttpStatusCode(operatorApiException.getStatusCode());
+                }
+            }
+
             throw exception;
 
-        } catch (JsonProcessingException e) {
-            this.setEndTime(httpRequestLog);
-            throw new InvalidOperatorResponseException("cannot convert balance response object to string");
         }
 
 //        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
