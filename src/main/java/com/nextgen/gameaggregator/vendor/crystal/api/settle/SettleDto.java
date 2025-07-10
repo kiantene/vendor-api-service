@@ -25,7 +25,7 @@ public class SettleDto extends CommonDto implements BetResultData {
     private String transactionId;
 
     @NotNull
-    @Digits(integer = 20, fraction = 2)
+    @Digits(integer = 20, fraction = 8)
     @DecimalMin(value = "0.0")
     @JsonProperty("amount")
     private BigDecimal amount;
