@@ -50,7 +50,7 @@ public class GameLaunchService {
         );
     }
 
-    private String callS3(GameLaunchHandler<Object, Object> launchHandler, GameLaunchContext context) {
+    private void callS3(GameLaunchHandler<Object, Object> launchHandler, GameLaunchContext context) {
         String vendorClassName = context.getVendorClassName();
         Object gameLaunchRequest = launchHandler.onPrepareRequestBody(context);
 
