@@ -116,7 +116,7 @@ public class GameUrlService {
                         .platformId(gameSession.getPlatformId())
                         .build();
 
-                gameLaunchService.process(vendorGameLauncher, gameLaunchContext);
+                gameLaunchService.processLaunchRequest(vendorGameLauncher, gameLaunchContext);
                 gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
 
             } else {
