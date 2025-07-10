@@ -119,7 +119,7 @@ public class BetService {
             try {
                 // Verify session
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
-                
+
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getUser()); //generate new token
                 gameSessionService.updateByVendorGameCode(gameSession, gameCode);
@@ -468,6 +468,9 @@ public class BetService {
                         //only use pointout(no matter win or lose)
                         //no bet amount so just use money to define win or lose
                         resultType = dto.getMoney().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+                    } else {
+                        // did not lose all money or exactly lose (gamble lose)
+                        resultType = (dto.getBetinfo().subtract(dto.getMoney())).compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
                     }
                 }
             }

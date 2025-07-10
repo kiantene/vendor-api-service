@@ -1,0 +1,174 @@
+package com.nextgen.gameaggregator.vendor.kypoker.api.action;
+
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.kypoker.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.getorderstatus.GetOrderStatusService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.settle.SettleService;
+import com.nextgen.gameaggregator.vendor.kypoker.api.cancel.CancelService;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
+import com.nextgen.gameaggregator.vendor.kypoker.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
+import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
+
+import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(path = EndPoints.PATH)
+public class GeneralAction {
+
+    private final HttpService httpService;
+    private final BalanceService balanceService;
+    private final BetService betService;
+    private final SettleService settleService;
+    private final CancelService cancelService;
+    private final GetOrderStatusService getOrderStatusService;
+    private final VendorLineService vendorLineService;
+
+    public GeneralAction(HttpService httpService,
+                         BalanceService balanceService,
+                         BetService betService,
+                         SettleService settleService,
+                         CancelService cancelService,
+                         GetOrderStatusService getOrderStatusService,
+                         VendorLineService vendorLineService) {
+
+        this.httpService = httpService;
+        this.balanceService = balanceService;
+        this.betService = betService;
+        this.settleService = settleService;
+        this.cancelService = cancelService;
+        this.getOrderStatusService = getOrderStatusService;
+        this.vendorLineService = vendorLineService;
+
+    }
+
+    @GetMapping(EndPoints.ACTION)
+    public CommonVo action(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
+
+        ResponseObjectDto d = new ResponseObjectDto();
+
+        // Construct VO
+        CommonVo vo = new CommonVo();
+
+        try {
+            // Retrieve request body in original string format
+            String body = request.getQueryString();
+
+            // Convert original request body into dto
+            CommonDto commonDto = HttpService.convertQueryStringToDto(body, CommonDto.class);
+
+            // Validate request parameters (Non-database related)
+            ValidationUtils.validateRequest(commonDto);
+
+            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.AGENT_ID, commonDto.getAgent());
+
+            //Assign variables used in blocks
+            String aesKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
+            String md5Key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.MD5_KEY);
+            String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
+
+            //Check for decryption error
+            if(decryptedBody == null){
+                throw new InvalidRequestException();
+            }
+
+            //Adding logging readability on open serach
+            httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
+
+            //Md5 Hashing
+            String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
+
+            doVerification(commonDto,encryptedMd5);
+
+            ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
+
+            ValidationUtils.validateRequest(actionDto);
+
+            actionDto.setHttpRequestLog(httpRequestLog);
+
+            ValidationUtils.validateRequest(actionDto);
+
+            vo.setM(EndPoints.API_ENDPOINT);
+
+            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
+
+            //Catch stray error from action services
+            if (vo==null){
+                throw new InvalidRequestException();
+
+            }
+
+        } catch (InvalidRequestException invalidRequestException) {
+            vo = new CommonVo();
+            d.setCode(ResponseCodes.INVALID_REQUEST);
+            vo.setD(d);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            vo = new CommonVo();
+            d.setCode(ResponseCodes.INVALID_CREDENTIAL);
+            vo.setD(d);
+
+        } catch(InvalidDecryptionException invalidDecryptionException){
+            vo = new CommonVo();
+            d.setCode(ResponseCodes.INVALID_DECRYPTION);
+            vo.setD(d);
+
+        } catch (Exception e) {
+            vo = new CommonVo();
+            d.setCode(ResponseCodes.INTERNAL_ERROR);
+            vo.setD(d);
+        }
+        finally {
+            vo.setM(EndPoints.API_ENDPOINT);
+
+        }
+        return vo;
+    }
+
+    private void doVerification(CommonDto dto,String encryptedMd5)
+            throws InvalidRequestException {
+        ValidationUtils.isEquals(dto.getKey(), encryptedMd5);
+    }
+
+    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
+            throws AuthenticationException, InvalidRequestException {
+        CommonVo vo = new CommonVo();
+
+        switch (actionDto.getS()) {
+
+            case Actions.BALANCE:
+                vo = balanceService.balance(traceId, httpRequestLog, decryptedString);
+                break;
+            case Actions.BET:
+                vo = betService.bet(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.SETTLE:
+                vo = settleService.settle(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.CANCEL:
+                vo = cancelService.cancel(traceId, httpRequestLog, decryptedString, timeStamp);
+                break;
+            case Actions.GET_ORDER_STATUS:
+                vo = getOrderStatusService.getOrderStatus(body, httpRequestLog, decryptedString);
+                break;
+            default:
+                ResponseObjectDto d = new ResponseObjectDto();
+                d.setCode(ResponseCodes.INVALID_REQUEST);
+                vo.setD(d);
+                break;
+        }
+        return vo;
+    }
+
+}

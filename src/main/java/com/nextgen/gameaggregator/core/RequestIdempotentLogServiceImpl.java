@@ -103,4 +103,46 @@ public class RequestIdempotentLogServiceImpl implements RequestIdempotentLogServ
     public RequestIdempotentLog get(String id) {
         return requestIdempotentLogRepository.findById(id).orElse(null);
     }
+
+    // Sportsbook specific methods
+    @Override
+    public String generateBetResultRequestIdempotentLogId(String externalTransactionId, String vendorPlayerUsername, String prefix) {
+        externalTransactionId = (externalTransactionId == null) ? "" : externalTransactionId;
+        vendorPlayerUsername = (vendorPlayerUsername == null) ? "" : vendorPlayerUsername;
+
+        if (prefix == null || prefix.isBlank()) {
+            return externalTransactionId + "_" + vendorPlayerUsername;
+        }
+        return prefix + "_" + externalTransactionId + "_" + vendorPlayerUsername;
+    }
+
+    @Override
+    @CacheEvict(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager")
+    public void delete(String externalTransactionId, String vendorPlayerUsername, String prefix) {
+        try {
+            String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
+            requestIdempotentLogRepository.deleteById(id);
+        } catch (Exception e) {
+            // Handle exception for document not found, but do nothing
+        }
+    }
+
+    @Override
+    @CachePut(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager")
+    public RequestIdempotentLog create(String externalTransactionId, String vendorPlayerUsername, String prefix) {
+        String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
+        RequestIdempotentLog createRequestIdempotentLog = new RequestIdempotentLog();
+        createRequestIdempotentLog.setId(id);
+        createRequestIdempotentLog.setCreateTime(System.currentTimeMillis());
+        requestIdempotentLogRepository.save(createRequestIdempotentLog);
+        return createRequestIdempotentLog;
+    }
+
+    @Override
+    @Cacheable(value = "RequestIdempotentLog", key = "{#externalTransactionId, #vendorPlayerUsername, #prefix}", cacheManager = "cacheManager", unless = "#result == null")
+    public RequestIdempotentLog getSportsRequestIdempotentLog(String externalTransactionId, String vendorPlayerUsername, String prefix) {
+        String id = this.generateBetResultRequestIdempotentLogId(externalTransactionId, vendorPlayerUsername, prefix);
+        return requestIdempotentLogRepository.findById(id).orElse(null);
+    }
 }
+
