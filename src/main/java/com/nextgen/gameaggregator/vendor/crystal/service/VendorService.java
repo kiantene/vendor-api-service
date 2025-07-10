@@ -118,5 +118,11 @@ public class VendorService extends BaseVendorService {
         commonDataVo.getData().setActionId(externalTransactionId);
         return commonDataVo;
     }
+
+    @Override
+    public boolean shouldDoRollbackByRound(GameSession gameSession) {
+        return true;
+
+    }
 }
 
