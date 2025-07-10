@@ -8,6 +8,8 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.ifg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ifg.constant.GameType;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -19,11 +21,8 @@ import java.util.Map;
 @Service
 public class GameUrlService implements GameUrl {
 
-    private final VendorLineService vendorLineService;
-
-    public GameUrlService(VendorLineService vendorLineService) {
-        this.vendorLineService = vendorLineService;
-    }
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
@@ -81,7 +80,7 @@ public class GameUrlService implements GameUrl {
     }
 
     private Integer getCredentialVersion(Integer vendorLineId, String name) throws InvalidVendorLineException {
-        VendorLineCredential vendorLineCredential = vendorLineService.getCredentialByLineIdAndName(vendorLineId, name);
+        VendorLineCredential vendorLineCredential = vendorLineService.getLatestCredentialByLineIdAndName(vendorLineId, name);
 
         if (vendorLineCredential == null) {
             throw new InvalidVendorLineException("VendorLineCredential not found for vendorLineId: " + vendorLineId + " and name: " + name);

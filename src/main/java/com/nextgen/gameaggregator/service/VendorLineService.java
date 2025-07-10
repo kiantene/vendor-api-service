@@ -12,10 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,9 +69,13 @@ public class VendorLineService {
         return credential.getValue();
     }
 
-    @Cacheable(value = "VendorLineCredential", key = "{#vendorLineId, #name}", cacheManager = "cacheManager", unless = "#result == null")
-    public VendorLineCredential getCredentialByLineIdAndName(Integer vendorLineId, String name) {
-        return vendorLineCredentialRepository.findByVendorLineIdAndNameAndStatus(vendorLineId, name, Status.ACTIVE.code);
+    @Cacheable(value = "LatestVendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager", unless = "#result == null")
+    public VendorLineCredential getLatestCredentialByLineIdAndName(Integer vendorLineId, String name) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findAllByVendorLineIdAndNameAndStatus(vendorLineId, name, Status.ACTIVE.code);
+
+        return credentials.stream()
+            .max(Comparator.comparing(VendorLineCredential::getVersion))
+            .orElse(null);
     }
 
     @Cacheable(value = "VendorLineCredentials", key = "{#name, #value}", cacheManager = "cacheManager")
