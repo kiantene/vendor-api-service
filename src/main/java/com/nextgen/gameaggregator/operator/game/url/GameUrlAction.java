@@ -251,6 +251,7 @@ public class GameUrlAction {
         String body = httpRequestLog.getRequestBody();
         GameLaunchDto gameLaunchDto = new GameLaunchDto();
         gameLaunchDto.setTraceId(traceId);
+        gameLaunchDto.setLobbyUrl(dto.getLobbyUrl());
 
         // 1. Validate all fields in the request object
         loggingService.logStart();

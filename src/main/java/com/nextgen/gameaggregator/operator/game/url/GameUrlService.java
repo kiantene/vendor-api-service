@@ -91,7 +91,7 @@ public class GameUrlService {
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
-                                  VendorLine vendorLine, HttpRequestLog httpRequestLog)
+                                  VendorLine vendorLine, HttpRequestLog httpRequestLog, GameLaunchDto gameLaunchDto)
             throws InvalidVendorResponseException {
 
         GameUrlData gameUrlData = new GameUrlData();
@@ -114,7 +114,7 @@ public class GameUrlService {
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
                         .vendorCredentials(credentials)
                         .platformId(gameSession.getPlatformId())
-                        //TODO NEED TO ADD TO CONTEXT .lobbyUrl()
+                        .lobbyUrl(gameLaunchDto.getLobbyUrl())
                         .build();
 
                 gameLaunchService.processLaunchRequest(vendorGameLauncher, gameLaunchContext);
