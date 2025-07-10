@@ -114,6 +114,7 @@ public class GameUrlService {
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
                         .vendorCredentials(credentials)
                         .platformId(gameSession.getPlatformId())
+                        //TODO NEED TO ADD TO CONTEXT .lobbyUrl()
                         .build();
 
                 gameLaunchService.processLaunchRequest(vendorGameLauncher, gameLaunchContext);
