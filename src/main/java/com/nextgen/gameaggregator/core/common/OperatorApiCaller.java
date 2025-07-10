@@ -1,19 +1,16 @@
 package com.nextgen.gameaggregator.core.common;
 
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -43,11 +40,11 @@ public class OperatorApiCaller {
         this.path = path;
     }
 
-    public ClientBalanceResponse post(String baseUrl, Map<String, String> headers, Object requestBody) {
+    public ResponseEntity<String> post(String baseUrl, Map<String, String> headers, Object requestBody) {
         return post(baseUrl, this.path, headers, requestBody);
     }
 
-    public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object requestBody) {
+    public ResponseEntity<String> post(String baseUrl, String path, Map<String, String> headers, Object requestBody) {
 //        LogContext logContext = LogContextHolder.get();
 //        logContext.put("operatorUrl", baseUrl + path);
 
@@ -74,11 +71,11 @@ public class OperatorApiCaller {
 //            long startTime = System.currentTimeMillis();
 //            logContext.put("operatorStart", startTime);
 
-            ClientBalanceResponse clientBalanceResponse = requestHeadersSpec
+            ResponseEntity<String> clientBalanceResponse = requestHeadersSpec
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
                     .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
-                    .bodyToMono(ClientBalanceResponse.class)
+                    .toEntity(String.class)
                     .block()
             ;
 //            long endTime = System.currentTimeMillis();
