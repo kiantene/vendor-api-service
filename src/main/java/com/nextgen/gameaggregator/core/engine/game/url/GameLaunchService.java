@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.service.S3Service;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -53,7 +55,7 @@ public class GameLaunchService {
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
         @SuppressWarnings("unchecked")
-        Map<String, String> request = (Map<String, String>) launchHandler.onPrepareRequestBody(context);
+        Map<String, String> request = convertToMap(launchHandler.onPrepareRequestBody(context));
         String htmlTemplate = launchHandler.getHtmlTemplate();
         String html = applyPlaceholderReplacement(htmlTemplate, request);
         String response = s3Service.generateHtmlToS3(context, html);
@@ -67,5 +69,26 @@ public class GameLaunchService {
             result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return result;
+    }
+
+    private static Map<String, String> convertToMap(Object dto) {
+        Map<String, String> map = new HashMap<>();
+        if (dto == null) {
+            return map;
+        }
+
+        Field[] fields = dto.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(dto);
+                if (value != null) {
+                    map.put(field.getName(), value.toString());
+                }
+            } catch (IllegalAccessException e) {
+                // Optionally log or rethrow if needed
+            }
+        }
+        return map;
     }
 }
