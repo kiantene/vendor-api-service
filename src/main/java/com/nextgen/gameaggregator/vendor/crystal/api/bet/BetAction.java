@@ -69,6 +69,7 @@ public class BetAction {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
+            Thread.sleep(5000);
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
                     httpRequestLog.getRequestBody(), httpRequestLog);
