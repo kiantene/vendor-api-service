@@ -3,8 +3,9 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.service.S3Service;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class GameLaunchService {
@@ -14,46 +15,57 @@ public class GameLaunchService {
         this.s3Service = s3Service;
     }
 
-    public void processLaunchRequest(GameLaunchHandler<Object, Object> launchHandler, GameLaunchContext context) {
-        MediaType contentType = launchHandler.getContentType();
+    public void processLaunchRequest(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
 
-        Object response = null;
-        if (shouldCallWebClient(contentType)) {
-            response = callWebClient(launchHandler, context);
+        switch (launchHandler.getLaunchMode()) {
+            case API_CALL -> callExternalApi(context, launchHandler);
+//            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
+            case STATIC_HTML -> buildStaticHtml(context, launchHandler);
+//            case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
+            default -> throw new UnsupportedOperationException("Unsupported launch mode");
         }
-
-        launchHandler.onSuccess(context, response);
     }
 
-    private boolean shouldCallWebClient(MediaType contentType) {
-        return MediaType.APPLICATION_JSON.equals(contentType) ||
-                MediaType.APPLICATION_FORM_URLENCODED.equals(contentType);
-    }
-
-    private Object callWebClient(GameLaunchHandler<Object, Object> launchHandler, GameLaunchContext context) {
+    private void callExternalApi(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
         String vendorClassName = context.getVendorClassName();
-        Object gameLaunchRequest = launchHandler.onPrepareRequestBody(context);
+        Object request = launchHandler.onPrepareRequestBody(context);
 
         String baseUrl = launchHandler.getBaseUrl(context);
         if (baseUrl == null) throw new InternalConfigurationException(vendorClassName + " Game Launch baseUrl cannot be found.");
+
+        Map<String, String> headers = launchHandler.getHeaders(context, request);
 
         WebClientApiCaller webClientApiCaller = new WebClientApiCaller(
                 launchHandler.getPath(),
                 launchHandler.getContentType()
         );
 
-        return webClientApiCaller.post(
+        // should fire error event?
+        Object response = webClientApiCaller.post(
                 baseUrl,
-                launchHandler.getHeaders(context, gameLaunchRequest),
-                gameLaunchRequest,
+                headers,
+                request,
                 launchHandler.getResponseType()
         );
+
+        launchHandler.onSuccess(context, response);
     }
 
-    private void callS3(GameLaunchHandler<Object, Object> launchHandler, GameLaunchContext context) {
-        String vendorClassName = context.getVendorClassName();
-        Object gameLaunchRequest = launchHandler.onPrepareRequestBody(context);
+    private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
+        @SuppressWarnings("unchecked")
+        Map<String, String> request = (Map<String, String>) launchHandler.onPrepareRequestBody(context);
+        String htmlTemplate = launchHandler.getHtmlTemplate();
+        String html = applyPlaceholderReplacement(htmlTemplate, request);
+        String response = s3Service.generateHtmlToS3(context, html);
+        context.setGameUrl(response);
+        launchHandler.onSuccess(context, response);
+    }
 
-
+    private String applyPlaceholderReplacement(String template, Map<String, String> values) {
+        String result = template;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
+        }
+        return result;
     }
 }

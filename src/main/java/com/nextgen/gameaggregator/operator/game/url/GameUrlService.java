@@ -117,7 +117,7 @@ public class GameUrlService {
                         .lobbyUrl(gameLaunchDto.getLobbyUrl())
                         .build();
 
-                gameLaunchService.processLaunchRequest(vendorGameLauncher, gameLaunchContext);
+                gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
                 gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
 
             } else {
