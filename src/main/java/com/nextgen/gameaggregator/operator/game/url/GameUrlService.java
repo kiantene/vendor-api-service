@@ -27,6 +27,7 @@ public class GameUrlService {
     private static final String USERTYPE = "operator-api-service";
     private final AgentService agentService;
     private final AgentProductService agentProductService;
+    private final AgentVendorProxyService agentVendorProxyService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
@@ -45,6 +46,7 @@ public class GameUrlService {
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
                           AgentProductServiceImpl agentProductService,
+                          AgentVendorProxyService agentVendorProxyService,
                           AutowireCapableBeanFactory autowireCapableBeanFactory,
                           RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
@@ -61,6 +63,7 @@ public class GameUrlService {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
+        this.agentVendorProxyService = agentVendorProxyService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
@@ -106,7 +109,8 @@ public class GameUrlService {
                 if (gameUrlVo == null) throw new InvalidVendorResponseException();
 
                 //token will be replaced if vendor's token is needed to verify for action files.
-                gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
+                String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                gameUrlData.setGameUrl(gameUrlText);
             }
 
             gameUrlData.setToken(gameSession.getToken());
