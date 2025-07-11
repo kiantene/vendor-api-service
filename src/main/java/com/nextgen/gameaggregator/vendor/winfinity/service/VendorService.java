@@ -84,8 +84,9 @@ public class VendorService extends BaseVendorService {
         String decodedString = "";
 
         try {
-            publicKey = (id != null && id == "qa") ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA)
-                    : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY);
+            publicKey = ("qa".equals(id))
+                ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA)
+                : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY);
 
             decodedString = this.decodeRsaJwt(requestBody, publicKey);
 
