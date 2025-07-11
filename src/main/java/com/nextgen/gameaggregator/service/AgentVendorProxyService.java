@@ -40,6 +40,9 @@ public class AgentVendorProxyService {
         return gameUrl;
     }
 
-    public record DomainMapping(String vendorDomain, String vendorDomainLower, String proxyDomain) {
-    }
+    /**
+     * Represents only ACTIVE vendor proxy mappings.
+     * Status is filtered before caching.
+     */
+    public record DomainMapping(String vendorDomain, String vendorDomainLower, String proxyDomain) {}
 }
