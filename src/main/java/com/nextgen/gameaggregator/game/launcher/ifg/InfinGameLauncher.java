@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.game.launcher.ifg;
 
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.ifg.constant.Credentials;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-@Service(EndPoints.CLASS_NAME + "GameLauncher")
+@Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class InfinGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayload> {
     private static final String GAME_TYPE_DEMO_FALSE = "false";
     private Integer version = 1;
