@@ -109,7 +109,7 @@ public class GameUrlService {
                         .vendorClassName(vendorClassName)
                         .token(gameSession.getToken())
                         .vendorToken(gameSession.getToken())
-                        .gameCode(gameCode)
+                        .vendorGameCode(gameCode)
                         .vendorId(gameSession.getVendorId())
                         .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
                         .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
