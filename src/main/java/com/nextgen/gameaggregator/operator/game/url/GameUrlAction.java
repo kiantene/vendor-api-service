@@ -131,7 +131,7 @@ public class GameUrlAction {
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
             // Request game url from vendor
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog, gameLaunchDto);
             warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currencyId);
             responseVo.setData(gameUrlData);
 
@@ -251,6 +251,7 @@ public class GameUrlAction {
         String body = httpRequestLog.getRequestBody();
         GameLaunchDto gameLaunchDto = new GameLaunchDto();
         gameLaunchDto.setTraceId(traceId);
+        gameLaunchDto.setLobbyUrl(dto.getLobbyUrl());
 
         // 1. Validate all fields in the request object
         loggingService.logStart();
