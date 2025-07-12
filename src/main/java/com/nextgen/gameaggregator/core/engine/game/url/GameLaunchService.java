@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.service.S3Service;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
@@ -24,7 +26,7 @@ public class GameLaunchService {
     }
 
     public void processLaunchRequest(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
-
+        populateLogContext(context);
         switch (launchHandler.getLaunchMode()) {
             case API_CALL -> callExternalApi(context, launchHandler);
 //            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
@@ -33,6 +35,15 @@ public class GameLaunchService {
             case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
             default -> throw new UnsupportedOperationException("Unsupported launch mode");
         }
+    }
+
+    private void populateLogContext(GameLaunchContext context) {
+        LogContext logContext = LogContextHolder.get();
+        if (logContext == null) return;
+
+        logContext.setVendorId(context.getVendorId());
+        logContext.setAgentId(context.getAgentId());
+        logContext.setUsername(context.getAgentPlayerUsername());
     }
 
     private void callExternalApi(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {

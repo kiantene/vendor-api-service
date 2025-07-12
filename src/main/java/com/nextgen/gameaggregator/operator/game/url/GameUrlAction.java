@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -61,6 +63,11 @@ public class GameUrlAction {
 
     @PostMapping(path = "game/url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
+        LogContext logContext = LogContextHolder.get();
+        if (logContext != null) {
+            logContext.setLogGroup("GameLaunch");
+            logContext.setType(REQUEST_TYPE);
+        }
         HttpRequestLog httpRequestLog = httpService.start(request);
         httpRequestLog.setRequestType(REQUEST_TYPE);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
