@@ -3,8 +3,14 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.service.S3Service;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +30,7 @@ public class GameLaunchService {
 //            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
             case STATIC_HTML -> buildStaticHtml(context, launchHandler);
 //            case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
+            case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
             default -> throw new UnsupportedOperationException("Unsupported launch mode");
         }
     }
@@ -63,6 +70,22 @@ public class GameLaunchService {
         launchHandler.onSuccess(context, response);
     }
 
+    private void buildQueryStringUri(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
+        Object request = launchHandler.onPrepareRequestBody(context);
+        MultiValueMap<String, String> formData = convertToMultiValueMap(request);
+        String baseUrl = launchHandler.getBaseUrl(context);
+        String path = launchHandler.getPath();
+
+        String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
+                .queryParams(formData)
+                .build()
+                .encode()
+                .toUri()
+                .toString();
+
+        launchHandler.onSuccess(context, gameUrl);
+    }
+
     private String applyPlaceholderReplacement(String template, Map<String, String> values) {
         String result = template;
         for (Map.Entry<String, String> entry : values.entrySet()) {
@@ -89,6 +112,21 @@ public class GameLaunchService {
                 // Optionally log or rethrow if needed
             }
         }
+        return map;
+    }
+
+    public MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        BeanWrapper wrapper = new BeanWrapperImpl(dto);
+
+        for (PropertyDescriptor pd : wrapper.getPropertyDescriptors()) {
+            String name = pd.getName();
+            Object value = wrapper.getPropertyValue(name);
+            if (value != null && !"class".equals(name)) {
+                map.add(name, value.toString());
+            }
+        }
+
         return map;
     }
 }
