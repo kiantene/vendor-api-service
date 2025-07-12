@@ -27,15 +27,15 @@ import java.util.Base64;
 @Slf4j
 public class VendorService extends BaseVendorService {
 
-    public static String trimGameCode(String gameCode){
+    public static String trimGameCode(String gameCode) {
 
         String trimmedGameCode = null;
 
         // check if game code contain _stg (ignore case-sensitive)
-        if(gameCode.toLowerCase().contains("_stg")){
+        if (gameCode.toLowerCase().contains("_stg")) {
             // Trim value by removing _stg (ignore case-sensitive)
             trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
-        }else{
+        } else {
             // let trimmedCode same as gameCode
             trimmedGameCode = gameCode;
         }
@@ -43,7 +43,7 @@ public class VendorService extends BaseVendorService {
         return trimmedGameCode;
     }
 
-    public static String convertMapToJson(MultiValueMap<String, String> dataMap){
+    public static String convertMapToJson(MultiValueMap<String, String> dataMap) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.writeValueAsString(dataMap.toSingleValueMap());
@@ -66,14 +66,14 @@ public class VendorService extends BaseVendorService {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 
-    public static String encryption(String jsonString, String vendorSecrect, int iterations){
-        try{
+    public static String encryption(String jsonString, String vendorSecrect, int iterations) {
+        try {
             // Convert the jsonString to bytes
             byte[] passwordBytes = jsonString.getBytes(StandardCharsets.UTF_8);
 
             // Generate a salted hash using PBKDF2 with SHA-512
             return generatePBKDF2Hash(passwordBytes, vendorSecrect, iterations, 64);
-        }catch(Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
@@ -81,7 +81,8 @@ public class VendorService extends BaseVendorService {
     public static void validateSignature(String signature, String requestBody, String secret)
             throws JsonProcessingException, InvalidRequestException, InvalidSignatureException {
 
-        if (signature == null) throw new InvalidRequestException("Missing " + EndPoints.HEADER_SIGNATURE + " in header");
+        if (signature == null)
+            throw new InvalidRequestException("Missing " + EndPoints.HEADER_SIGNATURE + " in header");
 
         int iterations = 1000;
         String json = convertObjectMapper(requestBody);
@@ -96,7 +97,7 @@ public class VendorService extends BaseVendorService {
         return Instant.parse(dateTimeString).toEpochMilli();
     }
 
-    public static String convertUnixToDateTime(long unixTimestampMillis){
+    public static String convertUnixToDateTime(long unixTimestampMillis) {
         // Convert Unix timestamp with milliseconds to Instant
         Instant instant = Instant.ofEpochMilli(unixTimestampMillis);
 
@@ -113,9 +114,9 @@ public class VendorService extends BaseVendorService {
         return formatter.format(zonedDateTime);
     }
 
-    public static ResultType generateResultType(BigDecimal amount){
+    public static ResultType generateResultType(BigDecimal amount) {
 
-        if(amount.compareTo(BigDecimal.ZERO) > 0){
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
             return ResultType.WIN;
         }
 
@@ -124,7 +125,13 @@ public class VendorService extends BaseVendorService {
 
     public static String convertObjectMapper(String body) throws JsonProcessingException {
         // Create ObjectMapper instance
-         return new ObjectMapper().readTree(body).toString();
+        return new ObjectMapper().readTree(body).toString();
+    }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        Integer defaultTiming = 3500;
+        return defaultTiming;
     }
 
     @Override

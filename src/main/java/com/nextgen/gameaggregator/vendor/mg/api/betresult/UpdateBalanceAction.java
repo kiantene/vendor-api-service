@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import static com.nextgen.gameaggregator.vendor.mg.constant.TxnType.DEBIT;
+
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class UpdateBalanceAction {
@@ -73,9 +75,22 @@ public class UpdateBalanceAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Get GameSession by vendor player username
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-            // Switch game from lobby, update game code
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
+            try {
+                gameSession = gameSessionService.verifyToken(dto.getExtOperatorToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);
+            } catch (Exception e) {
+                if (dto.getTxnType() == DEBIT) {
+                    //DEBIT request token will not be regenerated.
+                    throw new AuthenticationException(e.getMessage());
+                } else {
+                    gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerId());
+                    gameSessionService.updateByVendorGameCode(gameSession, dto.getGameId());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
+                    gameSession.setToken(traceId);
+                    gameSession.setVendorToken(traceId);
+                }
+            }
+
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
@@ -87,7 +102,7 @@ public class UpdateBalanceAction {
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
 //                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
-                    ResultType resultType = determineResultType(dto);
+                    ResultType resultType = preProcessWinDto(winDataDto, gameSession);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
@@ -171,7 +186,17 @@ public class UpdateBalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private ResultType determineResultType(UpdateBalanceDto dto) {
+    private ResultType preProcessWinDto(WinDataDto dto, GameSession gameSession) {
+        
+        //only for live casino calculation
+        if (gameSession.getGameCategoryId() == 5) {
+            ResultType resultType = dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : dto.getCompleted() ? ResultType.END : ResultType.BET_LOSE;
+
+            if (resultType == ResultType.BET_WIN || resultType == ResultType.BET_LOSE) {
+                dto.setWinLoss(dto.getWinAmount());
+            }
+            return resultType;
+        }
         // Completed True also will happen in Win Situation
         return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
     }

@@ -55,6 +55,9 @@ public class BetTransactionsDto implements BetResultData {
     @NotNull
     private GameInfoDto gameInfo;
 
+    //this param is just confirming rollback success request when hit insufficient
+    private Boolean shouldRollback;
+
     @Override
     public String getExternalTransactionId() {
         return this.platformTxId;
@@ -72,7 +75,7 @@ public class BetTransactionsDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameCode+"_"+this.gameInfo.getTableId();
+        return this.gameCode + "_" + this.gameInfo.getTableId();
     }
 
     @Override
@@ -92,12 +95,12 @@ public class BetTransactionsDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.betAmount;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public Long getVendorBetTime() {
-       return VendorService.getTimeStamp(this.betTime);
+        return VendorService.getTimeStamp(this.betTime);
     }
 
     @Override

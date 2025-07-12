@@ -1,0 +1,135 @@
+package com.nextgen.gameaggregator.vendor.marblex.service;
+
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
+import com.nextgen.gameaggregator.sport.service.SportSettledBetService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.marblex.api.cancel.CancelDto;
+import com.nextgen.gameaggregator.vendor.marblex.api.refund.RefundDto;
+import com.nextgen.gameaggregator.vendor.marblex.constant.StatusCode;
+import com.nextgen.gameaggregator.vendor.marblex.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.marblex.vo.CommonDataVo;
+import com.nextgen.gameaggregator.vendor.marblex.vo.CommonVo;
+
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+
+@Service
+public class VendorService extends BaseVendorService {
+    public final VendorLineService vendorLineService;
+    public final AgentPlayerService agentPlayerService;
+    public final VendorGameService vendorGameService;
+    public final ValidationService validationService;
+    public final WalletService walletService;
+    public final SportSettledBetService sportSettledBetService;
+
+    public VendorService(VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService,
+                         ValidationService validationService,
+                         WalletService walletService,
+                         SportSettledBetService sportSettledBetService) {
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.validationService = validationService;
+        this.walletService = walletService;
+        this.sportSettledBetService = sportSettledBetService;
+    }
+
+    public CommonVo mapToSuccess(String currency, BigDecimal balance) {
+        return new CommonVo()
+                .setStatusCode(StatusCode.SUCCESS)
+                .setData(new CommonDataVo()
+                        .setBalance(balance)
+                        .setCurrency(currency));
+    }
+
+    public CommonVo mapIdempotentSuccess(BigDecimal balance, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        BigDecimal finalBalance = balance;
+
+        if (finalBalance == null || finalBalance.compareTo(BigDecimal.ZERO) == 0) {
+            try {
+                finalBalance = walletService.getBalance(gameSession.getTraceId(), gameSession, httpRequestLog);
+            } catch (Exception e) {
+                finalBalance = BigDecimal.ZERO;
+            }
+        }
+
+        return new CommonVo()
+                .setStatusCode(StatusCode.SUCCESS)
+                .setData(new CommonDataVo()
+                        .setBalance(finalBalance)
+                        .setCurrency(gameSession.getVendorCurrencyCode()));
+    }
+
+    public void doVerification(CommonDto dto, GameSession gameSession, boolean checkBet) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException {
+
+        if (checkBet) {
+            // validate vendor username, agent vendor line, player status, and game status
+            validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+        } else {
+            // Verify vendor line is active
+            vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+            // Verify agent player is active
+            agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+            // Verify vendor game is active
+            vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        }
+
+        // Verify player name from dto is equal
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
+    }
+
+    public void doDataMapper(WalletRequest walletRequest, SportBetResultData sportBetResultData) {
+        walletRequest.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
+        walletRequest.setVendorBetId(sportBetResultData.getVendorBetId());
+        walletRequest.setRoundId(sportBetResultData.getRoundId());
+        walletRequest.setVendorPlayerUsername(sportBetResultData.getVendorPlayerUsername());
+        walletRequest.setBetAmount(sportBetResultData.getBetAmount());
+        walletRequest.setNewBetAmount(sportBetResultData.getBetAmount());
+        walletRequest.setWinAmount(sportBetResultData.getWinAmount());
+        walletRequest.setWinLoss(sportBetResultData.getWinLoss());
+        walletRequest.setEffectiveTurnover(sportBetResultData.getBetAmount());
+        walletRequest.setVendorBetTime(sportBetResultData.getVendorBetTime());
+        walletRequest.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
+        walletRequest.setBetType(sportBetResultData.getBetType());
+        walletRequest.setBetStatus(sportBetResultData.getBetStatus());
+    }
+
+    public void doDataMapper(WalletRequest walletRequest, RefundDto refundDto) {
+        walletRequest.setExternalTransactionId(refundDto.getExternalTransactionId());
+        walletRequest.setVendorBetId(refundDto.getVendorBetId());
+        walletRequest.setRoundId(refundDto.getRoundId());
+        walletRequest.setVendorPlayerUsername(refundDto.getVendorPlayerUsername());
+    }
+
+    public void doDataMapper(WalletRequest walletRequest, CancelDto cancelDto) {
+        if (cancelDto.getExternalTransactionId().equals(walletRequest.getExternalTransactionId())) {
+            walletRequest.setExternalTransactionId(cancelDto.getTraceId());
+        } else {
+            walletRequest.setExternalTransactionId(cancelDto.getExternalTransactionId());
+        }
+        walletRequest.setVendorBetId(cancelDto.getVendorBetId());
+        walletRequest.setRoundId(cancelDto.getRoundId());
+        walletRequest.setVendorPlayerUsername(cancelDto.getVendorPlayerUsername());
+    }
+
+    public void checkSettledBetStatus(String vendorPlayerUsername, String vendorBetId) throws BetResultIdempotentViolationException, BetNotFoundException {
+        SportSettledBet sportSettledBet = sportSettledBetService.findById(vendorPlayerUsername + '_' + vendorBetId);
+
+        if (sportSettledBet == null) {
+            throw new BetNotFoundException("No settled bet found for player: " + vendorPlayerUsername + ", bet ID: " + vendorBetId);
+        }
+        throw new BetResultIdempotentViolationException("Bet already settled for player: " + vendorPlayerUsername + ", bet ID: " + vendorBetId);
+    }
+}

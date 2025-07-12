@@ -65,9 +65,7 @@ public class UpdateBalanceDto implements BetResultData {
     private Long creationTimeMs;
 
     private Long creationTime;
-
-    @Size(max = 50)
-    @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
+    
     private String extOperatorToken;
 
 
