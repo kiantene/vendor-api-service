@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 
-public abstract class StaticHtmlGameLauncher<T> implements GameLaunchHandler<T, String> {
+public abstract class StaticHtmlGameLauncher<T> extends AbstractGameLaunchHandler<T, String> {
     private static final ParameterizedTypeReference<String> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
 
     @Override
