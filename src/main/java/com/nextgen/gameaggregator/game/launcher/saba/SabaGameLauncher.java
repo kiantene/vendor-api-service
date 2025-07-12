@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.game.launcher.saba;
 
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.saba.api.createmember.CreateMemberService;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service(EndPoints.CLASS_NAME + "GameLauncher")
+@Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
     private static final ParameterizedTypeReference<GameLaunchResponse> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
     private static final String PLATFORM_WEB = "1";
