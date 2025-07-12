@@ -53,6 +53,7 @@ import java.util.Map;
  * @param <T> the response body type expected from the vendor
  */
 public interface GameLaunchHandler<R, T> {
+    String NAME = "GameLauncher";
     /**
      * Indicates the mode of this handler — used to route control flow in the launcher.
      * Defaults to {@link GameLaunchMode#API_CALL}.
