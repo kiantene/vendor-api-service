@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service
+@Service(EndPoints.CLASS_NAME + "GameLauncher")
 public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
     private static final ParameterizedTypeReference<GameLaunchResponse> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
     private static final String PLATFORM_WEB = "1";

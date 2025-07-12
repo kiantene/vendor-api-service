@@ -37,11 +37,9 @@ public class GameLaunchService {
 
     private void callExternalApi(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
         String vendorClassName = context.getVendorClassName();
-        Object request = launchHandler.onPrepareRequestBody(context);
-
         String baseUrl = launchHandler.getBaseUrl(context);
         if (baseUrl == null) throw new InternalConfigurationException(vendorClassName + " Game Launch baseUrl cannot be found.");
-
+        Object request = launchHandler.onPrepareRequestBody(context);
         Map<String, String> headers = launchHandler.getHeaders(context, request);
 
         WebClientApiCaller webClientApiCaller = new WebClientApiCaller(
@@ -71,10 +69,10 @@ public class GameLaunchService {
     }
 
     private void buildQueryStringUri(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
-        Object request = launchHandler.onPrepareRequestBody(context);
-        MultiValueMap<String, String> formData = convertToMultiValueMap(request);
         String baseUrl = launchHandler.getBaseUrl(context);
         String path = launchHandler.getPath();
+        Object request = launchHandler.onPrepareRequestBody(context);
+        MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
         String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
                 .queryParams(formData)
