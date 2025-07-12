@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.game.launcher.saba;
 
+import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.saba.api.createmember.CreateMemberService;
@@ -18,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service(EndPoints.CLASS_NAME + "GameLauncher")
-public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
+public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
     private static final ParameterizedTypeReference<GameLaunchResponse> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
     private static final String PLATFORM_WEB = "1";
     private static final String PLATFORM_H5 = "2";
@@ -49,19 +48,13 @@ public class SabaGameLauncher implements GameLaunchHandler<GameLaunchRequest, Ga
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
-        Map<String, VendorLineCredential> credentials = context.getVendorCredentials();
-
-        return credentials.get(Credentials.API_URL).getValue();
+        return getRequiredCredentialValue(context.getVendorCredentials(), Credentials.API_URL);
     }
 
     @Override
     public GameLaunchRequest onPrepareRequestBody(GameLaunchContext context) {
-
         Map<String, VendorLineCredential> credentials = context.getVendorCredentials();
-        String vendorId = Optional.ofNullable(credentials.get(Credentials.VENDOR_ID))
-                .map(VendorLineCredential::getValue)
-                .filter(value -> !value.isBlank())
-                .orElseThrow(() -> new InternalConfigurationException(Credentials.VENDOR_ID + " is missing or has no value."));
+        String vendorId = getRequiredCredentialValue(credentials, Credentials.VENDOR_ID);
 
         try { // requires refactor for createMember
             GameSession gameSession = new GameSession();
