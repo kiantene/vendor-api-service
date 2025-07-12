@@ -11,7 +11,7 @@ import java.util.Map;
 public class GameLaunchContext {
     private String vendorClassName;
     private String token;
-    private String gameCode;
+    private String vendorGameCode;
     private Integer vendorId;
     private String vendorPlayerUsername;
     private String vendorCurrencyCode;
