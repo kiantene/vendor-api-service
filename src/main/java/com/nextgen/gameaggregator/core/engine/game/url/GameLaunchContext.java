@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,7 +19,7 @@ public class GameLaunchContext {
     private Integer platformId;
     private String lobbyUrl;
 
-    Map<String, String> vendorCredentials;
+    Map<String, VendorLineCredential> vendorCredentials;
 
     private String vendorToken;
     private String gameUrl;
