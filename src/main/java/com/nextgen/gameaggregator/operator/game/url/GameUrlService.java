@@ -103,6 +103,8 @@ public class GameUrlService {
             @SuppressWarnings("unchecked")
             GameLaunchHandler<Object, Object> vendorGameLauncher = (GameLaunchHandler<Object, Object>) gameLaunchHandlerMap.get(vendorClassName);
             if (vendorGameLauncher != null) {
+                Map<String, VendorLineCredential> credentialMap = vendorLineService.mapCredentialsByName(vendorLine.getId());
+
                 GameLaunchContext gameLaunchContext = GameLaunchContext.builder()
                         .vendorClassName(vendorClassName)
                         .token(gameSession.getToken())
@@ -112,7 +114,7 @@ public class GameUrlService {
                         .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
                         .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
-                        .vendorCredentials(credentials)
+                        .vendorCredentials(credentialMap)
                         .platformId(gameSession.getPlatformId())
                         .lobbyUrl(gameLaunchDto.getLobbyUrl())
                         .build();
