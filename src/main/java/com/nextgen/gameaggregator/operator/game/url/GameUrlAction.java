@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -236,6 +237,15 @@ public class GameUrlAction {
             responseVo.setMessage(responseVo.getStatus().description);
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
             httpService.end(httpRequestLog, responseVo);
+        }
+        if (logContext != null) {
+            try {
+                logContext.setResponse(new ObjectMapper().writeValueAsString(responseVo));
+                logContext.setStatus(1);
+            } catch (Exception ex) {
+                logContext.setException(ex.getClass().getName());
+                logContext.setErrorMessage(ex.getMessage());
+            }
         }
 
         return responseVo;
