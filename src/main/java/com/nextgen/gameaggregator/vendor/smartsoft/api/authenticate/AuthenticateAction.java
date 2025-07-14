@@ -66,7 +66,7 @@ public class AuthenticateAction {
             responseVo.setSessionId(gameSession.getToken());
             responseVo.setUserName(gameSession.getVendorPlayerUsername());
             responseVo.setClientExternalKey(gameSession.getVendorPlayerId().toString());
-            responseVo.setCurrencyCode(gameSession.getCurrencyCode());
+            responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
             responseVo.setPortalName(portalName);
 
         } catch (Exception e) {
