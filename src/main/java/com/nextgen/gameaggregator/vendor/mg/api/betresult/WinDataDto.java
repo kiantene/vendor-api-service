@@ -70,6 +70,9 @@ public class WinDataDto implements BetResultData {
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
 
+    //just to set winLoss when the game is live casino
+    private BigDecimal winLoss;
+
     @Override
     public String getExternalTransactionId() {
         return txnId;
@@ -106,6 +109,10 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
+
+        if (this.winLoss != null) {
+            return this.winLoss;
+        }
         return null;
     }
 

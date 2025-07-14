@@ -107,10 +107,11 @@ public class BetService {
             vo.setBalance(balance.setScale(3, RoundingMode.DOWN));
             vo.setBalanceTs(vendorService.convertDateTimeFormat(System.currentTimeMillis()));
 
-        } catch (AuthenticationException e){
+        } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_TOKEN);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
+            processFailed = true;
             vo.setResponseCodes(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, e);
         } catch (GameNotSupportedException e) {
@@ -139,11 +140,11 @@ public class BetService {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Check first transaction game code
-        if(StringUtils.isBlank(dto.getMessage().getTxns().get(0).getGameCode())){
+        if (StringUtils.isBlank(dto.getMessage().getTxns().get(0).getGameCode())) {
             throw new InvalidRequestException();
         }
         // Check first transaction user id
-        if(StringUtils.isBlank(dto.getMessage().getTxns().get(0).getUserId())){
+        if (StringUtils.isBlank(dto.getMessage().getTxns().get(0).getUserId())) {
             throw new InvalidRequestException();
         }
     }
@@ -183,7 +184,7 @@ public class BetService {
             this.doValidation(betTransactionsDto);
 
             // Verify session token
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betTransactionsDto.getGameCode()+"_"+betTransactionsDto.getGameInfo().getTableId(), gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betTransactionsDto.getGameCode() + "_" + betTransactionsDto.getGameInfo().getTableId(), gameSession);
 
             // Verify data
             this.doBetVerification(betTransactionsDto, gameSession);
@@ -202,6 +203,7 @@ public class BetService {
             balanceVo = new BalanceVo(balance, httpRequestLog.getOperatorTimestamp());
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
+            betTransactionsDto.setShouldRollback(false);
             balanceVo = new BalanceVo(BigDecimal.ONE.negate(), httpRequestLog.getOperatorTimestamp());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
@@ -216,11 +218,13 @@ public class BetService {
     private void prepareRollback(List<BetTransactionsDto> transactionList, GameSession gameSession) {
         THREAD_POOL.submit(() -> {
             for (BetTransactionsDto transaction : transactionList) {
-                GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
-                generalRollbackDto.setRollbackId(transaction.getExternalTransactionId());
-                generalRollbackDto.setVendorSettledTime(null);
-                generalRollbackDto.setRoundId(transaction.getRoundId());
-                betActionLogService.create(new Gson().toJson(generalRollbackDto), transaction.getRoundId(), transaction.getVendorBetId(), transaction.getExternalTransactionId(), gameSession, 1, null);
+                if (transaction.getShouldRollback() == null || transaction.getShouldRollback()) {
+                    GeneralRollbackDto generalRollbackDto = new GeneralRollbackDto();
+                    generalRollbackDto.setRollbackId(transaction.getExternalTransactionId());
+                    generalRollbackDto.setVendorSettledTime(null);
+                    generalRollbackDto.setRoundId(transaction.getRoundId());
+                    betActionLogService.create(new Gson().toJson(generalRollbackDto), transaction.getRoundId(), transaction.getVendorBetId(), transaction.getExternalTransactionId(), gameSession, 1, null);
+                }
             }
         });
     }

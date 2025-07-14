@@ -92,6 +92,8 @@ public class CashTransferInOutAction {
             // 2. Verify session token
             String newToken = (dto.getOperatorPlayerSession() != null) ? dto.getOperatorPlayerSession() : traceId;
             GameSession gameSession = this.getGameSession(newToken, dto);
+            //GA-10954: for temporary using for log agent id
+            httpRequestLog.setAgentId(gameSession.getAgentId());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
