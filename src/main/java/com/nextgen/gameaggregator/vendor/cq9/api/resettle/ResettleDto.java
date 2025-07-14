@@ -27,7 +27,7 @@ public class ResettleDto {
     private String gamecode;
 
     @NotBlank
-    @Size(min = 1, max = 30)
+    @Size(min = 1, max = 50)
     private String roundid;
 
     @NotNull

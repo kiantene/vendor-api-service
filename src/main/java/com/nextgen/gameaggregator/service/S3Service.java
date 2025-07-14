@@ -28,16 +28,25 @@ public class S3Service {
     private String awsFolder;
     @Value("${aws.s3.gameUrl}")
     private String gameUrl;
+    @Value("${aws.s3.displayGameUrl:${aws.s3.gameUrl}}")
+    private String displayGameUrl;
+    @Value("${cloud.platform:aws}")
+    private String cloudPlatform;
 
     private AmazonS3 createS3Client() {
         AWSCredentialsProvider doCred = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessId, accessSecret));
-        //generate credentials
-        AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
-                .withRegion(Regions.fromName(awsRegion))
-                .withCredentials(doCred)
-                .build();
 
-        return s3Client;
+        return switch (cloudPlatform) {
+            case "huawei" -> AmazonS3ClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessId, accessSecret)))
+                    .withEndpointConfiguration(new AmazonS3ClientBuilder.EndpointConfiguration(gameUrl, awsRegion))
+                    .build();
+
+            //Default will be using AWS format.
+            default -> AmazonS3ClientBuilder.standard()
+                    .withRegion(Regions.fromName(awsRegion))
+                    .withCredentials(doCred).build();
+        };
     }
 
     public String generateHtmlToS3(GameSession gameSession, String rawHtml) throws RuntimeException {
@@ -53,7 +62,7 @@ public class S3Service {
             String key = awsFolder + "/" + vendorCode + "/" + fileName;
             uploadHtmlToS3(s3Client, key, rawHtml);
 
-            return gameUrl + key;
+            return displayGameUrl + key;
 
         } catch (Exception e) {
             throw new RuntimeException(e);

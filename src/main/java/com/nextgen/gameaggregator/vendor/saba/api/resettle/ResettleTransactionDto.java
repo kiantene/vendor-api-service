@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
+import com.nextgen.gameaggregator.vendor.saba.constant.DateTime;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -24,6 +24,7 @@ public class ResettleTransactionDto implements SportResettleData {
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    private String settlementTime;
     private String operationId;
 
     @Override
@@ -78,11 +79,25 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public Long getVendorSettleTime() {
-        // Parse the original string to a ZonedDateTime
-        ZonedDateTime zonedDateTime = ZonedDateTime.parse(this.winLostDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        try {
+            long millisSettlementTime = DateTimeConversionUtils.toUnixTimestamp(
+                    this.settlementTime,
+                    DateTime.PATTERN_SETTLEMENT_TIME,
+                    DateTime.ZONE
+            );
 
-        // Convert ZonedDateTime to milliseconds
-        return zonedDateTime.toInstant().toEpochMilli();
+            long millisWinLostDate = DateTimeConversionUtils.toUnixTimestamp(
+                    this.winLostDate,
+                    DateTime.PATTERN_WIN_LOST_DATE,
+                    DateTime.ZONE
+            );
+
+            return Math.max(millisSettlementTime, millisWinLostDate);
+
+        } catch (Exception ex) {
+            //regardless any of above conditions is failed, will fallback to use system generated current time.
+            return System.currentTimeMillis();
+        }
     }
 
     @Override

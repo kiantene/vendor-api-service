@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.balance;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto {
 
     @NotBlank

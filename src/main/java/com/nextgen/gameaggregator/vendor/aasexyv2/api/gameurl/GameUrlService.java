@@ -44,16 +44,22 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("cert", this.cert);
         formData.add("agentId", this.agentId);
         formData.add("userId", gameSession.getVendorPlayerUsername());
+        formData.add("isMobileLogin", gameSession.getPlatformId().equals(1) ? "true" : "false");
         formData.add("externalURL", gameSession.getLobbyUrl());
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("platform", "SEXYBCRT");
         formData.add("gameType", "LIVE");
 
-        String[] gameCodeParts = gameSession.getVendorGameCode().split("_");
-        formData.add("gameCode", gameCodeParts[0]);
-        formData.add("hall", "SEXY");
-        formData.add("isLaunchGameTable", "true");
-        formData.add("gameTableId", gameCodeParts[1]);
+        String vendorGameCode = gameSession.getVendorGameCode();
+        if (vendorGameCode.contains("_")) {
+            String[] gameCodeParts = vendorGameCode.split("_");
+            formData.add("gameCode", gameCodeParts[0]);
+            formData.add("hall", "SEXY");
+            formData.add("isLaunchGameTable", "true");
+            formData.add("gameTableId", gameCodeParts[1]);
+        } else {
+            formData.add("gameCode", vendorGameCode);
+        }
 
         return formData;
     }
@@ -75,7 +81,12 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         ResponseEntity<String> response = this.doPost(this.apiUrl, EndPoints.GAME_URL, new HttpHeaders(), formData, isTimeout);
         this.validateResponse(response, isTimeout, httpRequestLog, GameUrlVo.class, gameSession);
 
-        return new Gson().fromJson(response.getBody(), GameUrlVo.class);
+        // manual validate gameUrlVo, because setAutoMapResponse set false
+        GameUrlVo gameUrlVo = new Gson().fromJson(response.getBody(), GameUrlVo.class);
+        if (gameUrlVo.getGameUrl() == null) {
+            throw new InvalidVendorResponseException("cannot get game url");
+        }
+        return gameUrlVo;
     }
 
     private void checkAndCreateAccount(GameSession gameSession, HttpRequestLog httpRequestLog)
