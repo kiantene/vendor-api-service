@@ -22,7 +22,6 @@ import java.util.Map;
 @Service
 public class GameLaunchService {
     private final S3Service s3Service;
-    private LogContext logContext;
 
     public GameLaunchService(S3Service s3Service) {
         this.s3Service = s3Service;
@@ -44,7 +43,6 @@ public class GameLaunchService {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;
 
-        this.logContext = logContext;
         logContext.setVendorId(context.getVendorId());
         logContext.setAgentId(context.getAgentId());
         logContext.setUsername(context.getAgentPlayerUsername());
@@ -87,13 +85,6 @@ public class GameLaunchService {
         String baseUrl = launchHandler.getBaseUrl(context);
         String path = launchHandler.getPath();
         Object request = launchHandler.onPrepareRequestBody(context);
-        try {
-            logContext.setBody(new ObjectMapper().writeValueAsString(request));
-        } catch (JsonProcessingException jsonProcessingException) {
-            logContext.setException(jsonProcessingException.getClass().getName());
-            logContext.setErrorMessage(jsonProcessingException.getMessage());
-        }
-
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
         String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
@@ -103,7 +94,15 @@ public class GameLaunchService {
                 .toUri()
                 .toString();
 
-        logContext.setResponse(gameUrl);
+        LogContext logContext = LogContextHolder.get();
+        try {
+            logContext.setApiBody(request);
+            logContext.setApiResponse(gameUrl);
+        } catch (Exception exception) {
+            logContext.setException(exception.getClass().getName());
+            logContext.setErrorMessage(exception.getMessage());
+        }
+
         launchHandler.onSuccess(context, gameUrl);
     }
 
