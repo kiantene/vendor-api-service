@@ -45,7 +45,9 @@ public class LoggingManager {
         logContext.setEnd();
         asyncLogger.submit(() -> {
             try {
-                logContext.setResponse(responseBody);
+                if (responseBody != null && !responseBody.isEmpty()) {
+                    logContext.setResponse(responseBody);
+                }
 
                 if (ex != null) {
                     logContext.setException(ex.getClass().getName());
