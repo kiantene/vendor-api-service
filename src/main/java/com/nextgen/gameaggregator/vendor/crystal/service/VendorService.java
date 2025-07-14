@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.custodianseamless.constant.WalletServiceEndpoints;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.crystal.vo.CommonDataVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +21,8 @@ import org.springframework.util.MultiValueMap;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -30,9 +32,11 @@ import java.util.Map;
 public class VendorService extends BaseVendorService {
 
     private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
 
-    public VendorService(VendorLineService vendorLineService) {
+    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService) {
         this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
     }
 
     public static String convertToJson(String jsonBody) {
@@ -78,10 +82,7 @@ public class VendorService extends BaseVendorService {
             throws AuthenticationException, CredentialNotFoundException {
 
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        String operatorCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_CODE);
-
         String signatureHeader = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
-        String operatorHeader = request.getHeader(WalletServiceEndpoints.HEADER_OPERATOR);
 
         if (signatureHeader == null || signatureHeader.isEmpty()) {
             throw new AuthenticationException("Missing signature header");
@@ -91,13 +92,31 @@ public class VendorService extends BaseVendorService {
         if (body == null || body.isEmpty()) {
             throw new AuthenticationException("Empty request body");
         }
-        ValidationUtils.isEquals(operatorHeader, operatorCode, AuthenticationException::new);
         String compactJsonBody = convertToJson(body);
         String computedSignature = hashHMACSha256(compactJsonBody, secretKey);
 
         if (!computedSignature.equalsIgnoreCase(signatureHeader)) {
             throw new AuthenticationException("Invalid signature");
         }
+    }
+
+    public void validate(String currency, GameSession gameSession)
+            throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException {
+
+        //check currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency,
+                CurrencyNotSupportedException::new);
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    }
+
+    public CommonDataVo prepareVo(BigDecimal balance, String externalTransactionId) {
+        CommonDataVo commonDataVo = new CommonDataVo();
+        commonDataVo.getData().setBalance(balance.setScale(2, RoundingMode.DOWN));
+        commonDataVo.getData().setActionId(externalTransactionId);
+        return commonDataVo;
     }
 }
 
