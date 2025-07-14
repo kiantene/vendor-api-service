@@ -114,7 +114,18 @@ public class VendorLineService {
     @Cacheable(value = "VendorLineCredentials", key = "#vendorLineId", cacheManager = "cacheManager")
     public Map<String, String> toCredentialMap(Integer vendorLineId) {
         List<VendorLineCredential> credentials = vendorLineCredentialRepository.findByVendorLineIdAndStatus(vendorLineId, Status.ACTIVE.code);
-        return credentials.stream().collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
+        return credentials.stream()
+                .collect(Collectors.toMap(
+                        VendorLineCredential::getName,
+                        Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparing(VendorLineCredential::getVersion))
+                ))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().getValue()
+                ));
     }
 
     @Cacheable(value = "VendorLineCredentialMap", key = "#vendorLineId", cacheManager = "cacheManager")
