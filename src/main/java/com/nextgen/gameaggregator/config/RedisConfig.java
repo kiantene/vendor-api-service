@@ -191,6 +191,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("LatestVendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorLineCredentialMap", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(12)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentPlayers", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorPlayers", RedisCacheConfiguration.defaultCacheConfig()
