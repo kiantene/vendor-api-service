@@ -6,6 +6,8 @@ import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.core.exception.VendorNetworkException;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.core.ParameterizedTypeReference;
@@ -54,9 +56,13 @@ public class WebClientApiCaller {
     }
 
     public <T> T post(String baseUrl, String path, MediaType contentType, Map<String, String> headers, Object requestBody, ParameterizedTypeReference<T> typeRef) {
-        //TODO LOG CONTEXT DETAILS
-//        LogContext logContext = LogContextHolder.get();
-//        logContext.put("url", baseUrl + path);
+        LogContext logContext = LogContextHolder.get();
+        if (logContext != null) {
+            logContext.setApiUrl(baseUrl + path);
+            if (requestBody != null) {
+                logContext.setApiBody(requestBody);
+            }
+        }
 
         WebClient.RequestBodySpec request = builder
                 .baseUrl(baseUrl)
@@ -86,13 +92,22 @@ public class WebClientApiCaller {
         }
 
         try {
-            return requestHeadersSpec
+            if (logContext != null) {
+                logContext.setApiStart(System.currentTimeMillis());
+            }
+            T response = requestHeadersSpec
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
                     .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
                     .bodyToMono(typeRef)
-                    .block()
-                    ;
+                    .block();
+
+            if (logContext != null) {
+                logContext.setApiResponse(response);
+                setEndTime(logContext);
+            }
+
+            return response;
 
         } catch (WebClientRequestException ex) {
             /*
@@ -121,6 +136,8 @@ public class WebClientApiCaller {
         } catch (Exception e) {
 
             throw new RuntimeException("Unexpected client error", e);
+        } finally {
+            setEndTime(logContext);
         }
     }
 
@@ -156,5 +173,14 @@ public class WebClientApiCaller {
         }
 
         return multiValueMap;
+    }
+
+    private void setEndTime(LogContext context) {
+        if (context != null) {
+            long startTime = context.getApiStart();
+            long endTime = System.currentTimeMillis();
+            context.setApiEnd(endTime);
+            context.setApiTimeTaken(endTime - startTime);
+        }
     }
 }

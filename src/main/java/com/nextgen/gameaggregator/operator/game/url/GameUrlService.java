@@ -106,6 +106,8 @@ public class GameUrlService {
                 Map<String, VendorLineCredential> credentialMap = vendorLineService.mapCredentialsByName(vendorLine.getId());
 
                 GameLaunchContext gameLaunchContext = GameLaunchContext.builder()
+                        .agentId(gameLaunchDto.getAgentId())
+                        .agentPlayerUsername(gameLaunchDto.getAgentPlayerUsername())
                         .vendorClassName(vendorClassName)
                         .token(gameSession.getToken())
                         .vendorToken(gameSession.getToken())
@@ -158,8 +160,9 @@ public class GameUrlService {
 
             throw new InvalidVendorResponseException(gameClassException.getMessage());
         } catch (VendorApiException ex) {
-            throw new InvalidVendorResponseException(ex.getMessage());
 
+
+            throw new InvalidVendorResponseException(ex.getMessage());
         }
 
         return gameUrlData;
