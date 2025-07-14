@@ -63,14 +63,15 @@ public class GameUrlAction {
 
     @PostMapping(path = "game/url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestType(REQUEST_TYPE);
+        OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
         LogContext logContext = LogContextHolder.get();
         if (logContext != null) {
             logContext.setLogGroup("GameLaunch");
             logContext.setType(REQUEST_TYPE);
+            logContext.setBody(httpRequestLog.getRequestBody());
         }
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        httpRequestLog.setRequestType(REQUEST_TYPE);
-        OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
 
         try {
             // Retrieve request body in original string format and convert into dto
