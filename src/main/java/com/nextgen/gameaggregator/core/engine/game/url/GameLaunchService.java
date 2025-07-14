@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -28,24 +26,32 @@ public class GameLaunchService {
     }
 
     public void processLaunchRequest(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
-        populateLogContext(context);
-        switch (launchHandler.getLaunchMode()) {
-            case API_CALL -> callExternalApi(context, launchHandler);
-//            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
-            case STATIC_HTML -> buildStaticHtml(context, launchHandler);
-//            case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
-            case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
-            default -> throw new UnsupportedOperationException("Unsupported launch mode");
+        LogContext logContext = populateLogContext(context);
+        try {
+            switch (launchHandler.getLaunchMode()) {
+                case API_CALL -> callExternalApi(context, launchHandler);
+                //            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
+                case STATIC_HTML -> buildStaticHtml(context, launchHandler);
+                //            case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
+                case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
+                default -> throw new UnsupportedOperationException("Unsupported launch mode");
+            }
+        } finally {
+            long endTime = System.currentTimeMillis();
+            logContext.setApiEnd(endTime);
+            logContext.setApiTimeTaken(endTime - logContext.getApiStart());
         }
     }
 
-    private void populateLogContext(GameLaunchContext context) {
+    private LogContext populateLogContext(GameLaunchContext context) {
         LogContext logContext = LogContextHolder.get();
-        if (logContext == null) return;
+        if (logContext == null) return new LogContext();
 
         logContext.setVendorId(context.getVendorId());
         logContext.setAgentId(context.getAgentId());
         logContext.setUsername(context.getAgentPlayerUsername());
+        logContext.setApiStart(System.currentTimeMillis());
+        return logContext;
     }
 
     private void callExternalApi(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
