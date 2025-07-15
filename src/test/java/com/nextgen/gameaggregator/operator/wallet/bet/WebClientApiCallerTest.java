@@ -5,12 +5,14 @@ import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.core.exception.VendorNetworkException;
+import com.nextgen.gameaggregator.game.launcher.saba.GameLaunchResponse;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.codec.DecodingException;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
@@ -183,5 +185,77 @@ public class WebClientApiCallerTest {
         });
 
         System.out.println("Exception type: " + getRootCause(ex).getClass().getName());
+    }
+
+    @Test
+    void testDecodingException_GameLaunchResponse() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{ invalid_json")
+                .setHeader("Content-Type", "application/json"));
+
+        String baseUrl = mockWebServer.url("/").toString();
+
+        VendorApiException ex = assertThrows(VendorApiException.class, () -> {
+            apiCaller.post(
+                    baseUrl,
+                    "/test",
+                    MediaType.APPLICATION_JSON,
+                    Map.of(),
+                    Map.of("key", "value"),
+                    new ParameterizedTypeReference<GameLaunchResponse>() {}
+            );
+        });
+
+        assertTrue(ex.getCause() instanceof DecodingException);
+        System.out.println("Caught expected DecodingException: " + ex.getCause().getClass().getName());
+    }
+
+    @Test
+    void testDecodingException_wrongFieldType() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{ \"error_code\": \"not_an_integer\", \"message\": \"ok\", \"Data\": \"some string\" }")
+                .setHeader("Content-Type", "application/json"));
+
+        String baseUrl = mockWebServer.url("/").toString();
+
+        VendorApiException ex = assertThrows(VendorApiException.class, () -> {
+            apiCaller.post(
+                    baseUrl,
+                    "/test",
+                    MediaType.APPLICATION_JSON,
+                    Map.of(),
+                    Map.of("key", "value"),
+                    new ParameterizedTypeReference<GameLaunchResponse>() {}
+            );
+        });
+
+        assertTrue(ex.getCause() instanceof DecodingException);
+        System.out.println("Caught expected DecodingException: " + ex.getCause().getClass().getName());
+    }
+
+    @Test
+    void testWrongContentType() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("This is plain text, not JSON")
+                .setHeader("Content-Type", "text/plain"));
+
+        String baseUrl = mockWebServer.url("/").toString();
+
+        VendorApiException ex = assertThrows(VendorApiException.class, () -> {
+            apiCaller.post(
+                    baseUrl,
+                    "/test",
+                    MediaType.APPLICATION_JSON,   // you expect JSON response
+                    Map.of(),
+                    Map.of("key", "value"),
+                    new ParameterizedTypeReference<GameLaunchResponse>() {}
+            );
+        });
+
+        assertTrue(ex.getCause() instanceof DecodingException);
+        System.out.println("Caught expected DecodingException due to wrong Content-Type: " + ex.getCause().getClass().getName());
     }
 }

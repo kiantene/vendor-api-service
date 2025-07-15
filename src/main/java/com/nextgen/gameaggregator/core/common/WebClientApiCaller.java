@@ -134,7 +134,8 @@ public class WebClientApiCaller {
             throw new VendorApiException(ex.getMessage(), ex);
 
         } catch (Exception e) {
-
+            //TODO UnsupportedMediaTypeException when operator response body is not JSON
+            //TODO io.netty.handler.timeout.ReadTimeoutException might trigger when timeout from operator
             throw new RuntimeException("Unexpected client error", e);
         } finally {
             setEndTime(logContext);
