@@ -66,7 +66,7 @@ public class SettleAction {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-            
+
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getGameId(), gameSession);
@@ -126,6 +126,11 @@ public class SettleAction {
             commonDataVo.setError(new ErrorVo(
                     ResponseCodes.INVALID_SIGNATURE.code,
                     ResponseCodes.INVALID_SIGNATURE.message
+            ));
+        } else if (e instanceof BetNotFoundException) {
+            commonDataVo.setError(new ErrorVo(
+                    ResponseCodes.TRANSACTION_NOT_FOUND.code,
+                    ResponseCodes.TRANSACTION_NOT_FOUND.message
             ));
         } else {
             commonDataVo.setError(new ErrorVo(

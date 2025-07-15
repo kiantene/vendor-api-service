@@ -120,6 +120,11 @@ public class RefundAction {
                     ResponseCodes.INVALID_SIGNATURE.code,
                     ResponseCodes.INVALID_SIGNATURE.message
             ));
+        } else if (e instanceof BetNotFoundException) {
+            commonDataVo.setError(new ErrorVo(
+                    ResponseCodes.TRANSACTION_NOT_FOUND.code,
+                    ResponseCodes.TRANSACTION_NOT_FOUND.message
+            ));
         } else {
             commonDataVo.setError(new ErrorVo(
                     ResponseCodes.PLAYER_NOT_FOUND.code,
