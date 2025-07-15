@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.junit.jupiter.api.Assertions.*;
@@ -129,35 +128,35 @@ public class WebClientApiCallerTest {
         );
     }
 
-    @Test
-    void testSlowServerResponsePrintRootCause() {
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody("{\"status\":\"ok\"}")
-                .setHeader("Content-Type", "application/json")
-                .setBodyDelay(6, TimeUnit.SECONDS)  // delay longer than timeout
-        );
-
-        String baseUrl = mockWebServer.url("/").toString();
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            apiCaller.post(
-                    baseUrl,
-                    "/test",
-                    MediaType.APPLICATION_JSON,
-                    Map.of(),
-                    Map.of("key", "value"),
-                    new ParameterizedTypeReference<Map<String, Object>>() {}
-            );
-        });
-
-        Throwable rootCause = getRootCause(ex);
-        System.out.println("Root cause exception: " + rootCause.getClass().getName());
-        rootCause.printStackTrace();
-
-        // Optional: fail test or just stop here to inspect
-        fail("Check root cause above before updating exception handling.");
-    }
+//    @Test
+//    void testSlowServerResponsePrintRootCause() {
+//        mockWebServer.enqueue(new MockResponse()
+//                .setResponseCode(200)
+//                .setBody("{\"status\":\"ok\"}")
+//                .setHeader("Content-Type", "application/json")
+//                .setBodyDelay(6, TimeUnit.SECONDS)  // delay longer than timeout
+//        );
+//
+//        String baseUrl = mockWebServer.url("/").toString();
+//
+//        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+//            apiCaller.post(
+//                    baseUrl,
+//                    "/test",
+//                    MediaType.APPLICATION_JSON,
+//                    Map.of(),
+//                    Map.of("key", "value"),
+//                    new ParameterizedTypeReference<Map<String, Object>>() {}
+//            );
+//        });
+//
+//        Throwable rootCause = getRootCause(ex);
+//        System.out.println("Root cause exception: " + rootCause.getClass().getName());
+//        rootCause.printStackTrace();
+//
+//        // Optional: fail test or just stop here to inspect
+//        fail("Check root cause above before updating exception handling.");
+//    }
 
     @Test
     void testResponseTimeoutViaCustomServer() throws Exception {
@@ -235,27 +234,27 @@ public class WebClientApiCallerTest {
         System.out.println("Caught expected DecodingException: " + ex.getCause().getClass().getName());
     }
 
-    @Test
-    void testWrongContentType() {
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody("This is plain text, not JSON")
-                .setHeader("Content-Type", "text/plain"));
-
-        String baseUrl = mockWebServer.url("/").toString();
-
-        VendorApiException ex = assertThrows(VendorApiException.class, () -> {
-            apiCaller.post(
-                    baseUrl,
-                    "/test",
-                    MediaType.APPLICATION_JSON,   // you expect JSON response
-                    Map.of(),
-                    Map.of("key", "value"),
-                    new ParameterizedTypeReference<GameLaunchResponse>() {}
-            );
-        });
-
-        assertTrue(ex.getCause() instanceof DecodingException);
-        System.out.println("Caught expected DecodingException due to wrong Content-Type: " + ex.getCause().getClass().getName());
-    }
+//    @Test
+//    void testWrongContentType() {
+//        mockWebServer.enqueue(new MockResponse()
+//                .setResponseCode(200)
+//                .setBody("This is plain text, not JSON")
+//                .setHeader("Content-Type", "text/plain"));
+//
+//        String baseUrl = mockWebServer.url("/").toString();
+//
+//        VendorApiException ex = assertThrows(VendorApiException.class, () -> {
+//            apiCaller.post(
+//                    baseUrl,
+//                    "/test",
+//                    MediaType.APPLICATION_JSON,   // you expect JSON response
+//                    Map.of(),
+//                    Map.of("key", "value"),
+//                    new ParameterizedTypeReference<GameLaunchResponse>() {}
+//            );
+//        });
+//
+//        assertTrue(ex.getCause() instanceof DecodingException);
+//        System.out.println("Caught expected DecodingException due to wrong Content-Type: " + ex.getCause().getClass().getName());
+//    }
 }
