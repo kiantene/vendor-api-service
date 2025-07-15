@@ -70,7 +70,8 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return action_id;
+        //return action_id;
+        return withdraw_provider_tx_id;
     }
 
     @Override

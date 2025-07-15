@@ -64,7 +64,8 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return action_id;
+        //return action_id;
+        return provider_tx_id;
     }
 
     @Override

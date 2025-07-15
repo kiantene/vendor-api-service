@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.spribe.api.bet;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -96,8 +97,11 @@ public class BetAction {
             providerTxId = dto.getProvider_tx_id();
 
             // 6. Send bet request to Operator
-            ResultType resultType = getResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            //ResultType resultType = getResultType(dto);
+            //BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+            BigDecimal balance = betEvent.getLastBalance();
 
             // 7. Set response data
             data.setOperator_tx_id(traceId);
