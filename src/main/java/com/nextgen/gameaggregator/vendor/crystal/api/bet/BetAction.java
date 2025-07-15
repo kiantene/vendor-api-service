@@ -120,6 +120,11 @@ public class BetAction {
                     ResponseCodes.INVALID_SIGNATURE.code,
                     ResponseCodes.INVALID_SIGNATURE.message
             ));
+        } else if (e instanceof InsufficientBalanceException) {
+            commonDataVo.setError(new ErrorVo(
+                    ResponseCodes.INSUFFICIENT_FUNDS.code,
+                    ResponseCodes.INSUFFICIENT_FUNDS.message
+            ));
         } else {
             commonDataVo.setError(new ErrorVo(
                     ResponseCodes.PLAYER_NOT_FOUND.code,

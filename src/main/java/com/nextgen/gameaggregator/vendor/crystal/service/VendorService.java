@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
@@ -33,10 +34,12 @@ public class VendorService extends BaseVendorService {
 
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
+    private final GameSessionService gameSessionService;
 
-    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService) {
+    public VendorService(VendorLineService vendorLineService, AgentPlayerService agentPlayerService, GameSessionService gameSessionService) {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
+        this.gameSessionService = gameSessionService;
     }
 
     public static String convertToJson(String jsonBody) {
@@ -117,6 +120,26 @@ public class VendorService extends BaseVendorService {
         commonDataVo.getData().setBalance(balance.setScale(2, RoundingMode.DOWN));
         commonDataVo.getData().setActionId(externalTransactionId);
         return commonDataVo;
+    }
+
+    @Override
+    public boolean shouldDoRollbackByRound(GameSession gameSession) {
+        return true;
+
+    }
+
+    public GameSession checkGameSession(String traceId, String vendorPlayerUsername, String vendorGameCode) throws VendorCurrencyNotSupportException, InvalidPlayerException, GameNotSupportedException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+            gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }
 

@@ -1,12 +1,10 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.settle;
-
+package com.nextgen.gameaggregator.vendor.crystal.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -25,64 +23,59 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class SettleAction {
+public class RefundAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final WalletService walletService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public SettleAction(HttpService httpService,
+    public RefundAction(HttpService httpService,
                         VendorService vendorService,
                         WalletService walletService,
                         RequestIdempotentLogService requestIdempotentLogService) {
-
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.walletService = walletService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.SETTLE)
-    public CommonDataVo settle(HttpServletRequest request) throws JsonProcessingException {
+    @PostMapping(path = EndPoints.REFUND)
+    public CommonDataVo rollback(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
-        SettleDto settleDto = new SettleDto();
+        RefundDto refundDto = new RefundDto();
         CommonDataVo commonDataVo = new CommonDataVo();
+        BigDecimal balance;
         boolean isRequestExists = false;
-
         try {
             String body = httpRequestLog.getRequestBody();
-            settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
+            refundDto = HttpService.convertJsonToDto(body, RefundDto.class);
             GameSession gameSession;
-            VendorService.doValidation(settleDto);
+            VendorService.doValidation(refundDto);
 
-            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
-                requestIdempotentLogService.create(settleDto, settleDto.getPlayerId());
+            if (requestIdempotentLogService.checkExists(refundDto, refundDto.getPlayerId()) == null) {
+                requestIdempotentLogService.create(refundDto, refundDto.getPlayerId());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
 
-            // Get GameSession with username
-            gameSession = vendorService.checkGameSession(traceId, settleDto.getPlayerId(), settleDto.getGameId());
+            gameSession = vendorService.checkGameSession(traceId, refundDto.getPlayerId(), refundDto.getGameCode());
 
-            this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
+            this.doVerification(refundDto.getGameCode(), refundDto.getCurrencyCode(), gameSession);
 
-            ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
+            balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType,
-                    vendorService, httpRequestLog);
-
-            commonDataVo = vendorService.prepareVo(balance, settleDto.getExternalTransactionId());
+            commonDataVo = vendorService.prepareVo(balance, refundDto.getTransactionId());
 
         } catch (BetResultIdempotentViolationException e) {
-            commonDataVo = vendorService.prepareVo(e.getBalance(), settleDto.getExternalTransactionId());
+            commonDataVo = vendorService.prepareVo(e.getBalance(), refundDto.getTransactionId());
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             this.handleException(e, commonDataVo, httpRequestLog);
         } finally {
             if (!isRequestExists) {
-                requestIdempotentLogService.delete(settleDto, settleDto.getPlayerId());
+                requestIdempotentLogService.delete(refundDto, refundDto.getPlayerId());
             }
             httpService.end(httpRequestLog, commonDataVo);
         }
@@ -98,7 +91,6 @@ public class SettleAction {
         vendorService.validate(currency, gameSession);
         //check session gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameId, GameNotSupportedException::new);
-
     }
 
     @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
