@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -29,19 +28,16 @@ import java.math.BigDecimal;
 public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
     public SettleAction(HttpService httpService,
-                        GameSessionService gameSessionService,
                         VendorService vendorService,
                         WalletService walletService,
                         RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.vendorService = vendorService;
-        this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
@@ -67,16 +63,8 @@ public class SettleAction {
                 throw new TransactionStillProcessingException();
             }
 
-            try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
-                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getGameId(), gameSession);
-            } catch (AuthenticationException e) {
-                gameSession = gameSessionService.generateNewSessionToken(settleDto.getPlayerId());
-                gameSessionService.updateByVendorGameCode(gameSession, settleDto.getGameId());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
+            // Get GameSession with username
+            gameSession = vendorService.checkGameSession(traceId, settleDto.getPlayerId(), settleDto.getGameId());
 
             this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
 
