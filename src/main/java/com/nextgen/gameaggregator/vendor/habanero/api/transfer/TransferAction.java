@@ -21,13 +21,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -158,6 +161,30 @@ public class TransferAction {
             //return invalid respond 503 to trigger vendor resend when record still in processing
             httpStatus = HttpStatus.SC_SERVICE_UNAVAILABLE;
             httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (IndexOutOfBoundsException e) {
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+
+            String stakeTraceResult = Arrays.stream(e.getSuppressed())
+                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
+                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
+                            .map(StackTraceElement::toString)
+                    )
+                    .collect(Collectors.joining("\n"));
+
+            httpService.logError(httpRequestLog, new CouchbaseMoreThanOneRecordException(stakeTraceResult));
+
+        } catch (IncorrectResultSizeDataAccessException e) {
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+
+            String stakeTraceResult = Arrays.stream(e.getSuppressed())
+                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
+                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
+                            .map(StackTraceElement::toString)
+                    )
+                    .collect(Collectors.joining("\n"));
+
+            httpService.logError(httpRequestLog, new DatabaseMoreThanOneRecordException(stakeTraceResult));
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
