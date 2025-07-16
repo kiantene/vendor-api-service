@@ -135,12 +135,7 @@ public class WithdrawAction {
     })
     private void handleException(Exception e, WithdrawVo responseVo, WithdrawDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
-        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
-            responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setError(ResponseCode.OK);
-        } else if (e instanceof InsufficientBalanceException) {
+        if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
         } else if (e instanceof InvalidRequestException) {
             responseVo.setError(ResponseCode.UNEXPECTED_INPUT);

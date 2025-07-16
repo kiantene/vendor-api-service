@@ -136,11 +136,7 @@ public class CancelAction {
     })
     private void handleException(Exception e, CancelVo responseVo, CancelDto dto, HttpRequestLog httpRequestLog) {
 
-        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
-            responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setError(ResponseCode.OK);
-        } else if (e instanceof InvalidTokenException) {
+        if (e instanceof InvalidTokenException) {
             responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
