@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.138</version>
+    <version>1.1.138-hotfix</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-07-15T05:43:20Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-07-16T10:41:51Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
@@ -212,6 +212,27 @@
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
             <version>3.1.6</version>
+        </dependency>
+
+        <!-- UUIDv7 library -->
+        <dependency>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>uuid-creator</artifactId>
+            <version>5.3.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>4.12.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
