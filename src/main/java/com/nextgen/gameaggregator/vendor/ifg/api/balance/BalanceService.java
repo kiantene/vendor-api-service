@@ -37,7 +37,7 @@ public class BalanceService {
     @Autowired
     private VendorService vendorService;
 
-    public CommonVo balance(HttpRequestLog httpRequestLog, String traceId){
+    public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
         BalanceServiceDto balanceDto = new BalanceServiceDto();
 
         // Construct VO
@@ -48,14 +48,14 @@ public class BalanceService {
         BalanceVo balanceVo = new BalanceVo();
         GameSession gameSession = new GameSession();
 
-        try{
-            balanceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(),BalanceServiceDto.class);
+        try {
+            balanceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), BalanceServiceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getGetbalance().getWlid());
             // Verify session token
-            gameSession = gameSessionService.verifyToken(balanceDto.getGetbalance().getGuid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);
@@ -100,7 +100,7 @@ public class BalanceService {
             vo.setGetbalanceVo(getbalanceVo);
 
             httpService.logError(httpRequestLog, e);
-        } catch(Exception e){
+        } catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -114,7 +114,7 @@ public class BalanceService {
             vo.setGetbalanceVo(getbalanceVo);
 
             httpService.logError(httpRequestLog, e);
-        } finally{
+        } finally {
             // set vo
             vo.setSession(balanceDto.getSession());
             vo.setTime(balanceDto.getTime());
