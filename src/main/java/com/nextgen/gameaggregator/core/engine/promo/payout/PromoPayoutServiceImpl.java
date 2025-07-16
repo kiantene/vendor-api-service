@@ -43,9 +43,9 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         clientRequestAuth.initialise(context.getAgentId(), EndPoints.PROMO_PAYOUT, mapper.toPromoPayoutRequest(context));
 
         try {
-            ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth);
-            processor.onSuccess(context, response);
-            return response.getData();
+            Object response = operatorApiCaller.post(clientRequestAuth);
+//            processor.onSuccess(context, response);
+            return null;
         } catch (Exception ex) {
             processor.onError(context, clientRequestAuth, ex);
             throw ex;

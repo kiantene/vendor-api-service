@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -15,13 +14,11 @@ public class LoggingManager {
 
     private final ExecutorService asyncLogger = Executors.newSingleThreadExecutor();
 
-    public LogContext onRequestStart(HttpServletRequest request, String rawBody) {
+    public LogContext onRequestStart(HttpServletRequest request) {
         LogContext logContext = new LogContext();
-
         logContext.setUrl(request.getRequestURI());
-        logContext.setBody(rawBody);
-
         LogContextHolder.set(logContext);
+
         return logContext;
     }
 
@@ -31,33 +28,36 @@ public class LoggingManager {
 
     public void onRequestCompleted(HttpServletRequest request, String responseBody, Exception ex) {
         LogContext logContext = LogContextHolder.get();
-
-        if (Objects.nonNull(ex))
-            // TODO : remove for testing only
-            log.info("onRequestCompleted Exception : {}", ex.toString());
-
         if (logContext != null) {
-            logContext.setEnd();
             this.logAsync(logContext, responseBody, ex);
         }
     }
 
     public void onExceptionThrown(Exception ex) {
         LogContext logContext = LogContextHolder.get();
-        logContext.setException(ex.getClass().getName());
-        logContext.setErrorMessage(ex.getMessage());
+        if (logContext != null) {
+            logContext.setException(ex.getClass().getName());
+            logContext.setErrorMessage(ex.getMessage());
+        }
     }
 
     private void logAsync(LogContext logContext, String responseBody, Exception ex) {
+        logContext.setEnd();
         asyncLogger.submit(() -> {
             try {
-                logContext.setResponse(responseBody);
+                if (responseBody != null && !responseBody.isEmpty()) {
+                    logContext.setResponse(responseBody);
+                }
 
                 if (ex != null) {
-                    logContext.setException(logContext.getException());
+                    logContext.setException(ex.getClass().getName());
                     logContext.setErrorMessage(ex.getMessage());
+                    log.error(logContext.toJson());
+                } else if (logContext.getException() != null) {
+                    log.error(logContext.toJson());
+                } else {
+                    log.debug(logContext.toJson());
                 }
-                log.info(logContext.toJson());
 
                 LogContextHolder.clear();
             } catch (Exception e) {

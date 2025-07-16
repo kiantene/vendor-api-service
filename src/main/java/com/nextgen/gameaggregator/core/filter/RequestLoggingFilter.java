@@ -27,18 +27,19 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        LogContext logContext = loggingManager.onRequestStart(request);
         String requestURI = request.getRequestURI();
-        String vendorClassName = SupportedVendors.shouldApplyFilter(requestURI);
+        String vendorClassName = SupportedVendors.extractVendorClassName(requestURI);
 
-        if (vendorClassName != null) {
+        if (!vendorClassName.isEmpty()) {
             ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
             ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
             try {
                 if (hasBody(request)) {
                     String rawBody = getRawRequestBody(wrappedRequest, request);
-                    LogContext logContext = loggingManager.onRequestStart(request, rawBody);
                     logContext.setVendorClassName(vendorClassName);
+                    logContext.setBody(rawBody);
                     filterChain.doFilter(wrappedRequest, wrappedResponse);
                 } else {
                     filterChain.doFilter(request, response);
@@ -49,6 +50,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             }
         } else {
             filterChain.doFilter(request, response);
+            loggingManager.onRequestCompleted(request, "", null);
         }
     }
 

@@ -4,25 +4,26 @@ import java.util.List;
 
 public class SupportedVendors {
 
-    private static final List<String> VENDOR_PATHS = List.of(
-            com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints.CLASS_NAME
+    private static List<String> VENDOR_PATHS = List.of(
+
     );
 
     private SupportedVendors() {}
+
+    static void setVendorPaths(List<String> paths) {
+        VENDOR_PATHS = paths;
+    }
 
     public static List<String> getPaths() {
         return VENDOR_PATHS;
     }
 
-    public static String shouldApplyFilter(String requestURI) {
-        String vendorClassName = "";
-        for (String vendorPath : getPaths()) {
-            String fullPathPrefix = "/api/v1/" + vendorPath + "/";
-            if (requestURI.startsWith(fullPathPrefix)) {
-                vendorClassName = vendorPath;
-                break;
-            }
-        }
-        return vendorClassName;
+    public static String extractVendorClassName(String requestURI) {
+        if (requestURI == null) return "";
+
+        return getPaths().stream()
+                .filter(path -> requestURI.startsWith("/api/v1/" + path + "/"))
+                .findFirst()
+                .orElse("");
     }
 }
