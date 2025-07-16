@@ -24,6 +24,9 @@ public class UnsettledBet extends BetInformation {
         this.setId(this.generateId());
         this.setStatus(BetStatus.UNSETTLED.code);
         this.setCreateTime(System.currentTimeMillis());
+
+        // Set vendorSettleTime to null initially, it will be set when the bet is settled
+        this.setVendorSettleTime(null);
     }
 
     public UnsettledBet(SettledBet settledBet) {
