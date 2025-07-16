@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.common.ClientRequestAuth;
-import com.nextgen.gameaggregator.core.common.ContextEnricher;
-import com.nextgen.gameaggregator.core.common.ContextValidator;
-import com.nextgen.gameaggregator.core.common.OperatorApiCaller;
+import com.nextgen.gameaggregator.core.common.*;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -18,7 +15,6 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private final CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> processor;
     private final PromoPayoutMapper mapper;
     private final ClientRequestAuth<PromoPayoutRequest> clientRequestAuth;
-    private final OperatorApiCaller operatorApiCaller;
 
     public PromoPayoutServiceImpl(PromoPayoutValidator validator,
                                   PromoPayoutContextEnricher enricher,
@@ -32,7 +28,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         this.processor = processor;
         this.mapper = mapper;
         this.clientRequestAuth = clientRequestAuth;
-        this.operatorApiCaller = new OperatorApiCaller(EndPoints.PROMO_PAYOUT);
+
     }
 
     @Override
@@ -43,9 +39,11 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         clientRequestAuth.initialise(context.getAgentId(), EndPoints.PROMO_PAYOUT, mapper.toPromoPayoutRequest(context));
 
         try {
-            Object response = operatorApiCaller.post(clientRequestAuth);
-//            processor.onSuccess(context, response);
-            return null;
+            OperatorApiCallerV2 operatorApiCaller = new OperatorApiCallerV2(EndPoints.PROMO_PAYOUT);
+            ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth);
+            processor.onSuccess(context, response);
+
+            return response.getData();
         } catch (Exception ex) {
             processor.onError(context, clientRequestAuth, ex);
             throw ex;

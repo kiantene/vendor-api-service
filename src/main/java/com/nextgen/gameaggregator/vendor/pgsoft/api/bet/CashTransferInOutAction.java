@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pgsoft.service.PGSoftPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,9 +47,7 @@ public class CashTransferInOutAction {
     private final LoggingService loggingService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorGameCodeService vendorGameCodeService;
-    private final VendorRequestMapper<PromoPayoutContext, CashTransferInOutDto> promoRequestMapper;
-    private final VendorResponseMapper<PromoPayoutContext, CashTransferInOutVo> promoResponseMapper;
-    private final PromoPayoutService promoPayoutService;
+    private final PGSoftPromoPayoutService promoPayoutService;
 
     public CashTransferInOutAction(HttpService httpService,
                                    GameSessionService gameSessionService,
@@ -60,9 +59,7 @@ public class CashTransferInOutAction {
                                    LoggingService loggingService,
                                    RequestIdempotentLogService requestIdempotentLogService,
                                    VendorGameCodeService vendorGameCodeService,
-                                   PromoRequestMapper promoRequestMapper,
-                                   PromoResponseMapper promoResponseMapper,
-                                   PromoPayoutServiceImpl promoPayoutService) {
+                                   PGSoftPromoPayoutService promoPayoutService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -74,8 +71,6 @@ public class CashTransferInOutAction {
         this.loggingService = loggingService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorGameCodeService = vendorGameCodeService;
-        this.promoRequestMapper = promoRequestMapper;
-        this.promoResponseMapper = promoResponseMapper;
         this.promoPayoutService = promoPayoutService;
     }
 
@@ -92,14 +87,8 @@ public class CashTransferInOutAction {
         try {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
 
-            if (vendorService.isPromoPayout(dto)) {
-                PromoPayoutContext promoPayoutContext = promoRequestMapper.toInternal(dto);
-                httpRequestLog.setId(promoPayoutContext.getTraceId()); // promo payout will start sending traceId without hyphens
-                PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
-                responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
-                parentResponseVo.setData(responseVo);
-
-                return parentResponseVo;
+            if (promoPayoutService.isPromoPayout(dto)) {
+                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
             }
 
             vendorCurrencyCode = dto.getCurrencyCode();
