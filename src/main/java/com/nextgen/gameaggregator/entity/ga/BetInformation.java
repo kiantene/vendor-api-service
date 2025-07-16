@@ -61,7 +61,8 @@ public abstract class BetInformation {
         if (this.winLoss == null) this.winLoss = BigDecimal.ZERO;
         if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
 
-        this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
+        // Remove setting vendorSettleTime because we will do it in result
+        // this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
 
     protected BetInformation(SportBetResultData sportBetResultData) {
