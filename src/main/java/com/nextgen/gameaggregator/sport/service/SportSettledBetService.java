@@ -75,4 +75,8 @@ public class SportSettledBetService {
 
         return sportSettledBet;
     }
+
+    public SportSettledBet findById(String id) {
+        return sportSettledBetRepository.findById(id).orElse(null);
+    }
 }

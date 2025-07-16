@@ -55,13 +55,13 @@ public class RollbakcAction {
 
         BigDecimal balance = null;
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
             // get x-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
@@ -78,18 +78,18 @@ public class RollbakcAction {
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
-            responseVo.setBalance(balance.toBigIntegerExact());
-        } catch(BetNotFoundException e){
+            responseVo.setBalance(balance.toBigInteger());
+        } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
-        } catch(BetRefundIdempotentViolationException |
-                BetResultIdempotentViolationException e){
+        } catch (BetRefundIdempotentViolationException |
+                 BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
-        } catch(AuthenticationException e){
+        } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
@@ -100,10 +100,10 @@ public class RollbakcAction {
                         .orElse(ResponseCodes.RS_ERROR_UNKNOWN); // if there's no value, set it to the default value
                 responseVo.setStatus(violation);
             }
-        } catch(InvalidSignatureException e){
+        } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally {
@@ -136,7 +136,7 @@ public class RollbakcAction {
         Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
 
         // validateSignature not equal to true mean credential problem or this data is not from vendor
-        if(!validateSignature){
+        if (!validateSignature) {
             throw new InvalidSignatureException();
         }
     }
