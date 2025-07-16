@@ -95,7 +95,6 @@ public class CancelBetAction {
 
                     } catch (Exception exception) {
                         // throw to dlq
-                        httpService.logError(httpRequestLog, exception);
                         log.error(exception.getMessage());
                     } finally {
                         walletRequestService.end(newWalletRequest, httpRequestLog, vo);
