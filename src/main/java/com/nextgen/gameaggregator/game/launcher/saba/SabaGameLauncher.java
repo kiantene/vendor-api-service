@@ -34,7 +34,8 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
 
     @Override
     public String getVendorClassName() {
-        return EndPoints.CLASS_NAME; // return null to disable this launcher
+        return null;
+//        return EndPoints.CLASS_NAME; // return null to disable this launcher
     }
 
     @Override
