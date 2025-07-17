@@ -78,7 +78,8 @@ public class CancelAction {
             this.doVerification(dto, gameSession);
 
             //Rollback
-            balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
@@ -135,16 +136,19 @@ public class CancelAction {
     })
     private void handleException(Exception e, CancelVo responseVo, CancelDto dto, HttpRequestLog httpRequestLog) {
 
-        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
-            responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setError(ResponseCode.OK);
-        } else if (e instanceof InvalidTokenException) {
+        if (e instanceof InvalidTokenException) {
             responseVo.setError(ResponseCode.EXPIRED);
         } else {
             responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
         }
 
         httpService.logError(httpRequestLog, e);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+        HttpRequestLog httpRequestLogDup = new HttpRequestLog(httpRequestLog);
+
+        // Call the service with the duplicate log
+        return walletService.getBalance(traceId, gameSession, httpRequestLogDup);
     }
 }

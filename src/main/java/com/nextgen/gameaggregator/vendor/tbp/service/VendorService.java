@@ -35,7 +35,7 @@ public class VendorService extends BaseVendorService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), playerIdDto, AuthenticationException::new);
 
         // 4. Verify Currency
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), currencyDto, AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currencyDto, AuthenticationException::new);
 
         // 5. Verify SessionId
         ValidationUtils.isEquals(gameSession.getVendorToken(), sessionIdDto, InvalidTokenException::new);
