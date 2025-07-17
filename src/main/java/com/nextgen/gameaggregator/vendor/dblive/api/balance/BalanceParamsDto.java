@@ -12,7 +12,7 @@ public class BalanceParamsDto {
     @Size(max = 50)
     private String loginName;
     @NotBlank
-    @Size(max = 3)
+    @Size(max = 4)
     private String currency;
 
 }

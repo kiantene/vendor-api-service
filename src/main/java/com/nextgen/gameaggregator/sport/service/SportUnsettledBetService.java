@@ -10,6 +10,9 @@ import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.repository.SportUnsettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -75,6 +78,13 @@ public class SportUnsettledBetService {
         return sportUnsettledBet;
     }
 
+    @Recover
+    public SportUnsettledBet recoverData(Exception ex) throws Exception {
+        // Other exception in retryable function will just throw out
+        throw ex;
+    }
+
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
     public SportUnsettledBet getByVendorPlayerUsernameAndVendorBetId(String vendorPlayerUsername, String vendorBetId) throws BetNotFoundException {
         SportUnsettledBet sportUnsettledBet = null;
 
