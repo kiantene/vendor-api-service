@@ -112,6 +112,7 @@ public class CreditAction {
             responseVo.setResponseCode(ResponseCode.BET_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
             idempotentSetBalance(httpRequestLog, responseVo);
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {

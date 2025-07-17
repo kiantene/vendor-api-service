@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -64,6 +67,12 @@ public class GameUrlAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         httpRequestLog.setRequestType(REQUEST_TYPE);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
+        LogContext logContext = LogContextHolder.get();
+        if (logContext != null) {
+            logContext.setLogGroup("GameLaunch");
+            logContext.setType(REQUEST_TYPE);
+            logContext.setBody(httpRequestLog.getRequestBody());
+        }
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -131,7 +140,7 @@ public class GameUrlAction {
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
             // Request game url from vendor
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog, gameLaunchDto);
             warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currencyId);
             responseVo.setData(gameUrlData);
 
@@ -229,6 +238,15 @@ public class GameUrlAction {
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
             httpService.end(httpRequestLog, responseVo);
         }
+        if (logContext != null) {
+            try {
+                logContext.setResponse(new ObjectMapper().writeValueAsString(responseVo));
+                logContext.setStatus(1);
+            } catch (Exception ex) {
+                logContext.setException(ex.getClass().getName());
+                logContext.setErrorMessage(ex.getMessage());
+            }
+        }
 
         return responseVo;
     }
@@ -251,6 +269,7 @@ public class GameUrlAction {
         String body = httpRequestLog.getRequestBody();
         GameLaunchDto gameLaunchDto = new GameLaunchDto();
         gameLaunchDto.setTraceId(traceId);
+        gameLaunchDto.setLobbyUrl(dto.getLobbyUrl());
 
         // 1. Validate all fields in the request object
         loggingService.logStart();

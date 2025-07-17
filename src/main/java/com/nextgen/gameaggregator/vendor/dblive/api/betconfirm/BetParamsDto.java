@@ -29,7 +29,7 @@ public class BetParamsDto implements BetResultData {
     @Digits(integer = 13, fraction = 0)
     private Long betTime;
     @NotBlank
-    @Size(max = 3)
+    @Size(max = 4)
     private String currency;
     @NotBlank
     @Size(max = 20)
