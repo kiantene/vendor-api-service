@@ -67,7 +67,7 @@ public class AuthenticateAction {
             responseVo.setPassword(dto.getPassword());
             responseVo.setSessionId(dto.getSessionId());
             responseVo.setUserId(dto.getPlayerId());
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
             responseVo.setBalance(balance);
             responseVo.setError(ResponseCode.OK);
 
