@@ -314,6 +314,7 @@ public class HttpService {
                         if (balanceLog.getRootCause() == null || balanceLog.getRootCause().isEmpty()) {
                             log.info(balanceLogJson);
                         } else {
+                            requestLog.setStatus(ERROR);
                             log.error(balanceLogJson);
                         }
                     } else {
