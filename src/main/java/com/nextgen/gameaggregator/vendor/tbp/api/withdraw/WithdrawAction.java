@@ -84,7 +84,7 @@ public class WithdrawAction {
 
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setCasinoTransferId(dto.getCasinoTransferId());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setError(ResponseCode.OK);
 
         } catch (Exception e) {
