@@ -31,7 +31,7 @@ public class GamePayoutParamDto implements BetResultData {
     @Size(max = 20)
     private String transferType;
     @NotBlank
-    @Size(max = 3)
+    @Size(max = 4)
     private String currency;
     @NotBlank
     @Size(max = 20)
