@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Aviator Game Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .game-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .code-block {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Aviator Game Integration</h1>
+
+    <div class="game-container">
+        <iframe id="aviator-game" src="about:blank"></iframe>
+    </div>
+
+    <div class="code-block">
+        <h3>Configuration Data:</h3>
+        <pre id="config-data"></pre>
+    </div>
+</div>
+
+<script>
+    // Configuration data for the Aviator game
+    const data = {
+        // required. Type String
+        token: "YOUR_GAME_TOKEN_HERE", // Replace with your actual token
+        // required. Type String
+        providerId: "YOUR_PROVIDER_ID_HERE", // Replace with your provider ID
+        // optional. Type String. (Default ka, uses ISO 639-1 format. options are ka, en)
+        language: "ka",
+        // optional. Type String. (Default GEL, uses ISO 4217 format. for example USD)
+        currency: "GEL",
+        // required. Type Int.
+        gameId: 1,
+        // optional. Type String. (Operator home page URL to which redirect to with home button. If not provided, game will not have home button)
+        backtoHome: "https://yourwebsite.com",
+        // optional. Type boolean (true | false). (Default true) If passed "false" game will not have fullscreen button
+        fullscreen: true
+    };
+
+    // Display the configuration in the pre element
+    document.getElementById('config-data').textContent = JSON.stringify(data, null, 2);
+
+    // Function to load the game
+    function loadGame() {
+        const iframe = document.getElementById('aviator-game');
+
+        // Choose the appropriate URL based on your environment
+        // For production:
+        // const gameUrl = 'https://client.crash.aviator.studio:81/demo';
+
+        // For staging:
+        const gameUrl = 'https://client.staging.crash.aviator.studio:81/demo';
+
+        // Create URL with query parameters
+        const url = new URL(gameUrl);
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                url.searchParams.append(key, data[key]);
+            }
+        });
+
+        iframe.src = url.toString();
+    }
+
+    // Load the game when the page is ready
+    window.addEventListener('DOMContentLoaded', loadGame);
+</script>
+</body>
+</html>
