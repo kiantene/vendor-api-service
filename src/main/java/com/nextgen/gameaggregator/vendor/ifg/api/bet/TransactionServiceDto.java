@@ -19,12 +19,11 @@ public class TransactionServiceDto implements BetResultData {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 32)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String session;
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}")
     private String time;
 
     @JacksonXmlProperty(localName = "roundbet")
@@ -88,7 +87,9 @@ public class TransactionServiceDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO; }
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
 
     @Override
     public Integer getIsFreespin() {
@@ -97,7 +98,10 @@ public class TransactionServiceDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        if ("1".equals(this.getRoundbet().getFinished())) {
+            return BetStatus.SETTLED;
+        } else {
+            return BetStatus.UNSETTLED;
+        }
     }
-
 }

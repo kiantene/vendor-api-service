@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.logging;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.util.UuidUtil;
 import lombok.Data;
 
 import java.time.Instant;
@@ -11,7 +12,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -21,20 +21,47 @@ public class LogContext {
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
     private String type;
+    private String url;
     private String traceId;
     private String logGroup;
+
+    // Raw request body received from the client (e.g., operator system)
     private String body;
+
+    // Raw response body returned to the client
     private String response;
     private long start;
     private long end;
     private long timeTaken;
+
+    /**
+     * Target URL of the outbound API request to the external system
+     */
+    private String apiUrl;
+    /**
+     * Outbound request payload sent to external systems (e.g., game vendor APIs)
+     */
+    private Object apiBody;
+
+    /**
+     * Inbound response payload received from external systems
+     */
+    private Object apiResponse;
+    private long apiStart;
+    private long apiEnd;
+    private long apiTimeTaken;
     private String exception;
+    private String rootCause;
     private String errorMessage;
     private int status;
+    private String vendorClassName;
+    private Integer vendorId;
+    private Integer agentId;
+    private String username; // always refers to agent player username
 
     public LogContext() {
         this.logGroup = "general";
-        this.traceId = UUID.randomUUID().toString();
+        this.traceId = UuidUtil.newUuidV7StringRaw();
         this.start = System.currentTimeMillis();
         this.time = this.formatTimestamp(this.start);
     }
@@ -66,15 +93,26 @@ public class LogContext {
             base.put("logGroup", logGroup);
             base.put("traceId", traceId);
             base.put("type", type);
+            base.put("agentId", agentId);
+            base.put("vendorId", vendorId);
+            base.put("username", username);
+            base.put("url", url);
             base.put("start", start);
             base.put("end", end);
             base.put("timeTaken", timeTaken);
             base.put("body", body);
-            base.put("status", status);
             base.put("response", response);
+            base.put("apiUrl", apiUrl);
+            base.put("apiBody", apiBody);
+            base.put("apiResponse", apiResponse);
+            base.put("apiStart", apiStart);
+            base.put("apiEnd", apiEnd);
+            base.put("apiTimeTaken", apiTimeTaken);
+            base.put("status", status);
 
             // Exception
             base.put("exception", exception);
+            base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
             base.putAll(extraFields);
 
