@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
@@ -38,16 +39,16 @@ public class OperatorApiCaller {
     public OperatorApiCaller(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
 
-//        ConnectionProvider provider = ConnectionProvider.builder("high-volume-pool")
-//                .maxConnections(5000)                           // Increase total number of simultaneous open connections (default is 500)
-//                .pendingAcquireMaxCount(5000)                   // Increase the number of queued requests waiting for a connection (default is 500)
-//                .pendingAcquireTimeout(Duration.ofSeconds(10))  // Reduce wait time for a connection before failing (default is 45s)
-//                .maxIdleTime(Duration.ofSeconds(30))            // Close idle connections after 30s (default is 0s — no idle timeout)
-//                .maxLifeTime(Duration.ofMinutes(5))             // Close and recycle connections after 5 minutes to avoid staleness (default is 0s — live forever)
-//                .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
-//                .build();
+        ConnectionProvider provider = ConnectionProvider.builder("high-volume-pool")
+                .maxConnections(1000)                           // Increase total number of simultaneous open connections (default is 500)
+                .pendingAcquireMaxCount(1000)                   // Increase the number of queued requests waiting for a connection (default is 500)
+                .pendingAcquireTimeout(Duration.ofSeconds(10))  // Reduce wait time for a connection before failing (default is 45s)
+                .maxIdleTime(Duration.ofSeconds(30))            // Close idle connections after 30s (default is 0s — no idle timeout)
+                .maxLifeTime(Duration.ofMinutes(5))             // Close and recycle connections after 5 minutes to avoid staleness (default is 0s — live forever)
+                .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
+                .build();
 
-        HttpClient httpClient = HttpClient.create()
+        HttpClient httpClient = HttpClient.create(provider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
                 .responseTimeout(Duration.ofSeconds(3))             // 3s total read timeout
                 .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3))); // 3s read timeout (low-level)
