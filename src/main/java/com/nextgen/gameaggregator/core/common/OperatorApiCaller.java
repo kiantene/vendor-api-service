@@ -46,6 +46,7 @@ public class OperatorApiCaller {
                 .maxIdleTime(Duration.ofSeconds(30))            // Close idle connections after 30s (default is 0s — no idle timeout)
                 .maxLifeTime(Duration.ofMinutes(5))             // Close and recycle connections after 5 minutes to avoid staleness (default is 0s — live forever)
                 .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
+                .metrics(true)
                 .build();
 
         HttpClient httpClient = HttpClient.create(provider)
