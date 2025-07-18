@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import java.security.KeyFactory;
@@ -18,11 +19,8 @@ import java.util.Base64;
 
 @Setter
 @Getter
+@Service
 public class VendorService extends BaseVendorService {
-
-    private static final String PUBLIC_KEY_STRING = "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----";
-    private static final String PRIVATE_KEY_STRING = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----";
-    private static final String JWT_SECRET = "your_jwt_secret_here";
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
 
@@ -35,9 +33,10 @@ public class VendorService extends BaseVendorService {
     public static String generateJWT(String userId, String sessionId, String jwtToken, String publicKey) throws Exception {
         long issuedAtMillis = System.currentTimeMillis();
 
-        Algorithm algorithm = Algorithm.HMAC256(JWT_SECRET);
+        Algorithm algorithm = Algorithm.HMAC256(jwtToken);
         String jwt = JWT.create()
                 .withClaim("userId", userId)
+                .withClaim("iat", issuedAtMillis)
                 .withClaim("sessionId", sessionId)
                 .sign(algorithm);
 
@@ -67,34 +66,10 @@ public class VendorService extends BaseVendorService {
     }
 
     public static DecodedJWT decodeJWT(String jwtToken) {
-        Algorithm algorithm = Algorithm.HMAC256(JWT_SECRET);
+        Algorithm algorithm = Algorithm.HMAC256(jwtToken);
         JWTVerifier verifier = JWT.require(algorithm).build();
 
         return verifier.verify(jwtToken);
     }
 
-//    public static void main(String[] args) {
-//        try {
-//            // Create JWT and encrypt it
-//            String userId = "test-user-123";
-//            String sessionId = "123456";
-//            String jwtToken = generateJWT(userId, sessionId, PUBLIC_KEY_STRING);
-//            PublicKey publicKey = loadPublicKey(PUBLIC_KEY_STRING);
-//            String encryptedToken = encrypt(jwtToken, publicKey);
-//
-//            System.out.println("Encrypted JWT Token: " + encryptedToken);
-//
-//            // Simulate provider receiving the encrypted token back
-//            PrivateKey privateKey = loadPrivateKey(PRIVATE_KEY_STRING);
-//            String decryptedJWT = decrypt(encryptedToken, privateKey);
-//
-//            System.out.println("Decrypted JWT Token: " + decryptedJWT);
-//
-//            // Validate JWT token
-//            validateJWT(decryptedJWT);
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 }
