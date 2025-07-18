@@ -3,8 +3,13 @@ package com.nextgen.gameaggregator.game.launcher.aviatorstudio;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.StaticHtmlGameLauncher;
+import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class AviatorStudioGameLauncher extends StaticHtmlGameLauncher<GameLaunchRequest> {
@@ -15,6 +20,19 @@ public class AviatorStudioGameLauncher extends StaticHtmlGameLauncher<GameLaunch
 
     @Override
     public GameLaunchRequest onPrepareRequestBody(GameLaunchContext context) {
+        Map<String, VendorLineCredential> credentialMap = context.getVendorCredentials();
+        String userid = context.getVendorPlayerUsername();
+        String sessionId = context.getToken();
+        String publicKey = getRequiredCredentialValue(credentialMap, Credentials.PUBLIC_KEY);
+        String jwtToken = getRequiredCredentialValue(credentialMap, Credentials.JWT_SECRET);
+        String token;
+        try {
+            token = VendorService.generateJWT(userid, sessionId, jwtToken, publicKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
         return null;
     }
 
