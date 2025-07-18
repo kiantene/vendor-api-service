@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -22,6 +23,7 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.util.Map;
 
+@Slf4j
 public class OperatorApiCaller {
     private final WebClient.Builder builder;
     private String path;
@@ -90,6 +92,12 @@ public class OperatorApiCaller {
                             Retry.backoff(3, Duration.ofSeconds(1)) // Retry up to 3 times with exponential backoff: 1s, 2s, 4s delays
                                     .jitter(0.5) // Add ±50% random jitter to avoid retry spikes under load (e.g., jittered 1s = 0.5s–1.5s)
                                     .filter(this::isRetryable) // Only retry for retryable exceptions (e.g., I/O errors, 5xx responses); skip 4xx errors
+                                    .doBeforeRetry(retrySignal ->
+                                            log.warn("[{}] Retrying attempt {} due to: {}",
+                                                    this.path,
+                                                    retrySignal.totalRetries() + 1,
+                                                    retrySignal.failure())
+                                    )
                                     .onRetryExhaustedThrow((spec, signal) -> signal.failure()) // Re-throw the last failure after all retries are exhausted
                     )
                     .block()
