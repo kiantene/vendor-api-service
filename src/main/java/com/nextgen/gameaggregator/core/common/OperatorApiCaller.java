@@ -39,7 +39,7 @@ public class OperatorApiCaller {
     public OperatorApiCaller(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
 
-        ConnectionProvider provider = ConnectionProvider.builder("high-volume-pool")
+        ConnectionProvider provider = ConnectionProvider.builder("operator-web-client-pool")
                 .maxConnections(1000)                           // Increase total number of simultaneous open connections (default is 500)
                 .pendingAcquireMaxCount(1000)                   // Increase the number of queued requests waiting for a connection (default is 500)
                 .pendingAcquireTimeout(Duration.ofSeconds(10))  // Reduce wait time for a connection before failing (default is 45s)
