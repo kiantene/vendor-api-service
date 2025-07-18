@@ -38,6 +38,7 @@ public class GameUrlService extends BaseGameUrlService<ASGameUrlVo> {
             String jwtToken = ValidationUtils.validateCredential(credentials.get(Credentials.JWT_SECRET));
             String userid = gameSession.getVendorPlayerUsername();
             String sessionId = gameSession.getToken();
+            //generate JWT token
             String token = VendorService.generateJWT(userid, sessionId, jwtToken, publicKey);
 
             formData.add("token", token);
