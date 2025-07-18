@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.common.OperatorApiCaller;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -15,6 +12,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -32,18 +30,21 @@ public class WalletBalanceAction {
     private final AuthenticationService authenticationService;
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
+    private final MeterRegistry meterRegistry;
 
     public WalletBalanceAction(RequestService requestService,
                                AgentApiCredentialService agentApiCredentialService,
                                AuthenticationService authenticationService,
                                VendorService vendorService,
-                               CurrencyConversionService currencyConversionService) {
+                               CurrencyConversionService currencyConversionService,
+                               MeterRegistry meterRegistry) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
+        this.meterRegistry = meterRegistry;
     }
 
 
@@ -80,11 +81,15 @@ public class WalletBalanceAction {
         ResponseEntity<String> apiResponse;
 
         try {
-            OperatorApiCaller operatorApiCaller = new OperatorApiCaller(EndPoints.WALLET_BALANCE);
-            apiResponse = operatorApiCaller.post(apiUrl, Map.of(
+            OperatorApiCaller operatorApiCaller = new OperatorApiCaller(this.meterRegistry);
+            
+            apiResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, Map.of(
                     EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
                     EndPoints.HEADER_SIGNATURE, signature
-            ), dto);
+            ), dto, Map.of(
+                    OperatorApiCaller.AGENT_ID, String.valueOf(agentId),
+                    OperatorApiCaller.ACTION, "balance"
+            ));
             this.setEndTime(httpRequestLog);
 
         } catch (OperatorApiException operatorApiException) {
