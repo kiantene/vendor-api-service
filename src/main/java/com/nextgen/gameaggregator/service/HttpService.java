@@ -312,7 +312,7 @@ public class HttpService {
                         ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
                         boolean hasError = balanceLog.getRootCause() != null && !balanceLog.getRootCause().isEmpty();
 
-                        requestLog.setStatus(hasError ? ERROR : requestLog.getStatus());
+                        balanceLog.setStatus(hasError ? ERROR : requestLog.getStatus());
 
                         String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
                         if (hasError) {
