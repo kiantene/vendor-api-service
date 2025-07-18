@@ -162,8 +162,8 @@ public class OperatorApiCaller {
         Duration duration = Duration.between(startTime, Instant.now());
         Timer.builder("operator.latency")
                 .description("Latency of operator API call")
-                .tag("agentId", agentId)
-                .tag("action", action)
+                .tag(AGENT_ID, agentId)
+                .tag(ACTION, action)
                 .register(meterRegistry)
                 .record(duration);
     }
