@@ -39,7 +39,7 @@ public class OperatorApiCaller {
                 .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
                 .build();
 
-        HttpClient httpClient = HttpClient.create()
+        HttpClient httpClient = HttpClient.create(provider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
                 .responseTimeout(Duration.ofSeconds(3))             // 3s total read timeout
                 .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3))); // 3s read timeout (low-level)
