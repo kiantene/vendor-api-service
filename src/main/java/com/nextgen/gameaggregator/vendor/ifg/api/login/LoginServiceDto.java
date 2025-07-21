@@ -14,12 +14,11 @@ public class LoginServiceDto {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 32)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String session;
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}")
     private String time;
 
     @JacksonXmlProperty(localName = "enter")

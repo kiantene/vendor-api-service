@@ -71,6 +71,15 @@ public class VendorLineService {
         return credential.getValue();
     }
 
+    @Cacheable(value = "LatestVendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager", unless = "#result == null")
+    public VendorLineCredential getLatestCredentialByLineIdAndName(Integer vendorLineId, String name) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findAllByVendorLineIdAndNameAndStatus(vendorLineId, name, Status.ACTIVE.code);
+
+        return credentials.stream()
+            .max(Comparator.comparing(VendorLineCredential::getVersion))
+            .orElse(null);
+    }
+
     @Cacheable(value = "VendorLineCredentials", key = "{#name, #value}", cacheManager = "cacheManager")
     public Integer getVendorLineIdByNameAndValue(String name, String value) throws CredentialNotFoundException {
         final Integer ACTIVE = Status.ACTIVE.code;
