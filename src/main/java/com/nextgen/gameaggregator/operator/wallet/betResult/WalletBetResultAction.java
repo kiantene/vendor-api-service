@@ -359,12 +359,17 @@ public class WalletBetResultAction {
         walletBetResultDto.setWinLoss(winLossAmount);
         walletBetResultDto.setResultType(resultType);
         walletBetResultDto.setIsFreespin(betInformation.getIsFreespin());
-        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
         walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
         walletBetResultDto.setToken((betInformation.getGameSessionToken() != null) ? betInformation.getGameSessionToken() : gameSession.getToken());
         walletBetResultDto.setGameCode(gameSession.getGameCode());
         walletBetResultDto.setBetTime(betInformation.getVendorBetTime());
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());
+
+        if (betInformation.getIsEndRound() == null) { // fallback to original logic
+            walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
+        } else { // if isEndRound is mapped
+            walletBetResultDto.setIsEndRound(betInformation.getIsEndRound());
+        }
 
         return walletBetResultDto;
     }
