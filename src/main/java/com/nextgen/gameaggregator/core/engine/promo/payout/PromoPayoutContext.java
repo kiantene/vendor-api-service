@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
+import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import lombok.Builder;
 import lombok.Data;
 
@@ -7,7 +8,7 @@ import java.math.BigDecimal;
 
 @Builder
 @Data
-public class PromoPayoutContext {
+public class PromoPayoutContext implements VendorPlayerAware {
     // Request
     private String traceId;
     private String idempotencyKey;

@@ -1,54 +1,47 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.common.ContextEnricher;
+import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.service.data.AgentPlayerDataService;
+import com.nextgen.gameaggregator.core.service.data.VendorPlayerDataService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.service.*;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
-public class PromoPayoutContextEnricher implements ContextEnricher<PromoPayoutContext> {
-    private final AgentService agentService;
-    private final VendorPlayerService vendorPlayerService;
-    private final AgentPlayerService agentPlayerService;
-    private final CurrencyService currencyService;
-    private final VendorGameService vendorGameService;
-    private final VendorLineService vendorLineService;
-    private final VendorService vendorService;
-    private final GameCategoryService gameCategoryService;
+public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
+//    private final AgentService agentService;
+//    private final CurrencyService currencyService;
+//    private final VendorGameService vendorGameService;
+//    private final VendorLineService vendorLineService;
+//    private final VendorService vendorService;
+//    private final GameCategoryService gameCategoryService;
 
-    public void enrich(PromoPayoutContext context) {
+    public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
+                                      VendorPlayerDataService vendorPlayerDataService) {
+        super(agentPlayerDataService, vendorPlayerDataService);
+    }
+
+    public void doEnrich(PromoPayoutContext context) {
         try {
 
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(context.getVendorPlayerUsername());
-            context.setVendorPlayerId(vendorPlayer.getId());
-            context.setVendorLineId(vendorPlayer.getVendorLineId());
+//            Vendor vendor = vendorService.getById(context.getVendorId());
+//            context.setVendorId(vendor.getId());
+//            context.setVendorCode(vendor.getCode());
 
-            AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
-            context.setAgentId(agentPlayer.getAgentId());
-            context.setAgentPlayerId(agentPlayer.getId());
-            context.setAgentPlayerUsername(agentPlayer.getUsername());
+//            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
+//            context.setVendorGameId(vendorGame.getId());
+//            context.setGameCode(vendorGame.getCode());
 
-            Vendor vendor = vendorService.getById(vendorPlayer.getVendorId());
-            context.setVendorId(vendor.getId());
-            context.setVendorCode(vendor.getCode());
+//            GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId());
+//            context.setGameCategoryId(gameCategory.getId());
+//            context.setGameCategoryCode(gameCategory.getCode());
 
-            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
-            context.setVendorGameId(vendorGame.getId());
-            context.setGameCode(vendorGame.getCode());
-
-            GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId());
-            context.setGameCategoryId(gameCategory.getId());
-            context.setGameCategoryCode(gameCategory.getCode());
-
-            Currency currency = currencyService.get(vendorPlayer.getCurrencyId());
-            context.setCurrencyId(currency.getId());
-            context.setCurrency(currency.getCode());
+//            Currency currency = currencyService.get(vendorPlayer.getCurrencyId());
+//            context.setCurrencyId(currency.getId());
+//            context.setCurrency(currency.getCode());
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 }

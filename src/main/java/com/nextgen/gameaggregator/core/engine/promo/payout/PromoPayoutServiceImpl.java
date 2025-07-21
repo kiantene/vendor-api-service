@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.common.*;
+import com.nextgen.gameaggregator.core.common.ClientRequestAuth;
+import com.nextgen.gameaggregator.core.common.ContextValidator;
+import com.nextgen.gameaggregator.core.common.OperatorApiCallerV2;
+import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -11,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class PromoPayoutServiceImpl implements PromoPayoutService {
 
     private final ContextValidator<PromoPayoutContext> validator;
-    private final ContextEnricher<PromoPayoutContext> enricher;
+    private final BaseEnricher<PromoPayoutContext> enricher;
     private final CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> processor;
     private final PromoPayoutMapper mapper;
     private final ClientRequestAuth<PromoPayoutRequest> clientRequestAuth;
@@ -28,7 +31,6 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         this.processor = processor;
         this.mapper = mapper;
         this.clientRequestAuth = clientRequestAuth;
-
     }
 
     @Override
