@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.api.authenticate;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -69,9 +70,12 @@ public class AuthenticateAction {
         return responseVo;
     }
 
-    private void doVerification(String jwtAuth, String currency, GameSession gameSession) throws InvalidRequestException, AuthenticationException {
+    private void doVerification(String jwtAuth, String currency, GameSession gameSession) throws
+            AuthenticationException,
+            InvalidRequestException,
+            CredentialNotFoundException {
         //Verify JWT
-        vendorService.verifyJWT(jwtAuth, gameSession.getVendorPlayerUsername(), gameSession.getToken());
+        vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
 
         //Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, InvalidRequestException::new);

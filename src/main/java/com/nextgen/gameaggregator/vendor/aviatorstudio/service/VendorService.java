@@ -5,11 +5,13 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
@@ -89,8 +91,9 @@ public class VendorService extends BaseVendorService {
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
-    public static DecodedJWT decodeJWT(String jwtToken) {
-        Algorithm algorithm = Algorithm.HMAC256(jwtToken);
+    public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
+        String jwtSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.JWT_SECRET);
+        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
         JWTVerifier verifier = JWT.require(algorithm).build();
 
         return verifier.verify(jwtToken);
@@ -100,8 +103,9 @@ public class VendorService extends BaseVendorService {
         ValidationUtils.validateRequest(validationObject);
     }
 
-    public void verifyJWT(String jwtAuth, String vendorPlayerUsername, String sessionId) throws AuthenticationException {
-        DecodedJWT decodedJWT = decodeJWT(jwtAuth);
+    public void verifyJWT(String jwtAuth, int vendorLineId, String vendorPlayerUsername, String sessionId) throws AuthenticationException, CredentialNotFoundException {
+        DecodedJWT decodedJWT = decodeJWT(jwtAuth, vendorLineId);
+
         //Verify username
         ValidationUtils.isEquals(vendorPlayerUsername, decodedJWT.getClaim("userId").asString(), AuthenticationException::new);
 
