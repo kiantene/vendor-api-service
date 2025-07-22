@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,6 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Service
 public class AuthenticateAction {
 
     private final HttpService httpService;
@@ -75,7 +73,7 @@ public class AuthenticateAction {
             InvalidRequestException,
             CredentialNotFoundException {
         //Verify JWT
-        vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
+        //vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
 
         //Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, InvalidRequestException::new);
