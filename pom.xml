@@ -44,7 +44,7 @@
         <dependency>
             <groupId>com.nextgen</groupId>
             <artifactId>nextgen-core</artifactId>
-            <version>1.0.3</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>
@@ -244,9 +244,9 @@
 
     <repositories>
         <repository>
-            <id>gitlab-ga</id>
+            <id>gitlab-maven-nextgen-core</id>
             <name>GitLab Maven Registry</name>
-            <url>https://gitlab.newnextgen.site/api/v4/projects/627/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/629/packages/maven</url>
         </repository>
 
         <repository>
