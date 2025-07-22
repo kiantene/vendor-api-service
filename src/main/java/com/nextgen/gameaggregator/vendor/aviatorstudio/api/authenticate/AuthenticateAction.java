@@ -60,12 +60,8 @@ public class AuthenticateAction {
 
             responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
 
-        } catch (AuthenticationException e) {
-            responseVo.setResponseCode(ResponseCode.AUTH_ERROR);
-            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
-            httpService.logError(httpRequestLog, e);
+            this.handleException(e, responseVo, httpRequestLog);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
