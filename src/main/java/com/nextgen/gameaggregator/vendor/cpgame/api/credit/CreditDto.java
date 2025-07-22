@@ -66,7 +66,10 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return super.getMessageDto().getSettleTime() * 1000;
+        if (super.getMessageDto().getBetInfo().getSettleTime() != null) {
+            return super.getMessageDto().getBetInfo().getSettleTime() * 1000;
+        }
+        return this.getTime();
     }
 
     @Override
