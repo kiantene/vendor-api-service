@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.service.data;
 
 import com.couchbase.client.java.Collection;
+import com.nextgen.core.cache.CouchbaseCacheService;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
