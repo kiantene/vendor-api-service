@@ -54,7 +54,7 @@ public class VendorService extends BaseVendorService {
         Algorithm algorithm = Algorithm.HMAC256(jwtToken);
         String jwt = JWT.create()
                 .withClaim("userId", userId)
-                .withClaim("iat", issuedAtMillis)
+                .withClaim("iat", issuedAtMillis / 1000)
                 .withClaim("sessionId", sessionId)
                 .sign(algorithm);
 
