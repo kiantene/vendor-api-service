@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
-import com.nextgen.gameaggregator.core.util.UuidUtil;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import org.springframework.stereotype.Component;
 

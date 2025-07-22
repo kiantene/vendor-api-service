@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.common.ClientRequestAuth;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
-import com.nextgen.gameaggregator.core.util.UuidUtil;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.PromoType;
