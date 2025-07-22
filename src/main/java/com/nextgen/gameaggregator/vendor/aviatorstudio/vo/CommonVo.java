@@ -34,8 +34,15 @@ public class CommonVo implements HttpResponse {
     }
 
     public void setResponseCode(ResponseCode responseCode) {
-        this.error = responseCode.code;
-        this.message = responseCode.description;
+        this.responseCode = responseCode;
+
+        if (responseCode != ResponseCode.SUCCESS) {
+            this.error = responseCode.code;
+            this.message = responseCode.description;
+        } else {
+            this.error = null;
+            this.message = null;
+        }
     }
 
     @Override
