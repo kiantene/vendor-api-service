@@ -16,6 +16,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import reactor.netty.resources.ConnectionProvider;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -30,13 +31,16 @@ public class WalletBalanceAction {
     private final AuthenticationService authenticationService;
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
+    private final ConnectionProvider operatorApiConnectionProvider;
     private final MeterRegistry meterRegistry;
+
 
     public WalletBalanceAction(RequestService requestService,
                                AgentApiCredentialService agentApiCredentialService,
                                AuthenticationService authenticationService,
                                VendorService vendorService,
                                CurrencyConversionService currencyConversionService,
+                               ConnectionProvider operatorApiConnectionProvider,
                                MeterRegistry meterRegistry) {
 
         this.requestService = requestService;
@@ -44,6 +48,7 @@ public class WalletBalanceAction {
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
+        this.operatorApiConnectionProvider = operatorApiConnectionProvider;
         this.meterRegistry = meterRegistry;
     }
 
@@ -81,7 +86,7 @@ public class WalletBalanceAction {
         ResponseEntity<String> apiResponse;
 
         try {
-            OperatorApiCaller operatorApiCaller = new OperatorApiCaller(this.meterRegistry);
+            OperatorApiCaller operatorApiCaller = new OperatorApiCaller(operatorApiConnectionProvider, this.meterRegistry);
             
             apiResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, Map.of(
                     EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),

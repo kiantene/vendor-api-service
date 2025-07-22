@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.gameaggregator.config.webclient.OperatorApiWebClientPoolProperties;
 import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
@@ -9,6 +10,7 @@ import io.micrometer.core.instrument.Timer;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -33,23 +35,15 @@ import java.util.Map;
 public class OperatorApiCaller {
     public static final String AGENT_ID = "agentId";
     public static final String ACTION = "action";
+
     private final WebClient.Builder builder;
     private final MeterRegistry meterRegistry;
 
-    public OperatorApiCaller(MeterRegistry meterRegistry) {
+    public OperatorApiCaller(ConnectionProvider operatorApiConnectionProvider,
+                             MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
 
-        ConnectionProvider provider = ConnectionProvider.builder("operator-web-client-pool")
-                .maxConnections(1000)                           // Increase total number of simultaneous open connections (default is 500)
-                .pendingAcquireMaxCount(1000)                   // Increase the number of queued requests waiting for a connection (default is 500)
-                .pendingAcquireTimeout(Duration.ofSeconds(10))  // Reduce wait time for a connection before failing (default is 45s)
-                .maxIdleTime(Duration.ofSeconds(30))            // Close idle connections after 30s (default is 0s — no idle timeout)
-                .maxLifeTime(Duration.ofMinutes(5))             // Close and recycle connections after 5 minutes to avoid staleness (default is 0s — live forever)
-                .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
-                .metrics(true)
-                .build();
-
-        HttpClient httpClient = HttpClient.create(provider)
+        HttpClient httpClient = HttpClient.create(operatorApiConnectionProvider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
                 .responseTimeout(Duration.ofSeconds(3))             // 3s total read timeout
                 .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3))); // 3s read timeout (low-level)
