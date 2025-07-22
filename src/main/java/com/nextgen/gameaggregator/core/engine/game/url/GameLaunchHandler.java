@@ -1,10 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
-
-import java.util.Collections;
-import java.util.Map;
+import com.nextgen.core.webclient.WebClientHandler;
 
 /**
  * A generic interface for handling vendor-specific game launch workflows.
@@ -30,12 +26,12 @@ import java.util.Map;
  *
  *   <li><b>4. Encrypted request → response:</b><br>
  *       Some vendors require the request payload to be encrypted (e.g., AES or RSA).
- *       Encryption is handled inside {@link #onPrepareRequestBody(GameLaunchContext)},
+ *       Encryption is handled inside {@link #buildRequestBody(GameLaunchContext)},
  *       and optional headers or metadata may be added via {@link #getHeaders(GameLaunchContext, Object)}.</li>
  *
  *   <li><b>5. No external request — internal HTML generation:</b><br>
  *       No call is made to any external API. Instead, an HTML page is generated internally
- *       using template logic. {@link #onPrepareRequestBody(GameLaunchContext)} is still used
+ *       using template logic. {@link #buildRequestBody(GameLaunchContext)} is still used
  *       to prepare dynamic values that populate placeholders in the template. The generated
  *       HTML is saved to S3, and the resulting link is returned.</li>
  * </ul>
@@ -49,10 +45,10 @@ import java.util.Map;
  *   <li>Handling success or failure via callbacks</li>
  * </ul>
  *
- * @param <R> the request body type to be sent to the vendor
- * @param <T> the response body type expected from the vendor
+ * @param <Q> the request body type to be sent to the vendor
+ * @param <R> the response body type expected from the vendor
  */
-public interface GameLaunchHandler<R, T> {
+public interface GameLaunchHandler<Q, R> extends WebClientHandler<Q, R, GameLaunchContext> {
     String NAME = "GameLauncher";
     /**
      * Indicates the mode of this handler — used to route control flow in the launcher.
@@ -64,65 +60,6 @@ public interface GameLaunchHandler<R, T> {
         return GameLaunchMode.API_CALL;
     }
 
-    /**
-     * Returns the identifier or class name of the vendor.
-     * This is used for internal mapping and logging purposes.
-     *
-     * @return the vendor's identifier or class name
-     */
-    String getVendorClassName();
-
-    /**
-     * Returns the content type of the request body.
-     * Default is {@code application/x-www-form-urlencoded}.
-     *
-     * @return the {@link MediaType} used for the request
-     */
-    default MediaType getContentType() {
-        return MediaType.APPLICATION_FORM_URLENCODED;
-    }
-
-    /**
-     * Returns the base URL for the vendor's game launch endpoint.
-     *
-     * @param context the current launch context
-     * @return the base URL as a string
-     */
-    String getBaseUrl(GameLaunchContext context);
-
-    /**
-     * Returns the endpoint path to be appended to the base URL.
-     *
-     * @return the endpoint path (e.g. "/launch")
-     */
-    String getPath();
-
-    /**
-     * Returns the {@link ParameterizedTypeReference} used to deserialize the response.
-     *
-     * @return the response type reference
-     */
-    ParameterizedTypeReference<T> getResponseType();
-
-    /**
-     * Prepares the request body based on the given launch context.
-     *
-     * @param context the current launch context
-     * @return the request body object
-     */
-    R onPrepareRequestBody(GameLaunchContext context);
-
-    /**
-     * Returns custom headers to be sent with the request.
-     * Defaults to an empty map.
-     *
-     * @param context the current launch context
-     * @param requestObject the prepared request body
-     * @return a map of headers
-     */
-    default Map<String, String> getHeaders(GameLaunchContext context, R requestObject) {
-        return Collections.emptyMap();
-    }
 
     /**
      * Optional method to provide a raw HTML template for handlers that generate static HTML.
@@ -140,16 +77,5 @@ public interface GameLaunchHandler<R, T> {
      * @param context the current launch context
      * @param response the deserialized response object
      */
-    void onSuccess(GameLaunchContext context, T response);
-
-    /**
-     * Callback invoked when an error occurs during the launch process.
-     * Default implementation is a no-op.
-     *
-     * @param context the current launch context
-     * @param error the exception or error thrown
-     */
-    default void onError(GameLaunchContext context, Throwable error) {
-        // Optional override
-    }
+    void onSuccess(GameLaunchContext context, R response);
 }

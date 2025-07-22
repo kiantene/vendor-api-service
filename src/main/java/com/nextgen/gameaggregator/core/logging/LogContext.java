@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.core.logging;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.util.UuidUtil;
+import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
 
 import java.time.Instant;
