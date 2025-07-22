@@ -42,6 +42,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.nextgen.nextgen-core</groupId>
+            <artifactId>nextgen-core</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.nextgen.sas</groupId>
             <artifactId>core</artifactId>
             <version>${sas-core.version}</version>
@@ -237,6 +243,12 @@
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>gitlab-maven-nextgen-core</id>
+            <name>GitLab Maven Registry</name>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/629/packages/maven</url>
+        </repository>
+
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>
