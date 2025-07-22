@@ -18,14 +18,9 @@ public class PromoRequestMapper implements VendorRequestMapper<PromoPayoutContex
                 .vendorCurrency(vendorRequest.getCurrencyCode())
                 .vendorGameCode(vendorRequest.getGameId())
                 // promo payout history
-                .externalTransactionId(vendorRequest.getFreeGameTransactionId())
-                .betAmount(vendorRequest.getBetAmount())
-                .winAmount(vendorRequest.getWinAmount())
-                .winLoss(vendorRequest.getWinLoss())
-                .effectiveTurnover(vendorRequest.getEffectiveTurnover())
-                .vendorBetTime(vendorRequest.getVendorBetTime())
-                .vendorSettleTime(vendorRequest.getVendorSettleTime())
-                .resultTime(vendorRequest.getResultTime())
+                .vendorTransactionId(vendorRequest.getFreeGameTransactionId())
+                .payoutAmount(vendorRequest.getReal_transfer_amount())
+                .vendorTransactionTime(vendorRequest.getCreateTime())
                 .build();
     }
 }

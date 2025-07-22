@@ -6,13 +6,13 @@ import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.util.UuidUtil;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.PromoType;
 import com.nextgen.gameaggregator.service.BetResultRetryLogService;
 import com.nextgen.gameaggregator.service.KafkaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Slf4j
 @Service
@@ -25,36 +25,37 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
     @Override
     public void process(PromoPayoutContext context) {
         context.setTransactionId(UuidUtil.newUuidV7StringRaw());
+
         // TODO : currency conversion
         // TODO : store in couchbase?
+
         PromoPayoutHistory promoPayoutHistory = PromoPayoutHistory.builder()
-                .id(context.getTransactionId())
-                .externalTransactionId(context.getExternalTransactionId())
-                .vendorGameId(context.getVendorGameId())
-                .gameCode(context.getGameCode())
+                .transactionId(context.getTransactionId())
+                .vendorTransactionId(context.getVendorTransactionId())
+                .campaignUuid(context.getCampaignUuid())
+                .agentPlayerId(context.getAgentPlayerId())
+                .agentPlayerUsername(context.getAgentPlayerUsername())
                 .vendorPlayerId(context.getVendorPlayerId())
                 .vendorPlayerUsername(context.getVendorPlayerUsername())
+
+                .vendorGameId(context.getVendorGameId())
+                .gameName(context.getGameName())
+                .gameCode(context.getGameCode())
+
                 .vendorId(context.getVendorId())
 //                .vendorCode(context.getVendorCode())
                 .vendorLineId(context.getVendorLineId())
-                .agentPlayerId(context.getAgentPlayerId())
-                .agentPlayerUsername(context.getAgentPlayerUsername())
-                .agentId(context.getAgentId())
+
 //                .gameCategoryId(context.getGameCategoryId())
 //                .gameCategoryCode(context.getGameCategoryCode())
+                .agentId(context.getAgentId())
+
                 .currencyId(context.getCurrencyId())
                 .currencyCode(context.getCurrency())
-                .betAmount(context.getBetAmount())
-                .winAmount(context.getWinAmount())
-                .winLoss(context.getWinLoss())
-                .effectiveTurnover(context.getEffectiveTurnover())
-                .jackpotAmount(BigDecimal.ZERO) // TODO : replace
-                .resultType(1) // TODO : replace
-                .isFreespin(0) // TODO : replace
-                .status(1) // TODO : replace
-                .vendorBetTime(context.getVendorBetTime())
-                .vendorSettleTime(context.getVendorSettleTime())
-                .resultTime(context.getResultTime())
+                .payoutAmount(context.getPayoutAmount())
+                .promoType(PromoType.FREE_ROUND.id)
+                .status(BetStatus.SETTLED.code)
+                .vendorTransactionTime(context.getVendorTransactionTime())
                 .build();
         kafkaService.producePromoPayoutHistory(promoPayoutHistory);
 
@@ -73,8 +74,8 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
             betResultRetryLogService.create(operatorData,
                     context.getVendorId(),
                     context.getAgentId(),
-                    context.getExternalTransactionId(),
-                    context.getExternalTransactionId(),
+                    context.getVendorTransactionId(),
+                    context.getVendorTransactionId(),
                     context.getTransactionId(),
                     clientRequestAuth.getPath());
         } catch (Exception e) {

@@ -10,24 +10,37 @@ import java.math.BigDecimal;
 @Data
 @Builder
 public class PromoPayoutHistory {
+
     @Id
-    @JsonProperty("id")
-    private String id;
+    @JsonProperty("transaction_id")
+    private String transactionId;
 
-    @JsonProperty("external_transaction_id")
-    private String externalTransactionId;
+    @JsonProperty("vendor_transaction_id")
+    private String vendorTransactionId;
 
-    @JsonProperty("vendor_game_id")
-    private Integer vendorGameId;
+    @JsonProperty("campaign_uuid")
+    private String campaignUuid;
 
-    @JsonProperty("game_code")
-    private String gameCode;
+    @JsonProperty("agent_player_id")
+    private Long agentPlayerId;
+
+    @JsonProperty("agent_player_username")
+    private String agentPlayerUsername;
 
     @JsonProperty("vendor_player_id")
     private Long vendorPlayerId;
 
     @JsonProperty("vendor_player_username")
     private String vendorPlayerUsername;
+
+    @JsonProperty("vendor_game_id")
+    private Integer vendorGameId;
+
+    @JsonProperty("game_name")
+    private String gameName;
+
+    @JsonProperty("game_code")
+    private String gameCode;
 
     @JsonProperty("vendor_id")
     private Integer vendorId;
@@ -38,20 +51,14 @@ public class PromoPayoutHistory {
     @JsonProperty("vendor_line_id")
     private Integer vendorLineId;
 
-    @JsonProperty("agent_player_id")
-    private Long agentPlayerId;
-
-    @JsonProperty("agent_player_username")
-    private String agentPlayerUsername;
-
-    @JsonProperty("agent_id")
-    private Integer agentId;
-
     @JsonProperty("game_category_id")
     private Integer gameCategoryId;
 
     @JsonProperty("game_category_code")
     private String gameCategoryCode;
+
+    @JsonProperty("agent_id")
+    private Integer agentId;
 
     @JsonProperty("currency_id")
     private Integer currencyId;
@@ -59,36 +66,15 @@ public class PromoPayoutHistory {
     @JsonProperty("currency_code")
     private String currencyCode;
 
-    @JsonProperty("bet_amount")
-    private BigDecimal betAmount;
+    @JsonProperty("payout_amount")
+    private BigDecimal payoutAmount;
 
-    @JsonProperty("win_amount")
-    private BigDecimal winAmount;
-
-    @JsonProperty("win_loss")
-    private BigDecimal winLoss;
-
-    @JsonProperty("effective_turnover")
-    private BigDecimal effectiveTurnover;
-
-    @JsonProperty("jackpot_amount")
-    private BigDecimal jackpotAmount;
-
-    @JsonProperty("result_type")
-    private Integer resultType;
-
-    @JsonProperty("is_freespin")
-    private Integer isFreespin;
+    @JsonProperty("promo_type")
+    private Integer promoType;
 
     @JsonProperty("status")
     private Integer status;
 
-    @JsonProperty("vendor_bet_time")
-    private Long vendorBetTime;
-
-    @JsonProperty("vendor_settle_time")
-    private Long vendorSettleTime;
-
-    @JsonProperty("result_time")
-    private Long resultTime;
+    @JsonProperty("vendor_transaction_time")
+    private Long vendorTransactionTime;
 }

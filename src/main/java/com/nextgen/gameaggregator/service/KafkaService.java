@@ -37,6 +37,7 @@ public class KafkaService {
     private final VendorService vendorService;
     private final VendorGameCodeService vendorGameCodeService;
     private final AgentService agentService;
+    private final ObjectMapper objectMapper;
 
     @Value("${logging.log-to-kafka:true}")
     private boolean logToKafka;
@@ -53,7 +54,8 @@ public class KafkaService {
                         S3BetService s3BetService,
                         VendorService vendorService,
                         VendorGameCodeService vendorGameCodeService,
-                        AgentService agentService
+                        AgentService agentService,
+                        ObjectMapper objectMapper
     ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
@@ -66,6 +68,7 @@ public class KafkaService {
         this.vendorService = vendorService;
         this.vendorGameCodeService = vendorGameCodeService;
         this.agentService = agentService;
+        this.objectMapper = objectMapper;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -246,7 +249,7 @@ public class KafkaService {
 
     public void producePromoPayoutHistory(PromoPayoutHistory promoPayoutHistory) {
         try {
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, promoPayoutHistory);
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, this.objectMapper.writeValueAsString(promoPayoutHistory));
         } catch (Exception e) {
             log.error(e.getMessage());
         }
