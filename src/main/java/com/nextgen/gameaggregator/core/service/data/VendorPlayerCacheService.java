@@ -4,6 +4,7 @@ import com.couchbase.client.java.Collection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -12,7 +13,7 @@ import java.time.Duration;
 class VendorPlayerCacheService extends CouchbaseCacheService<VendorPlayer> {
     private final VendorPlayerRepository repository;
 
-    public VendorPlayerCacheService(Collection vendorPlayerCollection,
+    public VendorPlayerCacheService(@Qualifier("vendorPlayerCollection") Collection vendorPlayerCollection,
                                     ObjectMapper objectMapper,
                                     VendorPlayerRepository repository) {
 
