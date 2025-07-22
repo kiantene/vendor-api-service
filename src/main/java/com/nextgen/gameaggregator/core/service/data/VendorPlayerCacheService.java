@@ -11,7 +11,6 @@ import java.time.Duration;
 @Service
 class VendorPlayerCacheService extends CouchbaseCacheService<VendorPlayer> {
     private final VendorPlayerRepository repository;
-    private static final Duration TTL = Duration.ofMinutes(10);
 
     public VendorPlayerCacheService(Collection vendorPlayerCollection,
                                     ObjectMapper objectMapper,
@@ -21,14 +20,10 @@ class VendorPlayerCacheService extends CouchbaseCacheService<VendorPlayer> {
         this.repository = repository;
     }
 
-    @Override
-    protected String buildCacheKey(String username) {
-        return "vendor-player::" + username;
-    }
-
     public VendorPlayer getByUsername(String username) {
-        return retrieve(username,
+        String key = buildCacheKey("username", username);
+        return retrieve(key,
                 () -> repository.findByUsername(username),
-                TTL);
+                Duration.ofMinutes(120));
     }
 }
