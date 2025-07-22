@@ -4,7 +4,6 @@ import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.kv.GetResult;
 import com.couchbase.client.java.kv.UpsertOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -39,11 +38,9 @@ public abstract class CouchbaseCacheService<T> {
 
     public T getById(String cacheKey) {
         try {
-            GetResult result = collection.get(buildCacheKey(cacheKey));
-            if (result == null || result.contentAs(String.class) == null) {
-                return null;
-            }
-            return objectMapper.readValue(result.contentAsBytes(), clazz);
+            GetResult result = collection.get(cacheKey);
+            if (result == null) return null;
+            return result.contentAs(clazz);
         } catch (Exception e) {
             return null; // treat as cache miss
         }
@@ -51,8 +48,7 @@ public abstract class CouchbaseCacheService<T> {
 
     public void upsert(String cacheKey, T value, Duration ttl) {
         try {
-            byte[] json = objectMapper.writeValueAsBytes(value);
-            collection.upsert(cacheKey, json, UpsertOptions.upsertOptions().expiry(ttl));
+            collection.upsert(cacheKey, value, UpsertOptions.upsertOptions().expiry(ttl));
         } catch (Exception e) {
             // optionally log or swallow
         }
