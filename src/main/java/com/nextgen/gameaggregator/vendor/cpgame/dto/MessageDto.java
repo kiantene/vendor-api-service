@@ -25,7 +25,6 @@ public class MessageDto {
     private String gameId;
 
     @JsonProperty("settle_time")
-    @Size(max = 255)
     private Long settleTime;
 
     @JsonProperty("bet_info")
