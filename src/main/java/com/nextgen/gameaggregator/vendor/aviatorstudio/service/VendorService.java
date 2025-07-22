@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.JWTVerifier;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -54,7 +53,7 @@ public class VendorService extends BaseVendorService {
         Algorithm algorithm = Algorithm.HMAC256(jwtToken);
         String jwt = JWT.create()
                 .withClaim("userId", userId)
-                .withClaim("iat", issuedAtMillis / 1000)
+                .withClaim("iat", issuedAtMillis)
                 .withClaim("sessionId", sessionId)
                 .sign(algorithm);
 
@@ -94,9 +93,8 @@ public class VendorService extends BaseVendorService {
     public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
         String jwtSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.JWT_SECRET);
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
-        JWTVerifier verifier = JWT.require(algorithm).build();
 
-        return verifier.verify(jwtToken);
+        return JWT.require(algorithm).build().verify(jwtToken);
     }
 
     public <T> void doValidation(T validationObject) throws InvalidRequestException {
@@ -111,5 +109,13 @@ public class VendorService extends BaseVendorService {
 
         //verify sessionId
         ValidationUtils.isEquals(sessionId, decodedJWT.getClaim("sessionId").asString(), AuthenticationException::new);
+
+        long issuedAtMillis = decodedJWT.getClaim("iat").asLong();
+        long nowMillis = System.currentTimeMillis();
+        long twoDaysMillis = 2L * 24 * 60 * 60 * 1000;
+
+        if (Math.abs(nowMillis - issuedAtMillis) > twoDaysMillis) {
+            throw new AuthenticationException();
+        }
     }
 }
