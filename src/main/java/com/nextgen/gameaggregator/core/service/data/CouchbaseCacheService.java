@@ -3,31 +3,27 @@ package com.nextgen.gameaggregator.core.service.data;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.kv.GetResult;
 import com.couchbase.client.java.kv.UpsertOptions;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
 public abstract class CouchbaseCacheService<T> {
-
-    private final String DELIMITER = "::";
     private final Collection collection;
-    private final ObjectMapper objectMapper;
     private final Class<T> clazz;
     private final String prefix;
 
-    protected CouchbaseCacheService(Collection collection, ObjectMapper objectMapper, Class<T> clazz) {
+    protected CouchbaseCacheService(Collection collection, Class<T> clazz) {
         this.collection = collection;
-        this.objectMapper = objectMapper;
         this.clazz = clazz;
         this.prefix = toKebabCase(clazz.getSimpleName());
     }
 
     protected String buildCacheKey(Object... parts) {
+        final String delimiter = "::";
         StringBuilder sb = new StringBuilder(prefix);
 
         for (Object part : parts) {
-            sb.append(DELIMITER);
+            sb.append(delimiter);
             sb.append(part instanceof String
                     ? ((String) part).trim().toLowerCase()
                     : part);
