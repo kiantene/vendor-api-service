@@ -40,6 +40,6 @@ public class CommonVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return !this.responseCode.equals(ResponseCode.SUCCESS);
+        return this.responseCode != ResponseCode.SUCCESS;
     }
 }
