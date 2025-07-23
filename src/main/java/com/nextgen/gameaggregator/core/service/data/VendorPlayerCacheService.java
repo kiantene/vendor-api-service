@@ -1,29 +1,34 @@
 package com.nextgen.gameaggregator.core.service.data;
 
-import com.couchbase.client.java.Collection;
-import com.nextgen.core.cache.CouchbaseCacheService;
+import com.nextgen.core.cache.couchbase.CouchbaseCacheFactory;
+import com.nextgen.core.cache.couchbase.CouchbaseCacheService;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Service
 class VendorPlayerCacheService extends CouchbaseCacheService<VendorPlayer> {
     private final VendorPlayerRepository repository;
 
-    public VendorPlayerCacheService(@Qualifier("vendorPlayerCollection") Collection vendorPlayerCollection,
+    public VendorPlayerCacheService(CouchbaseCacheFactory factory,
                                     VendorPlayerRepository repository) {
 
-        super(vendorPlayerCollection, VendorPlayer.class);
+        super(factory, VendorPlayer.class);
         this.repository = repository;
+    }
+
+    @Override
+    protected Map<String, Duration> getTtlMap() {
+        return Map.of(
+                ttlKey("username"), Duration.ofMinutes(120)
+        );
     }
 
     public VendorPlayer getByUsername(String username) {
         String key = buildCacheKey("username", username);
-        return retrieve(key,
-                () -> repository.findByUsername(username),
-                Duration.ofMinutes(120));
+        return get(key, () -> repository.findByUsername(username));
     }
 }

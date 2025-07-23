@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.service.data;
 
-import com.nextgen.core.cache.CouchbaseCacheService;
+import com.nextgen.core.cache.couchbase.CouchbaseCacheFactory;
+import com.nextgen.core.cache.couchbase.CouchbaseCacheService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
 import org.springframework.stereotype.Service;
@@ -11,17 +12,21 @@ import java.util.Map;
 
 @Service
 class AgentApiCredentialCacheService extends CouchbaseCacheService<AgentApiCredential> {
-    private final Map<String, Duration> ttl = Map.of(
-            "agentId", Duration.ofMinutes(120)
-    );
 
     private final AgentApiCredentialRepository repository;
 
-    AgentApiCredentialCacheService(CacheCollectionFactory factory,
+    AgentApiCredentialCacheService(CouchbaseCacheFactory factory,
                                    AgentApiCredentialRepository repository) {
 
-        super(factory.get(AgentApiCredential.class), AgentApiCredential.class);
+        super(factory, AgentApiCredential.class);
         this.repository = repository;
+    }
+
+    @Override
+    protected Map<String, Duration> getTtlMap() {
+        return Map.of(
+                ttlKey("agentId"), Duration.ofMinutes(120)
+        );
     }
 
     public List<AgentApiCredential> getByAgentId(Integer agentId) {
@@ -30,11 +35,11 @@ class AgentApiCredentialCacheService extends CouchbaseCacheService<AgentApiCrede
 
     public AgentApiCredential getActiveCredential(Integer agentId) {
         String key = buildCacheKey("agentId", agentId);
-        return retrieve(key,
+        return get(key,
                 () -> getByAgentId(agentId).stream()
                         .filter(cred -> cred.getStatus() == 1)
                         .findFirst()
-                        .orElse(null),
-                ttl.get("agentId"));
+                        .orElse(null)
+        );
     }
 }
