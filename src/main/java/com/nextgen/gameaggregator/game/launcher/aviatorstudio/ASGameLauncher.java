@@ -35,7 +35,7 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayl
     public LaunchRequestPayload onPrepareRequestBody(GameLaunchContext context) {
         Map<String, VendorLineCredential> credentialMap = context.getVendorCredentials();
         String publicKey = getRequiredCredentialValue(credentialMap, Credentials.PUBLIC_KEY);
-        String jwtToken = getRequiredCredentialValue(credentialMap, Credentials.JWT_SECRET);
+        //String jwtToken = getRequiredCredentialValue(credentialMap, Credentials.JWT_SECRET);
         String userid = context.getVendorPlayerUsername();
         String sessionId = context.getToken();
         String providerId = getRequiredCredentialValue(credentialMap, Credentials.PROVIDER_ID);
@@ -46,7 +46,7 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayl
 
         try {
             //generate JWT token
-            token = VendorService.generateJWT(userid, sessionId, jwtToken, publicKey);
+            token = VendorService.generateJWT(userid, sessionId, providerId, publicKey);
         } catch (Exception exception) {
             throw new RuntimeException(exception.getMessage());
         }
