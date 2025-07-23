@@ -279,11 +279,10 @@ public class TransferService {
 
         if (amount.compareTo(BigDecimal.ZERO) > 0) {
             if (isSpecialType && winDataDto.getSpecialGame().getSequence() == 0) {
-                winDataDto.setIsEndRound(0);
                 return ResultType.WIN;
 
             } else {
-                winDataDto.setIsEndRound(0);
+                winDataDto.setIsEndRound(isSpecialType ? 0 : 1);
                 return isSpecialType ? ResultType.BET_WIN : ResultType.WIN;
 
             }
