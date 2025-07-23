@@ -14,14 +14,14 @@ public class DefaultCouchbaseCacheFactory implements CouchbaseCacheFactory {
     private final Map<Class<?>, Collection> collectionMap;
 
     public DefaultCouchbaseCacheFactory(
-            @Qualifier("agentApiCredentialCollection") Collection agentApiCredentialCollection,
-            @Qualifier("agentPlayerCache") Collection agentPlayerCollection,
-            @Qualifier("vendorPlayerCache") Collection vendorPlayerCollection
+            @Qualifier("agentApiCredentialCache") Collection agentApiCredentialCache,
+            @Qualifier("agentPlayerCache") Collection agentPlayerCache,
+            @Qualifier("vendorPlayerCache") Collection vendorPlayerCache
     ) {
         this.collectionMap = Map.of(
-                AgentApiCredential.class, agentApiCredentialCollection,
-                AgentPlayer.class, agentPlayerCollection,
-                VendorPlayer.class, vendorPlayerCollection
+                AgentApiCredential.class, agentApiCredentialCache,
+                AgentPlayer.class, agentPlayerCache,
+                VendorPlayer.class, vendorPlayerCache
         );
     }
 
