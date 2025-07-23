@@ -58,20 +58,20 @@ public class CouchbaseCacheConfig {
     }
 
     @Bean
-    @Qualifier("agentPlayerCollection")
-    public Collection agentPlayerCollection(@Qualifier("cacheScope") Scope scope) {
+    @Qualifier("agentPlayerCache")
+    public Collection agentPlayerCache(@Qualifier("cacheScope") Scope scope) {
         return scope.collection("agent_players");
     }
 
     @Bean
-    @Qualifier("agentApiCredentialCollection")
-    public Collection agentApiCredentialCollection(@Qualifier("cacheScope") Scope scope) {
+    @Qualifier("agentApiCredentialCache")
+    public Collection agentApiCredentialCache(@Qualifier("cacheScope") Scope scope) {
         return scope.collection("agent_api_credentials");
     }
 
     @Bean
-    @Qualifier("vendorPlayerCollection")
-    public Collection vendorPlayerCollection(@Qualifier("cacheScope") Scope scope) {
+    @Qualifier("vendorPlayerCache")
+    public Collection vendorPlayerCache(@Qualifier("cacheScope") Scope scope) {
         return scope.collection("vendor_players");
     }
 }
