@@ -1,6 +1,11 @@
 package com.nextgen.gameaggregator.vendor.spribe.service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.spribe.api.result.SettleDto;
+import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -35,7 +40,7 @@ public class VendorService extends BaseVendorService {
         return queryString.toString();
     }
 
-/*    @Override
+    @Override
     public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
         // Get the JSON request body from the HttpRequestLog
         String requestBody = rawData;
@@ -54,5 +59,5 @@ public class VendorService extends BaseVendorService {
             log.error("Error parsing JSON: " + e.getMessage());
         }
         return settledBet;
-    }*/
+    }
 }
