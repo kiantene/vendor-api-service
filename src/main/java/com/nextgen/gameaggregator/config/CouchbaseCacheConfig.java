@@ -74,4 +74,28 @@ public class CouchbaseCacheConfig {
     public Collection vendorPlayerCache(@Qualifier("cacheScope") Scope scope) {
         return scope.collection("vendor_players");
     }
+
+    @Bean
+    @Qualifier("currencyCache")
+    public Collection currencyCache(@Qualifier("cacheScope") Scope scope) {
+        return scope.collection("currencies");
+    }
+
+    @Bean
+    @Qualifier("vendorCache")
+    public Collection vendorCache(@Qualifier("cacheScope") Scope scope) {
+        return scope.collection("vendors");
+    }
+
+    @Bean
+    @Qualifier("vendorGameCache")
+    public Collection vendorGameCache(@Qualifier("cacheScope") Scope scope) {
+        return scope.collection("vendor_games");
+    }
+
+    @Bean
+    @Qualifier("gameCategoryCache")
+    public Collection gameCategoryCache(@Qualifier("cacheScope") Scope scope) {
+        return scope.collection("game_categories");
+    }
 }

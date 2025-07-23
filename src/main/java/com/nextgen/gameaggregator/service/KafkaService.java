@@ -249,7 +249,7 @@ public class KafkaService {
 
     public void producePromoPayoutHistory(PromoPayoutHistory promoPayoutHistory) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, this.objectMapper.writeValueAsString(promoPayoutHistory));
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, promoPayoutHistory.getVendorPlayerUsername(), this.objectMapper.writeValueAsString(promoPayoutHistory));
         } catch (Exception e) {
             log.error(e.getMessage());
         }

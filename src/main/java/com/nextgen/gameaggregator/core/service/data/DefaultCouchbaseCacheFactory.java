@@ -16,12 +16,20 @@ public class DefaultCouchbaseCacheFactory implements CouchbaseCacheFactory {
     public DefaultCouchbaseCacheFactory(
             @Qualifier("agentApiCredentialCache") Collection agentApiCredentialCache,
             @Qualifier("agentPlayerCache") Collection agentPlayerCache,
-            @Qualifier("vendorPlayerCache") Collection vendorPlayerCache
+            @Qualifier("vendorPlayerCache") Collection vendorPlayerCache,
+            @Qualifier("currencyCache") Collection currencyCache,
+            @Qualifier("vendorCache") Collection vendorCache,
+            @Qualifier("vendorGameCache") Collection vendorGameCache,
+            @Qualifier("gameCategoryCache") Collection gameCategoryCache
     ) {
         this.collectionMap = Map.of(
                 AgentApiCredential.class, agentApiCredentialCache,
                 AgentPlayer.class, agentPlayerCache,
-                VendorPlayer.class, vendorPlayerCache
+                VendorPlayer.class, vendorPlayerCache,
+                Currency.class, currencyCache,
+                Vendor.class, vendorCache,
+                VendorGame.class, vendorGameCache,
+                GameCategory.class, gameCategoryCache
         );
     }
 

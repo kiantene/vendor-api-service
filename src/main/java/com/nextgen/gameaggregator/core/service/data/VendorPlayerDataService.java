@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.service.data;
 
+import com.nextgen.gameaggregator.core.exception.VendorPlayerNotFoundException;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +12,8 @@ import java.util.Optional;
 public class VendorPlayerDataService {
     private final VendorPlayerCacheService cache;
 
-    public VendorPlayer getByUsername(String username) throws InvalidPlayerException {
+    public VendorPlayer getByUsername(String username) {
         return Optional.ofNullable(cache.getByUsername(username))
-                .orElseThrow(InvalidPlayerException::new); // TODO: throw VendorPlayerNotFoundException
+                .orElseThrow(() -> new VendorPlayerNotFoundException("username (" + username + ") cannot be found"));
     }
 }

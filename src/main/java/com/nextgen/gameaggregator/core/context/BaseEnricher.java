@@ -36,9 +36,11 @@ public abstract class BaseEnricher<T> {
                 contextWithUsername.setVendorPlayerId(vendorPlayer.getId());
                 contextWithUsername.setVendorId(vendorPlayer.getVendorId());
                 contextWithUsername.setVendorLineId(vendorPlayer.getVendorLineId());
+                contextWithUsername.setCurrencyId(vendorPlayer.getCurrencyId());
 
                 AgentPlayer agentPlayer = agentPlayerDataService.get(vendorPlayer.getAgentPlayerId());
                 contextWithUsername.setAgentPlayerUsername(agentPlayer.getUsername());
+                contextWithUsername.setAgentId(agentPlayer.getAgentId());
 
             } catch (Exception ex) {
                 // TODO: handle exception

@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestAuth;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
-import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.PromoType;
@@ -43,11 +43,11 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                 .gameCode(context.getGameCode())
 
                 .vendorId(context.getVendorId())
-//                .vendorCode(context.getVendorCode())
+                .vendorCode(context.getVendorCode())
                 .vendorLineId(context.getVendorLineId())
 
-//                .gameCategoryId(context.getGameCategoryId())
-//                .gameCategoryCode(context.getGameCategoryCode())
+                .gameCategoryId(context.getGameCategoryId())
+                .gameCategoryCode(context.getGameCategoryCode())
                 .agentId(context.getAgentId())
 
                 .currencyId(context.getCurrencyId())

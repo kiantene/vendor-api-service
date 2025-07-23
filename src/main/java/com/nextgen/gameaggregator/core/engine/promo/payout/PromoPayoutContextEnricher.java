@@ -1,90 +1,79 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.service.data.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.data.VendorPlayerDataService;
+import com.nextgen.gameaggregator.core.exception.*;
+import com.nextgen.gameaggregator.core.service.data.*;
+import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.GameCategory;
+import com.nextgen.gameaggregator.entity.ga.Vendor;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
-//    private final AgentService agentService;
-//    private final CurrencyService currencyService;
-//    private final VendorGameService vendorGameService;
-//    private final VendorLineService vendorLineService;
-//    private final VendorService vendorService;
-//    private final GameCategoryService gameCategoryService;
+    private final CurrencyDataService currencyDataService;
+    private final VendorDataService vendorDataService;
+    private final VendorGameDataService vendorGameDataService;
+    private final GameCategoryDataService gameCategoryDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
-                                      VendorPlayerDataService vendorPlayerDataService) {
+                                      VendorPlayerDataService vendorPlayerDataService,
+                                      CurrencyDataService currencyDataService,
+                                      VendorDataService vendorDataService,
+                                      VendorGameDataService vendorGameDataService,
+                                      GameCategoryDataService gameCategoryDataService) {
         super(agentPlayerDataService, vendorPlayerDataService);
+        this.currencyDataService = currencyDataService;
+        this.vendorDataService = vendorDataService;
+        this.vendorGameDataService = vendorGameDataService;
+        this.gameCategoryDataService = gameCategoryDataService;
     }
 
     public void doEnrich(PromoPayoutContext context) {
+        this.populateCurrency(context);
+        this.populateVendor(context);
+        this.populateVendorGame(context);
+        this.populateGameCategory(context);
+    }
+
+    private void populateCurrency(PromoPayoutContext context) {
         try {
-
-//            Vendor vendor = vendorService.getById(context.getVendorId());
-//            context.setVendorId(vendor.getId());
-//            context.setVendorCode(vendor.getCode());
-
-//            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
-//            context.setVendorGameId(vendorGame.getId());
-//            context.setGameCode(vendorGame.getCode());
-
-//            GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId());
-//            context.setGameCategoryId(gameCategory.getId());
-//            context.setGameCategoryCode(gameCategory.getCode());
-
-//            Currency currency = currencyService.get(vendorPlayer.getCurrencyId());
-//            context.setCurrencyId(currency.getId());
-//            context.setCurrency(currency.getCode());
-//            this.populateVendorPlayer(context);
-//            this.populateAgentPlayer(context);
-//            this.populateVendor(context);
-//            this.populateVendorGame(context);
-//            this.populateGameCategory(context);
-//            this.populateCurrency(context);
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            Currency currency = currencyDataService.get(context.getCurrencyId());
+            context.setCurrencyId(currency.getId());
+            context.setCurrency(currency.getCode());
+        } catch (CurrencyNotFoundException e) {
+            throw new InternalConfigurationException(e.getMessage());
+            // TODO : add constructor to support root cause
         }
     }
 
-//    private void populateVendorPlayer(PromoPayoutContext context) throws InvalidPlayerException {
-//        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(context.getVendorPlayerUsername());
-//        context.setVendorPlayerId(vendorPlayer.getId());
-//        context.setVendorLineId(vendorPlayer.getVendorLineId());
-//    }
-//
-//    private void populateAgentPlayer(PromoPayoutContext context) throws RecordNotFoundException {
-//        AgentPlayer agentPlayer = agentPlayerService.get(context.getAgentPlayerId());
-//        context.setAgentId(agentPlayer.getAgentId());
-//        context.setAgentPlayerId(agentPlayer.getId());
-//        context.setAgentPlayerUsername(agentPlayer.getUsername());
-//    }
-//
-//    private void populateVendor(PromoPayoutContext context) throws InvalidVendorException {
-//        Vendor vendor = vendorService.getById(context.getVendorId());
-//        context.setVendorId(vendor.getId());
-//        context.setVendorCode(vendor.getCode());
-//    }
-//
-//    private void populateVendorGame(PromoPayoutContext context) throws GameNotSupportedException {
-//        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
-//        context.setVendorGameId(vendorGame.getId());
-//        context.setGameCode(vendorGame.getCode());
-//    }
-//
-//    private void populateGameCategory(PromoPayoutContext context) {
-//        GameCategory gameCategory = gameCategoryService.getByGameCategoryId(context.getGameCategoryId());
-//        context.setGameCategoryId(gameCategory.getId());
-//        context.setGameCategoryCode(gameCategory.getCode());
-//    }
-//
-//    private void populateCurrency(PromoPayoutContext context) throws InvalidCurrencyException {
-//        Currency currency = currencyService.get(context.getCurrencyId());
-//        context.setCurrencyId(currency.getId());
-//        context.setCurrency(currency.getCode());
-//    }
+    private void populateVendor(PromoPayoutContext context) {
+        try {
+            Vendor vendor = vendorDataService.get(context.getVendorId());
+            context.setVendorCode(vendor.getCode());
+        } catch (VendorNotFoundException e) {
+            throw new InternalConfigurationException(e.getMessage());
+        }
+    }
 
+    private void populateVendorGame(PromoPayoutContext context) {
+        try {
+            VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
+            context.setVendorGameId(vendorGame.getId());
+            context.setGameCode(vendorGame.getCode());
+            context.setGameName(vendorGame.getName());
+            context.setGameCategoryId(vendorGame.getGameCategoryId());
+        } catch (VendorGameNotFoundException e) {
+            throw new InternalConfigurationException(e.getMessage());
+        }
+    }
 
+    private void populateGameCategory(PromoPayoutContext context) {
+        try {
+            GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
+            context.setGameCategoryCode(gameCategory.getCode());
+        } catch (GameCategoryNotFoundException e) {
+            throw new InternalConfigurationException(e.getMessage());
+        }
+    }
 }
