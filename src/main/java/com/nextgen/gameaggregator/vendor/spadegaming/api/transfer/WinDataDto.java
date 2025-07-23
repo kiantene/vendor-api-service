@@ -91,6 +91,9 @@ public class WinDataDto implements BetResultData {
     private String betId;
     private BigDecimal vendorWinLoss;
 
+    // not a vendor's field, but added to include logic to determine whether end round or not
+    private Integer isEndRound;
+
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
@@ -189,5 +192,10 @@ public class WinDataDto implements BetResultData {
             log.error(transferTime, exception);
             return null;
         }
+    }
+
+    @Override
+    public Integer isEndRound() {
+        return this.isEndRound;
     }
 }
