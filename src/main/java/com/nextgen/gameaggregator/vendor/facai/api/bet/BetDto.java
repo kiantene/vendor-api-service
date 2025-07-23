@@ -100,7 +100,7 @@ public class BetDto implements BetResultData {
     @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @Digits(integer = 13, fraction = 0, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("Ts")
-    public BigDecimal ts;
+    public Long ts;
 
     @Override
     public String getExternalTransactionId() {
