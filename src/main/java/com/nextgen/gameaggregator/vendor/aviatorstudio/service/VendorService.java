@@ -19,12 +19,12 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
@@ -83,17 +83,9 @@ public class VendorService extends BaseVendorService {
             NoSuchPaddingException,
             InvalidKeyException,
             IllegalBlockSizeException,
-            BadPaddingException,
-            InvalidAlgorithmParameterException {
+            BadPaddingException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
-        OAEPParameterSpec oaepParams = new OAEPParameterSpec(
-                "SHA-256",
-                "MGF1",
-                MGF1ParameterSpec.SHA256,
-                PSource.PSpecified.DEFAULT
-        );
-
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey, oaepParams);
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         byte[] encryptedBytes = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
