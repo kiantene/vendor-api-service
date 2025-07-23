@@ -8,7 +8,7 @@ import org.springframework.data.couchbase.repository.Scope;
 
 @Document
 @Scope("raw")
-@Collection("bet_not_found_log")
+@Collection("bet_not_found_logs")
 @Data
 @NoArgsConstructor
 public class BetNotFoundLog extends BetInformation {
