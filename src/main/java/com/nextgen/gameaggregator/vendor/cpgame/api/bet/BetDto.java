@@ -82,15 +82,15 @@ public class BetDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
+        long vendorSettleTime = System.currentTimeMillis();
         try {
             if (super.getMessageDto().getBetInfo().getSettleTime() != null) {
-                return super.getMessageDto().getBetInfo().getSettleTime() * 1000;
+                vendorSettleTime = super.getMessageDto().getBetInfo().getSettleTime() * 1000;
             }
-            return System.currentTimeMillis();
         } catch (Exception e) {
             //if any error just return system generate time
-            return System.currentTimeMillis();
         }
+        return vendorSettleTime;
     }
 
     @Override
