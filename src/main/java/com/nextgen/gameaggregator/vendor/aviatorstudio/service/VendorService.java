@@ -19,6 +19,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -54,7 +55,6 @@ public class VendorService extends BaseVendorService {
         String jwt = JWT.create()
                 .withClaim("userId", userId)
                 .withClaim("iat", issuedAtMillis)
-                .withClaim("sessionId", sessionId)
                 .sign(algorithm);
 
         PublicKey generatedPublicKey = loadPublicKey(publicKey);
@@ -87,7 +87,8 @@ public class VendorService extends BaseVendorService {
         Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         byte[] encryptedBytes = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(encryptedBytes);
+        String base64Token = Base64.getEncoder().encodeToString(encryptedBytes);
+        return URLEncoder.encode(base64Token, StandardCharsets.UTF_8);
     }
 
     public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
