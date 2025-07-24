@@ -310,11 +310,15 @@ public class HttpService {
 
                     if (WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
                         ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
+                        boolean hasError = balanceLog.getRootCause() != null && !balanceLog.getRootCause().isEmpty();
+
+                        balanceLog.setStatus(hasError ? ERROR : requestLog.getStatus());
+
                         String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
-                        if (balanceLog.getRootCause() == null || balanceLog.getRootCause().isEmpty()) {
-                            log.info(balanceLogJson);
-                        } else {
+                        if (hasError) {
                             log.error(balanceLogJson);
+                        } else {
+                            log.info(balanceLogJson);
                         }
                     } else {
                         kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));

@@ -33,6 +33,7 @@ public class GameUrlService {
     private static final String USERTYPE = "operator-api-service";
     private final AgentService agentService;
     private final AgentProductService agentProductService;
+    private final AgentVendorProxyService agentVendorProxyService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
@@ -53,6 +54,7 @@ public class GameUrlService {
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
                           AgentProductServiceImpl agentProductService,
+                          AgentVendorProxyService agentVendorProxyService,
                           AutowireCapableBeanFactory autowireCapableBeanFactory,
                           RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
@@ -71,6 +73,7 @@ public class GameUrlService {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
+        this.agentVendorProxyService = agentVendorProxyService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
@@ -99,6 +102,9 @@ public class GameUrlService {
 
         try {
             String vendorClassName = vendorService.getById(vendorLine.getVendorId()).getClassName();
+            httpRequestLog.setOperatorData(httpRequestLog.getRequestBody());
+            long startTime = System.currentTimeMillis();
+            httpRequestLog.setBetStart(startTime);
 
             @SuppressWarnings("unchecked")
             GameLaunchHandler<Object, Object> vendorGameLauncher = (GameLaunchHandler<Object, Object>) gameLaunchHandlerMap.get(vendorClassName);
@@ -123,6 +129,7 @@ public class GameUrlService {
 
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
                 gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
+                httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
 
             } else {
                 String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
@@ -130,10 +137,7 @@ public class GameUrlService {
                 autowireCapableBeanFactory.autowireBean(gameUrl);
                 MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
 
-                httpRequestLog.setOperatorData(httpRequestLog.getRequestBody());
                 httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
-                long startTime = System.currentTimeMillis();
-                httpRequestLog.setBetStart(startTime);
 
                 //GA-9567 Add toggle to skip call to vendor based on player name
                 //GA-10147 Migrate logic into testSupportService to manage test special logic better
@@ -145,7 +149,8 @@ public class GameUrlService {
                     if (gameUrlVo == null) throw new InvalidVendorResponseException();
 
                     //token will be replaced if vendor's token is needed to verify for action files.
-                    gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
+                    String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                    gameUrlData.setGameUrl(gameUrlText);
                 }
 
                 gameUrlData.setToken(gameSession.getToken());

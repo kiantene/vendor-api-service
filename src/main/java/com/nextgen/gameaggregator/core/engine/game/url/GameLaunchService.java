@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -104,6 +105,7 @@ public class GameLaunchService {
         try {
             logContext.setApiBody(request);
             logContext.setApiResponse(gameUrl);
+            context.setVendorFormData(new ObjectMapper().writeValueAsString(request));
         } catch (Exception exception) {
             logContext.setException(exception.getClass().getName());
             logContext.setErrorMessage(exception.getMessage());
