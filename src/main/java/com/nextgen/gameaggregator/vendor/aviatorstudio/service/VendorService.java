@@ -106,9 +106,6 @@ public class VendorService extends BaseVendorService {
         //Verify username
         ValidationUtils.isEquals(vendorPlayerUsername, decodedJWT.getClaim("userId").asString(), AuthenticationException::new);
 
-        //verify sessionId
-        ValidationUtils.isEquals(sessionId, decodedJWT.getClaim("sessionId").asString(), AuthenticationException::new);
-
         long issuedAtMillis = decodedJWT.getClaim("iat").asLong();
         long nowMillis = System.currentTimeMillis();
         long twoDaysMillis = 2L * 24 * 60 * 60 * 1000;
