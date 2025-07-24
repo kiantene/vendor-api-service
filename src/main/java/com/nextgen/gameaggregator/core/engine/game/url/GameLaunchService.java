@@ -102,8 +102,8 @@ public class GameLaunchService {
 
         String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
                 .queryParams(formData)
-                .build()
                 .encode()
+                .build()
                 .toUri()
                 .toString();
 
