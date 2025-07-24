@@ -282,13 +282,11 @@ public class TransferService {
                 return ResultType.WIN;
 
             } else {
-                winDataDto.setIsEndRound(isSpecialType ? 0 : 1);
                 return isSpecialType ? ResultType.BET_WIN : ResultType.WIN;
 
             }
 
         } else {
-            winDataDto.setIsEndRound(isSpecialType ? 0 : 1);
             return isSpecialType ? ResultType.BET_LOSE : ResultType.END;
         }
     }
