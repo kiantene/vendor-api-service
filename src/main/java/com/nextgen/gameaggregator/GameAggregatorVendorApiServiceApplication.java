@@ -20,7 +20,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(basePackages = {
         "com.nextgen.core.*",
         "com.nextgen.sas.core",
-        "com.nextgen.core.*",
         "com.nextgen.gameaggregator",
         "com.nextgen.gameaggregator.vendor",
 }, nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
