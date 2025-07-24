@@ -37,7 +37,7 @@ public class VendorService extends BaseVendorService {
         this.gameSessionService = gameSessionService;
     }
 
-    public static String generateJWT(String userId, String sessionId, String jwtToken, String publicKey) throws
+    public static String generateJWT(String userId, String jwtSecret, String publicKey) throws
             InvalidKeySpecException,
             NoSuchAlgorithmException,
             NoSuchPaddingException,
@@ -46,11 +46,10 @@ public class VendorService extends BaseVendorService {
             InvalidKeyException {
         long issuedAtMillis = System.currentTimeMillis();
 
-        Algorithm algorithm = Algorithm.HMAC256(jwtToken);
+        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
         String jwt = JWT.create()
                 .withClaim("userId", userId)
                 .withClaim("iat", issuedAtMillis)
-                .withClaim("sessionId", sessionId)
                 .sign(algorithm);
 
         PublicKey generatedPublicKey = loadPublicKey(publicKey);
