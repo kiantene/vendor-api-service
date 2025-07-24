@@ -4,41 +4,41 @@ package com.nextgen.gameaggregator.game.launcher.aviatorstudio;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
+import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class ASGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayload> {
 
-    @Override
-    public String getVendorClassName() {
-        return EndPoints.CLASS_NAME;
+    protected ASGameLauncher(VendorCredentialUtils credentialUtils) {
+        super(credentialUtils, EndPoints.CLASS_NAME);
     }
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
-        VendorLineCredential urlSchemeCredential = getRequiredCredential(context.getVendorCredentials(), Credentials.API_URL);
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
+        VendorLineCredential urlSchemeCredential = credentialAccessor.get(Credentials.API_URL);
         return urlSchemeCredential.getValue();
     }
 
     @Override
-    public String getPath() {
+    public String getPath(GameLaunchContext gameLaunchContext) {
         return "";
     }
 
     @Override
-    public LaunchRequestPayload onPrepareRequestBody(GameLaunchContext context) {
-        Map<String, VendorLineCredential> credentialMap = context.getVendorCredentials();
-        String publicKey = getRequiredCredentialValue(credentialMap, Credentials.PUBLIC_KEY);
-        String jwtSecret = getRequiredCredentialValue(credentialMap, Credentials.JWT_SECRET);
+    public LaunchRequestPayload buildRequestBody(GameLaunchContext context) {
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
+        String publicKey = credentialAccessor.getValue(Credentials.PUBLIC_KEY);
+        //String jwtToken = getRequiredCredentialValue(credentialMap, Credentials.JWT_SECRET);
         String userid = context.getVendorPlayerUsername();
         String sessionId = context.getToken();
-        String providerId = getRequiredCredentialValue(credentialMap, Credentials.PROVIDER_ID);
+        String providerId = credentialAccessor.getValue(Credentials.PROVIDER_ID);
         String currency = context.getVendorCurrencyCode();
         String language = context.getVendorLanguageCode();
         String vendorGameCode = context.getVendorGameCode();
@@ -46,7 +46,7 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayl
 
         try {
             //generate JWT token
-            token = VendorService.generateJWT(userid, sessionId, jwtSecret, publicKey);
+            token = VendorService.generateJWT(userid, sessionId, providerId, publicKey);
         } catch (Exception exception) {
             throw new RuntimeException(exception.getMessage());
         }
