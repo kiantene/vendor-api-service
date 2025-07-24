@@ -55,12 +55,12 @@ public class PayoutDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return tid;
+        return this.refid;
     }
 
     @Override
     public String getVendorBetId() {
-        return tid;
+        return this.refid;
     }
 
     @Override

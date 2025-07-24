@@ -1004,7 +1004,7 @@ public class WalletService {
                     unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
                     loggingService.logProcessTime("unsettledBetService.findBetsForRollback", traceId);
                 } catch (BetNotFoundException betNotFoundException) {
-                    betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
+                    betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED, gameSession.getVendorId());
                     throw betNotFoundException;
                 }
 

@@ -63,10 +63,10 @@ public class GameUrlService extends BaseGameUrlService<WMGameUrlVo> {
         formData.add("signature", this.signature);
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
-        formData.add("lang", gameSession.getLanguage()); // or other language code
+        formData.add("lang", gameSession.getVendorLanguageCode()); // or other language code
         formData.add("isTest", "0"); // or other test value
         formData.add("timestamp", "0"); // or other timestamp value
-        formData.add("syslang", gameSession.getLanguage()); // or other system language value
+        formData.add("syslang", gameSession.getVendorLanguageCode()); // or other system language value
 
         return formData;
     }

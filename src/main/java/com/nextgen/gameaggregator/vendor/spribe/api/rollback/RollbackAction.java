@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -101,11 +100,7 @@ public class RollbackAction {
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setVendorToken(dto.getSession_token());
-                List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
-                if (settledBetList.isEmpty()) {
-                    throw new BetNotFoundException();
-                }
-                gameSession.setToken(settledBetList.get(0).getGameSessionToken());
+                gameSession.setToken(dto.getSession_token());
             }
 
             // 5. Verify remaining parameters (Verify against database values)

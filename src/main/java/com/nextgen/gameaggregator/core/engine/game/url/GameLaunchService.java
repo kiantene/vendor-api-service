@@ -28,6 +28,27 @@ public class GameLaunchService {
         this.apiExecutor = apiExecutor;
     }
 
+    private static Map<String, String> convertToMap(Object dto) {
+        Map<String, String> map = new HashMap<>();
+        if (dto == null) {
+            return map;
+        }
+
+        Field[] fields = dto.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(dto);
+                if (value != null) {
+                    map.put(field.getName(), value.toString());
+                }
+            } catch (IllegalAccessException e) {
+                // Optionally log or rethrow if needed
+            }
+        }
+        return map;
+    }
+
     public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
         LogContext logContext = populateLogContext(context);
         try {
@@ -111,6 +132,7 @@ public class GameLaunchService {
         try {
             logContext.setApiBody(request);
             logContext.setApiResponse(gameUrl);
+            context.setVendorFormData(new ObjectMapper().writeValueAsString(request));
         } catch (Exception exception) {
             logContext.setException(exception.getClass().getName());
             logContext.setErrorMessage(exception.getMessage());
@@ -125,27 +147,6 @@ public class GameLaunchService {
             result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return result;
-    }
-
-    private static Map<String, String> convertToMap(Object dto) {
-        Map<String, String> map = new HashMap<>();
-        if (dto == null) {
-            return map;
-        }
-
-        Field[] fields = dto.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(dto);
-                if (value != null) {
-                    map.put(field.getName(), value.toString());
-                }
-            } catch (IllegalAccessException e) {
-                // Optionally log or rethrow if needed
-            }
-        }
-        return map;
     }
 
     public MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
