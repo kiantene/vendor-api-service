@@ -59,10 +59,8 @@ public class VendorService extends BaseVendorService {
                 .withClaim("userId", userId)
                 .withClaim("iat", issuedAtMillis)
                 .sign(algorithm);
-
-        PublicKey generatedPublicKey = parsePublicKey(publicKey);
-
-        return encrypt(generatedPublicKey.toString(), jwt);
+        
+        return encrypt(publicKey, jwt);
     }
 
     public static String encrypt(String publicKeyPEM, String jwtToken) throws
