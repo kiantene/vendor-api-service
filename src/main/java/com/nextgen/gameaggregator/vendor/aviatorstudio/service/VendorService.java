@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import lombok.Getter;
 import lombok.Setter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;
@@ -20,10 +21,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -32,6 +30,11 @@ import java.util.Base64;
 @Getter
 @Service
 public class VendorService extends BaseVendorService {
+    static {
+        // Register BouncyCastle as a security provider
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
 
@@ -47,7 +50,8 @@ public class VendorService extends BaseVendorService {
             NoSuchPaddingException,
             IllegalBlockSizeException,
             BadPaddingException,
-            InvalidKeyException {
+            InvalidKeyException,
+            NoSuchProviderException {
         long issuedAtMillis = System.currentTimeMillis();
 
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
@@ -56,37 +60,52 @@ public class VendorService extends BaseVendorService {
                 .withClaim("iat", issuedAtMillis)
                 .sign(algorithm);
 
-        PublicKey generatedPublicKey = loadPublicKey(publicKey);
+        PublicKey generatedPublicKey = parsePublicKey(publicKey);
 
-        return encrypt(jwt, generatedPublicKey);
+        return encrypt(generatedPublicKey.toString(), jwt);
     }
 
-    public static PublicKey loadPublicKey(String keyStr) throws
-            InvalidKeySpecException,
+    public static String encrypt(String publicKeyPEM, String jwtToken) throws
+            NoSuchPaddingException,
             NoSuchAlgorithmException,
-            NullPointerException {
-        String publicKeyPEM = keyStr
+            NoSuchProviderException,
+            InvalidKeySpecException,
+            IllegalBlockSizeException,
+            BadPaddingException,
+            InvalidKeyException {
+        // Convert message to bytes
+        byte[] messageBytes = jwtToken.getBytes(StandardCharsets.UTF_8);
+
+        // Parse the public key
+        PublicKey publicKey = parsePublicKey(publicKeyPEM);
+
+        // Initialize cipher
+        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding", "BC");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+
+        // Encrypt the message
+        byte[] encryptedBytes = cipher.doFinal(messageBytes);
+
+        // Encode as base64 string
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+
+    }
+
+    private static PublicKey parsePublicKey(String publicKeyPEM)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        // Remove PEM headers and whitespace
+        String publicKeyContent = publicKeyPEM
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s+", "");
+                .replaceAll("\\s", "");
 
-        byte[] encoded = Base64.getDecoder().decode(publicKeyPEM);
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
+        // Decode the base64 content
+        byte[] encodedKey = Base64.getDecoder().decode(publicKeyContent);
 
+        // Create the public key
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encodedKey);
         return keyFactory.generatePublic(keySpec);
-    }
-
-    public static String encrypt(String message, PublicKey publicKey) throws
-            NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            InvalidKeyException,
-            IllegalBlockSizeException,
-            BadPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        byte[] encryptedBytes = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
     public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
@@ -100,7 +119,7 @@ public class VendorService extends BaseVendorService {
         ValidationUtils.validateRequest(validationObject);
     }
 
-    public void verifyJWT(String jwtAuth, int vendorLineId, String vendorPlayerUsername, String sessionId) throws AuthenticationException, CredentialNotFoundException {
+    public void verifyJWT(String jwtAuth, int vendorLineId, String vendorPlayerUsername) throws AuthenticationException, CredentialNotFoundException {
         DecodedJWT decodedJWT = decodeJWT(jwtAuth, vendorLineId);
 
         //Verify username
