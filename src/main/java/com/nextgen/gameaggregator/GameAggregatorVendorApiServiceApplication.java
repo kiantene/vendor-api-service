@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(exclude = {SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class})
 @EntityScan("com.nextgen.gameaggregator.*")
 @ComponentScan(basePackages = {
+        "com.nextgen.core.*",
         "com.nextgen.sas.core",
         "com.nextgen.core.*",
         "com.nextgen.gameaggregator",
