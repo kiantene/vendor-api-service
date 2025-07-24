@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.ZoneId;
 import java.util.Optional;
 
 @RestController
@@ -73,9 +75,7 @@ public class BetAction {
             this.doDecryptValidation(betDto);
 
             //calculate vendor threshold. if the time is over 4 sec, direct send error to vendor.
-            if (betDto.getTs() != null && System.currentTimeMillis() - betDto.getTs() >= 4000) {
-                throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Response to vendor is too late. The vendor threshold timeout is 4 seconds.)");
-            }
+            this.checkVendorTimeout(betDto);
 
             //get rawGameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
@@ -216,6 +216,13 @@ public class BetAction {
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, betDto.getMemberAccount());
+    }
+
+    private void checkVendorTimeout(BetDto betDto) throws BetFailedException {
+        if (betDto.getTs() != null &&
+                DateTimeConversionUtils.toCurrentUnixTimestampWithTimeZone(ZoneId.of("UTC-4")) - betDto.getTs() >= 4000) {
+            throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Response to vendor is too late. The vendor threshold timeout is 4 seconds.)");
+        }
     }
 
     private ResultType getResultType(BetDto betDto) {
