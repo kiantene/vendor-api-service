@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -10,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -26,6 +30,27 @@ public class GameLaunchService {
 
         this.s3Service = s3Service;
         this.apiExecutor = apiExecutor;
+    }
+
+    private static Map<String, String> convertToMap(Object dto) {
+        Map<String, String> map = new HashMap<>();
+        if (dto == null) {
+            return map;
+        }
+
+        Field[] fields = dto.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(dto);
+                if (value != null) {
+                    map.put(field.getName(), value.toString());
+                }
+            } catch (IllegalAccessException e) {
+                // Optionally log or rethrow if needed
+            }
+        }
+        return map;
     }
 
     public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
@@ -100,10 +125,10 @@ public class GameLaunchService {
         Object request = launchHandler.buildRequestBody(context);
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
-        String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
-                .queryParams(formData)
-                .encode()
-                .build()
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+        applyEncodedQueryParams(urlBuilder, formData);
+
+        String gameUrl = urlBuilder.build(true)
                 .toUri()
                 .toString();
 
@@ -111,6 +136,7 @@ public class GameLaunchService {
         try {
             logContext.setApiBody(request);
             logContext.setApiResponse(gameUrl);
+            context.setVendorFormData(new ObjectMapper().writeValueAsString(request));
         } catch (Exception exception) {
             logContext.setException(exception.getClass().getName());
             logContext.setErrorMessage(exception.getMessage());
@@ -127,27 +153,6 @@ public class GameLaunchService {
         return result;
     }
 
-    private static Map<String, String> convertToMap(Object dto) {
-        Map<String, String> map = new HashMap<>();
-        if (dto == null) {
-            return map;
-        }
-
-        Field[] fields = dto.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(dto);
-                if (value != null) {
-                    map.put(field.getName(), value.toString());
-                }
-            } catch (IllegalAccessException e) {
-                // Optionally log or rethrow if needed
-            }
-        }
-        return map;
-    }
-
     public MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         BeanWrapper wrapper = new BeanWrapperImpl(dto);
@@ -161,5 +166,18 @@ public class GameLaunchService {
         }
 
         return map;
+    }
+
+    private static void applyEncodedQueryParams(
+            UriComponentsBuilder builder,
+            MultiValueMap<String, String> rawParams
+    ) {
+        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
+            String key = entry.getKey();
+            for (String value : entry.getValue()) {
+                String encodedValue = UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8);
+                builder.queryParam(key, encodedValue);
+            }
+        }
     }
 }
