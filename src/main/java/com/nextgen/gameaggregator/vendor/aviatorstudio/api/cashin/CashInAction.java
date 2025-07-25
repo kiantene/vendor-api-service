@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
@@ -29,15 +28,17 @@ public class CashInAction {
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorService vendorService;
-    private final ValidationService validationService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public CashInAction(GameSessionService gameSessionService, HttpService httpService, WalletService walletService, VendorService vendorService, ValidationService validationService, RequestIdempotentLogService requestIdempotentLogService) {
+    public CashInAction(GameSessionService gameSessionService,
+                        HttpService httpService,
+                        WalletService walletService,
+                        VendorService vendorService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-        this.validationService = validationService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
@@ -96,8 +97,7 @@ public class CashInAction {
             httpService.end(httpRequestLog, responseVo);
         }
 
-
-        return null;
+        return responseVo;
     }
 
     private void doVerification(String jwtAuth, CashInDto dto, GameSession gameSession) throws InvalidPlayerException,
@@ -125,8 +125,7 @@ public class CashInAction {
         if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setResponseSuccess(betResultIdempotentViolationException.getBalance(),
                     gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
-        } else if (e instanceof InsufficientBalanceException) {
-            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
+
         } else if (e instanceof AuthenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTH_ERROR);
         } else {
