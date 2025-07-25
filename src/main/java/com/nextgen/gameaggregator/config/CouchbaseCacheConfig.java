@@ -1,12 +1,8 @@
 package com.nextgen.gameaggregator.config;
 
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
-import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
-import com.couchbase.client.java.Collection;
-import com.couchbase.client.java.Scope;
 import com.couchbase.client.java.env.ClusterEnvironment;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,9 +21,6 @@ public class CouchbaseCacheConfig {
     @Value("${spring.couchbase.password}")
     private String password;
 
-    @Value("${spring.couchbase.bucketName}")
-    private String bucketName;
-
     @Bean
     public ClusterEnvironment cacheClusterEnvironment() {
         return ClusterEnvironment.builder()
@@ -39,63 +32,8 @@ public class CouchbaseCacheConfig {
                 .build();
     }
 
-    @Bean
-    @Qualifier("cacheCluster")
+    @Bean("cacheCluster")
     public Cluster cacheCluster() {
         return Cluster.connect(connectionString, userName, password);
-    }
-
-    @Bean
-    @Qualifier("cacheBucket")
-    public Bucket cacheBucket(@Qualifier("cacheCluster") Cluster cluster) {
-        return cluster.bucket(bucketName);
-    }
-
-    @Bean
-    @Qualifier("cacheScope")
-    public Scope cacheScope(@Qualifier("cacheBucket") Bucket bucket) {
-        return bucket.scope("cache");
-    }
-
-    @Bean
-    @Qualifier("agentPlayerCache")
-    public Collection agentPlayerCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("agent_players");
-    }
-
-    @Bean
-    @Qualifier("agentApiCredentialCache")
-    public Collection agentApiCredentialCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("agent_api_credentials");
-    }
-
-    @Bean
-    @Qualifier("vendorPlayerCache")
-    public Collection vendorPlayerCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("vendor_players");
-    }
-
-    @Bean
-    @Qualifier("currencyCache")
-    public Collection currencyCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("currencies");
-    }
-
-    @Bean
-    @Qualifier("vendorCache")
-    public Collection vendorCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("vendors");
-    }
-
-    @Bean
-    @Qualifier("vendorGameCache")
-    public Collection vendorGameCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("vendor_games");
-    }
-
-    @Bean
-    @Qualifier("gameCategoryCache")
-    public Collection gameCategoryCache(@Qualifier("cacheScope") Scope scope) {
-        return scope.collection("game_categories");
     }
 }

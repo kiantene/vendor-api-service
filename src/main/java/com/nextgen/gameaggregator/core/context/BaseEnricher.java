@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.core.context;
 
-import com.nextgen.gameaggregator.core.service.data.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.data.VendorPlayerDataService;
-import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.core.entity.AgentPlayer;
+import com.nextgen.gameaggregator.core.entity.VendorPlayer;
+import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
+import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 
 public abstract class BaseEnricher<T> {
     private final AgentPlayerDataService agentPlayerDataService;

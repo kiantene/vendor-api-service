@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
-import com.nextgen.gameaggregator.core.service.data.AgentApiCredentialDataService;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class ClientRequestAuth<T> {
+    private final Validator validator;
+    private final AgentApiCredentialDataService credentialService;
     @Getter
     private Integer agentId;
     @Getter
@@ -27,8 +29,6 @@ public class ClientRequestAuth<T> {
     private String baseUrl;
     @Getter
     private String path;
-    private final Validator validator;
-    private final AgentApiCredentialDataService credentialService;
 
     public ClientRequestAuth(Validator validator, AgentApiCredentialDataService credentialService) {
         this.validator = validator;
