@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -25,6 +26,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Enumeration;
 
 @Setter
 @Getter
@@ -59,7 +61,7 @@ public class VendorService extends BaseVendorService {
                 .withClaim("userId", userId)
                 .withClaim("iat", issuedAtMillis)
                 .sign(algorithm);
-        
+
         return encrypt(publicKey, jwt);
     }
 
@@ -106,15 +108,15 @@ public class VendorService extends BaseVendorService {
         return keyFactory.generatePublic(keySpec);
     }
 
+    public static <T> void doValidation(T validationObject) throws InvalidRequestException {
+        ValidationUtils.validateRequest(validationObject);
+    }
+
     public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
         String jwtSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.JWT_SECRET);
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
 
         return JWT.require(algorithm).build().verify(jwtToken);
-    }
-
-    public <T> void doValidation(T validationObject) throws InvalidRequestException {
-        ValidationUtils.validateRequest(validationObject);
     }
 
     public void verifyJWT(String jwtAuth, int vendorLineId, String vendorPlayerUsername) throws AuthenticationException, CredentialNotFoundException {
@@ -132,4 +134,17 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public String getHeaders(HttpServletRequest request) {
+        Enumeration<String> headerNames = request.getHeaderNames();
+        StringBuilder headersString = new StringBuilder();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = request.getHeader(headerName);
+            headersString.append(headerName)
+                    .append(":")
+                    .append(headerValue)
+                    .append("\n");
+        }
+        return headersString.toString();
+    }
 }

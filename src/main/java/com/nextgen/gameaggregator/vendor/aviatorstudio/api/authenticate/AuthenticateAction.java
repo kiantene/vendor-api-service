@@ -50,6 +50,9 @@ public class AuthenticateAction {
             AuthenticateDto authenticateDto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
             authenticateDto.setAuthorization(jwtAuth);
 
+            //Add request header log
+            httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
+
             vendorService.doValidation(authenticateDto);
 
             GameSession gameSession = gameSessionService.verifyToken(authenticateDto.getSessionId());

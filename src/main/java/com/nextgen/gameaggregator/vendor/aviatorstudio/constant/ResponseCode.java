@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 public enum ResponseCode {
 
     SUCCESS(200, "Success"),
+    INSUFFICIENT_FUNDS(400, "Insufficient funds"),
     AUTH_ERROR(403, "Authentication failed"),
     SERVER_ERROR(500, "Server error");
 
