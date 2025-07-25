@@ -44,14 +44,14 @@ public class AuthenticateAction {
 
         try {
             String traceId = httpRequestLog.getId();
-            String body = httpRequestLog.getRequestBody();
+            String queryString = request.getQueryString();
             String jwtAuth = request.getHeader("Authorization");
 
-            AuthenticateDto authenticateDto = HttpService.convertQueryStringToDtoUrlDecode(body, AuthenticateDto.class);
+            AuthenticateDto authenticateDto = HttpService.convertQueryStringToDto(queryString, AuthenticateDto.class);
             authenticateDto.setAuthorization(jwtAuth);
 
             //Add request header log
-            httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
+            httpRequestLog.setRequestBody("Request Body: \n" + queryString + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
 
             vendorService.doValidation(authenticateDto);
 
