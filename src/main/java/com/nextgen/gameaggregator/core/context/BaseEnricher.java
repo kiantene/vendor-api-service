@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.core.context;
 
+import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.entity.AgentPlayer;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
@@ -42,8 +44,8 @@ public abstract class BaseEnricher<T> {
                 contextWithUsername.setAgentPlayerUsername(agentPlayer.getUsername());
                 contextWithUsername.setAgentId(agentPlayer.getAgentId());
 
-            } catch (Exception ex) {
-                // TODO: handle exception
+            } catch (EntityNotFoundException ex) {
+                throw new InternalConfigurationException(ex);
             }
         }
     }
