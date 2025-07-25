@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -10,10 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -121,10 +125,10 @@ public class GameLaunchService {
         Object request = launchHandler.buildRequestBody(context);
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
-        String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
-                .queryParams(formData)
-                .encode()
-                .build()
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+        applyEncodedQueryParams(urlBuilder, formData);
+
+        String gameUrl = urlBuilder.build(true)
                 .toUri()
                 .toString();
 
@@ -162,5 +166,18 @@ public class GameLaunchService {
         }
 
         return map;
+    }
+
+    private static void applyEncodedQueryParams(
+            UriComponentsBuilder builder,
+            MultiValueMap<String, String> rawParams
+    ) {
+        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
+            String key = entry.getKey();
+            for (String value : entry.getValue()) {
+                String encodedValue = UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8);
+                builder.queryParam(key, encodedValue);
+            }
+        }
     }
 }
