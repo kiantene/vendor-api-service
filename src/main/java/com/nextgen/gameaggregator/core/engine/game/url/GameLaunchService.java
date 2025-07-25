@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.web.util.UriUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -53,19 +53,6 @@ public class GameLaunchService {
         return map;
     }
 
-    private static void applyEncodedQueryParams(
-            UriComponentsBuilder builder,
-            MultiValueMap<String, String> rawParams
-    ) {
-        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
-            String key = entry.getKey();
-            for (String value : entry.getValue()) {
-                String encodedValue = UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8);
-                builder.queryParam(key, encodedValue);
-            }
-        }
-    }
-
     public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
         LogContext logContext = populateLogContext(context);
         try {
@@ -97,30 +84,7 @@ public class GameLaunchService {
 
     private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
         launchHandler.execute(apiExecutor, context)
-                .onSuccess(response -> {
-                    launchHandler.onSuccess(context, response);
-                });
-
-//        String vendorClassName = context.getVendorClassName();
-//        String baseUrl = launchHandler.getBaseUrl(context);
-//        if (baseUrl == null) throw new InternalConfigurationException(vendorClassName + " Game Launch baseUrl cannot be found.");
-//        Object request = launchHandler.buildRequestBody(context);
-//        Map<String, String> headers = launchHandler.getHeaders(context, request);
-//
-//        WebClientApiCaller webClientApiCaller = new WebClientApiCaller(
-//                launchHandler.getPath(context),
-//                launchHandler.getContentType()
-//        );
-//
-//        // should fire error event?
-//        Object response = webClientApiCaller.post(
-//                baseUrl,
-//                headers,
-//                request,
-//                launchHandler.getResponseType()
-//        );
-//
-//        launchHandler.onSuccess(context, response);
+                .onSuccess(response -> launchHandler.onSuccess(context, response));
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
@@ -138,13 +102,8 @@ public class GameLaunchService {
         Object request = launchHandler.buildRequestBody(context);
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
-        // Create a copy of the form data to modify
-        MultiValueMap<String, String> finalFormData = new LinkedMultiValueMap<>(formData);
-
-
-        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
-                .queryParams(finalFormData);
-        //applyEncodedQueryParams(urlBuilder, formData);
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+        applyEncodedQueryParams(urlBuilder, formData);
 
         String gameUrl = urlBuilder.build(true)
                 .toUri()
@@ -184,5 +143,18 @@ public class GameLaunchService {
         }
 
         return map;
+    }
+
+    private static void applyEncodedQueryParams(
+            UriComponentsBuilder builder,
+            MultiValueMap<String, String> rawParams
+    ) {
+        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
+            String key = entry.getKey();
+            for (String value : entry.getValue()) {
+                String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+                builder.queryParam(key, encodedValue);
+            }
+        }
     }
 }
