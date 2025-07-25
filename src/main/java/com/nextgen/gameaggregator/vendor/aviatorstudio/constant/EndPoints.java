@@ -8,4 +8,5 @@ public class EndPoints {
     public static final String PATH = "api/v1/aviator";
     public static final String AUTHENTICATE = "api/account";
     public static final String CASHOUT = "/api/balance/cash-out";
+    public static final String CASHIN = "/api/balance/cash-in";
 }
