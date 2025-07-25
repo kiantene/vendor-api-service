@@ -23,7 +23,8 @@ class VendorGameCacheService extends CouchbaseCacheService<VendorGame> {
     @Override
     protected Map<String, Duration> getTtlMap() {
         return Map.of(
-                ttlKey("id"), Duration.ofMinutes(120)
+                ttlKey("id"), Duration.ofMinutes(120),
+                ttlKey("vendorGameCodeAndVendorId"), Duration.ofMinutes(120)
         );
     }
 
@@ -33,7 +34,7 @@ class VendorGameCacheService extends CouchbaseCacheService<VendorGame> {
     }
 
     public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
-        String key = buildCacheKey("vendorGameCode,vendorId", vendorGameCode + "," + vendorId);
+        String key = buildCacheKey("vendorGameCodeAndVendorId", vendorGameCode, vendorId);
         return get(key, () -> repository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId));
     }
 }
