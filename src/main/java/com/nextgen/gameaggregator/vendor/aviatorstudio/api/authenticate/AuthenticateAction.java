@@ -47,7 +47,7 @@ public class AuthenticateAction {
             String body = httpRequestLog.getRequestBody();
             String jwtAuth = request.getHeader("Authorization");
 
-            AuthenticateDto authenticateDto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
+            AuthenticateDto authenticateDto = HttpService.convertQueryStringToDtoUrlDecode(body, AuthenticateDto.class);
             authenticateDto.setAuthorization(jwtAuth);
 
             //Add request header log
