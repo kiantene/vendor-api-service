@@ -74,15 +74,4 @@ public class DateTimeConversionUtils {
         long absTimestamp = Math.abs(timestamp);
         return (absTimestamp < 1_000_000_000_000L) ? timestamp * 1000 : timestamp;
     }
-
-    /**
-     * Get the current time as a Unix timestamp in milliseconds, based on the given timezone.
-     *
-     * @param zone the timezone to apply (e.g. ZoneId.of("GMT+8"))
-     * @return the current time in milliseconds
-     */
-    public static long toCurrentUnixTimestampWithTimeZone(ZoneId zone) {
-        ZonedDateTime zonedDateTime = ZonedDateTime.now(zone);
-        return zonedDateTime.toInstant().toEpochMilli();
-    }
 }

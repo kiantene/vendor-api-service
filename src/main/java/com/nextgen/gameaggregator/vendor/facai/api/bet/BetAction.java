@@ -219,9 +219,8 @@ public class BetAction {
     }
 
     private void checkVendorTimeout(BetDto betDto) throws BetFailedException {
-        if (betDto.getTs() != null &&
-                DateTimeConversionUtils.toCurrentUnixTimestampWithTimeZone(ZoneId.of("UTC-4")) - betDto.getTs() >= 4000) {
-            throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Response to vendor is too late. The vendor threshold timeout is 4 seconds.)");
+        if (betDto.getTs() != null && System.currentTimeMillis() - betDto.getTs() >= 4000) {
+            throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Received request is too late. The vendor threshold timeout is 4 seconds.)");
         }
     }
 
