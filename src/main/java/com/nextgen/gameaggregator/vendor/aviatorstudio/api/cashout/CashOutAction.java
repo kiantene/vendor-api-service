@@ -79,7 +79,7 @@ public class CashOutAction {
             }
 
             // Get GameSession with Token
-            gameSession = gameSessionService.verifyToken(dto.getSessionId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(VendorService.jwtGetUserId(jwtAuth));
 
             // Verify parameters (Verify against database values)
             this.doVerification(jwtAuth, dto, gameSession);
@@ -102,13 +102,20 @@ public class CashOutAction {
         return responseVo;
     }
 
-    private void doVerification(String jwtAuth, CashOutDto dto, GameSession gameSession) throws InvalidPlayerException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, InvalidCurrencyException {
+    private void doVerification(String jwtAuth, CashOutDto dto, GameSession gameSession) throws
+            InvalidPlayerException,
+            AuthenticationException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException,
+            GameNotSupportedException,
+            InvalidCurrencyException,
+            CredentialNotFoundException {
 
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         //Verify JWT
-        //vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
+        vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername());
 
         //Check vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);

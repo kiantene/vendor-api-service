@@ -74,7 +74,7 @@ public class CashInAction {
             }
 
             // Get GameSession with Token
-            gameSession = gameSessionService.verifyToken(dto.getSessionId());
+            gameSession = vendorService.checkGameSession(traceId, VendorService.jwtGetUserId(jwtAuth), dto.getGameId(), dto.getSessionId());
 
             // Verify parameters (Verify against database values)
             this.doVerification(jwtAuth, dto, gameSession);
@@ -83,8 +83,8 @@ public class CashInAction {
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
 
             // Process settlement
-            balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
-                    httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+
             responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
 
         } catch (Exception e) {
@@ -100,11 +100,14 @@ public class CashInAction {
         return responseVo;
     }
 
-    private void doVerification(String jwtAuth, CashInDto dto, GameSession gameSession) throws InvalidPlayerException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, InvalidCurrencyException {
+    private void doVerification(String jwtAuth, CashInDto dto, GameSession gameSession) throws
+            AuthenticationException,
+            GameNotSupportedException,
+            InvalidCurrencyException,
+            CredentialNotFoundException {
 
         //Verify JWT
-        //vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
+        vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername());
 
         //Check vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);

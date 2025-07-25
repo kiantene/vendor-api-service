@@ -3,9 +3,8 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -32,6 +31,8 @@ import java.util.Enumeration;
 @Getter
 @Service
 public class VendorService extends BaseVendorService {
+    public static final String CLAIM_USER_ID = "userId";
+
     static {
         // Register BouncyCastle as a security provider
         Security.addProvider(new BouncyCastleProvider());
@@ -58,7 +59,7 @@ public class VendorService extends BaseVendorService {
 
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
         String jwt = JWT.create()
-                .withClaim("userId", userId)
+                .withClaim(CLAIM_USER_ID, userId)
                 .withClaim("iat", issuedAtMillis)
                 .sign(algorithm);
 
@@ -112,18 +113,28 @@ public class VendorService extends BaseVendorService {
         ValidationUtils.validateRequest(validationObject);
     }
 
+    public static String jwtGetUserId(String jwtToken) {
+        DecodedJWT decodedJWT = JWT.decode(jwtToken);
+        return decodedJWT.getClaim(CLAIM_USER_ID).asString();
+    }
+
     public DecodedJWT decodeJWT(String jwtToken, int vendorLineId) throws CredentialNotFoundException {
         String jwtSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.JWT_SECRET);
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
 
-        return JWT.require(algorithm).build().verify(jwtToken);
+        // Decode token WITHOUT verifying claims like `iat`
+        DecodedJWT decoded = JWT.decode(jwtToken);
+
+        algorithm.verify(decoded); // Signature check only
+
+        return decoded;
     }
 
     public void verifyJWT(String jwtAuth, int vendorLineId, String vendorPlayerUsername) throws AuthenticationException, CredentialNotFoundException {
         DecodedJWT decodedJWT = decodeJWT(jwtAuth, vendorLineId);
 
         //Verify username
-        ValidationUtils.isEquals(vendorPlayerUsername, decodedJWT.getClaim("userId").asString(), AuthenticationException::new);
+        ValidationUtils.isEquals(vendorPlayerUsername, decodedJWT.getClaim(CLAIM_USER_ID).asString(), AuthenticationException::new);
 
         long issuedAtMillis = decodedJWT.getClaim("iat").asLong();
         long nowMillis = System.currentTimeMillis();
@@ -133,6 +144,21 @@ public class VendorService extends BaseVendorService {
             throw new AuthenticationException();
         }
     }
+
+    public GameSession checkGameSession(String traceId, String vendorPlayerUsername, String vendorGameCode, String vendorToken) throws VendorCurrencyNotSupportException, InvalidPlayerException, GameNotSupportedException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+            gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(vendorToken);
+        }
+        return gameSession;
+    }
+
 
     public String getHeaders(HttpServletRequest request) {
         Enumeration<String> headerNames = request.getHeaderNames();

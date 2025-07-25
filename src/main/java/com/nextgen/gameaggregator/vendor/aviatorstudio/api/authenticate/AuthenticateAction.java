@@ -53,9 +53,10 @@ public class AuthenticateAction {
             //Add request header log
             httpRequestLog.setRequestBody("Request Body: \n" + queryString + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
 
-            vendorService.doValidation(authenticateDto);
+            VendorService.doValidation(authenticateDto);
 
-            GameSession gameSession = gameSessionService.verifyToken(authenticateDto.getSessionId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(VendorService.jwtGetUserId(jwtAuth));
+
             this.doVerification(jwtAuth, authenticateDto.getCurrency(), gameSession);
 
             // Get walletBalance
@@ -76,7 +77,7 @@ public class AuthenticateAction {
             InvalidRequestException,
             CredentialNotFoundException {
         //Verify JWT
-        //vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername(), gameSession.getToken());
+        vendorService.verifyJWT(jwtAuth, gameSession.getVendorLineId(), gameSession.getVendorPlayerUsername());
 
         //Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, InvalidRequestException::new);
