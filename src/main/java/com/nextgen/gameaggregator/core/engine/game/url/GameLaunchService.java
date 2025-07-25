@@ -53,6 +53,19 @@ public class GameLaunchService {
         return map;
     }
 
+    private static void applyEncodedQueryParams(
+            UriComponentsBuilder builder,
+            MultiValueMap<String, String> rawParams
+    ) {
+        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
+            String key = entry.getKey();
+            for (String value : entry.getValue()) {
+                String encodedValue = UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8);
+                builder.queryParam(key, encodedValue);
+            }
+        }
+    }
+
     public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
         LogContext logContext = populateLogContext(context);
         try {
@@ -125,8 +138,13 @@ public class GameLaunchService {
         Object request = launchHandler.buildRequestBody(context);
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
-        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
-        applyEncodedQueryParams(urlBuilder, formData);
+        // Create a copy of the form data to modify
+        MultiValueMap<String, String> finalFormData = new LinkedMultiValueMap<>(formData);
+
+
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
+                .queryParams(finalFormData);
+        //applyEncodedQueryParams(urlBuilder, formData);
 
         String gameUrl = urlBuilder.build(true)
                 .toUri()
@@ -166,18 +184,5 @@ public class GameLaunchService {
         }
 
         return map;
-    }
-
-    private static void applyEncodedQueryParams(
-            UriComponentsBuilder builder,
-            MultiValueMap<String, String> rawParams
-    ) {
-        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
-            String key = entry.getKey();
-            for (String value : entry.getValue()) {
-                String encodedValue = UriUtils.encodeQueryParam(value, StandardCharsets.UTF_8);
-                builder.queryParam(key, encodedValue);
-            }
-        }
     }
 }

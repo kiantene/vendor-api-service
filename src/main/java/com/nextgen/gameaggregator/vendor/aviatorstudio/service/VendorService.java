@@ -21,6 +21,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -85,9 +86,9 @@ public class VendorService extends BaseVendorService {
 
         // Encrypt the message
         byte[] encryptedBytes = cipher.doFinal(messageBytes);
-
+        String rawToken = Base64.getEncoder().encodeToString(encryptedBytes);
         // Encode as base64 string
-        return Base64.getEncoder().encodeToString(encryptedBytes);
+        return URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
 
     }
 
