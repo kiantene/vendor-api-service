@@ -35,7 +35,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
-        validator.validateOrThrow(context);
+//        validator.validateOrThrow(context);
         enricher.enrich(context);
         processor.process(context);
         clientRequestAuth.initialise(context.getAgentId(), EndPoints.PROMO_PAYOUT, mapper.toPromoPayoutRequest(context));
