@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
+import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutVo;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.PromoRequestMapper;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.PromoResponseMapper;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +46,7 @@ public class PGSoftPromoPayoutService {
         return matcher.find();
     }
 
+    @VendorExceptionHandler(className = Endpoints.CLASS_NAME)
     public ResponseVo<CashTransferInOutVo> doPromoPayout(CashTransferInOutDto dto, HttpRequestLog httpRequestLog) {
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
 
