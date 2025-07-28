@@ -99,7 +99,7 @@ public class WalletService {
         this.betIdempotentLogService = betIdempotentLogService;
         this.taskScheduler = taskScheduler;
         this.redisTemplate = redisTemplate;
-        this.skipToSendNotifyEndRoundAgentList = new HashSet<>(Set.of(1502, 12)); //STAGING CLIENT
+        this.skipToSendNotifyEndRoundAgentList = new HashSet<>(Set.of(1502, 4)); //STAGING CLIENT
 
     }
 
@@ -457,6 +457,7 @@ public class WalletService {
         if (!betResultData.getShouldSettleByBet()) {
 
             if (isTestEnvironment && this.skipToSendNotifyEndRoundAgentList.contains(gameSession.getAgentId())) {
+                httpRequestLog.setRequestType(httpRequestLog.getRequestType() + " (SKIP PROCESS END ROUND)");
                 //SKIP SEND ENDROUND, ONLY APPLICABLE FOR TEST ENVIRONMENT SPECIFIC AGENT
             } else {
                 // Get the list of vendors from ENV for retry vendor
