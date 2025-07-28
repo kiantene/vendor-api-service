@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.core.common;
 
-public interface VendorExceptionMapper {
+import com.nextgen.core.exception.InternalConfigurationException;
+
+public interface VendorExceptionMapper<T> {
     String getVendorClassName();
-    Object handle(Throwable ex);
+    T onInternalConfigurationError(InternalConfigurationException ex);
 }

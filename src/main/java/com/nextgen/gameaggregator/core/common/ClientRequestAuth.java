@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
