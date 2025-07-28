@@ -14,6 +14,9 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,9 +41,10 @@ public class AuthenticateAction {
     }
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public CommonVo account(HttpServletRequest request) {
+    public ResponseEntity<CommonVo> account(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
+        HttpStatus status = HttpStatus.OK;
 
         try {
             String traceId = httpRequestLog.getId();
@@ -65,11 +69,13 @@ public class AuthenticateAction {
             responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
 
         } catch (Exception e) {
-            this.handleException(e, responseVo, httpRequestLog);
+            status = this.handleException(e, responseVo, httpRequestLog);
+            httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
-        return responseVo;
+
+        return new ResponseEntity<>(responseVo, new HttpHeaders(), status);
     }
 
     private void doVerification(String jwtAuth, String currency, GameSession gameSession) throws
@@ -85,13 +91,15 @@ public class AuthenticateAction {
     }
 
     @ExceptionHandler({AuthenticationException.class, Exception.class})
-    private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
+    private HttpStatus handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
 
         if (e instanceof AuthenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTH_ERROR);
+            return HttpStatus.FORBIDDEN;
         } else {
             responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        httpService.logError(httpRequestLog, e);
+
     }
 }
