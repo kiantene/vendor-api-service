@@ -16,6 +16,9 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,7 +51,7 @@ public class CashOutAction {
     }
 
     @PostMapping(path = EndPoints.CASHOUT)
-    public CommonVo betAction(HttpServletRequest request) {
+    public ResponseEntity<CommonVo> betAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -59,6 +62,7 @@ public class CashOutAction {
         BigDecimal balance;
         GameSession gameSession = null;
         boolean isRequestExists = false;
+        HttpStatus status = HttpStatus.OK;
 
         try {
             dto = HttpService.convertJsonToDto(body, CashOutDto.class);
@@ -90,8 +94,8 @@ public class CashOutAction {
             responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
 
         } catch (Exception e) {
-            this.handleException(e, responseVo, gameSession, httpRequestLog);
-
+            status = this.handleException(e, responseVo, gameSession, httpRequestLog);
+            httpService.logError(httpRequestLog, e);
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
@@ -99,7 +103,8 @@ public class CashOutAction {
             }
             httpService.end(httpRequestLog, responseVo);
         }
-        return responseVo;
+
+        return new ResponseEntity<>(responseVo, new HttpHeaders(), status);
     }
 
     private void doVerification(String jwtAuth, CashOutDto dto, GameSession gameSession) throws
@@ -131,19 +136,21 @@ public class CashOutAction {
             AuthenticationException.class,
             Exception.class
     })
-    private void handleException(Exception e, CommonVo responseVo, GameSession gameSession, HttpRequestLog httpRequestLog) {
+    private HttpStatus handleException(Exception e, CommonVo responseVo, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setResponseSuccess(betResultIdempotentViolationException.getBalance(),
                     gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
+            return HttpStatus.OK;
         } else if (e instanceof InsufficientBalanceException) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
+            return HttpStatus.BAD_REQUEST;
         } else if (e instanceof AuthenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTH_ERROR);
+            return HttpStatus.FORBIDDEN;
         } else {
             responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
-
-        httpService.logError(httpRequestLog, e);
     }
 }
