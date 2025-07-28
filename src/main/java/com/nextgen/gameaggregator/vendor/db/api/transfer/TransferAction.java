@@ -65,6 +65,7 @@ public class TransferAction {
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
         CommonDto commonDto;
+        GameSession gameSession;
 
         // default value
         transferDataVo.setTradeType(0);
@@ -90,8 +91,18 @@ public class TransferAction {
             this.doValidation(transferDto);
 
             // using vendor player username to find gameSession details
-            GameSession gameSession = gameSessionService.
-                    getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+            } catch (AuthenticationException authenticationException) {
+                if (transferDto.getTradeType() == 2) {
+                    gameSession = gameSessionService.generateNewSessionToken(transferDto.getMemberId());
+                    gameSessionService.updateByVendorGameCode(gameSession, transferDto.getGameId());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
+                    gameSession.setToken(traceId);
+                    gameSession.setVendorToken(traceId);
+                } else throw new AuthenticationException();
+            }
+
             //Verification
             this.doVerification(transferDto, gameSession, commonDto);
 
