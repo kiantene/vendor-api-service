@@ -29,6 +29,9 @@ public class BetInfoDto {
     @JsonProperty("transfer_amount")
     private BigDecimal transferAmount;
 
+    @JsonProperty("settle_time")
+    private Long settleTime;
+
     @JsonProperty("parent_bet_id")
     @Size(max = 255)
     private String parentBetId;

@@ -372,11 +372,16 @@ public class GameSessionService {
 
         if (vendorId == null) return;
 
-        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
-        gameSession.setVendorGameId(vendorGame.getId());
-        gameSession.setGameCode(vendorGame.getCode());
-        gameSession.setVendorGameCode(vendorGameCode);
-        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+        VendorGame vendorGame = vendorGameService.getByVendorGameCode(vendorGameCode, vendorId);
+        if (vendorGame != null) {
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setVendorGameCode(vendorGameCode);
+            gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+        } else {
+            //if vendor's game not found throw GameNotSupportedException
+            throw new GameNotSupportedException();
+        }
     }
 
     public void updateByVendorGameId(GameSession gameSession, Integer vendorGameId) throws GameNotSupportedException {
