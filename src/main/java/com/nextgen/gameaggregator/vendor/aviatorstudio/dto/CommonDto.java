@@ -24,6 +24,8 @@ public class CommonDto {
     BigDecimal amount;
 
     @JsonProperty("gameId")
+    @NotBlank
+    @Size(max = 10)
     String vendorGameId;
 
     @NotBlank
@@ -31,6 +33,8 @@ public class CommonDto {
     String transactionId;
 
     @JsonProperty("roundId")
+    @NotBlank
+    @Size(max = 255)
     String vendorRoundId;
 
     @NotBlank

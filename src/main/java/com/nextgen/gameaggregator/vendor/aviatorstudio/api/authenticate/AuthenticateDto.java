@@ -1,22 +1,13 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.dto.CommonDto;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AuthenticateDto {
-
-    @NotBlank
-    private String authorization;
-
-    @NotBlank
-    private String currency;
-
-    @NotBlank
-    private String sessionId;
+public class AuthenticateDto extends CommonDto {
 
 }

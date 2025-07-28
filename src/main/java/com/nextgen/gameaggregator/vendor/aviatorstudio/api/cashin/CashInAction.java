@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -24,18 +23,15 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class CashInAction {
-    private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public CashInAction(GameSessionService gameSessionService,
-                        HttpService httpService,
+    public CashInAction(HttpService httpService,
                         WalletService walletService,
                         VendorService vendorService,
                         RequestIdempotentLogService requestIdempotentLogService) {
-        this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.walletService = walletService;
         this.vendorService = vendorService;

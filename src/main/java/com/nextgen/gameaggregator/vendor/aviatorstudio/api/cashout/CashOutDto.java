@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.dto.CommonDto;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CashOutDto extends CommonDto implements BetResultData {
 
     @Override

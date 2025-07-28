@@ -47,17 +47,17 @@ public class AuthenticateAction {
             String queryString = request.getQueryString();
             String jwtAuth = request.getHeader("Authorization");
 
-            AuthenticateDto authenticateDto = HttpService.convertQueryStringToDto(queryString, AuthenticateDto.class);
-            authenticateDto.setAuthorization(jwtAuth);
+            AuthenticateDto dto = HttpService.convertQueryStringToDto(queryString, AuthenticateDto.class);
+            dto.setAuthorization(jwtAuth);
 
             //Add request header log
             httpRequestLog.setRequestBody("Request Body: \n" + queryString + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
 
-            VendorService.doValidation(authenticateDto);
+            VendorService.doValidation(dto);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(VendorService.jwtGetUserId(jwtAuth));
 
-            this.doVerification(jwtAuth, authenticateDto.getCurrency(), gameSession);
+            this.doVerification(jwtAuth, dto.getCurrency(), gameSession);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
