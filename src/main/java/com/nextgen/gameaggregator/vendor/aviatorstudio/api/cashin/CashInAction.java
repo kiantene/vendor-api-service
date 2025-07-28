@@ -75,11 +75,22 @@ public class CashInAction {
             // Verify parameters (Verify against database values)
             this.doVerification(jwtAuth, dto, gameSession);
 
-            // Calculate winAmount and JackpotAmount
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
+            // If reason is REVERSE_FUND process refund
+            if (dto.getReason().equals("REVERSE_FUND")) {
+                ReverseCashInDto reverseDto = new ReverseCashInDto();
+                reverseDto.setPreviousTransactionId(dto.getPreviousTransactionId());
+                balance = walletService.processRollback(traceId, reverseDto, gameSession, vendorService, httpRequestLog);
 
-            // Process settlement
-            balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+                //Else Process settle
+            } else {
+                // Calculate winAmount and JackpotAmount
+                ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
+
+                // Process settlement
+                balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+
+            }
+
 
             responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), gameSession.getVendorPlayerUsername());
 

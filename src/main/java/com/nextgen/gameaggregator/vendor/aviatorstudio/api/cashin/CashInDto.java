@@ -20,6 +20,10 @@ public class CashInDto extends CommonDto implements BetResultData {
     @Size(max = 255)
     String previousTransactionId;
 
+    @NotBlank
+    @Size(max = 255)
+    String reason;
+
 
     @Override
     public String getExternalTransactionId() {
