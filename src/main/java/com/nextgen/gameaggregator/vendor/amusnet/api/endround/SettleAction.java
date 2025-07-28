@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -118,7 +119,8 @@ public class SettleAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), settleDto.getPlayerId(), AuthenticationException::new);
 
         //if jackpot game don't need check unsettled bet
-        if (!settleDto.getVendorGameId().equals("998") && !settleDto.getVendorGameId().equals("999")) {
+        Set<String> excludedGameIds = Set.of("996", "998", "999", "8888");
+        if (!excludedGameIds.contains(settleDto.getVendorGameId())) {
             //Search Unsettled Bet
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(settleDto.getGameNumber());
 
