@@ -43,7 +43,19 @@ public class KafkaConsumerService {
     private final CachingService cachingService;
     private final AgentApiVersionService agentApiVersionService;
 
-    public KafkaConsumerService(WalletBetResultAction walletBetResultAction, WalletRollbackAction walletRollbackAction, SettledBetService settledBetService, KafkaService kafkaService, UnsettledBetService unsettledBetService, VendorService vendorService, SportWalletService sportWalletService, HttpService httpService, AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, CachingService cachingService, AgentApiVersionService agentApiVersionService) {
+    public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
+                                WalletRollbackAction walletRollbackAction,
+                                SettledBetService settledBetService,
+                                KafkaService kafkaService,
+                                UnsettledBetService unsettledBetService,
+                                VendorService vendorService,
+                                SportWalletService sportWalletService,
+                                HttpService httpService,
+                                AgentPlayerService agentPlayerService,
+                                VendorPlayerService vendorPlayerService,
+                                CachingService cachingService,
+                                AgentApiVersionService agentApiVersionService) {
+        
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
         this.settledBetService = settledBetService;
