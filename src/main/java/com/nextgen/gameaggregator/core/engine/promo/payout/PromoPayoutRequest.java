@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -34,6 +37,9 @@ public class PromoPayoutRequest {
     @NotBlank(message = "Transaction ID is required and cannot be blank.")
     @Size(min = 1, max = 128, message = "Transaction ID must be between 1 and 128 characters.")
     private final String transactionId;
+
+//    @NotBlank(message = "Campaign ID is required and cannot be blank.")
+//    private final String campaignId;
 
     /**
      * The currency in which the promotion payout is being made (e.g., "USD", "SGD", "EUR").

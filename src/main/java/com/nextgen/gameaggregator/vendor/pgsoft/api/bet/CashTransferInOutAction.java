@@ -1,12 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
-import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
-import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
-import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutServiceImpl;
-import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
-import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
@@ -87,6 +81,7 @@ public class CashTransferInOutAction {
         try {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
 
+            // TODO : catch new exception and error mapping to vendor
             if (promoPayoutService.isPromoPayout(dto)) {
                 return promoPayoutService.doPromoPayout(dto, httpRequestLog);
             }

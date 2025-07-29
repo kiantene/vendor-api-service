@@ -14,7 +14,7 @@ public class PromoRequestMapper implements VendorRequestMapper<PromoPayoutContex
         return PromoPayoutContext.builder()
                 .traceId(UuidUtil.newUuidV7StringRaw())
                 .vendorClassName(Endpoints.CLASS_NAME)
-                .idempotencyKey(vendorRequest.getFreeGameTransactionId())
+                .idempotencyKey(vendorRequest.getTransactionId())
                 .vendorPlayerUsername(vendorRequest.getPlayerName())
                 .vendorCurrency(vendorRequest.getCurrencyCode())
                 .vendorGameCode(vendorRequest.getGameId())
