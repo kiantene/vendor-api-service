@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ReasonCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
@@ -22,20 +23,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.Set;
+
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class CashInAction {
-    private static final Set<String> REFUND_REASONS = Set.of(
-            "ROUND_CHANGED",
-            "PHASE_CHANGED",
-            "TIMEOUT_EXCEEDED",
-            "REVERSE_FUND",
-            "CASHOUT_FAILED",
-            "INTEGRATION_TIMED_OUT",
-            "INTERNAL_ERROR"
-    );
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorService vendorService;
@@ -90,7 +82,7 @@ public class CashInAction {
             this.doVerification(jwtAuth, dto, gameSession);
 
             // If reason is REVERSE_FUND process refund
-            if (REFUND_REASONS.contains(dto.getReason())) {
+            if (ReasonCode.isRefundReason(dto.getReason())) {
                 ReverseCashInDto reverseDto = new ReverseCashInDto();
                 reverseDto.setPreviousTransactionId(dto.getPreviousTransactionId());
                 balance = walletService.processRollback(traceId, reverseDto, gameSession, vendorService, httpRequestLog);
