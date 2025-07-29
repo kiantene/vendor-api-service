@@ -22,10 +22,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class CashInAction {
+    private static final Set<String> REFUND_REASONS = Set.of(
+            "ROUND_CHANGED",
+            "PHASE_CHANGED",
+            "TIMEOUT_EXCEEDED",
+            "REVERSE_FUND",
+            "CASHOUT_FAILED",
+            "INTEGRATION_TIMED_OUT",
+            "INTERNAL_ERROR"
+    );
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorService vendorService;
@@ -42,7 +52,7 @@ public class CashInAction {
     }
 
     @PostMapping(path = EndPoints.CASHIN)
-    public ResponseEntity<CommonVo> betAction(HttpServletRequest request) {
+    public ResponseEntity<CommonVo> settleAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -80,7 +90,7 @@ public class CashInAction {
             this.doVerification(jwtAuth, dto, gameSession);
 
             // If reason is REVERSE_FUND process refund
-            if (dto.getReason().equals("REVERSE_FUND")) {
+            if (REFUND_REASONS.contains(dto.getReason())) {
                 ReverseCashInDto reverseDto = new ReverseCashInDto();
                 reverseDto.setPreviousTransactionId(dto.getPreviousTransactionId());
                 balance = walletService.processRollback(traceId, reverseDto, gameSession, vendorService, httpRequestLog);
@@ -108,7 +118,7 @@ public class CashInAction {
             }
             httpService.end(httpRequestLog, responseVo);
         }
-        
+
         return new ResponseEntity<>(responseVo, new HttpHeaders(), status);
     }
 
