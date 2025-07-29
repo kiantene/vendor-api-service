@@ -10,13 +10,13 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
+import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -30,31 +30,33 @@ import java.util.concurrent.Executors;
 public class KafkaConsumerService {
     private static final Integer THREAD_SIZE = 64;
     private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    private final WalletBetResultAction walletBetResultAction;
+    private final WalletRollbackAction walletRollbackAction;
+    private final SettledBetService settledBetService;
+    private final KafkaService kafkaService;
+    private final UnsettledBetService unsettledBetService;
+    private final VendorService vendorService;
+    private final SportWalletService sportWalletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorPlayerService vendorPlayerService;
+    private final CachingService cachingService;
+    private final AgentApiVersionService agentApiVersionService;
 
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private KafkaService kafkaService;
-    @Autowired
-    private RequestService requestService;
-    @Autowired
-    private UnsettledBetService unsettledBetService;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private SportWalletService sportWalletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private AgentApiVersionService agentApiVersionService;
+    public KafkaConsumerService(WalletBetResultAction walletBetResultAction, WalletRollbackAction walletRollbackAction, SettledBetService settledBetService, KafkaService kafkaService, UnsettledBetService unsettledBetService, VendorService vendorService, SportWalletService sportWalletService, HttpService httpService, AgentPlayerService agentPlayerService, VendorPlayerService vendorPlayerService, CachingService cachingService, AgentApiVersionService agentApiVersionService) {
+        this.walletBetResultAction = walletBetResultAction;
+        this.walletRollbackAction = walletRollbackAction;
+        this.settledBetService = settledBetService;
+        this.kafkaService = kafkaService;
+        this.unsettledBetService = unsettledBetService;
+        this.vendorService = vendorService;
+        this.sportWalletService = sportWalletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorPlayerService = vendorPlayerService;
+        this.cachingService = cachingService;
+        this.agentApiVersionService = agentApiVersionService;
+    }
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
