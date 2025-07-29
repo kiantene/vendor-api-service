@@ -93,7 +93,9 @@ public class TransferAction {
             // using vendor player username to find gameSession details
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(transferDto.getGameId(), gameSession);
             } catch (AuthenticationException authenticationException) {
+                //add regenerate token on settle only
                 if (transferDto.getTradeType() == 2) {
                     gameSession = gameSessionService.generateNewSessionToken(transferDto.getMemberId());
                     gameSessionService.updateByVendorGameCode(gameSession, transferDto.getGameId());
