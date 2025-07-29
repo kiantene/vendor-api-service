@@ -50,7 +50,6 @@ public class RefundAction {
         try {
             String body = httpRequestLog.getRequestBody();
             refundDto = HttpService.convertJsonToDto(body, RefundDto.class);
-            GameSession gameSession;
             VendorService.doValidation(refundDto);
 
             if (requestIdempotentLogService.checkExists(refundDto, refundDto.getPlayerId()) == null) {
@@ -60,7 +59,7 @@ public class RefundAction {
                 throw new TransactionStillProcessingException();
             }
 
-            gameSession = vendorService.checkGameSession(traceId, refundDto.getPlayerId(), refundDto.getGameCode());
+            GameSession gameSession = vendorService.checkGameSession(traceId, refundDto.getPlayerId(), refundDto.getGameCode());
 
             this.doVerification(refundDto.getGameCode(), refundDto.getCurrencyCode(), gameSession);
 

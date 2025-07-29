@@ -55,13 +55,7 @@ public class BetAction {
         try {
             String body = httpRequestLog.getRequestBody();
             betDto = HttpService.convertJsonToDto(body, BetDto.class);
-
             VendorService.doValidation(betDto);
-
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
-
-            vendorService.doCompareSignature(request, httpRequestLog, gameSession);
-            this.doVerification(betDto.getGameId(), betDto.getCurrencyCode(), gameSession);
 
             if (requestIdempotentLogService.checkExists(betDto, betDto.getPlayerId()) == null) {
                 requestIdempotentLogService.create(betDto, betDto.getPlayerId());
@@ -69,6 +63,12 @@ public class BetAction {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
+
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
+
+            vendorService.doCompareSignature(request, httpRequestLog, gameSession);
+            this.doVerification(betDto.getGameId(), betDto.getCurrencyCode(), gameSession);
+
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto,
                     httpRequestLog.getRequestBody(), httpRequestLog);

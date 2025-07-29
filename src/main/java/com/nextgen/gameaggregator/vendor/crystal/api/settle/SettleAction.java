@@ -53,7 +53,6 @@ public class SettleAction {
         try {
             String body = httpRequestLog.getRequestBody();
             settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
-            GameSession gameSession;
             VendorService.doValidation(settleDto);
 
             if (requestIdempotentLogService.checkExists(settleDto, settleDto.getPlayerId()) == null) {
@@ -64,7 +63,7 @@ public class SettleAction {
             }
 
             // Get GameSession with username
-            gameSession = vendorService.checkGameSession(traceId, settleDto.getPlayerId(), settleDto.getGameId());
+            GameSession gameSession = vendorService.checkGameSession(traceId, settleDto.getPlayerId(), settleDto.getGameId());
 
             this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
 
