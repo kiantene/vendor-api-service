@@ -53,6 +53,8 @@ public class KafkaConsumerService {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private AgentApiVersionService agentApiVersionService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
@@ -113,8 +115,16 @@ public class KafkaConsumerService {
             //prepare delete unsettledBet
             unsettledBetService.delete(unsettledBet);
 
-            //prepare and send endRound to operator
-            this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBet, settledBet, httpRequestLog);
+            Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
+
+            switch (agentApiVersion) {
+                case 2:
+                    //version 2 will not send notifyEndRoundProcess
+                    httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
+                default:
+                    //other than version 2, will proceed to send notifyEndRoundProcess
+                    this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBet, settledBet, httpRequestLog);
+            }
 
         } catch (GameNotSupportedException e) {
             exception = e;
@@ -195,7 +205,17 @@ public class KafkaConsumerService {
 
             //prepare and send endRound to operator
             if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
-                this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBetForPatching, settledBet, httpRequestLog);
+                Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
+
+                switch (agentApiVersion) {
+                    case 2:
+                        //version 2 will not send notifyEndRoundProcess
+                        httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
+                    default:
+                        //other than version 2, will proceed to send notifyEndRoundProcess
+                        this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBetForPatching, settledBet, httpRequestLog);
+                }
+
             } else {
                 GeneralVo vo = new GeneralVo();
                 vo.setResponseCode(ResponseCode.SUCCESS);

@@ -59,11 +59,6 @@ public class WalletService {
     private int retryMaxAttempts;
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
     private String retryVendorList;
-    @Value("${is-test-env:false}")
-    private Boolean isTestEnvironment;
-    private final Set<Integer> skipToSendNotifyEndRoundAgentList;
-
-
 
     @Autowired
     public WalletService(BetResultLogService betResultLogService,
@@ -99,7 +94,6 @@ public class WalletService {
         this.betIdempotentLogService = betIdempotentLogService;
         this.taskScheduler = taskScheduler;
         this.redisTemplate = redisTemplate;
-        this.skipToSendNotifyEndRoundAgentList = new HashSet<>(Set.of(1502, 4)); //STAGING CLIENT
 
     }
 
@@ -455,23 +449,17 @@ public class WalletService {
         loggingService.logStart();
         //settle by round
         if (!betResultData.getShouldSettleByBet()) {
+            // Get the list of vendors from ENV for retry vendor
+            List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
 
-            if (isTestEnvironment && this.skipToSendNotifyEndRoundAgentList.contains(gameSession.getAgentId())) {
-                httpRequestLog.setRequestType(httpRequestLog.getRequestType() + " (SKIP PROCESS END ROUND)");
-                //SKIP SEND ENDROUND, ONLY APPLICABLE FOR TEST ENVIRONMENT SPECIFIC AGENT
+            // Check if the vendor is eligible to process the end round
+            if (vendorList.contains(settledBet.getVendorId())) {
+                loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+
             } else {
-                // Get the list of vendors from ENV for retry vendor
-                List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
-
-                // Check if the vendor is eligible to process the end round
-                if (vendorList.contains(settledBet.getVendorId())) {
-                    loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-                    this.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
-
-                } else {
-                    loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-                    this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
-                }
+                loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                this.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
             }
         }
         //else settle by bet, which no need to run endRoundAsync.
