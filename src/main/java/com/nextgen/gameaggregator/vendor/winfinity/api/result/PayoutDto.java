@@ -105,7 +105,7 @@ public class PayoutDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
