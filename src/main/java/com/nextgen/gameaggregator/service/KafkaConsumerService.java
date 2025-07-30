@@ -21,6 +21,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +44,7 @@ public class KafkaConsumerService {
     private final VendorPlayerService vendorPlayerService;
     private final CachingService cachingService;
     private final AgentApiVersionService agentApiVersionService;
+    private final Set<Integer> skipVendorList;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -68,6 +71,7 @@ public class KafkaConsumerService {
         this.vendorPlayerService = vendorPlayerService;
         this.cachingService = cachingService;
         this.agentApiVersionService = agentApiVersionService;
+        this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
@@ -129,16 +133,7 @@ public class KafkaConsumerService {
             //prepare delete unsettledBet
             unsettledBetService.delete(unsettledBet);
 
-            Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
-
-            switch (agentApiVersion) {
-                case 2:
-                    //version 2 will not send notifyEndRoundProcess
-                    httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
-                default:
-                    //other than version 2, will proceed to send notifyEndRoundProcess
-                    this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBet, settledBet, httpRequestLog);
-            }
+            this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBet, httpRequestLog);
 
         } catch (GameNotSupportedException e) {
             exception = e;
@@ -155,6 +150,20 @@ public class KafkaConsumerService {
                 processEndRoundLog.setEndTime(System.currentTimeMillis());
                 RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
             }
+        }
+    }
+
+    private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog) {
+
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
+
+        if (agentApiVersion == 2 && this.skipVendorList.contains(vendorPlayer.getVendorId())) {
+            // Skip notifyEndRoundProcess for version 2
+            httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
+        } else {
+            this.notifyEndRoundProcess(traceId, agentPlayer, vendorPlayer, gameSession, settledBet,
+                    vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(),
+                    endRoundSettledBet, settledBet, httpRequestLog);
         }
     }
 
@@ -218,17 +227,9 @@ public class KafkaConsumerService {
             unsettledBetService.delete(unsettledBet);
 
             //prepare and send endRound to operator
-            if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
-                Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
 
-                switch (agentApiVersion) {
-                    case 2:
-                        //version 2 will not send notifyEndRoundProcess
-                        httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
-                    default:
-                        //other than version 2, will proceed to send notifyEndRoundProcess
-                        this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBetForPatching, settledBet, httpRequestLog);
-                }
+            if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
+                this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBetForPatching, httpRequestLog);
 
             } else {
                 GeneralVo vo = new GeneralVo();
