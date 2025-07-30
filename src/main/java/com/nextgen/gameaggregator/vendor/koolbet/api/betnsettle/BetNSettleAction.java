@@ -67,6 +67,7 @@ public class BetNSettleAction {
 
             //get rawGameSession by token id
             gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betNSettleDto.getGame()), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);

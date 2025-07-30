@@ -10,11 +10,12 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-@Slf4j
 public class BetDetailService implements BetDetailUrl {
 
     @Autowired
@@ -55,7 +55,6 @@ public class BetDetailService implements BetDetailUrl {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             jsonParamString = objectMapper.writeValueAsString(rawParam);
-            log.info("RAW Param Json : " + jsonParamString);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("Json Convert Failed");
         }
@@ -63,7 +62,8 @@ public class BetDetailService implements BetDetailUrl {
         //encrypt request param
         String encryptParam = "";
         try {
-            encryptParam = vendorService.aesEncrypt(jsonParamString, credentials.get(Credentials.AGENT_KEY));
+            String secret = credentials.get(Credentials.AGENT_KEY);
+            encryptParam = EncryptionUtils.aesEncrypt(Encryption.CIPHER_MODE_AND_PADDING, jsonParamString, secret);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("Param Encrypt Failed");
         }
@@ -93,9 +93,6 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        log.info("Calling " + apiUrl + EndPoints.BET_DETAIL_URL);
-        log.info(formData.toString());
-
         //convert from data into mapper data
         Map<String, String> convertFormMap = new HashMap<String, String>();
         convertFormMap.put("AgentCode", formData.getFirst("AgentCode"));
@@ -108,7 +105,6 @@ public class BetDetailService implements BetDetailUrl {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             jsonFormString = objectMapper.writeValueAsString(convertFormMap);
-            log.info("Request Json : " + jsonFormString);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("Json Convert Failed");
         }
@@ -144,7 +140,8 @@ public class BetDetailService implements BetDetailUrl {
 
             requestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException | JsonProcessingException invalidException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 JsonProcessingException invalidException) {
             GameSession gameSession = new GameSession();
             requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();

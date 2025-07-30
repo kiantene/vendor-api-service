@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -83,8 +82,8 @@ public class RollbackAction {
             this.doValidation(dto);
 
             // 3. Request idempotent checking.
-            if (requestIdempotentLogService.checkExistsRollback(dto, dto.getUser_id()) == null) {
-                requestIdempotentLogService.createRollback(dto, dto.getUser_id());
+            if (requestIdempotentLogService.checkExists(dto, dto.getUser_id()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUser_id());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
@@ -101,11 +100,7 @@ public class RollbackAction {
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setVendorToken(dto.getSession_token());
-                List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
-                if(settledBetList.isEmpty()){
-                    throw new BetNotFoundException();
-                }
-                gameSession.setToken(settledBetList.get(0).getGameSessionToken());
+                gameSession.setToken(dto.getSession_token());
             }
 
             // 5. Verify remaining parameters (Verify against database values)
@@ -187,7 +182,7 @@ public class RollbackAction {
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
-                requestIdempotentLogService.deleteRollback(dto, dto.getUser_id());
+                requestIdempotentLogService.delete(dto, dto.getUser_id());
             }
             httpService.end(httpRequestLog, vo);
         }

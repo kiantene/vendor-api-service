@@ -50,6 +50,8 @@ public class WalletRequest {
     protected String newVendorBetId;
     protected String newRoundId;
     protected Boolean isPreProcessBet = false;
+    // Is Refund Info
+    protected Integer isRefund;
     // Sports Bet Info
     protected BigDecimal newBetAmount;
     protected BigDecimal newWinAmount;
@@ -89,6 +91,9 @@ public class WalletRequest {
     //currency conversion
     private BigDecimal fromVendorRate;
     private BigDecimal toVendorRate;
+
+    //call operator timeout timing
+    private Integer operatorTimeoutTiming;
 
     public WalletRequest() {
         this.init(UUID.randomUUID().toString());

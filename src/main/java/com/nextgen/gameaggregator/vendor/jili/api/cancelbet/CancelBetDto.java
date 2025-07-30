@@ -3,10 +3,9 @@ package com.nextgen.gameaggregator.vendor.jili.api.cancelbet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
-
-import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -54,7 +53,6 @@ public class CancelBetDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        // return getTimestamp();
         return null;
     }
 
@@ -63,13 +61,4 @@ public class CancelBetDto implements RollbackData {
         return null;
     }
 
-    /*
-    private Long getTimestamp() {
-        long timestamp = this.getWagersTime().longValueExact();
-        if (String.valueOf(Math.abs(timestamp)).length() > 10) {
-            return timestamp;
-        }
-        return timestamp * 1000;
-    }
-     */
 }

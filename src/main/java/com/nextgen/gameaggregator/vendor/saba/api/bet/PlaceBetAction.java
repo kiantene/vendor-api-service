@@ -122,5 +122,6 @@ public class PlaceBetAction {
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetDto.getUserId());
+        walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
     }
 }

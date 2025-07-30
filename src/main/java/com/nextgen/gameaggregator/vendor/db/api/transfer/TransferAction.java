@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -59,11 +60,16 @@ public class TransferAction {
 
         String traceId = httpRequestLog.getId();
 
-        TransferDto transferDto;
+        TransferDto transferDto = null;
         BigDecimal balance;
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
         CommonDto commonDto;
+
+        // default value
+        transferDataVo.setTradeType(0);
+        transferDataVo.setTradeAmount(BigInteger.ZERO);
+        transferDataVo.setBalance(BigInteger.ZERO);
         try {
             //get body and queryString from vendor request
             String body = httpRequestLog.getRequestBody();
@@ -107,7 +113,6 @@ public class TransferAction {
             transferDataVo.setBalance(balance.toBigInteger());
             transferDataVo.setTradeType(transferDto.getTradeType());
             transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
-            vo.setData(transferDataVo);
 
         } catch (DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
@@ -130,10 +135,21 @@ public class TransferAction {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
 
+        } catch (GameTerminatedException exception) {
+            httpService.logError(httpRequestLog, exception);
+            if (transferDto != null && transferDto.getTradeType() == TradeType.BET) {
+                //GA-10441 this return insufficient error is preventing vendor resend same request
+                //only apply on bet
+                vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
+            }
+
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INTERNAL_SERVER_ERROR);
         } finally {
+            vo.setData(transferDataVo);
             httpService.end(httpRequestLog, vo);
         }
 
@@ -148,11 +164,11 @@ public class TransferAction {
 
     private void doVerification(TransferDto dto, GameSession gameSession, CommonDto commonDto) throws
             InvalidPlayerException, DisabledVendorLineException, CurrencyNotSupportedException, CredentialNotFoundException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException {
+            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, GameTerminatedException {
 
         if (dto.getTradeType() == TradeType.BET) {
             //validate vendor username, agent vendor line, player status, and game status
-            validationService.validateEligibleBet(gameSession, dto.getMemberId());
+            validationService.isBetAllowed(gameSession, dto.getMemberId());
         }
 
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

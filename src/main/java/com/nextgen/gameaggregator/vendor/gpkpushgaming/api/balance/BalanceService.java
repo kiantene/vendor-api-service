@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkpushgaming.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,7 +17,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 @Service
-@Slf4j
 public class BalanceService {
     private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
@@ -26,7 +24,7 @@ public class BalanceService {
     private final HttpService httpService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
-    
+
     public BalanceService(GameSessionService gameSessionService,
                           VendorLineService vendorLineService,
                           WalletService walletService,

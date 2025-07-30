@@ -40,6 +40,7 @@ public class WalletBetResultAction {
     private final AuthenticationService authenticationService;
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
+    private final HttpService httpService;
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
     private final Set<Integer> betLoseVendorList;
@@ -49,13 +50,15 @@ public class WalletBetResultAction {
                                  AgentApiCredentialService agentApiCredentialService,
                                  AuthenticationService authenticationService,
                                  CurrencyConversionService currencyConversionService,
-                                 BetResultRetryLogService betResultRetryLogService) {
+                                 BetResultRetryLogService betResultRetryLogService,
+                                 HttpService httpService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
+        this.httpService = httpService;
         this.forceSuccessResultTypeList = new HashSet<>();
         this.betWinVendorList = new HashSet<>();
         this.betLoseVendorList = new HashSet<>();
@@ -64,8 +67,8 @@ public class WalletBetResultAction {
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
 
-        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1));
-        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75));
+        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1, 86, 17, 18));
+        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75, 86, 17, 18));
     }
 
     public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
@@ -225,6 +228,7 @@ public class WalletBetResultAction {
                     responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
 
                     if (httpRequestLog != null) {
+                        httpService.logError(httpRequestLog, new InvalidOperatorResponseException(operatorStatus.description));
                         betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
                     }
                 }

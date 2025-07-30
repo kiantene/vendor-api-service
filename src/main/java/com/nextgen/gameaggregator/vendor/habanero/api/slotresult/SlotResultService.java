@@ -91,6 +91,8 @@ public class SlotResultService {
                 //setup debit and credit bet type respond message
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessCredit(true);
             }
+
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
             httpService.logError(httpRequestLog, e);

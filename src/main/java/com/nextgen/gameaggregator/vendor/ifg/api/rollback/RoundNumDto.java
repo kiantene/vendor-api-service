@@ -9,6 +9,6 @@ import lombok.Data;
 public class RoundNumDto {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String id;
 }

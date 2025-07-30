@@ -1,6 +1,10 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchService;
+import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,16 +14,18 @@ import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -27,6 +33,7 @@ public class GameUrlService {
     private static final String USERTYPE = "operator-api-service";
     private final AgentService agentService;
     private final AgentProductService agentProductService;
+    private final AgentVendorProxyService agentVendorProxyService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
@@ -40,11 +47,14 @@ public class GameUrlService {
     private final VendorLineService vendorLineService;
     private final VendorGameCodeService vendorGameCodeService;
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
+    private final Map<String, GameLaunchHandler<?, ?>> gameLaunchHandlerMap;
+    private final GameLaunchService gameLaunchService;
 
     //remove request service
     @Autowired
     public GameUrlService(AgentServiceImpl agentService,
                           AgentProductServiceImpl agentProductService,
+                          AgentVendorProxyService agentVendorProxyService,
                           AutowireCapableBeanFactory autowireCapableBeanFactory,
                           RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
@@ -57,10 +67,13 @@ public class GameUrlService {
                           VendorLineService vendorLineService,
                           VendorGameCodeService vendorGameCodeService,
                           VendorGameDeactivatedService vendorGameDeactivatedService,
-                          TestSupportService testSupportService) {
+                          TestSupportService testSupportService,
+                          List<GameLaunchHandler<?, ?>> gameLaunchHandlerList,
+                          GameLaunchService gameLaunchService) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
+        this.agentVendorProxyService = agentVendorProxyService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
@@ -74,10 +87,14 @@ public class GameUrlService {
         this.vendorGameCodeService = vendorGameCodeService;
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.testSupportService = testSupportService;
+        this.gameLaunchHandlerMap = gameLaunchHandlerList.stream()
+                .filter(handler -> handler.getVendorClassName() != null)
+                .collect(Collectors.toMap(GameLaunchHandler::getVendorClassName, Function.identity()));
+        this.gameLaunchService = gameLaunchService;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
-                                  VendorLine vendorLine, HttpRequestLog httpRequestLog)
+                                  VendorLine vendorLine, HttpRequestLog httpRequestLog, GameLaunchDto gameLaunchDto)
             throws InvalidVendorResponseException {
 
         GameUrlData gameUrlData = new GameUrlData();
@@ -85,31 +102,59 @@ public class GameUrlService {
 
         try {
             String vendorClassName = vendorService.getById(vendorLine.getVendorId()).getClassName();
-
-            String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
-            GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
-            autowireCapableBeanFactory.autowireBean(gameUrl);
-            MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
-
             httpRequestLog.setOperatorData(httpRequestLog.getRequestBody());
-            httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
             long startTime = System.currentTimeMillis();
             httpRequestLog.setBetStart(startTime);
 
-            //GA-9567 Add toggle to skip call to vendor based on player name
-            //GA-10147 Migrate logic into testSupportService to manage test special logic better
-            if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
-                gameUrlData.setGameUrl("SkipCallToVendor");
+            @SuppressWarnings("unchecked")
+            GameLaunchHandler<Object, Object> vendorGameLauncher = (GameLaunchHandler<Object, Object>) gameLaunchHandlerMap.get(vendorClassName);
+            if (vendorGameLauncher != null) {
+                Map<String, VendorLineCredential> credentialMap = vendorLineService.mapCredentialsByName(vendorLine.getId());
+
+                GameLaunchContext gameLaunchContext = GameLaunchContext.builder()
+                        .agentId(gameLaunchDto.getAgentId())
+                        .agentPlayerUsername(gameLaunchDto.getAgentPlayerUsername())
+                        .vendorClassName(vendorClassName)
+                        .token(gameSession.getToken())
+                        .vendorToken(gameSession.getToken())
+                        .vendorGameCode(gameCode)
+                        .vendorId(gameSession.getVendorId())
+                        .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                        .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
+                        .vendorLanguageCode(gameSession.getVendorLanguageCode())
+                        .vendorCredentials(credentialMap)
+                        .platformId(gameSession.getPlatformId())
+                        .lobbyUrl(gameLaunchDto.getLobbyUrl())
+                        .build();
+
+                gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
+                gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
+                httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
+
             } else {
-                GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
+                String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
+                GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
+                autowireCapableBeanFactory.autowireBean(gameUrl);
+                MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
 
-                if (gameUrlVo == null) throw new InvalidVendorResponseException();
+                httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
 
-                //token will be replaced if vendor's token is needed to verify for action files.
-                gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
+                //GA-9567 Add toggle to skip call to vendor based on player name
+                //GA-10147 Migrate logic into testSupportService to manage test special logic better
+                if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
+                    gameUrlData.setGameUrl("SkipCallToVendor");
+                } else {
+                    GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
+
+                    if (gameUrlVo == null) throw new InvalidVendorResponseException();
+
+                    //token will be replaced if vendor's token is needed to verify for action files.
+                    String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                    gameUrlData.setGameUrl(gameUrlText);
+                }
+
+                gameUrlData.setToken(gameSession.getToken());
             }
-
-            gameUrlData.setToken(gameSession.getToken());
 
             //TODO throw vendor maintenance exception
 
@@ -119,7 +164,10 @@ public class GameUrlService {
                 gameClassException) {
 
             throw new InvalidVendorResponseException(gameClassException.getMessage());
+        } catch (VendorApiException ex) {
 
+
+            throw new InvalidVendorResponseException(ex.getMessage());
         }
 
         return gameUrlData;

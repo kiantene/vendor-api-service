@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playtech.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playtech.constant.PrefixConstant;
 import com.nextgen.gameaggregator.vendor.playtech.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
 import com.nextgen.gameaggregator.vendor.playtech.vo.CommonBalanceVo;
@@ -18,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -50,8 +51,6 @@ public class BetAction {
     @PostMapping(path = EndPoints.BET)
     public BetVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        String removePrefix = PrefixConstant.REMOVE_PREFIX;
         String traceId = httpRequestLog.getId();
         BetVo betVo = new BetVo();
         CommonBalanceVo commonBalanceVo = new CommonBalanceVo();
@@ -64,8 +63,8 @@ public class BetAction {
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(betDto);
 
+            String removedPrefix = vendorService.getExtractToken(betDto.getExternalToken());
             // 3. Verify session token
-            String removedPrefix = vendorService.removePrefix(betDto.getExternalToken(), removePrefix);
             gameSession = gameSessionService.verifyToken(removedPrefix);
 
             if (!(betDto.getGameCodeName()).equals(gameSession.getVendorGameCode())) {
@@ -82,7 +81,7 @@ public class BetAction {
             // 6. Set response data
             betVo.setExternalTransactionCode(betDto.getExternalTransactionId());
             betVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(betDto.getVendorBetTime()));
-            commonBalanceVo.setReal(String.valueOf(betEvent.getLastBalance()));
+            commonBalanceVo.setReal(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             betVo.setBalance(commonBalanceVo);
 
@@ -95,7 +94,7 @@ public class BetAction {
         } catch (BetResultIdempotentViolationException e) {
             betVo.setExternalTransactionCode(betDto.getExternalTransactionId());
             betVo.setExternalTransactionDate(VendorService.convertBetOrSettleTime(betDto.getVendorBetTime()));
-            commonBalanceVo.setReal(String.valueOf(e.getBalance()));
+            commonBalanceVo.setReal(e.getBalance().setScale(2, RoundingMode.DOWN));
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             betVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);

@@ -8,10 +8,10 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.betcredit.WalletBetCreditProcessor;
 import com.nextgen.gameaggregator.operator.wallet.betdebit.WalletBetDebitProcessor;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletBetDebitRefundProcessor;
-import com.nextgen.gameaggregator.service.BetResultRetryLogService;
-import com.nextgen.gameaggregator.service.KafkaService;
-import com.nextgen.gameaggregator.service.WalletTransactionServiceImpl;
+import com.nextgen.gameaggregator.service.*;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 public class OperatorWalletServiceImpl implements OperatorWalletService {
@@ -23,16 +23,20 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
 
     public OperatorWalletServiceImpl(WalletTransactionServiceImpl walletTransactionService,
                                      WalletRequestServiceImpl walletRequestService,
-                                     KafkaService kafkaService, BetResultRetryLogService betResultRetryLogService) {
+                                     KafkaService kafkaService,
+                                     BetResultRetryLogService betResultRetryLogService,
+                                     SettledBetService settledBetService,
+                                     BetResultLogService betResultLogService,
+                                     BetRefundLogService betRefundLogService) {
 
         this.betResultRetryLogService = betResultRetryLogService;
-        this.walletBetCreditProcessor = new WalletBetCreditProcessor(walletRequestService, walletTransactionService, kafkaService);
+        this.walletBetCreditProcessor = new WalletBetCreditProcessor(walletRequestService, walletTransactionService, kafkaService, settledBetService, betResultLogService, betRefundLogService);
         this.walletBetDebitProcessor = new WalletBetDebitProcessor(walletRequestService, walletTransactionService);
         this.walletBetDebitRefundProcessor = new WalletBetDebitRefundProcessor(walletRequestService, walletTransactionService, kafkaService);
     }
 
     @Override
-    public WalletRequest betDebit(WalletRequest walletRequest) throws InvalidOperatorResponseException, InsufficientBalanceException, InternalServerException, BetNotAllowedException {
+    public WalletRequest betDebit(WalletRequest walletRequest) throws InvalidOperatorResponseException, InsufficientBalanceException, InternalServerException, BetNotAllowedException, BetResultIdempotentViolationException {
 
         try {
             walletRequest = walletBetDebitProcessor.process(walletRequest);
@@ -66,7 +70,7 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
     }
 
     @Override
-    public WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotAllowedException {
+    public WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException {
 
         try {
             walletRequest = walletBetCreditProcessor.process(walletRequest);
@@ -76,14 +80,12 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
             //remain operatorStatus and balance as 0.
             throw e;
 
-        } catch (InsufficientBalanceException e) {
-            //within callToOperator and after operator response
-            walletRequest.setOperatorResponseStatus(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS);
-            throw e;
-
         } catch (InvalidOperatorResponseException e) {
             //within callToOperator and after operator response
             walletRequest.setOperatorResponseStatus(ResponseCodes.Status.checkCodeStatus(e.getOperatorStatus()));
+            this.createBetResultRetryLog(walletRequest);
+            this.doForceSuccessParameters(walletRequest);
+
             throw e;
 
         } catch (Exception e) {
@@ -92,13 +94,6 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
 
         } finally {
             //if status is not 1, and operatorData is not null, which mean operator process request failed
-            //then will require send retry credit request to this operator
-            if (!walletRequest.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
-                if (walletRequest.getOperatorData() != null) {
-                    betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), walletRequest.getBetId(), walletRequest.getRoundId(), walletRequest.getTransactionId(), EndPoints.WALLET_BET_CREDIT);
-                }
-            }
-
             walletRequest.setBetEnd(System.currentTimeMillis());
         }
 
@@ -111,5 +106,15 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
             BetNotFoundException, BetNotAllowedException {
 
         return walletBetDebitRefundProcessor.process(walletRequest);
+    }
+
+    private void createBetResultRetryLog(WalletRequest walletRequest) {
+        betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), walletRequest.getBetId(), walletRequest.getRoundId(), walletRequest.getTransactionId(), EndPoints.WALLET_BET_CREDIT);
+    }
+
+    private void doForceSuccessParameters(WalletRequest walletRequest) {
+        walletRequest.setBalanceAfter(BigDecimal.ZERO);
+        walletRequest.setOperatorResponseStatus(ResponseCodes.Status.SC_OK);
+        walletRequest.setStatus(ResponseCodes.Status.SC_OK.code);
     }
 }
