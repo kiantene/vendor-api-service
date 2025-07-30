@@ -515,7 +515,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
     @Override
     @Deprecated(forRemoval = true)
-    public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog, boolean isOnlyWinlostDateChanged) throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException {
+    public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException {
 
         String vendorPlayerUsername = sportResettleData.getVendorPlayerUsername();
         String vendorBetId = sportResettleData.getVendorBetId();
@@ -580,11 +580,11 @@ public class SportWalletServiceImpl implements SportWalletService {
             kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
 
             //if only date change is true
-            if (isOnlyWinlostDateChanged) {
+            /*if (isOnlyWinlostDateChanged) {
                 //push into saba date resettle topic
                 kafkaService.produceSportResettleDateChange(sportSettledBet);
-            }
-
+            }*/
+            kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBetService.save(sportSettledBet);

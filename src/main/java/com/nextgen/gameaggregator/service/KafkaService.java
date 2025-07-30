@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
-import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.util.StackTraceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -376,13 +375,17 @@ public class KafkaService {
         }
     }
 
-    public void produceSportResettleDateChange(SportSettledBet sportSettledBet) {
+    public void produceSportResettleDateChange(BetHistory betHistory) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_RAW_SETTLED_BET, new Gson().toJson(sportSettledBet));
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_RESETTLEMENT_DATE_CHANGE, new Gson().toJson(betHistory));
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending resettlement date change to Kafka: ", throwable);
+                return null;
+            });
 
         } catch (Exception e) {
-            log.error(e.getMessage());
-
+            log.error("Resettlement Date Changes: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
         }
     }
 }

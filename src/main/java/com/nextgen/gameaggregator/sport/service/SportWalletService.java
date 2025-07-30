@@ -57,7 +57,7 @@ public interface SportWalletService {
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidRequestException, InvalidPlayerException;
 
-    BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog, boolean isOnlyWinlostDateChanged)
+    BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog)
             throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException;
 
     BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog)
