@@ -5,7 +5,7 @@ import java.util.List;
 public class SupportedVendors {
 
     private static List<String> VENDOR_PATHS = List.of(
-
+            "aviator"
     );
 
     private SupportedVendors() {}
