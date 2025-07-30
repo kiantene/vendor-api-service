@@ -7,4 +7,5 @@ public interface VendorExceptionMapper<T> {
     String getVendorClassName();
     T onInternalConfigurationError(InternalConfigurationException ex);
     T onAuthenticationError(AuthenticationException ex);
+    T onInternalError(Throwable ex);
 }

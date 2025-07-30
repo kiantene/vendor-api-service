@@ -44,6 +44,8 @@ public class VendorExceptionAspect {
             return mapper.onInternalConfigurationError(new InternalConfigurationException(ex));
         } catch (AuthenticationException ex) {
             return mapper.onAuthenticationError(ex);
+        } catch (Exception ex) {
+            return mapper.onInternalError(ex);
         }
     }
 }

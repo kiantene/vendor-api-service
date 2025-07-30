@@ -9,7 +9,9 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
+@Component(EndPoints.CLASS_NAME)
 public class AviatorStudioExceptionMapper implements VendorExceptionMapper<ResponseEntity<CommonVo>> {
     @Override
     public String getVendorClassName() {
@@ -28,5 +30,12 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper<Respo
         CommonVo responseVo = new CommonVo();
         responseVo.setResponseCode(ResponseCode.AUTH_ERROR);
         return new ResponseEntity<>(responseVo, new HttpHeaders(), HttpStatus.FORBIDDEN);
+    }
+
+    @Override
+    public ResponseEntity<CommonVo> onInternalError(Throwable ex) {
+        CommonVo responseVo = new CommonVo();
+        responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
+        return new ResponseEntity<>(responseVo, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
