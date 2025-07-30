@@ -94,4 +94,10 @@ public class VendorService extends BaseVendorService {
         return false;
 
     }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        //millisecond
+        return 4000;
+    }
 }
