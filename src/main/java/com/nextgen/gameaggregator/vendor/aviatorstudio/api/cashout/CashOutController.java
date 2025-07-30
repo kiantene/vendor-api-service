@@ -10,10 +10,7 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSi
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -23,7 +20,7 @@ public class CashOutController {
     private final CashOutRequestMapper requestMapper;
     private final CashOutResponseMapper responseMapper;
 
-//    @PostMapping(path = EndPoints.CASHOUT)
+    @PostMapping(path = EndPoints.CASHOUT)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashOutResponse> betAction(
             @RequestHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION) String jwt,

@@ -50,7 +50,7 @@ public class CashOutAction {
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.CASHOUT)
+//    @PostMapping(path = EndPoints.CASHOUT)
     public ResponseEntity<CommonVo> betAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
