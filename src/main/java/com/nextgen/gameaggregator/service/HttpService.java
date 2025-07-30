@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -337,13 +338,16 @@ public class HttpService {
     public void logError(HttpRequestLog requestLog, Exception exception) {
         if (requestLog != null) {
             requestLog.setStatus(ERROR);
-            requestLog.setErrorMessage(exception.toString());
 
             if (exception instanceof InvalidOperatorResponseException && WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
                 String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
                 requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
                 requestLog.setRootCause(rootCause);
+            } else if (exception instanceof AmbiguousTimeoutException) {
+                requestLog.setErrorMessage(getStackTrace(exception));
+            } else {
+                requestLog.setErrorMessage(exception.toString());
             }
         } else {
             log.warn("HttpService.logError: requestLog is null");
