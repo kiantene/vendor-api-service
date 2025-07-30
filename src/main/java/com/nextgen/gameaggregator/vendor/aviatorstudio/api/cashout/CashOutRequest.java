@@ -1,46 +1,40 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.dto;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Getter
-@Setter
+@Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CommonDto {
-
-    String authorization;
-
+public class CashOutRequest {
     @NotNull
     @Digits(integer = 20, fraction = 8)
-    BigDecimal amount;
+    private BigDecimal amount;
 
-    @JsonProperty("gameId")
     @NotBlank
     @Size(max = 10)
-    String vendorGameId;
+    private String gameId;
 
     @NotBlank
     @Size(max = 255)
-    String transactionId;
+    private String transactionId;
 
-    @JsonProperty("roundId")
     @NotBlank
     @Size(max = 255)
-    String vendorRoundId;
+    private String roundId;
 
     @NotBlank
     @Size(max = 5)
-    String currency;
+    private String currency;
 
     @NotBlank
     @Size(max = 255)
-    String sessionId;
+    private String sessionId;
 }

@@ -13,8 +13,6 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSi
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,12 +29,11 @@ public class AuthenticateController {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
 
-//    @GetMapping(path = EndPoints.AUTHENTICATE)
+    @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CommonVo> account(HttpServletRequest request) throws Exception {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
-        HttpStatus status = HttpStatus.OK;
 
         String traceId = httpRequestLog.getId();
         String queryString = request.getQueryString();
@@ -50,6 +47,6 @@ public class AuthenticateController {
         responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), vendorPlayerUsername);
         httpService.end(httpRequestLog, responseVo);
 
-        return new ResponseEntity<>(responseVo, new HttpHeaders(), status);
+        return ResponseEntity.ok(responseVo);
     }
 }

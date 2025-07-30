@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
 import com.nextgen.gameaggregator.core.common.VendorExceptionMapperRegistry;
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -44,6 +45,8 @@ public class VendorExceptionAspect {
             return mapper.onInternalConfigurationError(new InternalConfigurationException(ex));
         } catch (AuthenticationException ex) {
             return mapper.onAuthenticationError(ex);
+        } catch (InsufficientBalanceException ex) {
+            return mapper.onInsufficientBalance(ex);
         } catch (Exception ex) {
             return mapper.onInternalError(ex);
         }

@@ -40,7 +40,7 @@ public class AuthenticateAction {
         this.walletService = walletService;
     }
 
-    @GetMapping(path = EndPoints.AUTHENTICATE)
+//    @GetMapping(path = EndPoints.AUTHENTICATE)
     public ResponseEntity<CommonVo> account(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
