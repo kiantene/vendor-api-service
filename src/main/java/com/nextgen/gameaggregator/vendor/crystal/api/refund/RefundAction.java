@@ -60,7 +60,7 @@ public class RefundAction {
             }
 
             GameSession gameSession = vendorService.checkGameSession(traceId, refundDto.getPlayerId(), refundDto.getGameCode());
-
+            vendorService.doCompareSignature(request, httpRequestLog, gameSession);
             this.doVerification(refundDto.getGameCode(), refundDto.getCurrencyCode(), gameSession);
 
             balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);

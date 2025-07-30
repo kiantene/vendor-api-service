@@ -64,7 +64,7 @@ public class SettleAction {
 
             // Get GameSession with username
             GameSession gameSession = vendorService.checkGameSession(traceId, settleDto.getPlayerId(), settleDto.getGameId());
-
+            vendorService.doCompareSignature(request, httpRequestLog, gameSession);
             this.doVerification(settleDto.getGameId(), settleDto.getCurrencyCode(), gameSession);
 
             ResultType resultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
