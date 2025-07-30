@@ -83,8 +83,15 @@ public class GameLaunchService {
     }
 
     private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
+
         launchHandler.execute(apiExecutor, context)
-                .onSuccess(response -> launchHandler.onSuccess(context, response));
+                .onSuccess(response -> launchHandler.onSuccess(context, response))
+                .onError((response, ex) -> {
+                    LogContext logContext = LogContextHolder.get();
+                    logContext.setApiBody(response);
+                    logContext.setException(ex.getClass().getName());
+                    logContext.setErrorMessage(ex.getMessage());
+                });
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
