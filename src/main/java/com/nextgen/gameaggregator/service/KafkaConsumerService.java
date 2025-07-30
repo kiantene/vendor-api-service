@@ -265,7 +265,6 @@ public class KafkaConsumerService {
 
             } finally {
                 httpRequestLog.setBetEnd(System.currentTimeMillis());
-                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
                 httpService.end(httpRequestLog, vo);
 
             }
