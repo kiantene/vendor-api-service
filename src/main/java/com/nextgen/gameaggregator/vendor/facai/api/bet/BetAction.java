@@ -72,6 +72,9 @@ public class BetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
 
+            //calculate vendor threshold. if the time is over 4 sec, direct send error to vendor.
+            this.checkVendorTimeout(betDto);
+
             //get rawGameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
 
@@ -123,10 +126,10 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             if (invalidOperatorResponseException.getOperatorStatus()
-                    .equals(Status.SC_INSUFFICIENT_FUNDS.code)){
+                    .equals(Status.SC_INSUFFICIENT_FUNDS.code)) {
                 commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            }else {
+            } else {
                 commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }
@@ -160,6 +163,9 @@ public class BetAction {
             }
             httpService.logError(httpRequestLog, invalidRequestException);
 
+        } catch (BetFailedException betFailedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, betFailedException);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
@@ -208,6 +214,12 @@ public class BetAction {
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, betDto.getMemberAccount());
+    }
+
+    private void checkVendorTimeout(BetDto betDto) throws BetFailedException {
+        if (betDto.getTs() != null && System.currentTimeMillis() - betDto.getTs() >= 4000) {
+            throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Received request is too late. The vendor threshold timeout is 4 seconds.)");
+        }
     }
 
     private ResultType getResultType(BetDto betDto) {
