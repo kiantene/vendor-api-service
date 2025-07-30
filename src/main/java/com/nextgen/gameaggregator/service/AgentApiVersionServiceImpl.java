@@ -18,7 +18,7 @@ public class AgentApiVersionServiceImpl implements AgentApiVersionService {
     @Override
     public Integer getAgentApiVersion(Integer agentId) {
         return agentApiVersionRepository.findById(agentId)
-                .map(AgentApiVersion::getVersion)
+                .map(AgentApiVersion::getApiVersion)
                 .orElse(1);
     }
 

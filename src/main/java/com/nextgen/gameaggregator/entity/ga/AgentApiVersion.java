@@ -6,11 +6,11 @@ import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "agent_api_version")
+@Table(name = "agent_api_versions")
 @Data
 public class AgentApiVersion {
     @Id
     private Integer agentId;
-    private Integer version;
+    private Integer apiVersion;
 
 }
