@@ -10,7 +10,6 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateDto {
-    @NotBlank
     private String authorization;
 
     @NotBlank

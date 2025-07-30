@@ -32,18 +32,19 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         String vendorClassName = SupportedVendors.extractVendorClassName(requestURI);
 
         if (!vendorClassName.isEmpty()) {
+            logContext.setVendorClassName(vendorClassName);
             ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
             ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
             try {
-                if (hasBody(request)) {
-                    String rawBody = getRawRequestBody(wrappedRequest, request);
-                    logContext.setVendorClassName(vendorClassName);
-                    logContext.setBody(rawBody);
-                    filterChain.doFilter(wrappedRequest, wrappedResponse);
-                } else {
-                    filterChain.doFilter(request, response);
+                String rawBody;
+                if (hasBody(request)) { // POST,PUT,PATCH
+                    rawBody = getRawRequestBody(wrappedRequest, request);
+                } else { // GET
+                    rawBody = request.getQueryString();
                 }
+                logContext.setBody(rawBody);
+                filterChain.doFilter(wrappedRequest, wrappedResponse);
             } finally {
                 String responseBody = getResponseBody(wrappedResponse, response);
                 loggingManager.onRequestCompleted(request, responseBody, null);
