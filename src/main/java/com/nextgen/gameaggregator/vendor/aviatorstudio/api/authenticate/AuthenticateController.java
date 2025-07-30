@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -39,12 +40,10 @@ public class AuthenticateController {
 
         String traceId = httpRequestLog.getId();
         String queryString = request.getQueryString();
-        String jwtAuth = request.getHeader("Authorization");
-
-        // TODO: require verifyJWT before continue
 
         AuthenticateDto dto = HttpService.convertQueryStringToDto(queryString, AuthenticateDto.class);
         ValidationUtils.validateRequest(dto);
+        String jwtAuth = request.getHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION);
         String vendorPlayerUsername = VendorService.jwtGetUserId(jwtAuth);
         GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
         BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);

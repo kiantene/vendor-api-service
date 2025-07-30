@@ -22,7 +22,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class AviatorStudioSignatureValidator implements VendorSignatureValidator {
-    private static final String HEADER_AUTHORIZATION = "Authorization";
+    public static final String HEADER_AUTHORIZATION = "Authorization";
     private final VendorPlayerService vendorPlayerService;
     private final VendorService vendorService;
 
