@@ -118,6 +118,7 @@ public class GameUrlService {
                         .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
                         .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
+                        .vendorPlatformCode(gameSession.getVendorPlatformCode())
                         .vendorCredentials(credentialMap)
                         .platformId(gameSession.getPlatformId())
                         .lobbyUrl(gameLaunchDto.getLobbyUrl())
