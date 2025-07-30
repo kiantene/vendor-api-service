@@ -91,6 +91,12 @@ public class GameLaunchService {
                     logContext.setApiBody(response);
                     logContext.setException(ex.getClass().getName());
                     logContext.setErrorMessage(ex.getMessage());
+
+                    Throwable cause = ex.getCause();
+                    while (cause.getCause() != null && cause.getCause() != cause) {
+                        cause = cause.getCause();
+                    }
+                    logContext.setRootCause(cause.toString());
                 });
     }
 
