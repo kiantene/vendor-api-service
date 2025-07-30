@@ -71,6 +71,15 @@ public class LogContext {
         this.timeTaken = this.end - this.start;
     }
 
+    public void setException(Exception ex) {
+        setException(ex.getClass().getSimpleName());
+    }
+
+    public void setException(String ex) {
+        this.exception = ex;
+        this.status = -1;
+    }
+
     public void put(String key, Object value) {
         extraFields.put(key, value);
     }
