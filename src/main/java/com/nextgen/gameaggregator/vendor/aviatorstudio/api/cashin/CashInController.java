@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator;
@@ -15,25 +15,29 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @RequiredArgsConstructor
-public class CashOutController {
-    private final WalletBetService walletService;
-    private final CashOutRequestMapper requestMapper;
-    private final CashOutResponseMapper responseMapper;
+public class CashInController {
+    private final WalletBetResultServiceWrapper walletService;
+    private final CashInRequestMapper requestMapper;
+    private final CashInResponseMapper responseMapper;
+    private final VendorService vendorService;
 
-    @PostMapping(path = EndPoints.CASHOUT)
+//    @PostMapping(path = EndPoints.CASHIN)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<CashOutResponse> betAction(
+    public ResponseEntity<CashInResponse> settleAction(
             @RequestHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION) String jwt,
-            @Valid @RequestBody CashOutRequest request) {
+            @Valid @RequestBody CashInRequest request) {
 
-        BetContext context = requestMapper.toBetContext(request);
+        BetResultContext context = requestMapper.toBetResultContext(request);
         enrich(context, jwt);
-        PlayerBalanceData balanceData = walletService.process(context);
+        PlayerBalanceData balanceData = walletService
+                .isBetTxn(context, false)
+                .vendorService(context, vendorService)
+                .process(context);
 
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
-    private void enrich(BetContext context, String jwt) {
+    private void enrich(BetResultContext context, String jwt) {
         context.setVendorPlayerUsername(VendorService.jwtGetUserId(jwt));
     }
 }

@@ -153,9 +153,9 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private PlayerBalanceData toPlayerBalanceData(BetContext context, BetEvent betEvent, HttpRequestLog httpRequestLog) {
         PlayerBalanceData playerBalanceData = new PlayerBalanceData();
 
-        playerBalanceData.setUsername(context.getAgentPlayerUsername());
+        playerBalanceData.setUsername(context.getVendorPlayerUsername());
         playerBalanceData.setBalance(betEvent.getLastBalance());
-        playerBalanceData.setCurrency(context.getCurrencyCode());
+        playerBalanceData.setCurrency(context.getVendorCurrency());
         playerBalanceData.setTimestamp(httpRequestLog.getOperatorEnd()); // as we do not have this info, default to operatorEnd
 
         return playerBalanceData;
