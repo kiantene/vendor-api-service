@@ -29,7 +29,6 @@ public class BetDto implements BetResultData {
     private String gamecode;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 50)
     private String roundid;
 
@@ -40,7 +39,6 @@ public class BetDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank

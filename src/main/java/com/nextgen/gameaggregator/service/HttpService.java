@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,12 +12,16 @@ import com.nextgen.gameaggregator.entity.ga.RawBetActionLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.logging.ApiRequestBalanceLog;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -305,7 +310,21 @@ public class HttpService {
 
                     requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
+                    if (WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
+                        ApiRequestBalanceLog balanceLog = new ApiRequestBalanceLog(requestLog);
+                        boolean hasError = balanceLog.getRootCause() != null && !balanceLog.getRootCause().isEmpty();
+
+                        balanceLog.setStatus(hasError ? ERROR : requestLog.getStatus());
+
+                        String balanceLogJson = new ObjectMapper().writeValueAsString(balanceLog);
+                        if (hasError) {
+                            log.error(balanceLogJson);
+                        } else {
+                            log.info(balanceLogJson);
+                        }
+                    } else {
+                        kafkaService.produceApiRequestLog(new ApiRequestLog(requestLog));
+                    }
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());
@@ -320,7 +339,17 @@ public class HttpService {
     public void logError(HttpRequestLog requestLog, Exception exception) {
         if (requestLog != null) {
             requestLog.setStatus(ERROR);
-            requestLog.setErrorMessage(exception.toString());
+
+            if (exception instanceof InvalidOperatorResponseException && WalletBalanceAction.class.getSimpleName().equals(requestLog.getRequestType())) {
+                String rootCause = ((InvalidOperatorResponseException) exception).getRootCause();
+                requestLog.setErrorMessage(exception.getClass().getName());
+                requestLog.setExceptionMessage(exception.getMessage());
+                requestLog.setRootCause(rootCause);
+            } else if (exception instanceof AmbiguousTimeoutException || exception instanceof IncorrectResultSizeDataAccessException || exception instanceof IndexOutOfBoundsException) {
+                requestLog.setErrorMessage(getStackTrace(exception));
+            } else {
+                requestLog.setErrorMessage(exception.toString());
+            }
         } else {
             log.warn("HttpService.logError: requestLog is null");
             exception.printStackTrace();

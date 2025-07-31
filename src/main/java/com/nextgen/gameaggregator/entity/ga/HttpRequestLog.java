@@ -44,6 +44,8 @@ public class HttpRequestLog {
     private ResponseCodes.Status operatorResponseStatus;
     private String operatorResponse;
     private String errorMessage;
+    private String exceptionMessage;
+    private String rootCause;
     private Integer status;
     private String requestIp;
     private Long startTime;

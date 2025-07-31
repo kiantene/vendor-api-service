@@ -14,13 +14,13 @@ public class EnterDto {
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 64)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String id;
 
     @JacksonXmlProperty(isAttribute = true)
     @NotBlank
     @Size(max = 64)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
+    @Pattern(regexp = "^[A-Za-z0-9\\-]+$")
     private String guid;
 
     @JacksonXmlProperty(isAttribute = true)

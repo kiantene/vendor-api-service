@@ -16,5 +16,4 @@ public class RequestIdempotentLog {
     @Id
     private String id;
     private Long createTime;
-
 }
