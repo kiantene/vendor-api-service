@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
+import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,19 +19,21 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private final CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> processor;
     private final PromoPayoutMapper mapper;
     private final ClientRequestAuth<PromoPayoutRequest> clientRequestAuth;
+    private final RequestService requestService;
 
     public PromoPayoutServiceImpl(PromoPayoutValidator validator,
                                   PromoPayoutContextEnricher enricher,
                                   PromoPayoutProcessor processor,
                                   PromoPayoutMapper mapper,
-                                  ClientRequestAuth<PromoPayoutRequest> clientRequestAuth
-    ) {
+                                  ClientRequestAuth<PromoPayoutRequest> clientRequestAuth,
+                                  RequestService requestService) {
 
         this.validator = validator;
         this.enricher = enricher;
         this.processor = processor;
         this.mapper = mapper;
         this.clientRequestAuth = clientRequestAuth;
+        this.requestService = requestService;
     }
 
     @Override
@@ -41,8 +44,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         clientRequestAuth.initialise(context.getAgentId(), EndPoints.PROMO_PAYOUT, mapper.toPromoPayoutRequest(context));
 
         try {
-            OperatorApiCallerV2 operatorApiCaller = new OperatorApiCallerV2(EndPoints.PROMO_PAYOUT);
-            ClientBalanceResponse response = operatorApiCaller.post(clientRequestAuth);
+            ClientBalanceResponse response;
+            if (Boolean.TRUE.equals(requestService.shouldSkipStubCall(context.getAgentPlayerUsername()))) {
+                response = requestService.getClientBalanceResponse(context.getTraceId(), context.getCurrency(), context.getAgentPlayerUsername());
+            } else {
+                OperatorApiCallerV2 operatorApiCaller = new OperatorApiCallerV2(EndPoints.PROMO_PAYOUT);
+                response = operatorApiCaller.post(clientRequestAuth);
+            }
             processor.onSuccess(context, response);
 
             return response.getData();
