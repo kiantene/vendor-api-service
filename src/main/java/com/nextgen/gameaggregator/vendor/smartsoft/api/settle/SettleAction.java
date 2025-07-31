@@ -70,7 +70,7 @@ public class SettleAction {
             this.doValidation(settleDto);
 
             // Verify session
-            gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName());
+            gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName(), settleDto.getTransactionInfoDto().getGameName());
 
             currentBalance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
 
@@ -78,12 +78,9 @@ public class SettleAction {
             this.doVerification(settleDto, gameSession, body, method);
 
             // Settle
-            if (settleDto.getTransactionType().equals("CloseRound")) {
-                balance = processClosedRound(settleDto, gameSession, httpRequestLog);
-            } else {
-                ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
-                balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
-            }
+            ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
+            balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
+
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
@@ -132,15 +129,5 @@ public class SettleAction {
 
         // Call the service with the duplicate log
         return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
-    }
-
-    private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
-        BigDecimal balance;
-        try {
-            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-        } catch (BetNotFoundException e) {
-            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-        }
-        return balance;
     }
 }

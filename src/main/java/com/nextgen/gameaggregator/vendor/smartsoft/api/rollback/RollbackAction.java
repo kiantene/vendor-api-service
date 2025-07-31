@@ -70,7 +70,7 @@ public class RollbackAction {
             this.doValidation(rollbackDto);
 
             // Verify session
-            gameSession = vendorService.checkGameSession(traceId, rollbackDto.getUserName());
+            gameSession = vendorService.checkGameSession(traceId, rollbackDto.getUserName(), rollbackDto.getRollbackTransactionInfoDto().getGameName());
 
             // Verify parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession, body, method);

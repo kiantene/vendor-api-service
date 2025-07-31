@@ -4,10 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.smartsoft.constant.EndPoints;
@@ -30,16 +27,20 @@ public class BetAction {
     private final ValidationService validationService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
+    private final GameSessionService gameSessionService;
 
     public BetAction(WalletService walletService,
                      HttpService httpService,
                      ValidationService validationService,
-                     VendorService vendorService, VendorLineService vendorLineService) {
+                     VendorService vendorService,
+                     VendorLineService vendorLineService,
+                     GameSessionService gameSessionService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
+        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping(path = EndPoints.DEPOSIT)
@@ -69,7 +70,7 @@ public class BetAction {
             this.doValidation(betDto);
 
             // Verify session
-            gameSession = vendorService.checkGameSession(traceId, betDto.getUserName());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUserName());
 
             // Verify parameters (Verify against database values)
             this.doVerification(betDto, gameSession, body, method);
