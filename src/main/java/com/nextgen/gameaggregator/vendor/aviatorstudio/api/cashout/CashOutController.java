@@ -20,7 +20,7 @@ public class CashOutController {
     private final CashOutRequestMapper requestMapper;
     private final CashOutResponseMapper responseMapper;
 
-    @PostMapping(path = EndPoints.CASHOUT)
+    @PostMapping(path = EndPoints.CASHOUT + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashOutResponse> betAction(
             @RequestHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION) String jwt,

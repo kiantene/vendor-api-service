@@ -1,12 +1,15 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
+import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -16,126 +19,69 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class WalletBetResultServiceWrapper implements WalletBetResultService {
-
-    private final Map<String, BaseVendorService> vendorServiceMap = new HashMap<>();
-    private final Map<String, Boolean> transactionIsBetMap = new HashMap<>();
+public class WalletBetResultServiceWrapper {
+    private static final ThreadLocal<BetResultWrapperContext> stateHolder = new ThreadLocal<>(); // thread safe, context object won't be shared across threads
+    private final WalletBetResultValidator validator;
     private final WalletService walletService;
     private final HttpService httpService;
+    private final GameSessionDataService gameSessionDataService;
+    private final BetResultDataMapper betResultDataMapper;
 
-    public WalletBetResultServiceWrapper isBetTxn(BetResultContext context, boolean flag) {
-        transactionIsBetMap.put(context.getIdempotencyKey(), flag);
-        return this;
-    }
-
-    public WalletBetResultServiceWrapper vendorService(BetResultContext context, BaseVendorService vendorService) {
-        vendorServiceMap.put(context.getVendorClassName(), vendorService);
-        return this;
-    }
-
-    @Override
-    public PlayerBalanceData process(BetResultContext context) {
+    public PlayerBalanceData process() {
+        BetResultContext context = state().getBetResultContext();
         context.setResultTime(System.currentTimeMillis());
         LogContext logContext = LogContextHolder.get();
         final String vendorClassName = logContext.getVendorClassName();
 
-        BetResultData betResultData = this.toBetResultData(context);
-        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
-        BaseVendorService vendorService = vendorServiceMap.get(vendorClassName); // assume not null
+        validator.validateRequestContext(vendorClassName, context);
+
+        GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
+
         ResultType resultType = getResultType(context);
-        GameSession gameSession = new GameSession();
+        validator.validateBusinessState(gameSession, context, resultType);
+        BetResultData betResultData = betResultDataMapper.toBetResultData(context);
+        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
 
         try {
-            BigDecimal balance = walletService.processBetResult(context.getTraceId(), gameSession, betResultData, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(
+                    context.getTraceId(),
+                    gameSession,
+                    betResultData,
+                    resultType,
+                    state().getVendorService(),
+                    httpRequestLog
+            );
+
             return this.toPlayerBalanceData(context, balance, httpRequestLog);
 
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
+
+            throw new InternalConfigurationException(ex.getMessage(), ex);
+
+        } catch (MergedBetDataIntegrityException | InvalidOperatorResponseException ex) {
+
+            throw new InternalServerException(ex.getMessage(), ex);
+        } catch (BetResultIdempotentViolationException ex) {
+
+            throw new DuplicateBetException(ex.getBetId());
+        } catch (TransactionStillProcessingException ex) {
+
+            throw new DuplicateBetException(ex.getMessage());
+        } catch (InsufficientBalanceException ex) {
+
+            throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         } catch (Exception ex) {
             throw new InternalServerException(ex.getMessage(), ex);
 
         } finally {
-            cleanup(context);
+            cleanup();
+            this.updateLogContext(logContext, httpRequestLog);
             httpService.end(httpRequestLog, null);
         }
-    }
-
-    private BetResultData toBetResultData(BetResultContext context) {
-        return new BetResultData() {
-            @Override
-            public String getExternalTransactionId() {
-                return context.getIdempotencyKey();
-            }
-
-            @Override
-            public String getVendorBetId() {
-                return context.getVendorBetId();
-            }
-
-            @Override
-            public String getRoundId() {
-                return context.getRoundId();
-            }
-
-            @Override
-            public String getGameId() {
-                return context.getGameCode();
-            }
-
-            @Override
-            public BigDecimal getBetAmount() {
-                return context.getBetAmount();
-            }
-
-            @Override
-            public BigDecimal getWinAmount() {
-                return context.getWinAmount();
-            }
-
-            @Override
-            public BigDecimal getWinLoss() {
-                return context.getWinloss();
-            }
-
-            @Override
-            public BigDecimal getEffectiveTurnover() {
-                return context.getEffectiveTurnover();
-            }
-
-            @Override
-            public Long getVendorBetTime() {
-                return context.getVendorBetTime();
-            }
-
-            @Override
-            public Long getResultTime() {
-                return System.currentTimeMillis();
-            }
-
-            @Override
-            public Long getVendorSettleTime() {
-                return context.getVendorSettleTime();
-            }
-
-            @Override
-            public BigDecimal getJackpotAmount() {
-                return context.getJackpotAmount();
-            }
-
-            @Override
-            public Integer getIsFreespin() {
-                return context.getIsFreeSpin();
-            }
-
-            @Override
-            public BetStatus getBetStatus() {
-                return BetStatus.SETTLED;
-            }
-        };
     }
 
     private HttpRequestLog toHttpRequestLog(LogContext logContext) {
@@ -160,17 +106,52 @@ public class WalletBetResultServiceWrapper implements WalletBetResultService {
         return playerBalanceData;
     }
 
-    private ResultType getResultType(BetResultContext context) {
-        String idempotencyKey = context.getIdempotencyKey();
-        /*
-        Scenarios:
-        1. WIN        -> Win transaction for a previous bet (not a bet)
-        2. BET_WIN    -> Bet with win or jackpot
-        3. BET_LOSE   -> Bet with no win
-        4. END        -> Non-bet transaction with no win (default fallback)
-        */
+    private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
+        logContext.setStart(httpRequestLog.getBetStart());
+        logContext.setEnd(httpRequestLog.getBetEnd());
+        logContext.setApiStart(httpRequestLog.getOperatorStart());
+        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+    }
 
-        boolean isBet = transactionIsBetMap.getOrDefault(idempotencyKey, true);
+    public WalletBetResultServiceWrapper initialise(BetResultContext context) {
+        BetResultWrapperContext state = new BetResultWrapperContext();
+        state.setBetResultContext(context);
+        stateHolder.set(state);
+        return this;
+    }
+
+    private BetResultWrapperContext state() {
+        BetResultWrapperContext ctx = stateHolder.get();
+        if (ctx == null) throw new IllegalStateException("BetResultWrapperContext not initialized");
+        return ctx;
+    }
+
+    public WalletBetResultServiceWrapper isBetTxn(boolean flag) {
+        state().setIsBetTxn(flag);
+        return this;
+    }
+
+    public WalletBetResultServiceWrapper resultType(ResultType resultType) {
+        state().setResultType(resultType);
+        return this;
+    }
+
+    public WalletBetResultServiceWrapper vendorService(BaseVendorService vendorService) {
+        state().setVendorService(vendorService);
+        return this;
+    }
+
+    /**
+     * Scenarios:
+     * 1. WIN        -> Win transaction for a previous bet (not a bet)
+     * 2. BET_WIN    -> Bet with win or jackpot
+     * 3. BET_LOSE   -> Bet with no win
+     * 4. END        -> Non-bet transaction with no win (default fallback)
+     */
+    private ResultType getResultType(BetResultContext context) {
+        if (state().getResultType() != null) return state().getResultType();
+
+        boolean isBet = Optional.ofNullable(state().getIsBetTxn()).orElse(false);
         BigDecimal winAmount = Optional.ofNullable(context.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmount = Optional.ofNullable(context.getJackpotAmount()).orElse(BigDecimal.ZERO);
         boolean hasWin = winAmount.compareTo(BigDecimal.ZERO) > 0;
@@ -183,8 +164,7 @@ public class WalletBetResultServiceWrapper implements WalletBetResultService {
         }
     }
 
-    private void cleanup(BetResultContext context) {
-        transactionIsBetMap.remove(context.getIdempotencyKey());
-        vendorServiceMap.remove(context.getVendorClassName());
+    private void cleanup() {
+        stateHolder.remove();
     }
 }

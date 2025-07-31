@@ -7,18 +7,15 @@ import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
-import com.nextgen.gameaggregator.core.validator.WalletBetValidator;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -26,22 +23,30 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final GameSessionDataService gameSessionDataService;
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
+    private final HttpService httpService;
+    private final BetResultDataMapper betResultDataMapper;
 
     @Override
     public PlayerBalanceData process(BetContext context) {
         LogContext logContext = LogContextHolder.get();
         final String vendorClassName = logContext.getVendorClassName();
 
-        walletBetValidator.validatePreSession(vendorClassName, context);
+        walletBetValidator.validateRequestContext(vendorClassName, context);
         GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
         // TODO: need to add support for vendor that does not return session token
-        walletBetValidator.validateOrThrow(gameSession, context);
+        walletBetValidator.validateBusinessState(gameSession, context);
 
-        BetResultData betResultData = this.toBetResultData(context);
+        BetResultData betResultData = betResultDataMapper.toBetResultData(context);
         HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
 
         try {
-            BetEvent betEvent = walletService.processBet(context.getTraceId(), gameSession, betResultData, logContext.getBody(), httpRequestLog);
+            BetEvent betEvent = walletService.processBet(
+                    context.getTraceId(),
+                    gameSession,
+                    betResultData,
+                    logContext.getBody(),
+                    httpRequestLog
+            );
 
             return this.toPlayerBalanceData(context, betEvent, httpRequestLog);
 
@@ -62,81 +67,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
             throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         } finally {
             this.updateLogContext(logContext, httpRequestLog);
+            httpService.end(httpRequestLog, null);
         }
-    }
-
-    private BetResultData toBetResultData(BetContext betContext) {
-        return new BetResultData() {
-            @Override
-            public String getExternalTransactionId() {
-                return betContext.getIdempotencyKey();
-            }
-
-            @Override
-            public String getVendorBetId() {
-                return betContext.getVendorBetId();
-            }
-
-            @Override
-            public String getRoundId() {
-                return betContext.getRoundId();
-            }
-
-            @Override
-            public String getGameId() {
-                return betContext.getGameCode();
-            }
-
-            @Override
-            public BigDecimal getBetAmount() {
-                return betContext.getBetAmount();
-            }
-
-            @Override
-            public BigDecimal getWinAmount() {
-                return BigDecimal.ZERO;
-            }
-
-            @Override
-            public BigDecimal getWinLoss() {
-                return BigDecimal.ZERO;
-            }
-
-            @Override
-            public BigDecimal getEffectiveTurnover() {
-                return betContext.getBetAmount();
-            }
-
-            @Override
-            public Long getVendorBetTime() {
-                return betContext.getTimestamp();
-            }
-
-            @Override
-            public Long getResultTime() {
-                return null;
-            }
-
-            @Override
-            public Long getVendorSettleTime() {
-                return null;
-            }
-
-            @Override
-            public BigDecimal getJackpotAmount() {
-                return BigDecimal.ZERO;
-            }
-
-            @Override
-            public Integer getIsFreespin() {
-                return 0;
-            }
-
-            @Override
-            public BetStatus getBetStatus() {
-                return BetStatus.UNSETTLED;
-            }
-        };
     }
 
     private HttpRequestLog toHttpRequestLog(LogContext logContext) {

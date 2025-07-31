@@ -21,7 +21,7 @@ public class CashInController {
     private final CashInResponseMapper responseMapper;
     private final VendorService vendorService;
 
-//    @PostMapping(path = EndPoints.CASHIN)
+    @PostMapping(path = EndPoints.CASHIN + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashInResponse> settleAction(
             @RequestHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION) String jwt,
@@ -30,9 +30,10 @@ public class CashInController {
         BetResultContext context = requestMapper.toBetResultContext(request);
         enrich(context, jwt);
         PlayerBalanceData balanceData = walletService
-                .isBetTxn(context, false)
-                .vendorService(context, vendorService)
-                .process(context);
+                .initialise(context)
+                .isBetTxn(false)
+                .vendorService(vendorService)
+                .process();
 
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
