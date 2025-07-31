@@ -3,19 +3,14 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.entity.Currency;
+import com.nextgen.gameaggregator.core.entity.GameCategory;
+import com.nextgen.gameaggregator.core.entity.Vendor;
+import com.nextgen.gameaggregator.core.entity.VendorGame;
 import com.nextgen.gameaggregator.core.exception.GameCategoryNotFoundException;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.VendorGameNotFoundException;
 import com.nextgen.gameaggregator.core.exception.VendorNotFoundException;
-import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.CurrencyDataService;
-import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.service.data.GameCategoryDataService;
-import com.nextgen.gameaggregator.core.service.data.VendorDataService;
-import com.nextgen.gameaggregator.core.service.data.VendorGameDataService;
-import com.nextgen.gameaggregator.entity.ga.GameCategory;
-import com.nextgen.gameaggregator.entity.ga.Vendor;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.core.service.*;
 import org.springframework.stereotype.Service;
 
 @Service
