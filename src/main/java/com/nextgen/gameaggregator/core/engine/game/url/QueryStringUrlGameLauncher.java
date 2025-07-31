@@ -1,19 +1,20 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 
 public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHandler<T, String> {
-    private static final ParameterizedTypeReference<String> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
+
+    protected QueryStringUrlGameLauncher(VendorCredentialUtils credentialUtils,
+                                         String vendorClassName) {
+
+        super(credentialUtils, vendorClassName, String.class);
+    }
 
     @Override
     public GameLaunchMode getLaunchMode() {
         return GameLaunchMode.QUERY_STRING_URL;
-    }
-
-    @Override
-    public ParameterizedTypeReference<String> getResponseType() {
-        return RESPONSE_TYPE;
     }
 
     @Override

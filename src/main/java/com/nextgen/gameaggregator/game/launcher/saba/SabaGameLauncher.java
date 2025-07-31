@@ -3,12 +3,13 @@ package com.nextgen.gameaggregator.game.launcher.saba;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
+import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.saba.api.createmember.CreateMemberService;
 import com.nextgen.gameaggregator.vendor.saba.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -19,7 +20,6 @@ import java.util.stream.Collectors;
 
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
-    private static final ParameterizedTypeReference<GameLaunchResponse> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
     private static final String PLATFORM_WEB = "1";
     private static final String PLATFORM_H5 = "2";
     private static final String WEB_SKIN_TYPE = "&WebSkinType=";
@@ -27,42 +27,34 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     private static final String DEFAULT_SKIN_NEW_ASIA = "7";
     private final CreateMemberService createMemberService;
 
-    public SabaGameLauncher(CreateMemberService createMemberService) {
+    public SabaGameLauncher(CreateMemberService createMemberService,
+                            VendorCredentialUtils credentialUtils) {
 
+        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class);
         this.createMemberService = createMemberService;
     }
 
     @Override
-    public String getVendorClassName() {
-        return null;
-//        return EndPoints.CLASS_NAME; // return null to disable this launcher
-    }
-
-    @Override
-    public ParameterizedTypeReference<GameLaunchResponse> getResponseType() {
-        return RESPONSE_TYPE;
-    }
-
-    @Override
-    public String getPath() {
+    public String getPath(GameLaunchContext context) {
         return EndPoints.GAME_URL;
     }
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
-        return getRequiredCredentialValue(context.getVendorCredentials(), Credentials.API_URL);
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
+        return credentialAccessor.getValue(Credentials.API_URL);
     }
 
     @Override
-    public GameLaunchRequest onPrepareRequestBody(GameLaunchContext context) {
-        Map<String, VendorLineCredential> credentials = context.getVendorCredentials();
-        String vendorId = getRequiredCredentialValue(credentials, Credentials.VENDOR_ID);
+    public GameLaunchRequest buildRequestBody(GameLaunchContext context) {
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
+        String vendorId = credentialAccessor.getValue(Credentials.VENDOR_ID);
 
         try { // requires refactor for createMember
             GameSession gameSession = new GameSession();
             gameSession.setVendorCurrencyCode(context.getVendorCurrencyCode());
             gameSession.setVendorPlayerUsername(context.getVendorPlayerUsername());
-            createMemberService.call(gameSession, toCredentialsKV(credentials));
+            createMemberService.call(gameSession, toCredentialsKV(context.getVendorCredentials()));
         } catch (Exception ex) {
             throw new RuntimeException(ex); // need better handling
         }

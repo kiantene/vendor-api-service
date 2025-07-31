@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchService;
+import com.nextgen.gameaggregator.core.engine.game.url.*;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
@@ -47,7 +45,7 @@ public class GameUrlService {
     private final VendorLineService vendorLineService;
     private final VendorGameCodeService vendorGameCodeService;
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
-    private final Map<String, GameLaunchHandler<?, ?>> gameLaunchHandlerMap;
+    private final GameLauncherRegistry gameLauncherRegistry;
     private final GameLaunchService gameLaunchService;
 
     //remove request service
@@ -68,7 +66,7 @@ public class GameUrlService {
                           VendorGameCodeService vendorGameCodeService,
                           VendorGameDeactivatedService vendorGameDeactivatedService,
                           TestSupportService testSupportService,
-                          List<GameLaunchHandler<?, ?>> gameLaunchHandlerList,
+                          GameLauncherRegistry gameLauncherRegistry,
                           GameLaunchService gameLaunchService) {
 
         this.agentService = agentService;
@@ -87,10 +85,9 @@ public class GameUrlService {
         this.vendorGameCodeService = vendorGameCodeService;
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.testSupportService = testSupportService;
-        this.gameLaunchHandlerMap = gameLaunchHandlerList.stream()
-                .filter(handler -> handler.getVendorClassName() != null)
-                .collect(Collectors.toMap(GameLaunchHandler::getVendorClassName, Function.identity()));
+        this.gameLauncherRegistry = gameLauncherRegistry;
         this.gameLaunchService = gameLaunchService;
+
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -106,8 +103,7 @@ public class GameUrlService {
             long startTime = System.currentTimeMillis();
             httpRequestLog.setBetStart(startTime);
 
-            @SuppressWarnings("unchecked")
-            GameLaunchHandler<Object, Object> vendorGameLauncher = (GameLaunchHandler<Object, Object>) gameLaunchHandlerMap.get(vendorClassName);
+            AbstractGameLaunchHandler<Object, Object> vendorGameLauncher = gameLauncherRegistry.getHandler(vendorClassName);
             if (vendorGameLauncher != null) {
                 Map<String, VendorLineCredential> credentialMap = vendorLineService.mapCredentialsByName(vendorLine.getId());
 
@@ -122,6 +118,7 @@ public class GameUrlService {
                         .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
                         .vendorCurrencyCode(gameSession.getVendorCurrencyCode())
                         .vendorLanguageCode(gameSession.getVendorLanguageCode())
+                        .vendorPlatformCode(gameSession.getVendorPlatformCode())
                         .vendorCredentials(credentialMap)
                         .platformId(gameSession.getPlatformId())
                         .lobbyUrl(gameLaunchDto.getLobbyUrl())

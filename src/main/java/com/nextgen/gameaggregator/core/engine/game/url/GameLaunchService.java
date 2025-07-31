@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.common.WebClientApiCaller;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.service.S3Service;
@@ -15,25 +14,53 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class GameLaunchService {
     private final S3Service s3Service;
+    private final VendorApiExecutor apiExecutor;
 
-    public GameLaunchService(S3Service s3Service) {
+    public GameLaunchService(S3Service s3Service,
+                             VendorApiExecutor apiExecutor) {
+
         this.s3Service = s3Service;
+        this.apiExecutor = apiExecutor;
     }
 
-    public void processLaunchRequest(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
+    private static Map<String, String> convertToMap(Object dto) {
+        Map<String, String> map = new HashMap<>();
+        if (dto == null) {
+            return map;
+        }
+
+        Field[] fields = dto.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(dto);
+                if (value != null) {
+                    map.put(field.getName(), value.toString());
+                }
+            } catch (IllegalAccessException e) {
+                // Optionally log or rethrow if needed
+            }
+        }
+        return map;
+    }
+
+    public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
         LogContext logContext = populateLogContext(context);
         try {
             switch (launchHandler.getLaunchMode()) {
                 case API_CALL -> callExternalApi(context, launchHandler);
-                //            case HTML_RESPONSE -> handleHtmlResponse(context, handler);
+//                case HTML_RESPONSE -> handleHtmlResponse(context, handler);
                 case STATIC_HTML -> buildStaticHtml(context, launchHandler);
-                //            case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
+//                case ENCRYPTED_API_CALL -> callEncryptedApi(context, handler);
                 case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
                 default -> throw new UnsupportedOperationException("Unsupported launch mode");
             }
@@ -55,32 +82,26 @@ public class GameLaunchService {
         return logContext;
     }
 
-    private void callExternalApi(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
-        String vendorClassName = context.getVendorClassName();
-        String baseUrl = launchHandler.getBaseUrl(context);
-        if (baseUrl == null) throw new InternalConfigurationException(vendorClassName + " Game Launch baseUrl cannot be found.");
-        Object request = launchHandler.onPrepareRequestBody(context);
-        Map<String, String> headers = launchHandler.getHeaders(context, request);
+    private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
 
-        WebClientApiCaller webClientApiCaller = new WebClientApiCaller(
-                launchHandler.getPath(),
-                launchHandler.getContentType()
-        );
+        launchHandler.execute(apiExecutor, context)
+                .onSuccess(response -> launchHandler.onSuccess(context, response))
+                .onError((response, ex) -> {
+                    LogContext logContext = LogContextHolder.get();
+                    logContext.setApiBody(response);
+                    logContext.setException(ex.getClass().getName());
+                    logContext.setErrorMessage(ex.getMessage());
 
-        // should fire error event?
-        Object response = webClientApiCaller.post(
-                baseUrl,
-                headers,
-                request,
-                launchHandler.getResponseType()
-        );
-
-        launchHandler.onSuccess(context, response);
+                    Throwable cause = ex.getCause();
+                    while (cause.getCause() != null && cause.getCause() != cause) {
+                        cause = cause.getCause();
+                    }
+                    logContext.setRootCause(cause.toString());
+                });
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
-        @SuppressWarnings("unchecked")
-        Map<String, String> request = convertToMap(launchHandler.onPrepareRequestBody(context));
+        Map<String, String> request = convertToMap(launchHandler.buildRequestBody(context));
         String htmlTemplate = launchHandler.getHtmlTemplate();
         String html = applyPlaceholderReplacement(htmlTemplate, request);
         String response = s3Service.generateHtmlToS3(context, html);
@@ -90,14 +111,14 @@ public class GameLaunchService {
 
     private void buildQueryStringUri(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
         String baseUrl = launchHandler.getBaseUrl(context);
-        String path = launchHandler.getPath();
-        Object request = launchHandler.onPrepareRequestBody(context);
+        String path = launchHandler.getPath(context);
+        Object request = launchHandler.buildRequestBody(context);
         MultiValueMap<String, String> formData = convertToMultiValueMap(request);
 
-        String gameUrl = UriComponentsBuilder.fromHttpUrl(baseUrl + path)
-                .queryParams(formData)
-                .build()
-                .encode()
+        UriComponentsBuilder urlBuilder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+        applyEncodedQueryParams(urlBuilder, formData);
+
+        String gameUrl = urlBuilder.build(true)
                 .toUri()
                 .toString();
 
@@ -122,27 +143,6 @@ public class GameLaunchService {
         return result;
     }
 
-    private static Map<String, String> convertToMap(Object dto) {
-        Map<String, String> map = new HashMap<>();
-        if (dto == null) {
-            return map;
-        }
-
-        Field[] fields = dto.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(dto);
-                if (value != null) {
-                    map.put(field.getName(), value.toString());
-                }
-            } catch (IllegalAccessException e) {
-                // Optionally log or rethrow if needed
-            }
-        }
-        return map;
-    }
-
     public MultiValueMap<String, String> convertToMultiValueMap(Object dto) {
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         BeanWrapper wrapper = new BeanWrapperImpl(dto);
@@ -156,5 +156,18 @@ public class GameLaunchService {
         }
 
         return map;
+    }
+
+    private static void applyEncodedQueryParams(
+            UriComponentsBuilder builder,
+            MultiValueMap<String, String> rawParams
+    ) {
+        for (Map.Entry<String, List<String>> entry : rawParams.entrySet()) {
+            String key = entry.getKey();
+            for (String value : entry.getValue()) {
+                String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8);
+                builder.queryParam(key, encodedValue);
+            }
+        }
     }
 }

@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.game.launcher.ifg;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
+import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.ifg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ifg.constant.EndPoints;
@@ -19,28 +21,29 @@ public class InfinGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestP
             2, "desktop"
     );
 
-    @Override
-    public String getVendorClassName() {
-        return EndPoints.CLASS_NAME;
+    public InfinGameLauncher(VendorCredentialUtils credentialUtils) {
+
+        super(credentialUtils, EndPoints.CLASS_NAME);
     }
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
-        VendorLineCredential urlSchemeCredential = getRequiredCredential(context.getVendorCredentials(), Credentials.game_url);
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
+        VendorLineCredential urlSchemeCredential = credentialAccessor.get(Credentials.game_url);
         this.version = urlSchemeCredential.getVersion();
         return urlSchemeCredential.getValue();
     }
 
     @Override
-    public String getPath() {
+    public String getPath(GameLaunchContext context) {
         return "";
     }
 
     @Override
-    public LaunchRequestPayload onPrepareRequestBody(GameLaunchContext context) {
-        Map<String, VendorLineCredential> credentialMap = context.getVendorCredentials();
+    public LaunchRequestPayload buildRequestBody(GameLaunchContext context) {
+        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
         String vendorGameCode = context.getVendorGameCode();
-        String partner = getRequiredCredentialValue(credentialMap, Credentials.partner);
+        String partner = credentialAccessor.getValue(Credentials.partner);
         String token = context.getToken();
         String platform = vendorPlatformCodes.getOrDefault(context.getPlatformId(), "desktop");
         String lang = context.getVendorLanguageCode();
