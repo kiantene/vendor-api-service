@@ -115,4 +115,9 @@ public class ResettleTransactionDto implements SportResettleData {
     public String getVendorPlayerUsername() {
         return this.userId;
     }
+
+    @Override
+    public boolean getIsSettlementDateChange() {
+        return this.extraInfo != null && this.extraInfo.isOnlyWinlostDateChanged();
+    }
 }

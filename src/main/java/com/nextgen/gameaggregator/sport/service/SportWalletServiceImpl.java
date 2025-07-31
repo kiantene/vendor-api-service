@@ -593,7 +593,11 @@ public class SportWalletServiceImpl implements SportWalletService {
                 //push into saba date resettle topic
                 kafkaService.produceSportResettleDateChange(sportSettledBet);
             }*/
-            kafkaService.produceSportResettleDateChange(betHistory);
+
+            //if settlement date change then insert to topic
+            if (sportResettleData.getIsSettlementDateChange()) {
+                kafkaService.produceSportResettleDateChange(betHistory);
+            }
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBetService.save(sportSettledBet);
