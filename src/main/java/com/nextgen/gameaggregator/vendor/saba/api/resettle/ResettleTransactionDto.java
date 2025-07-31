@@ -118,6 +118,6 @@ public class ResettleTransactionDto implements SportResettleData {
 
     @Override
     public boolean getIsSettlementDateChange() {
-        return this.extraInfo != null && this.extraInfo.isOnlyWinlostDateChanged();
+        return this.extraInfo != null && this.extraInfo.isOnlyWinLostDateChanged();
     }
 }
