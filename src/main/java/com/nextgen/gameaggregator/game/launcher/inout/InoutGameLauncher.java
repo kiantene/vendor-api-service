@@ -43,7 +43,7 @@ public class InoutGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestP
         String authToken = context.getToken();
         String language = context.getVendorLanguageCode();
         String lobbyUrl = context.getLobbyUrl();
-        String subId = context.getVendorPlayerUsername();
+        String subId = credentialAccessor.getValue(Credentials.NAME);
         boolean isDemoPlay = false;
         String token;
         try {
