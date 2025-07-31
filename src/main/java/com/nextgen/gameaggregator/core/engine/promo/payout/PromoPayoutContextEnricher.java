@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.core.entity.Currency;
 import com.nextgen.gameaggregator.core.entity.GameCategory;
 import com.nextgen.gameaggregator.core.entity.Vendor;
 import com.nextgen.gameaggregator.core.entity.VendorGame;
-import com.nextgen.gameaggregator.core.exception.GameCategoryNotFoundException;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.exception.VendorGameNotFoundException;
-import com.nextgen.gameaggregator.core.exception.VendorNotFoundException;
 import com.nextgen.gameaggregator.core.service.*;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +44,6 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             context.setCurrency(currency.getCode());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
-            // TODO : add constructor to support root cause
         }
     }
 
@@ -55,7 +51,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         try {
             Vendor vendor = vendorDataService.get(context.getVendorId());
             context.setVendorCode(vendor.getCode());
-        } catch (VendorNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }
     }
@@ -67,7 +63,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             context.setGameCode(vendorGame.getCode());
             context.setGameName(vendorGame.getName());
             context.setGameCategoryId(vendorGame.getGameCategoryId());
-        } catch (VendorGameNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }
     }
@@ -76,7 +72,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         try {
             GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
             context.setGameCategoryCode(gameCategory.getCode());
-        } catch (GameCategoryNotFoundException e) {
+        } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }
     }
