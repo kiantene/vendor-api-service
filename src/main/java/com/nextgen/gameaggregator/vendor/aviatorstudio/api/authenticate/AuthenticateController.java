@@ -43,6 +43,8 @@ public class AuthenticateController {
         String jwtAuth = request.getHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION);
         String vendorPlayerUsername = VendorService.jwtGetUserId(jwtAuth);
         GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+        // update to use vendor's session token
+        gameSessionService.regenerateVendorToken(gameSession, dto.getSessionId());
         BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
         responseVo.setResponseSuccess(balance, gameSession.getVendorPlayerId().toString(), vendorPlayerUsername);
         httpService.end(httpRequestLog, responseVo);

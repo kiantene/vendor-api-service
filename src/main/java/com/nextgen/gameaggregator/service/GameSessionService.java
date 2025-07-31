@@ -294,7 +294,7 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
     })
     public GameSession regenerateVendorToken(GameSession gameSession, String newToken) {
-
+        // TODO: to refactor to use mutateIn
         gameSession.setVendorToken(newToken);
         rawGameSessionRepository.save(gameSession);
 
