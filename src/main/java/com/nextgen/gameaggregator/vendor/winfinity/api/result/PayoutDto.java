@@ -105,7 +105,7 @@ public class PayoutDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return (timestamp != null) ? timestamp / 1000L : System.currentTimeMillis();
     }
 
     @Override

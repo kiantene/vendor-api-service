@@ -11,6 +11,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -21,21 +24,23 @@ public class TransferHistoryService {
 
 
     @Cacheable(value = "RawTransferHistories", key = "{#referenceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
-    public Optional<RawTransferHistory> getTransactionHistoryById(String referenceId, Integer  agentId) {
-        return rawTransferHistoryRepository.findById(referenceId+"_"+agentId);
+    public Optional<RawTransferHistory> getTransactionHistoryById(String referenceId, Integer agentId) {
+        List<RawTransferHistory> rawTransferHistories = rawTransferHistoryRepository.findAllById(Collections.singleton(referenceId + "_" + agentId));
+        return rawTransferHistories.stream().max(Comparator.comparingLong(RawTransferHistory::getCreateTime));
     }
 
     @CachePut(value = "RawTransferHistories", key = "{#referenceId, #agentPlayer.agentId}", cacheManager = "cacheManager")
-    public RawTransferHistory preGenerateRawTransferHistory(String referenceId, AgentPlayer agentPlayer, Currency currency, Integer transactionType, BigDecimal transferAmount){
+    public RawTransferHistory preGenerateRawTransferHistory(String referenceId, AgentPlayer agentPlayer, Currency currency, Integer transactionType, BigDecimal transferAmount) {
         return new RawTransferHistory(referenceId, agentPlayer, currency, transactionType, transferAmount);
     }
+
     @CachePut(value = "RawTransferHistories", key = "{#rawTransferHistory.referenceId, #rawTransferHistory.agentId}", cacheManager = "cacheManager")
-    public RawTransferHistory updateRawTransferHistory(RawTransferHistory rawTransferHistory){
+    public RawTransferHistory updateRawTransferHistory(RawTransferHistory rawTransferHistory) {
         return rawTransferHistory;
     }
 
-    public void saveRawTransferHistory(RawTransferHistory rawTransferHistory){
-        rawTransferHistoryRepository.save(rawTransferHistory) ;
+    public void saveRawTransferHistory(RawTransferHistory rawTransferHistory) {
+        rawTransferHistoryRepository.save(rawTransferHistory);
     }
 
 }

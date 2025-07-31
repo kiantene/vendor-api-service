@@ -28,9 +28,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -165,26 +163,26 @@ public class TransferAction {
         } catch (IndexOutOfBoundsException e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
 
-            String stakeTraceResult = Arrays.stream(e.getSuppressed())
-                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
-                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
-                            .map(StackTraceElement::toString)
-                    )
-                    .collect(Collectors.joining("\n"));
+//            String stakeTraceResult = Arrays.stream(e.getSuppressed())
+//                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
+//                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
+//                            .map(StackTraceElement::toString)
+//                    )
+//                    .collect(Collectors.joining("\n"));
 
-            httpService.logError(httpRequestLog, new CouchbaseMoreThanOneRecordException(stakeTraceResult));
+            httpService.logError(httpRequestLog, e);
 
         } catch (IncorrectResultSizeDataAccessException e) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+//
+//            String stakeTraceResult = Arrays.stream(e.getSuppressed())
+//                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
+//                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
+//                            .map(StackTraceElement::toString)
+//                    )
+//                    .collect(Collectors.joining("\n"));
 
-            String stakeTraceResult = Arrays.stream(e.getSuppressed())
-                    .flatMap(throwable -> Arrays.stream(throwable.getStackTrace())
-                            .filter(ste -> ste.getClassName().contains("com.nextgen.gameaggregator"))
-                            .map(StackTraceElement::toString)
-                    )
-                    .collect(Collectors.joining("\n"));
-
-            httpService.logError(httpRequestLog, new DatabaseMoreThanOneRecordException(stakeTraceResult));
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
