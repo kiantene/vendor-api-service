@@ -370,9 +370,9 @@ public class WalletBetResultAction {
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());
         walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
 
-        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(gameSession.getAgentId());
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(betInformation.getAgentId());
 
-        if (betInformation.getIsEndRound() != null && agentApiVersion == 2 && this.skipVendorList.contains(gameSession.getVendorId())) {
+        if (betInformation.getIsEndRound() != null && agentApiVersion == 2 && this.skipVendorList.contains(betInformation.getVendorId())) {
             //if isEndRound configure not empty from DTO, and agentApiVersion is 2, and is PGSOFT and SPADEGAMING then set the isEndRound value
             walletBetResultDto.setIsEndRound(betInformation.getIsEndRound());
         }
