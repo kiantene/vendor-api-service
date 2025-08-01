@@ -29,4 +29,9 @@ public abstract class StaticHtmlGameLauncher<T> extends AbstractGameLaunchHandle
     public String getPath(GameLaunchContext context) {
         return null;
     }
+
+    @Override
+    public boolean isSuccess(String response) {
+        return true;
+    }
 }

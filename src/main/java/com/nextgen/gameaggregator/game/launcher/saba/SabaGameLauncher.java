@@ -67,6 +67,11 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     }
 
     @Override
+    public boolean isSuccess(GameLaunchResponse response) {
+        return response.getData() != null && !response.getData().isBlank();
+    }
+
+    @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
         String gameUrl = response.getData();
         Map<String, VendorLineCredential> credentials = context.getVendorCredentials();
