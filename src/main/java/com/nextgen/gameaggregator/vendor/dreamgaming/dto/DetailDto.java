@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -17,4 +19,8 @@ public class DetailDto {
 
     @Size(max = 255)
     private String parentBetId;
+
+    @Size(max = 255)
+    private BigDecimal availableBet;
+
 }
