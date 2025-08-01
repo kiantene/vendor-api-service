@@ -53,7 +53,6 @@ public class ResettleAction {
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
                 this.doValidation(txn);
                 txn.setOperationId(dtos.getMessage().getOperationId());
-                //sportWalletService.resettle(traceId, txn, httpRequestLog, txn.getExtraInfo().isOnlyWinlostDateChanged());
                 sportWalletService.resettle(traceId, txn, httpRequestLog);
             }
 
