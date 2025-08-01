@@ -1,4 +1,4 @@
-FROM openjdk:19
+FROM openjdk:18
 
 COPY ./target/*.jar /ga_vendor/app.jar
 COPY ./game_aggregator-root-certificate.pem game_aggregator-root-certificate.pem
