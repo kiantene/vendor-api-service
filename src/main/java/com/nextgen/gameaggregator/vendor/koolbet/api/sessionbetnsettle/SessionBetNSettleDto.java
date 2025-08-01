@@ -79,6 +79,9 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
+        if (this.type == Formats.SESSION_BET_TYPE_SETTLE) {
+            return BigDecimal.ZERO;
+        }
         return this.betAmount;
     }
 
@@ -94,7 +97,7 @@ public class SessionBetNSettleDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.betAmount;
+        return this.getBetAmount();
     }
 
     @Override
