@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -112,35 +113,49 @@ public class SettleAction {
             InvalidCredentialsException,
             BetNotFoundException {
 
-        // Verify vendor currency
+        //1. Currency and Username validation
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), settleDto.getCurrency(), CurrencyNotSupportedException::new);
-        // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), settleDto.getPlayerId(), AuthenticationException::new);
 
-        //if jackpot game don't need check unsettled bet
-        if (!settleDto.getVendorGameId().equals("998") && !settleDto.getVendorGameId().equals("999")) {
-            //Search Unsettled Bet
+        //2. Check for excluded jackpot games
+        Set<String> excludedGameIds = Set.of("996", "998", "999", "8888");
+        boolean isJackpotGame = excludedGameIds.contains(settleDto.getVendorGameId());
+
+        //3. If not jackpot, verify unsettled bet logic
+        if (!isJackpotGame) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(settleDto.getGameNumber());
 
             if (unsettledBet == null) {
                 throw new BetNotFoundException();
-            } else {
-                if (unsettledBet.getVendorBetId().equals(settleDto.getVendorBetId())) {
-                    throw new InvalidRequestException();
-                }
+            }
+
+            if (unsettledBet.getVendorBetId().equals(settleDto.getVendorBetId())) {
+                throw new InvalidRequestException();
             }
         }
 
+        //4. Load vendor credentials
         String userName = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
         String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PASSWORD);
         String portalCodeEQ = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_CODE_EQ);
         String portalCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PORTAL_CODE);
         String categoryCodeList = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CATEGORY_CODE_EQ);
-        String verifiedPortalCode = vendorService.checkGameCodeIsOpenEQGame(categoryCodeList, settleDto.getVendorGameId(), portalCodeEQ, portalCode);
 
+        //5. Validate credentials
         ValidationUtils.isEquals(userName, settleDto.getUserName(), InvalidCredentialsException::new);
         ValidationUtils.isEquals(password, settleDto.getPassword());
-        ValidationUtils.isEquals(verifiedPortalCode, settleDto.getPortalCode());
+
+        // 6. Validate game code for EQ games (if not jackpot)
+        if (!isJackpotGame) {
+            String verifiedPortalCode = vendorService.checkGameCodeIsOpenEQGame(
+                    categoryCodeList,
+                    settleDto.getVendorGameId(),
+                    portalCodeEQ,
+                    portalCode
+            );
+
+            ValidationUtils.isEquals(verifiedPortalCode, settleDto.getPortalCode());
+        }
     }
 
     private ResultType getResultType(SettleDto settleDto) {

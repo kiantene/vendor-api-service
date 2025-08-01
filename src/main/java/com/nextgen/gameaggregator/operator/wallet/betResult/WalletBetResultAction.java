@@ -109,10 +109,9 @@ public class WalletBetResultAction {
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
-        long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorStart(startTime);
+            httpRequestLog.setOperatorStart(System.currentTimeMillis());
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
@@ -145,12 +144,9 @@ public class WalletBetResultAction {
                     })
                     .block();
 
-            long endTime = System.currentTimeMillis();
-            if (httpRequestLog != null) {
-                httpRequestLog.setOperatorEnd(endTime);
-                if (apiResponse != null) {
-                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-                }
+            setEnd(httpRequestLog);
+            if (httpRequestLog != null && apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
             }
 
             if (isTimeout.get()) {
@@ -207,6 +203,7 @@ public class WalletBetResultAction {
 
         } finally {
             if (isError) {
+                setEnd(httpRequestLog);
                 boolean shouldForceSuccess = false;
 
                 if (this.forceSuccessResultTypeList.contains(resultType.code)) {
@@ -236,9 +233,6 @@ public class WalletBetResultAction {
                         betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
                     }
                 }
-
-            } else {
-                //this is not error.
             }
         }
         return responseVo;
@@ -248,8 +242,6 @@ public class WalletBetResultAction {
             throws InvalidAgentApiCredentialException {
 
         WalletBalanceVo responseVo;
-        Long startTime = System.currentTimeMillis();
-        Long endTime = 0L;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
@@ -260,7 +252,7 @@ public class WalletBetResultAction {
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         String jsonApiResponse = new Gson().toJson(dto);
 
-        httpRequestLog.setOperatorStart(startTime);
+        httpRequestLog.setOperatorStart(System.currentTimeMillis());
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
 
@@ -283,10 +275,9 @@ public class WalletBetResultAction {
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                     .block();
 
-            endTime = System.currentTimeMillis();
+            setEnd(httpRequestLog);
             if (apiResponse != null) {
                 httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
             }
 
             // 1. validate HTTP Response Code
@@ -313,8 +304,7 @@ public class WalletBetResultAction {
             betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
 
         } finally {
-            endTime = (endTime.equals(0L) ? System.currentTimeMillis() : endTime);
-            httpRequestLog.setOperatorEnd(endTime);
+            setEnd(httpRequestLog);
         }
 
         return responseVo;
@@ -382,5 +372,11 @@ public class WalletBetResultAction {
 
     private BigDecimal stripZeroToString(BigDecimal value) {
         return new BigDecimal(value.stripTrailingZeros().toPlainString());
+    }
+
+    private void setEnd(HttpRequestLog httpRequestLog) {
+        if (httpRequestLog != null && httpRequestLog.getOperatorEnd() == null) {
+            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
+        }
     }
 }
