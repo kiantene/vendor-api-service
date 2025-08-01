@@ -26,7 +26,6 @@ public class ResettleTransactionDto implements SportResettleData {
     private String extraStatus;
     private String settlementTime;
     private String operationId;
-    private ExtraInfo extraInfo;
 
     @Override
     public String getExternalTransactionId() {
@@ -114,10 +113,5 @@ public class ResettleTransactionDto implements SportResettleData {
     @Override
     public String getVendorPlayerUsername() {
         return this.userId;
-    }
-
-    @Override
-    public boolean getIsSettlementDateChange() {
-        return this.extraInfo != null && this.extraInfo.isOnlyWinLostDateChanged();
     }
 }

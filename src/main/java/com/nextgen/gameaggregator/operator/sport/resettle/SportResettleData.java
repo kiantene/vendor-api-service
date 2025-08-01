@@ -36,8 +36,4 @@ public interface SportResettleData {
     BigDecimal getCreditAmount();
 
     BigDecimal getDebitAmount();
-
-    default boolean getIsSettlementDateChange() {
-        return false;
-    }
 }
