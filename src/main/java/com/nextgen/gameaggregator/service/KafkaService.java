@@ -296,7 +296,6 @@ public class KafkaService {
             log.info(new Gson().toJson(apiRequestLog));
         }
     }
-
     public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
         if (this.logToKafka) {
             try {
@@ -313,9 +312,9 @@ public class KafkaService {
     public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
         try {
             BetTransactionLog betTransactionLog;
-            if (betResultData != null) {
+            if(betResultData!=null){
                 betTransactionLog = new BetTransactionLog(betInformation, betResultData);
-            } else {
+            }else{
                 // set back to original data
                 betTransactionLog = new BetTransactionLog(betInformation);
             }

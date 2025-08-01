@@ -587,13 +587,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             //         (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
-
-            //if only date change is true
-            /*if (isOnlyWinlostDateChanged) {
-                //push into saba date resettle topic
-                kafkaService.produceSportResettleDateChange(sportSettledBet);
-            }*/
-
+            
             //resettle will insert into resettlement date change
             kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
