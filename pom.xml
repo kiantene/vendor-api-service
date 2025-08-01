@@ -20,8 +20,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2025-07-30T10:03:43Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
-        <maven.compiler.source>19</maven.compiler.source>
-        <maven.compiler.target>19</maven.compiler.target>
+        <maven.compiler.source>18</maven.compiler.source>
+        <maven.compiler.target>18</maven.compiler.target>
         <spring-doc.version>1.6.9</spring-doc.version>
         <sas-core.version>3.0.8</sas-core.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
