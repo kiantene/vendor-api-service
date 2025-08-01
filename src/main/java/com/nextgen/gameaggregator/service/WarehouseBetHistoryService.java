@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.repository.ga.writer.VendorCurrencyRepository;
 import com.nextgen.sas.core.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -405,5 +406,27 @@ public class WarehouseBetHistoryService {
         }
 
         return isDelaySettlement;
+    }
+
+    public List<BetHistory> findByExternalTransactionIdAndVendorSettleTime(
+            String externalTransactionId,
+            long toTimeMillis) {
+
+        // calculate fromTime
+        long sixHoursInMillis = 21600000L;
+        long fromTimeMillis = toTimeMillis - sixHoursInMillis;
+
+        String sql = "SELECT * FROM bet_history " +
+                "WHERE external_transaction_id = :externalTransactionId " +
+                "AND vendor_settle_time BETWEEN :fromTime AND :toTime";
+
+        Map<String, Object> params = Map.of(
+                "externalTransactionId", externalTransactionId,
+                "fromTime", fromTimeMillis,
+                "toTime", toTimeMillis
+        );
+
+        return clickHouseJdbcTemplate.query(sql, params, new BeanPropertyRowMapper<>(BetHistory.class))
+                .isEmpty() ? null : clickHouseJdbcTemplate.query(sql, params, new BeanPropertyRowMapper<>(BetHistory.class));
     }
 }
