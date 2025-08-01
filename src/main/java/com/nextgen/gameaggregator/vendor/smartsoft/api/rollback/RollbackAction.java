@@ -1,11 +1,9 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.rollback;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -32,15 +30,18 @@ public class RollbackAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public RollbackAction(WalletService walletService,
                           HttpService httpService,
                           VendorService vendorService,
-                          VendorLineService vendorLineService) {
+                          VendorLineService vendorLineService,
+                          RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.ROLLBACK)
@@ -51,12 +52,13 @@ public class RollbackAction {
         String body = httpRequestLog.getRequestBody();
         String method = httpRequestLog.getMethod();
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
-        RollbackDto rollbackDto;
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
+        RollbackDto rollbackDto = new RollbackDto();
         RollbackVo vo = new RollbackVo();
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
+        boolean isRequestExists = false;
 
         try {
             rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
@@ -68,6 +70,14 @@ public class RollbackAction {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(rollbackDto, rollbackDto.getUserName()) == null) {
+                requestIdempotentLogService.create(rollbackDto, rollbackDto.getUserName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session
             gameSession = vendorService.checkGameSession(traceId, rollbackDto.getUserName(), rollbackDto.getRollbackTransactionInfoDto().getGameName());
@@ -91,6 +101,9 @@ public class RollbackAction {
             headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
             headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(rollbackDto, rollbackDto.getUserName());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return new ResponseEntity<>(vo, headers, status);

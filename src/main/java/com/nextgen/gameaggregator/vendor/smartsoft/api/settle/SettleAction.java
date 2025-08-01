@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.settle;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -30,15 +31,18 @@ public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
                         VendorService vendorService,
-                        VendorLineService vendorLineService) {
+                        VendorLineService vendorLineService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
@@ -51,12 +55,14 @@ public class SettleAction {
         BigDecimal balance;
         BigDecimal currentBalance = null;
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
-        SettleDto settleDto;
+        SettleDto settleDto = new SettleDto();
+        ;
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
+        boolean isRequestExists = false;
 
         try {
             settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
@@ -68,6 +74,14 @@ public class SettleAction {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getUserName()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getUserName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session
             gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName(), settleDto.getTransactionInfoDto().getGameName());
@@ -99,6 +113,9 @@ public class SettleAction {
             headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
             headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(settleDto, settleDto.getUserName());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return new ResponseEntity<>(vo, headers, status);

@@ -51,7 +51,7 @@ public class BetAction {
         String body = httpRequestLog.getRequestBody();
         String method = httpRequestLog.getMethod();
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
         BetVo vo = new BetVo();
         BetDto betDto;
         GameSession gameSession;
