@@ -6,4 +6,6 @@ import lombok.experimental.UtilityClass;
 public class EndPoints {
     public static final String CLASS_NAME = "inout";
     public static final String PATH = "api/v1/inout";
+    public static final String ACTION = "action";
+
 }
