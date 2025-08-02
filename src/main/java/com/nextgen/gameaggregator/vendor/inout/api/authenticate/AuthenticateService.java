@@ -3,15 +3,9 @@ package com.nextgen.gameaggregator.vendor.inout.api.authenticate;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
@@ -24,21 +18,27 @@ import java.math.BigDecimal;
 @Service
 public class AuthenticateService {
     private final HttpService httpService;
-    private final VendorLineService vendorLineService;
-    private final GameSessionService gameSessionService;
     private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final VendorGameService vendorGameService;
+    private final GameSessionService gameSessionService;
+    private final AgentPlayerService agentPlayerService;
 
     public AuthenticateService(HttpService httpService,
+                               WalletService walletService,
                                VendorLineService vendorLineService,
+                               VendorGameService vendorGameService,
                                GameSessionService gameSessionService,
-                               WalletService walletService) {
+                               AgentPlayerService agentPlayerService) {
         this.httpService = httpService;
-        this.vendorLineService = vendorLineService;
-        this.gameSessionService = gameSessionService;
         this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.vendorGameService = vendorGameService;
+        this.gameSessionService = gameSessionService;
+        this.agentPlayerService = agentPlayerService;
     }
 
-    public CommonVo authenticate(HttpServletRequest request) {
+    public CommonVo initSession(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
@@ -56,7 +56,7 @@ public class AuthenticateService {
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
+            this.doVerification(dto.getData().getCurrency(), dto.getData().getGameMode(), gameSession);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -79,9 +79,14 @@ public class AuthenticateService {
     private void doValidation(CommonDto<AuthenticateDto> dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+        ValidationUtils.validateRequest(dto.getData());
     }
 
-    private void doVerification(CommonDto<AuthenticateDto> dto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException {
+    private void doVerification(String currency, String gameMode, GameSession gameSession) throws
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException {
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
@@ -93,32 +98,29 @@ public class AuthenticateService {
         // 3. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // 1. Verify Username
-        String username = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.USERNAME);
-        ValidationUtils.isEquals(username, dto.getUsername(), AuthenticationException::new);
+        // 4. Verify Currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, AuthenticationException::new);
 
-        // 2. Verify Password
-        String password = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.TOKEN);
-        ValidationUtils.isEquals(password, dto.getPassword(), AuthenticationException::new);
-
-        // 3. Verify PlayerId
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
-
-        // 4. Verify DefenceCode
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getDefenceCode(), AuthenticationException::new);
+        // 5. Verify GameMode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
     }
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
-
         if (e instanceof InvalidRequestException) {
-            responseVo.setError(ResponseCode.);
+            responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
-            responseVo.setError(ResponseCode.PERMISSION_DENIED);
+            responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
+        } else if (e instanceof DisabledVendorLineException ||
+                e instanceof DisabledGameException ||
+                e instanceof DisabledAgentPlayerException) {
+            responseVo.setError(ResponseCode.GAME_DISABLED);
         } else {
-            responseVo.setError(ResponseCode.INTERNAL_SERVER_ERROR);
+            responseVo.setError(ResponseCode.UNKNOWN_ERROR);
         }
+
         httpService.logError(httpRequestLog, e);
     }
+
 
 }
