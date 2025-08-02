@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAcces
 import com.nextgen.gameaggregator.custodianseamless.operator.deposit.TransferData;
 import com.nextgen.gameaggregator.custodianseamless.operator.dto.TraceIdRequest;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceBeforeAfterVo;
-import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
@@ -87,7 +86,7 @@ public class TransferService {
         if (rawTransferHistory.isPresent()) {
             transferHistory = new TransferHistory(rawTransferHistory.get());
         } else {
-            transferHistory = transferHistoryReaderRepository.findTransferHistoriesByAgentIdAndReferenceId(agentId, referenceId);
+            transferHistory = transferHistoryReaderRepository.findTop1TransferHistoriesByAgentIdAndReferenceIdOrderByCreateTimeDesc(agentId, referenceId);
         }
 
         Optional.ofNullable(transferHistory).orElseThrow(TransferHistoryNotFoundException::new);

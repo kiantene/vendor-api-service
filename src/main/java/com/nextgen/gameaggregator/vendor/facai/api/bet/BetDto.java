@@ -100,7 +100,7 @@ public class BetDto implements BetResultData {
     @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @Digits(integer = 13, fraction = 0, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("Ts")
-    public BigDecimal ts;
+    public Long ts;
 
     @Override
     public String getExternalTransactionId() {
@@ -157,12 +157,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return DateTimeConversionUtils.toUnixTimestamp(getCreateDate(), DateTime.PATTERN, DateTime.ZONE);
+        return DateTimeConversionUtils.toUnixTimestamp(getGameDate(), DateTime.PATTERN, DateTime.ZONE);
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return DateTimeConversionUtils.toUnixTimestamp(getCreateDate(), DateTime.PATTERN, DateTime.ZONE);
+        return DateTimeConversionUtils.toUnixTimestamp(getGameDate(), DateTime.PATTERN, DateTime.ZONE);
     }
 
     @Override

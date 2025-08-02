@@ -23,6 +23,11 @@ public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHa
     }
 
     @Override
+    public boolean isSuccess(String response) {
+        return true;
+    }
+
+    @Override
     public void onSuccess(GameLaunchContext context, String response) {
         context.setGameUrl(response);
     }

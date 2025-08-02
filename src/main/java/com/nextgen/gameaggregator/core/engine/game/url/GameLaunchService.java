@@ -86,9 +86,12 @@ public class GameLaunchService {
 
         launchHandler.execute(apiExecutor, context)
                 .onSuccess(response -> launchHandler.onSuccess(context, response))
-                .onError((response, ex) -> {
+                .onError(result -> {
+                    // TODO: refactor this part
+                    Throwable ex = result.getError();
                     LogContext logContext = LogContextHolder.get();
-                    logContext.setApiBody(response);
+                    logContext.setApiBody(result.getRequestObject());
+                    logContext.setApiResponse(result.getRawResponse());
                     logContext.setException(ex.getClass().getName());
                     logContext.setErrorMessage(ex.getMessage());
 

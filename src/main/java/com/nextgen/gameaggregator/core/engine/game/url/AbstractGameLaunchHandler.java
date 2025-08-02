@@ -33,7 +33,7 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
         return credentialUtils.of(raw);
     }
 
-    public final HandlerResult<R> execute(ApiExecutor executor, GameLaunchContext context) {
+    public final HandlerResult<Q, R> execute(ApiExecutor executor, GameLaunchContext context) {
         return executor.execute(context, this);
     }
 
