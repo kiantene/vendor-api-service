@@ -19,7 +19,15 @@ public class WalletRollbackServiceWrapper {
     private final WalletService walletService;
     private final RollbackDataMapper rollbackDataMapper;
 
-    public void asyncRollbackSettledBet(BetRollbackContext context, long delaySeconds, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog) {
+    public void asyncRollbackSettledBet(BetRollbackContext context) {
+        asyncRollbackSettledBet(context, 1000);
+    }
+
+    public void asyncRollbackSettledBet(BetRollbackContext context, long delaySeconds) {
+        GameSession gameSession = context.getGameSession();
+        BaseVendorService vendorService = context.getVendorService();
+        HttpRequestLog httpRequestLog = context.getHttpRequestLog();
+
         CompletableFuture.runAsync(() -> {
             try {
                 rollbackSettledBet(context, gameSession, vendorService, httpRequestLog);
@@ -29,7 +37,7 @@ public class WalletRollbackServiceWrapper {
                 // cleanup
 
             }
-        }, CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.SECONDS));
+        }, CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.MILLISECONDS));
     }
 
     private void rollbackSettledBet(BetRollbackContext context, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog) throws Exception {
