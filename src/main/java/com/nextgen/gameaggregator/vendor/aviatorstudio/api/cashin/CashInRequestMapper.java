@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextMapp
 import org.springframework.stereotype.Component;
 
 @Component
-public class CashInRequestMapper implements BetResultContextMapper<CashInRequest> {
+class CashInRequestMapper implements BetResultContextMapper<CashInRequest> {
     @Override
     public BetResultContext toBetResultContext(CashInRequest request) {
         return BetResultContext.builder()

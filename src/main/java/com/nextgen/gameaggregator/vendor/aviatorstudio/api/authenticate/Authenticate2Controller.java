@@ -1,12 +1,12 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.authenticate;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
+import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateContext;
+import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
-import jakarta.validation.Valid;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,25 +16,24 @@ import static com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorS
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @RequiredArgsConstructor
-public class CashOutController {
-    private final WalletBetService walletService;
-    private final CashOutRequestMapper requestMapper;
-    private final CashOutResponseMapper responseMapper;
+public class Authenticate2Controller {
+    private final AuthenticateRequestMapper requestMapper;
+    private final AuthenticateResponseMapper responseMapper;
+    private final AuthenticateServiceWrapper authenticateService;
 
-    @PostMapping(path = EndPoints.CASHOUT + "/v2")
+    @GetMapping(path = EndPoints.AUTHENTICATE + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<CashOutResponse> betAction(
+    public ResponseEntity<CommonVo> account(
             @RequestHeader(HEADER_AUTHORIZATION) String jwt,
-            @Valid @RequestBody CashOutRequest request) {
+            @ModelAttribute AuthenticateDto dto) {
 
-        BetContext context = requestMapper.toBetContext(request);
+        AuthenticateContext context = requestMapper.toAuthenticateContext(dto);
         enrich(context, jwt);
-        PlayerBalanceData balanceData = walletService.process(context);
-
+        PlayerBalanceData balanceData = authenticateService.process(context);
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
-    private void enrich(BetContext context, String jwt) {
+    private void enrich(AuthenticateContext context, String jwt) {
         context.setVendorPlayerUsername(VendorService.jwtGetUserId(jwt));
     }
 }

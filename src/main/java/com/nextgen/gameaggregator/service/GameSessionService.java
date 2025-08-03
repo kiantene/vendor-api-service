@@ -180,6 +180,7 @@ public class GameSessionService {
     }
 
     // deprecated, use getLastGameSessionByVendorPlayerUsername instead
+    @Deprecated
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 

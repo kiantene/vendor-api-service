@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CashOutResponseMapper implements VendorResponseMapper<BetContext, CashOutResponse> {
+class CashOutResponseMapper implements VendorResponseMapper<BetContext, CashOutResponse> {
     @Override
     public CashOutResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return CashOutResponse.builder()

@@ -6,11 +6,12 @@ import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import static com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator.HEADER_AUTHORIZATION;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -24,7 +25,7 @@ public class CashInController {
     @PostMapping(path = EndPoints.CASHIN + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashInResponse> settleAction(
-            @RequestHeader(AviatorStudioSignatureValidator.HEADER_AUTHORIZATION) String jwt,
+            @RequestHeader(HEADER_AUTHORIZATION) String jwt,
             @Valid @RequestBody CashInRequest request) {
 
         BetResultContext context = requestMapper.toBetResultContext(request);
