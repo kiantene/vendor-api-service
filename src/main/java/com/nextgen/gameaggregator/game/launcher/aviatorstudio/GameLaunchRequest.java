@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class GameLaunchRequest implements LaunchRequestPayload {
+public class GameLaunchRequest {
     private String token;
     private String providerId;
     private String currency;
