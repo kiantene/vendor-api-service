@@ -16,6 +16,6 @@ public enum ResponseCode {
     CHECKS_FAIL("CHECKS_FAIL", "Operation not allowed because of failed checks on the casino side."),
     DEBIT_TRANSACTION_NOT_FOUND("DEBIT_TRANSACTION_NOT_FOUND", "");
 
-    private final String code;
-    private final String message;
+    public final String code;
+    public final String message;
 }

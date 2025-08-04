@@ -1,17 +1,19 @@
 package com.nextgen.gameaggregator.vendor.inout.api.action;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
+import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
 import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,11 +25,13 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final VendorLineService vendorLineService;
+    private final AuthenticateService authenticateService;
 
     public GeneralAction(HttpService httpService,
-                         VendorLineService vendorLineService) {
+                         VendorLineService vendorLineService, AuthenticateService authenticateService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
+        this.authenticateService = authenticateService;
     }
 
     @PostMapping(EndPoints.ACTION)
@@ -40,26 +44,26 @@ public class GeneralAction {
 
         CommonVo vo = new CommonVo();
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
-            CommonDto dto = HttpService.convertJsonToDto(body, CommonDto.class);
+            CommonDto<GeneralActionDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
+            });
 
             ValidationUtils.validateRequest(dto);
 
-            vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.OPERATOR_ID, dto.getCommonDataDto().getOperator());
+            vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.OPERATOR_ID, dto.getData().getOperator());
 
-            secretKey = vendorLineService.getCredentialValueByName(vendorLineId,Credentials.SECRET_KEY);
+            secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
 
-            this.doVerification(body,secretKey,xSign);
+            this.doVerification(body, secretKey, xSign);
 
-            vo = this.actionHandling(body,dto);
+            vo = this.actionHandling(httpRequestLog, dto);
 
-        }  catch (InvalidRequestException e){
-            vo.setCodeMessages(String.valueOf(ResponseCode.INVALID_TOKEN));
+        } catch (InvalidRequestException e) {
+            vo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -72,12 +76,13 @@ public class GeneralAction {
         ValidationUtils.isEquals(xSign, requestBody);
     }
 
-    private CommonVo actionHandling(String body, CommonDto commonDto){
+    private CommonVo actionHandling(HttpRequestLog httpRequestLog, CommonDto<GeneralActionDto> commonDto) {
         CommonVo vo = new CommonVo();
 
         switch (commonDto.getAction()) {
 
             case Actions.INITIALIZE:
+                vo = authenticateService.initSession(httpRequestLog);
                 break;
 
             case Actions.BET:
@@ -93,7 +98,7 @@ public class GeneralAction {
                 break;
 
         }
-            return  vo;
+        return vo;
 
     }
 }
