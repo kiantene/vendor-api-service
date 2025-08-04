@@ -32,4 +32,5 @@ public class GameLaunchDto {
     private VendorLine vendorLine;
     private Boolean isLaunchByProductGame;
     private String lobbyUrl;
+    private String ipAddress;
 }
