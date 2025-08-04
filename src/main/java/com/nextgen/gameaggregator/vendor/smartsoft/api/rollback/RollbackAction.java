@@ -112,8 +112,6 @@ public class RollbackAction {
     private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-        ValidationUtils.validateRequest(dto.getRollbackTransactionInfoDto());
     }
 
     private void doVerification(RollbackDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {
@@ -126,6 +124,6 @@ public class RollbackAction {
         ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
 
         //verify ClientExternalKey
-        ValidationUtils.isEquals(gameSession.getVendorPlayerId().toString(), dto.getClientExternalKey(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getClientExternalKey(), AuthenticationException::new);
     }
 }

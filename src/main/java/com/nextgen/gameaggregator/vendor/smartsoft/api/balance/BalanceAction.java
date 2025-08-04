@@ -115,6 +115,6 @@ public class BalanceAction {
         ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
 
         //6. verify ClientExternalKey
-        ValidationUtils.isEquals(gameSession.getVendorPlayerId().toString(), dto.getClientExternalKey(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getClientExternalKey(), AuthenticationException::new);
     }
 }

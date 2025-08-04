@@ -63,7 +63,7 @@ public class AuthenticateAction {
             // 5. Set response data
             responseVo.setSessionId(gameSession.getToken());
             responseVo.setUserName(gameSession.getVendorPlayerUsername());
-            responseVo.setClientExternalKey(gameSession.getVendorPlayerId().toString());
+            responseVo.setClientExternalKey(gameSession.getVendorPlayerUsername());
             responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
             responseVo.setPortalName(portalName);
 
