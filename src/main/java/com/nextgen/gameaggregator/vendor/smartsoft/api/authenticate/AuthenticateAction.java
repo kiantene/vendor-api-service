@@ -44,7 +44,7 @@ public class AuthenticateAction {
         String body = httpRequestLog.getRequestBody();
         String signature = request.getHeader(Headers.REQUEST_SIGNATURE);
         AuthenticateVo responseVo = new AuthenticateVo();
-        httpRequestLog.setRequestBody("Request Body: \n" + body + "\nRequest Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
 
         try {
             // 1. Retrieve request body and convert into dto

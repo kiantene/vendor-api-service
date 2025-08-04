@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.smartsoft.api.settle;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -30,15 +31,18 @@ public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public SettleAction(WalletService walletService,
                         HttpService httpService,
                         VendorService vendorService,
-                        VendorLineService vendorLineService) {
+                        VendorLineService vendorLineService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.WITHDRAW)
@@ -51,12 +55,14 @@ public class SettleAction {
         BigDecimal balance;
         BigDecimal currentBalance = null;
         //Add request header log
-        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\nRequest Header: \n" + vendorService.getHeaders(request));
+        httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
         SettleVo vo = new SettleVo();
-        SettleDto settleDto;
+        SettleDto settleDto = new SettleDto();
+        ;
         GameSession gameSession;
         HttpHeaders headers = new HttpHeaders();
         HttpStatus status = HttpStatus.OK;
+        boolean isRequestExists = false;
 
         try {
             settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
@@ -69,8 +75,16 @@ public class SettleAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
 
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getUserName()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getUserName());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             // Verify session
-            gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName());
+            gameSession = vendorService.checkGameSession(traceId, settleDto.getUserName(), settleDto.getTransactionInfoDto().getGameName());
 
             currentBalance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
 
@@ -78,12 +92,9 @@ public class SettleAction {
             this.doVerification(settleDto, gameSession, body, method);
 
             // Settle
-            if (settleDto.getTransactionType().equals("CloseRound")) {
-                balance = processClosedRound(settleDto, gameSession, httpRequestLog);
-            } else {
-                ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
-                balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
-            }
+            ResultType updatedResultType = vendorService.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
+            balance = walletService.processBetResult(traceId, gameSession, settleDto, updatedResultType, vendorService, httpRequestLog);
+
             vo.setTransactionId(httpRequestLog.getId());
             vo.setBalance(balance);
 
@@ -102,6 +113,9 @@ public class SettleAction {
             headers.add(Headers.ERROR_CODE, ResponseCode.INTERNAL_ERROR.code.toString());
             headers.add(Headers.ERROR_MESSAGE, ResponseCode.INTERNAL_ERROR.message);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(settleDto, settleDto.getUserName());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return new ResponseEntity<>(vo, headers, status);
@@ -132,15 +146,5 @@ public class SettleAction {
 
         // Call the service with the duplicate log
         return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
-    }
-
-    private BigDecimal processClosedRound(SettleDto settleDto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, InternalServerTimeoutRetryException {
-        BigDecimal balance;
-        try {
-            balance = walletService.processBetResult(httpRequestLog.getId(), gameSession, settleDto, ResultType.END, vendorService, httpRequestLog);
-        } catch (BetNotFoundException e) {
-            balance = getCurrentBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-        }
-        return balance;
     }
 }

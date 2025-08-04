@@ -129,7 +129,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.transactionType.equals("WinAmount") || this.transactionType.equals("CloseRound")) {
+        if (this.transactionType.equals("CloseRound")) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;
