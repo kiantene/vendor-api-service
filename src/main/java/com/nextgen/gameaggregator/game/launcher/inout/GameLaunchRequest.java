@@ -9,7 +9,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
-public class GameLaunchRequest implements LaunchRequestPayload {
+public class GameLaunchRequest {
     private String gameMode;
     private UUID aggregatorId;
     private String currency;
