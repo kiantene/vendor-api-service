@@ -33,11 +33,6 @@ import java.util.Enumeration;
 public class VendorService extends BaseVendorService {
     public static final String CLAIM_USER_ID = "userId";
 
-    static {
-        // Register BouncyCastle as a security provider
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
 
@@ -45,68 +40,6 @@ public class VendorService extends BaseVendorService {
                          GameSessionService gameSessionService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
-    }
-
-    public static String generateJWT(String userId, String jwtSecret, String publicKey) throws
-            InvalidKeySpecException,
-            NoSuchAlgorithmException,
-            NoSuchPaddingException,
-            IllegalBlockSizeException,
-            BadPaddingException,
-            InvalidKeyException,
-            NoSuchProviderException {
-        long issuedAtMillis = System.currentTimeMillis();
-
-        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
-        String jwt = JWT.create()
-                .withClaim(CLAIM_USER_ID, userId)
-                .withClaim("iat", issuedAtMillis)
-                .sign(algorithm);
-
-        return encrypt(publicKey, jwt);
-    }
-
-    public static String encrypt(String publicKeyPEM, String jwtToken) throws
-            NoSuchPaddingException,
-            NoSuchAlgorithmException,
-            NoSuchProviderException,
-            InvalidKeySpecException,
-            IllegalBlockSizeException,
-            BadPaddingException,
-            InvalidKeyException {
-        // Convert message to bytes
-        byte[] messageBytes = jwtToken.getBytes(StandardCharsets.UTF_8);
-
-        // Parse the public key
-        PublicKey publicKey = parsePublicKey(publicKeyPEM);
-
-        // Initialize cipher
-        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding", "BC");
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-
-        // Encrypt the message
-        byte[] encryptedBytes = cipher.doFinal(messageBytes);
-
-        // Encode as base64 string
-        return Base64.getEncoder().encodeToString(encryptedBytes);
-
-    }
-
-    private static PublicKey parsePublicKey(String publicKeyPEM)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        // Remove PEM headers and whitespace
-        String publicKeyContent = publicKeyPEM
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s", "");
-
-        // Decode the base64 content
-        byte[] encodedKey = Base64.getDecoder().decode(publicKeyContent);
-
-        // Create the public key
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encodedKey);
-        return keyFactory.generatePublic(keySpec);
     }
 
     public static <T> void doValidation(T validationObject) throws InvalidRequestException {

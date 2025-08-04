@@ -1,16 +1,18 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.validator;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,8 +25,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AviatorStudioSignatureValidator implements VendorSignatureValidator {
     public static final String HEADER_AUTHORIZATION = "Authorization";
+    public static final String CLAIM_USER_ID = "userId";
     private final VendorPlayerService vendorPlayerService;
-    private final VendorService vendorService;
+    private final VendorLineService vendorLineService;
 
     @Override
     public String getVendorClassName() {
@@ -32,26 +35,23 @@ public class AviatorStudioSignatureValidator implements VendorSignatureValidator
     }
 
     @Override
-    public boolean validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) {
+    public void validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
         String jwtAuth = request.getHeader(HEADER_AUTHORIZATION);
-        LogContext logContext = LogContextHolder.get();
 
         if (jwtAuth == null || jwtAuth.isBlank()) {
-            logContext.setErrorMessage("Missing Authorization header");
-            return false;
+            throw new SignatureValidationException("Missing Authorization header");
         }
 
-        String vendorPlayerUsername = VendorService.jwtGetUserId(jwtAuth);
         try {
+            String vendorPlayerUsername = getUsername(jwtAuth);
+            request.setAttribute("username", vendorPlayerUsername);
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerUsername);
             Integer vendorLineId = vendorPlayer.getVendorLineId();
-            vendorService.verifyJWT(jwtAuth, vendorLineId, vendorPlayerUsername);
-            return true;
+            String jwtSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.JWT_SECRET);
+            verifyAndDecode(jwtAuth, jwtSecret);
 
-        } catch (InvalidPlayerException | AuthenticationException | CredentialNotFoundException ex) {
-            logContext.setException(ex.getClass().getSimpleName());
-            logContext.setErrorMessage(ex.getMessage());
-            return false;
+        } catch (Exception ex) {
+            throw new SignatureValidationException(ex.getMessage(), ex);
         }
     }
 
@@ -61,5 +61,16 @@ public class AviatorStudioSignatureValidator implements VendorSignatureValidator
         responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
 
         return new VendorErrorResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, responseVo);
+    }
+
+    private DecodedJWT verifyAndDecode(String jwtToken, String jwtSecret) throws JWTVerificationException {
+        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+        JWTVerifier verifier = JWT.require(algorithm).build();
+        return verifier.verify(jwtToken);
+    }
+
+    public static String getUsername(String jwtToken) {
+        DecodedJWT decodedJWT = JWT.decode(jwtToken);
+        return decodedJWT.getClaim(CLAIM_USER_ID).asString();
     }
 }

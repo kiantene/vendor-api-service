@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.common.RequestParserService;
 import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidatorRegistry;
+import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import jakarta.servlet.FilterChain;
@@ -52,10 +53,11 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
         String rawBody = new String(wrapped.getContentAsByteArray(), request.getCharacterEncoding());
         Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);
 
-        boolean valid = validator.validate(wrapped, parsedFields, rawBody);
-        if (!valid) {
+        try {
+            validator.validate(wrapped, parsedFields, rawBody);
+        } catch (SignatureValidationException ex) {
             LogContext logContext = LogContextHolder.get();
-            logContext.setErrorMessage("Invalid Signature");
+            logContext.setException(ex);
             VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
             writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode());
             return;

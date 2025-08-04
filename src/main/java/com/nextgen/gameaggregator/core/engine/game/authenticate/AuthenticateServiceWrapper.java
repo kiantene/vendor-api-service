@@ -21,6 +21,7 @@ public class AuthenticateServiceWrapper {
 
     public PlayerBalanceData process(AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Authenticate");
         String vendorPlayerUsername = context.getVendorPlayerUsername();
         String vendorSessionToken = context.getVendorSessionToken();
         GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
@@ -28,10 +29,11 @@ public class AuthenticateServiceWrapper {
         gameSessionService.regenerateVendorToken(gameSession, vendorSessionToken);
         HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
         try {
-            BigDecimal balance = walletService.getBalance(logContext.getTraceId(), gameSession, httpRequestLog);
+            BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
             return this.toPlayerBalanceData(context, balance, httpRequestLog);
+
         } catch (Exception ex) {
-            throw new InternalServerException(ex.getMessage());
+            throw new InternalServerException(ex.getMessage(), ex);
         } finally {
 //            this.updateLogContext(logContext, httpRequestLog);
 //            httpService.end(httpRequestLog, null);
@@ -42,7 +44,7 @@ public class AuthenticateServiceWrapper {
         final Integer PROCESSING = 1;
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-        httpRequestLog.setId(logContext.getTraceId());
+        logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
         httpRequestLog.setRequestBody(logContext.getBody());
         httpRequestLog.setStatus(PROCESSING);

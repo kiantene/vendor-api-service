@@ -73,6 +73,17 @@ public class LogContext {
 
     public void setException(Exception ex) {
         setException(ex.getClass().getSimpleName());
+        setErrorMessage(ex.getMessage());
+
+        if (ex instanceof RuntimeException && ex.getCause() != null) {
+            Throwable cause = ex.getCause();
+
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+
+            setRootCause(cause.getClass().getSimpleName());
+        }
     }
 
     public void setException(String ex) {
