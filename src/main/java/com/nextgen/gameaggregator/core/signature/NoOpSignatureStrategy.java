@@ -5,4 +5,9 @@ public class NoOpSignatureStrategy implements SignatureStrategy {
     public String sign(String payload, String secret) {
         return "";
     }
+
+    @Override
+    public String sign(Object payload, String secret) {
+        return "";
+    }
 }
