@@ -16,8 +16,8 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
     private final Class<R> responseType;
 
     protected AbstractGameLaunchHandler(VendorCredentialUtils credentialUtils,
-                                       String vendorClassName,
-                                       Class<R> responseType) {
+                                        String vendorClassName,
+                                        Class<R> responseType) {
 
         this.credentialUtils = credentialUtils;
         this.vendorClassName = vendorClassName;
