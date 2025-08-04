@@ -75,7 +75,6 @@ public class AuthenticateService {
     private void doValidation(CommonDto<AuthenticateDto> dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-        ValidationUtils.validateRequest(dto.getData());
     }
 
     private void doVerification(String currency, String gameMode, GameSession gameSession) throws
