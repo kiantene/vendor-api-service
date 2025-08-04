@@ -124,8 +124,6 @@ public class SettleAction {
     private void doValidation(SettleDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession, String body, String method) throws AuthenticationException, CredentialNotFoundException, InvalidRequestException {

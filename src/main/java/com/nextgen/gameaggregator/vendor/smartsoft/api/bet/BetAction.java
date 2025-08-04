@@ -104,8 +104,6 @@ public class BetAction {
     private void doValidation(BetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-        ValidationUtils.validateRequest(dto.getTransactionInfoDto());
     }
 
     private void doVerification(BetDto dto, GameSession gameSession, String body, String method) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
