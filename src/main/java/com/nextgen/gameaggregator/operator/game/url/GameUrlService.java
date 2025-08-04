@@ -122,6 +122,7 @@ public class GameUrlService {
                         .vendorCredentials(credentialMap)
                         .platformId(gameSession.getPlatformId())
                         .lobbyUrl(gameLaunchDto.getLobbyUrl())
+                        .ipAddress(gameLaunchDto.getIpAddress())
                         .build();
 
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);

@@ -21,6 +21,7 @@ public class GameLaunchContext {
     private String vendorPlatformCode;
     private Integer platformId;
     private String lobbyUrl;
+    private String ipAddress;
 
     Map<String, VendorLineCredential> vendorCredentials;
 

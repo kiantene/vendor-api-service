@@ -43,25 +43,25 @@ public class LoggingManager {
 
     private void logAsync(LogContext logContext, String responseBody, Exception ex) {
         logContext.setEnd();
+        if (responseBody != null && !responseBody.isEmpty()) {
+            logContext.setResponse(responseBody);
+        }
+        if (ex != null) {
+            logContext.setException(ex);
+        }
+        final String logJson = logContext.toJson();
+        boolean hasException = logContext.getException() != null;
+        LogContextHolder.clear();
+
         asyncLogger.submit(() -> {
             try {
-                if (responseBody != null && !responseBody.isEmpty()) {
-                    logContext.setResponse(responseBody);
-                }
-
-                if (ex != null) {
-                    logContext.setException(ex.getClass().getName());
-                    logContext.setErrorMessage(ex.getMessage());
-                    log.error(logContext.toJson());
-                } else if (logContext.getException() != null) {
-                    log.error(logContext.toJson());
+                if (hasException) {
+                    log.error(logJson);
                 } else {
-                    log.debug(logContext.toJson());
+                    log.info(logJson);
                 }
-
-                LogContextHolder.clear();
             } catch (Exception e) {
-                log.error("Failed to log asynchronously: " + e.getMessage());
+                log.error("Failed to log asynchronously: ", e);
             }
         });
     }
