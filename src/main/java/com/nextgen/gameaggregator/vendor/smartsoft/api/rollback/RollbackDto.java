@@ -3,8 +3,10 @@ package com.nextgen.gameaggregator.vendor.smartsoft.api.rollback;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +52,8 @@ public class RollbackDto implements RollbackData {
     @JsonProperty("Amount")
     private BigDecimal amount;
 
+    @Valid
+    @NotNull
     @JsonProperty("TransactionInfo")
     private RollbackTransactionInfoDto rollbackTransactionInfoDto;
 

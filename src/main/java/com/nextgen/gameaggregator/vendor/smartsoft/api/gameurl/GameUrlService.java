@@ -35,7 +35,7 @@ public class GameUrlService extends BaseGameUrlService<SSGameUrlVo> {
         formData.add("GameName", gameSession.getVendorGameCode());
         formData.add("Token", gameSession.getToken());
         formData.add("ReturnUrl", gameSession.getLobbyUrl());
-        formData.add("Lang", gameSession.getLanguage());
+        formData.add("Lang", gameSession.getVendorLanguageCode());
         formData.add("PortalName", portalName);
 
         return formData;
