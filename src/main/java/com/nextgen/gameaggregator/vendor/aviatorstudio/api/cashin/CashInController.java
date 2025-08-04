@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator.HEADER_AUTHORIZATION;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @RequiredArgsConstructor
@@ -25,21 +23,20 @@ public class CashInController {
     @PostMapping(path = EndPoints.CASHIN + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashInResponse> settleAction(
-            @RequestHeader(HEADER_AUTHORIZATION) String jwt,
-            @Valid @RequestBody CashInRequest request) {
+            @Valid @RequestBody CashInRequest request,
+            @RequestAttribute("username") String username) {
 
         BetResultContext context = requestMapper.toBetResultContext(request);
-        enrich(context, jwt);
+        enrich(context, username);
         PlayerBalanceData balanceData = walletService
                 .initialise(context)
                 .isBetTxn(false)
                 .vendorService(vendorService)
                 .process();
-
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
-    private void enrich(BetResultContext context, String jwt) {
-        context.setVendorPlayerUsername(VendorService.jwtGetUserId(jwt));
+    private void enrich(BetResultContext context, String username) {
+        context.setVendorPlayerUsername(username);
     }
 }

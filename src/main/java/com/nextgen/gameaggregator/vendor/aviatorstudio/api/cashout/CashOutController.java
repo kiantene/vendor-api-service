@@ -5,13 +5,10 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import static com.nextgen.gameaggregator.vendor.aviatorstudio.validator.AviatorStudioSignatureValidator.HEADER_AUTHORIZATION;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -24,17 +21,16 @@ public class CashOutController {
     @PostMapping(path = EndPoints.CASHOUT + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashOutResponse> betAction(
-            @RequestHeader(HEADER_AUTHORIZATION) String jwt,
-            @Valid @RequestBody CashOutRequest request) {
+            @Valid @RequestBody CashOutRequest request,
+            @RequestAttribute("username") String username) {
 
         BetContext context = requestMapper.toBetContext(request);
-        enrich(context, jwt);
+        enrich(context, username);
         PlayerBalanceData balanceData = walletService.process(context);
-
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
-    private void enrich(BetContext context, String jwt) {
-        context.setVendorPlayerUsername(VendorService.jwtGetUserId(jwt));
+    private void enrich(BetContext context, String username) {
+        context.setVendorPlayerUsername(username);
     }
 }
