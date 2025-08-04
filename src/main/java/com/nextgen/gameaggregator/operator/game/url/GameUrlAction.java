@@ -270,6 +270,7 @@ public class GameUrlAction {
         GameLaunchDto gameLaunchDto = new GameLaunchDto();
         gameLaunchDto.setTraceId(traceId);
         gameLaunchDto.setLobbyUrl(dto.getLobbyUrl());
+        gameLaunchDto.setIpAddress(dto.getIpAddress());
 
         // 1. Validate all fields in the request object
         loggingService.logStart();
