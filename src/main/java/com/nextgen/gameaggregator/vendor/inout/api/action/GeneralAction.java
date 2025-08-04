@@ -34,7 +34,7 @@ public class GeneralAction {
         this.authenticateService = authenticateService;
     }
 
-    @PostMapping(EndPoints.ACTION)
+    @PostMapping
     public CommonVo action(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -52,7 +52,7 @@ public class GeneralAction {
 
             ValidationUtils.validateRequest(dto);
 
-            vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.OPERATOR_ID, dto.getData().getOperator());
+            vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.OPERATOR_ID, dto.getData().getOperator());
 
             secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
 
@@ -61,7 +61,7 @@ public class GeneralAction {
             vo = this.actionHandling(httpRequestLog, dto);
 
         } catch (InvalidRequestException e) {
-            vo.setResponseCode(ResponseCode.INVALID_TOKEN);
+            vo.setError(ResponseCode.INVALID_TOKEN);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -72,8 +72,8 @@ public class GeneralAction {
 
     private void doVerification(String body, String secretKey, String xSign) throws InvalidRequestException {
 
-        String requestBody = VendorService.hashHMACSha256(body, secretKey);
-        ValidationUtils.isEquals(xSign, requestBody);
+        String requestSignature = VendorService.hashHMACSha256(body, secretKey);
+        ValidationUtils.isEquals(requestSignature, xSign);
     }
 
     private CommonVo actionHandling(HttpRequestLog httpRequestLog, CommonDto<GeneralActionDto> commonDto) {
