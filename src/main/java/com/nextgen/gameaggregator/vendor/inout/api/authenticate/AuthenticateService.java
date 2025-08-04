@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -38,8 +37,7 @@ public class AuthenticateService {
         this.agentPlayerService = agentPlayerService;
     }
 
-    public CommonVo initSession(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
+    public CommonVo initSession(HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonVo responseVo = new CommonVo();
@@ -69,8 +67,6 @@ public class AuthenticateService {
             responseVo.setOperator(dto.getData().getOperator());
         } catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
-        } finally {
-            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;
