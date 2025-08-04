@@ -18,7 +18,7 @@ public class AuthenticateController {
     private final AuthenticateResponseMapper responseMapper;
     private final AuthenticateServiceWrapper authenticateService;
 
-    @GetMapping(path = EndPoints.AUTHENTICATE + "/v2")
+    @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CommonVo> account(
             @RequestAttribute("username") String username,
