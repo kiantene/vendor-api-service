@@ -5,33 +5,24 @@ import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
-import com.nextgen.gameaggregator.vendor.saba.api.createmember.CreateMemberService;
 import com.nextgen.gameaggregator.vendor.saba.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
     private static final String PLATFORM_WEB = "1";
     private static final String PLATFORM_H5 = "2";
-    private static final String WEB_SKIN_TYPE = "&WebSkinType=";
-    private static final String SKIN_TYPE = "&skin=";
-    private static final String DEFAULT_SKIN_NEW_ASIA = "7";
-    private final CreateMemberService createMemberService;
+    private final MemberCreateService memberCreateService;
 
-    public SabaGameLauncher(CreateMemberService createMemberService,
-                            VendorCredentialUtils credentialUtils) {
+    public SabaGameLauncher(VendorCredentialUtils credentialUtils,
+                            MemberCreateService memberCreateService) {
 
         super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class);
-        this.createMemberService = createMemberService;
+        this.memberCreateService = memberCreateService;
     }
 
     @Override
@@ -49,15 +40,7 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     public GameLaunchRequest buildRequestBody(GameLaunchContext context) {
         VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
         String vendorId = credentialAccessor.getValue(Credentials.VENDOR_ID);
-
-        try { // requires refactor for createMember
-            GameSession gameSession = new GameSession();
-            gameSession.setVendorCurrencyCode(context.getVendorCurrencyCode());
-            gameSession.setVendorPlayerUsername(context.getVendorPlayerUsername());
-            createMemberService.call(gameSession, toCredentialsKV(context.getVendorCredentials()));
-        } catch (Exception ex) {
-            throw new RuntimeException(ex); // need better handling
-        }
+        memberCreateService.process(context);
 
         return GameLaunchRequest.builder()
                 .vendorId(vendorId)
@@ -74,22 +57,26 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
         String gameUrl = response.getData();
-        Map<String, VendorLineCredential> credentials = context.getVendorCredentials();
-        String skinParam = this.getSkinParamForUrl(credentials, context);
-        String langParam = "&lang=" + context.getVendorLanguageCode();
-        String homeUrlParam = "&homeUrl=" + context.getLobbyUrl();
-        gameUrl = gameUrl + skinParam + langParam + homeUrlParam;
 
-        context.setGameUrl(gameUrl);
+        String fullUrl = gameUrl +
+                resolveSkinParam(context) +
+                "&lang=" + context.getVendorLanguageCode() +
+                "&homeUrl=" + context.getLobbyUrl();
+
+        context.setGameUrl(fullUrl);
     }
 
-    private String getSkinParamForUrl(Map<String, VendorLineCredential> credentials, GameLaunchContext context) {
-        String skinBase = context.getPlatformId().equals(1) ? SKIN_TYPE : WEB_SKIN_TYPE;
+    private String resolveSkinParam(GameLaunchContext context) {
+        VendorCredentialAccessor accessor = new VendorCredentialAccessor(context.getVendorCredentials());
+        final String WEB_SKIN_TYPE = "&WebSkinType=";
+        final String SKIN_TYPE = "&skin=";
+        final String DEFAULT_SKIN_NEW_ASIA = "7";
+        String skinPrefix = context.getPlatformId().equals(1) ? SKIN_TYPE : WEB_SKIN_TYPE;
         String vendorCurrency = context.getVendorCurrencyCode();
 
-        String customCurrency = getCredentialValue(credentials, Credentials.CUSTOM_CURRENCY, "");
-        String customSkin = getCredentialValue(credentials, Credentials.CUSTOM_SKIN, DEFAULT_SKIN_NEW_ASIA);
-        String defaultSkin = getCredentialValue(credentials, Credentials.DEFAULT_SKIN, DEFAULT_SKIN_NEW_ASIA);
+        String customCurrency = accessor.getOrDefault(Credentials.CUSTOM_CURRENCY, "");
+        String customSkin = accessor.getOrDefault(Credentials.CUSTOM_SKIN, DEFAULT_SKIN_NEW_ASIA);
+        String defaultSkin = accessor.getOrDefault(Credentials.DEFAULT_SKIN, DEFAULT_SKIN_NEW_ASIA);
 
         if (!customCurrency.isEmpty()) {
             List<String> currencyList = Arrays.asList(customCurrency.split(","));
@@ -98,20 +85,6 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
             }
         }
 
-        return skinBase + defaultSkin;
-    }
-
-    private Map<String, String> toCredentialsKV(Map<String, VendorLineCredential> credentialMap) {
-        return credentialMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().getValue()
-                ));
-    }
-
-    private String getCredentialValue(Map<String, VendorLineCredential> credentials, String key, String defaultValue) {
-        return Optional.ofNullable(credentials.get(key))
-                .map(VendorLineCredential::getValue)
-                .orElse(defaultValue);
+        return skinPrefix + defaultSkin;
     }
 }
