@@ -41,13 +41,17 @@ public class WalletRollbackServiceWrapper {
     }
 
     private void rollbackSettledBet(BetRollbackContext context, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog) throws Exception {
+        //TODO BETHISTORY SHOULD BE A LIST
         BetHistory betHistory = findSettledBet(context);
+
+        //TODO INSERT AS LIST TO COUCHBASE SETTLEDBET
         if (betHistory == null) return;
 
         SettledBet settledBetDocument = buildSettledBetDocument(betHistory);
         storeSettledBetDocument(settledBetDocument);
-        RollbackData rollbackData = rollbackDataMapper.toRollbackData(context);
 
+        //TODO ADD CONDITION TO CHECK IF DONT HAVE ROLLBACK SETTLEDBET THEN ONLY DO MAPPING AND DO PROCESSROLLBACK
+        RollbackData rollbackData = rollbackDataMapper.toRollbackData(context);
         walletService.processRollback(context.getTraceId(), rollbackData, gameSession, vendorService, httpRequestLog);
     }
 
