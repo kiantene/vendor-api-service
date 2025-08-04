@@ -48,7 +48,7 @@ public class WalletBetResultServiceWrapper {
 
         try {
             BigDecimal balance = walletService.processBetResult(
-                    context.getTraceId(),
+                    httpRequestLog.getId(),
                     gameSession,
                     betResultData,
                     resultType,
@@ -88,7 +88,7 @@ public class WalletBetResultServiceWrapper {
         final Integer PROCESSING = 1;
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-        httpRequestLog.setId(logContext.getTraceId());
+        logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
         httpRequestLog.setRequestBody(logContext.getBody());
         httpRequestLog.setStatus(PROCESSING);
