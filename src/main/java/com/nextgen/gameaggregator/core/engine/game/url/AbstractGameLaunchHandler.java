@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.nextgen.core.webclient.ApiExecutor;
 import com.nextgen.core.webclient.HandlerResult;
-import com.nextgen.gameaggregator.core.signature.NoOpSignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
@@ -35,9 +34,7 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
         this.credentialUtils = credentialUtils;
         this.vendorClassName = vendorClassName;
         this.responseType = responseType;
-        this.signatureStrategy = strategyType != null
-                ? strategyType.getInstance()
-                : new NoOpSignatureStrategy(); // or null-safe fallback
+        this.signatureStrategy = (strategyType != null ? strategyType : SigningStrategyType.NO_OP).getStrategy();
     }
 
     @Override
