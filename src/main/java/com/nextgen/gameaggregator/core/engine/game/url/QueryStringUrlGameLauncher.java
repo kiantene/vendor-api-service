@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 
 public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHandler<T, String> {
@@ -10,6 +10,13 @@ public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHa
                                          String vendorClassName) {
 
         super(credentialUtils, vendorClassName, String.class);
+    }
+
+    protected QueryStringUrlGameLauncher(VendorCredentialUtils credentialUtils,
+                                         String vendorClassName,
+                                         SigningStrategyType strategyType) {
+
+        super(credentialUtils, vendorClassName, String.class, strategyType);
     }
 
     @Override
