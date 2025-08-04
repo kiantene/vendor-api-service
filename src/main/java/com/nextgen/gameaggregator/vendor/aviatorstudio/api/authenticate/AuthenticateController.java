@@ -21,8 +21,8 @@ public class AuthenticateController {
     @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CommonVo> account(
-            @RequestAttribute("username") String username,
-            @ModelAttribute AuthenticateRequest request) {
+            @ModelAttribute AuthenticateRequest request,
+            @RequestAttribute("username") String username) {
 
         AuthenticateContext context = requestMapper.toAuthenticateContext(request);
         enrich(context, username);
