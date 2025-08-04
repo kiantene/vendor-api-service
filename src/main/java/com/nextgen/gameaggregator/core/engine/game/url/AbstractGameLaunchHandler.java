@@ -49,6 +49,10 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
         return signatureStrategy.sign(payload, secret);
     }
 
+    protected String sign(Object payload, String secret) {
+        return signatureStrategy.sign(payload, secret);
+    }
+
     protected final VendorCredentialAccessor credentials(Map<String, VendorLineCredential> raw) {
         return credentialUtils.of(raw);
     }
