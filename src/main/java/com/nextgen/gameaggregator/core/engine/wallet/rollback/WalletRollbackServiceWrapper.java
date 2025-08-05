@@ -80,7 +80,7 @@ public class WalletRollbackServiceWrapper {
 
     private void storeSettledBetDocument(List<SettledBet> settledBetList) {
         try {
-            settledBetService.save(settledBetList);
+            settledBetService.saveAll(settledBetList);
         } catch (Exception ex) {
             // TODO: store failure in couchbase rollback_dlq
             throw ex;

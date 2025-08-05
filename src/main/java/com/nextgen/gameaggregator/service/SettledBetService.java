@@ -225,7 +225,7 @@ public class SettledBetService {
         return settledBetList;
     }
 
-    public List<SettledBet> save(List<SettledBet> settledBetList) {
+    public List<SettledBet> saveAll(List<SettledBet> settledBetList) {
         rawSettledBetRepository.saveAll(settledBetList);
         return settledBetList;
     }
