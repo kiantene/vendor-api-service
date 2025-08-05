@@ -36,9 +36,9 @@ public class WalletRollbackServiceWrapper {
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         HttpResponse httpResponse = context.getResponseVo();
         HttpServletRequest httpServletRequest = context.getHttpServletRequest();
-
+        HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
+        
         CompletableFuture.runAsync(() -> {
-            HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
             newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
             newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
             try {
