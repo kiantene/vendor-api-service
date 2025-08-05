@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.entity.Currency;
-import com.nextgen.gameaggregator.core.entity.GameCategory;
-import com.nextgen.gameaggregator.core.entity.Vendor;
-import com.nextgen.gameaggregator.core.entity.VendorGame;
+import com.nextgen.gameaggregator.core.entity.*;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.service.*;
 import org.springframework.stereotype.Service;
@@ -16,21 +13,25 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
     private final VendorDataService vendorDataService;
     private final VendorGameDataService vendorGameDataService;
     private final GameCategoryDataService gameCategoryDataService;
+    private final AgentDataService agentDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
                                       CurrencyDataService currencyDataService,
                                       VendorDataService vendorDataService,
                                       VendorGameDataService vendorGameDataService,
-                                      GameCategoryDataService gameCategoryDataService) {
+                                      GameCategoryDataService gameCategoryDataService,
+                                      AgentDataService agentDataService) {
         super(agentPlayerDataService, vendorPlayerDataService);
         this.currencyDataService = currencyDataService;
         this.vendorDataService = vendorDataService;
         this.vendorGameDataService = vendorGameDataService;
         this.gameCategoryDataService = gameCategoryDataService;
+        this.agentDataService = agentDataService;
     }
 
     public void doEnrich(PromoPayoutContext context) {
+        this.populateAgent(context);
         this.populateCurrency(context);
         this.populateVendor(context);
         this.populateVendorGame(context);
@@ -42,6 +43,16 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             Currency currency = currencyDataService.get(context.getCurrencyId());
             context.setCurrencyId(currency.getId());
             context.setCurrency(currency.getCode());
+        } catch (EntityNotFoundException e) {
+            throw new InternalConfigurationException(e.getMessage());
+        }
+    }
+
+    private void populateAgent(PromoPayoutContext context) {
+        try {
+            Agent agent = agentDataService.get(context.getAgentId());
+            context.setMasterAgentId(agent.getMasterAgentId());
+            context.setHouseId(agent.getHouseId());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }

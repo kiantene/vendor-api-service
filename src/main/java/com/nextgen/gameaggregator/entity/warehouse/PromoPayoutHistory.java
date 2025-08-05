@@ -60,6 +60,12 @@ public class PromoPayoutHistory {
     @JsonProperty("agent_id")
     private Integer agentId;
 
+    @JsonProperty("master_agent_id")
+    private Integer masterAgentId;
+
+    @JsonProperty("house_id")
+    private Integer houseId;
+
     @JsonProperty("currency_id")
     private Integer currencyId;
 

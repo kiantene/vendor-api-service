@@ -22,6 +22,8 @@ public class PromoPayoutContext implements VendorPlayerAware {
 
     // GA
     private Integer agentId;
+    private Integer masterAgentId;
+    private Integer houseId;
     private Integer vendorId;
     private String vendorCode;
     private Integer vendorLineId;

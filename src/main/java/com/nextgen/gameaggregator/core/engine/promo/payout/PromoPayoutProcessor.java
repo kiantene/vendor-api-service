@@ -49,6 +49,8 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                 .gameCategoryId(context.getGameCategoryId())
                 .gameCategoryCode(context.getGameCategoryCode())
                 .agentId(context.getAgentId())
+                .masterAgentId(context.getMasterAgentId())
+                .houseId(context.getHouseId())
 
                 .currencyId(context.getCurrencyId())
                 .currencyCode(context.getCurrency())
