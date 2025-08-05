@@ -9,6 +9,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,5 +64,9 @@ public class VendorService extends BaseVendorService {
     public Integer operatorTimeoutTiming() {
         //millisecond
         return 4000;
+    }
+
+    public static BigDecimal roundDownToTwoDecimals(BigDecimal value) {
+        return value.setScale(2, RoundingMode.DOWN);
     }
 }
