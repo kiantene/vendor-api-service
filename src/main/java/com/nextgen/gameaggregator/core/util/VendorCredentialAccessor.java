@@ -29,4 +29,8 @@ public class VendorCredentialAccessor {
                 .map(VendorLineCredential::getValue)
                 .filter(v -> !v.isBlank());
     }
+
+    public String getOrDefault(String key, String defaultValue) {
+        return getOptionalValue(key).orElse(defaultValue);
+    }
 }
