@@ -6,7 +6,9 @@ import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MemberCreateHandler extends AbstractGameLaunchHandler<MemberCreateRequest, MemberCreateResponse> {
 
     public MemberCreateHandler(VendorCredentialUtils credentialUtils) {
