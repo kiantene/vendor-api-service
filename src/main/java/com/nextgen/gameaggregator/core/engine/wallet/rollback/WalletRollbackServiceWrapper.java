@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -34,16 +35,18 @@ public class WalletRollbackServiceWrapper {
         BaseVendorService vendorService = context.getVendorService();
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         HttpResponse httpResponse = context.getResponseVo();
+        HttpServletRequest httpServletRequest = context.getHttpServletRequest();
 
         CompletableFuture.runAsync(() -> {
+            HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
+            newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
+            newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
             try {
-                httpRequestLog.setStartTime(System.currentTimeMillis());
-                httpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
-                this.rollbackSettledBet(context, gameSession, vendorService, httpRequestLog);
+                this.rollbackSettledBet(context, gameSession, vendorService, newHttpRequestLog);
             } catch (Exception e) {
-                httpService.logError(httpRequestLog, e);
+                httpService.logError(newHttpRequestLog, e);
             } finally {
-                httpService.end(httpRequestLog, httpResponse);
+                httpService.end(newHttpRequestLog, httpResponse);
             }
         }, CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.MILLISECONDS));
     }

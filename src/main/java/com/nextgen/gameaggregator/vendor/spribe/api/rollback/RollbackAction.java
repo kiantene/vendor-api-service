@@ -104,6 +104,8 @@ public class RollbackAction {
             vo.setData(data);
 
         } catch (BetNotFoundException betNotFoundException) {
+            vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
             // find and insert settled bet to process rollback
             BetRollbackContext rollbackContext = rollbackContextMapper.toBetRollbackContext(dto);
@@ -111,11 +113,8 @@ public class RollbackAction {
             rollbackContext.setGameSession(gameSession);
             rollbackContext.setVendorService(vendorService);
             rollbackContext.setHttpRequestLog(httpRequestLog);
-            rollbackContext.setResponseVo(vo);
             walletRollbackServiceWrapper.asyncRollbackSettledBet(rollbackContext);
 
-            vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, betNotFoundException);
         } catch (RecordNotFoundException recordNotFoundException) {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, recordNotFoundException);
