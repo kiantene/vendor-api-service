@@ -7,8 +7,6 @@ import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
-import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -39,18 +37,16 @@ public class WalletRollbackServiceWrapper {
         HttpResponse httpResponse = context.getResponseVo();
         HttpServletRequest httpServletRequest = context.getHttpServletRequest();
 
-        HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
-        newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
-        newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
         CompletableFuture.runAsync(() -> {
-            ResponseVo responseVo = new ResponseVo();
+            HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
+            newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
+            newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
             try {
                 this.rollbackSettledBet(context, gameSession, vendorService, newHttpRequestLog);
-                responseVo.setCode(ErrorCodes.SUCCESS.code);
             } catch (Exception e) {
                 httpService.logError(newHttpRequestLog, e);
             } finally {
-                httpService.end(newHttpRequestLog, responseVo);
+                httpService.end(newHttpRequestLog, httpResponse);
             }
         }, CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.MILLISECONDS));
     }
@@ -65,7 +61,7 @@ public class WalletRollbackServiceWrapper {
         this.storeSettledBetDocument(settledBetList);
 
         RollbackData rollbackData = rollbackDataMapper.toRollbackData(context);
-        walletService.processRollback(context.getTraceId(), rollbackData, gameSession, vendorService, httpRequestLog);
+        walletService.processRollback(httpRequestLog.getId(), rollbackData, gameSession, vendorService, httpRequestLog);
     }
 
     private List<BetHistory> findSettledBet(BetRollbackContext context) {
