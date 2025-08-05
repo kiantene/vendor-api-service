@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Builder;
 import lombok.Data;
 
@@ -21,4 +22,5 @@ public class BetRollbackContext {
     private BaseVendorService vendorService;
     private GameSession gameSession;
     private HttpRequestLog httpRequestLog;
+    private HttpResponse responseVo;
 }
