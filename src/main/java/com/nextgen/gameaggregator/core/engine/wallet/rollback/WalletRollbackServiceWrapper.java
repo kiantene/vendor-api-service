@@ -37,8 +37,8 @@ public class WalletRollbackServiceWrapper {
 
         CompletableFuture.runAsync(() -> {
             try {
-                httpRequestLog.setStartTime(System.currentTimeMillis());
-                httpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
+                //httpRequestLog.setStartTime(System.currentTimeMillis());
+                //httpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
                 this.rollbackSettledBet(context, gameSession, vendorService, httpRequestLog);
             } catch (Exception e) {
                 httpService.logError(httpRequestLog, e);
