@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.service.VendorService;
 import org.springframework.stereotype.Service;
 
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
@@ -37,7 +38,10 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest
 
         try {
             //generate JWT token
-            String token = JwtUtil.generateJwt(userid, jwtSecret, publicKey);
+            String token2 = JwtUtil.generateJwt(userid, jwtSecret, publicKey);
+            System.out.println("Aviator JwtUtil: " + token2);
+            String token = VendorService.generateJWT(userid, jwtSecret, publicKey);
+            System.out.println("Aviator VendorService: " + token);
             return GameLaunchRequest.builder()
                     .token(token)
                     .providerId(accessor.getValue(Credentials.PROVIDER_ID))
