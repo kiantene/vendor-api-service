@@ -38,10 +38,10 @@ public class WalletRollbackServiceWrapper {
         HttpResponse httpResponse = context.getResponseVo();
         HttpServletRequest httpServletRequest = context.getHttpServletRequest();
 
+        HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
+        newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
+        newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
         CompletableFuture.runAsync(() -> {
-            HttpRequestLog newHttpRequestLog = httpService.start(httpServletRequest);
-            newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
-            newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
             try {
                 this.rollbackSettledBet(context, gameSession, vendorService, newHttpRequestLog);
             } catch (Exception e) {
