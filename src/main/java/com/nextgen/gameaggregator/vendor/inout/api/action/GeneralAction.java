@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
+import com.nextgen.gameaggregator.vendor.inout.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
 import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.EndPoints;
@@ -26,12 +27,16 @@ public class GeneralAction {
     private final HttpService httpService;
     private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
+    private final RefundService refundService;
 
     public GeneralAction(HttpService httpService,
-                         VendorLineService vendorLineService, AuthenticateService authenticateService) {
+                         VendorLineService vendorLineService,
+                         AuthenticateService authenticateService,
+                         RefundService refundService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
+        this.refundService = refundService;
     }
 
     @PostMapping
@@ -92,6 +97,7 @@ public class GeneralAction {
                 break;
 
             case Actions.ROLLBACK:
+                vo = refundService.refund(httpRequestLog);
                 break;
 
             default:
