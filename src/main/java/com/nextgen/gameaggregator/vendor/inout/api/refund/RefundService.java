@@ -84,10 +84,7 @@ public class RefundService {
             if (!isRequestExists) {
                 requestIdempotentLogService.delete(dto.getData(), dto.getData().getUser_id());
             }
-            httpService.end(httpRequestLog, responseVo);
         }
-
-
         return responseVo;
     }
 
