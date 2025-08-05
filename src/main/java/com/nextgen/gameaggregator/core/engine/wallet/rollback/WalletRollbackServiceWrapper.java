@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -42,12 +43,14 @@ public class WalletRollbackServiceWrapper {
         newHttpRequestLog.setUrl(httpRequestLog.getUrl() + " (Internal use)");
         newHttpRequestLog.setRequestBody(httpRequestLog.getRequestBody());
         CompletableFuture.runAsync(() -> {
+            ResponseVo responseVo = new ResponseVo();
             try {
                 this.rollbackSettledBet(context, gameSession, vendorService, newHttpRequestLog);
+                responseVo.setCode(ErrorCodes.SUCCESS.code);
             } catch (Exception e) {
                 httpService.logError(newHttpRequestLog, e);
             } finally {
-                httpService.end(newHttpRequestLog, new ResponseVo());
+                httpService.end(newHttpRequestLog, responseVo);
             }
         }, CompletableFuture.delayedExecutor(delaySeconds, TimeUnit.MILLISECONDS));
     }
