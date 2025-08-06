@@ -21,6 +21,9 @@ public interface BetResultData {
     BigDecimal getJackpotAmount();
     Integer getIsFreespin();
     BetStatus getBetStatus();
+    default Integer isEndRound() {
+        return null;
+    }
     default boolean getShouldSettleByBet() {
         return false;
     }

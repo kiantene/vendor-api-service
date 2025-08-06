@@ -148,6 +148,7 @@ public class TransferService {
                     if (!requireDebit) {
                         WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                         String type = Optional.ofNullable(dto.getSpecialGame()).map(SpecialGameDto::getType).orElse(null);
+                        winDataDto.setIsEndRound(this.setIsEndRound(winDataDto));
                         ResultType resultType = determineResultType(type, winDataDto);
                         BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                         transferVo.setBalance(payoutBalance);
@@ -235,6 +236,19 @@ public class TransferService {
         }
 
         return transferVo;
+    }
+
+    private Integer setIsEndRound(WinDataDto winDataDto) {
+        Integer isEndRound = 1;
+
+        //IF GOT SPECIAL GAME, AND SEQUENCE IS NOT EQUAL TO COUNT, THEN ISENDROUND = 0
+        if (winDataDto.getSpecialGame() != null && winDataDto.getSpecialGame().getType() != null) {
+            if (winDataDto.getSpecialGame().getSequence() != winDataDto.getSpecialGame().getCount()) {
+                isEndRound = 0;
+            }
+        }
+
+        return isEndRound;
     }
 
     private void doValidation(TransferDto dto) throws InvalidRequestException {
