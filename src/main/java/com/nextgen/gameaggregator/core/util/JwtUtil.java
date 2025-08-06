@@ -16,6 +16,7 @@ import java.util.Base64;
 
 public class JwtUtil {
     private static final String CLAIM_USER_ID = "userId";
+    private static final String CLAIM_IAT = "iat";
 
     static {
         // Register BouncyCastle provider if not already registered
@@ -36,7 +37,7 @@ public class JwtUtil {
 
         return JWT.create()
                 .withClaim(CLAIM_USER_ID, userId)
-                .withClaim("iat", System.currentTimeMillis())
+                .withClaim(CLAIM_IAT, System.currentTimeMillis())
 //                .withIssuedAt(Date.from(now))
                 .sign(algorithm);
     }
