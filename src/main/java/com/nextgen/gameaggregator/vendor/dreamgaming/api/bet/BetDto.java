@@ -94,10 +94,12 @@ public class BetDto implements BetResultData {
     public BigDecimal getEffectiveTurnover() {
         BigDecimal result = null;
         if (this.type.equals(TransferType.BET)) {
-            if (this.getDetailDto() != null && this.getDetailDto().getAvailableBet() != null) {
-                result = this.getDetailDto().getAvailableBet();
-            } else if (this.getMember() != null && this.getMember().getAmount() != null) {
-                result = this.getMember().getAmount().abs();
+            // Default to bet amount
+            result = this.getBetAmount();
+            // Use availableBet if present
+            DetailDto detaildto = this.getDetailDto();
+            if (detail != null && detaildto.getAvailableBet() != null) {
+                result = detaildto.getAvailableBet();
             }
         }
 
