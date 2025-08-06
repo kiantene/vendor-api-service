@@ -64,19 +64,20 @@ public class CommonSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        BigDecimal effectiveTurnover = null;
-        if (this.getWinAmount().compareTo(this.settleDto.getValidBetAmount()) == 0) {
-            //return 0 when win amount is same with bet amount
-            effectiveTurnover = BigDecimal.ZERO;
-        } else if (this.getWinAmount().compareTo(BigDecimal.ZERO) == 0 ||
-                this.getWinAmount().compareTo(this.settleDto.getValidBetAmount()) > 0) {
-            //return bet amount when win amount is 0 or win amount is more than bet amount.
-            effectiveTurnover = this.settleDto.getValidBetAmount();
-        } else if (this.getWinAmount().compareTo(this.settleDto.getValidBetAmount()) < 0) {
-            //return win amount when win amount less than bet amount.
-            effectiveTurnover = this.getWinAmount();
+        BigDecimal winAmount = this.getWinAmount();
+        BigDecimal betAmount = this.settleDto.getValidBetAmount();
+
+        if (winAmount.compareTo(betAmount) == 0) {
+            //Return 0 when win amount is same with bet amount
+            return BigDecimal.ZERO;
+        } else if (winAmount.compareTo(betAmount) < 0) {
+            //Return win amount when win amount less than bet amount.
+            return winAmount;
+        } else {
+            // Return bet amount when none of the above conditions are met
+            // (i.e. win amount is 0 or greater than the bet amount)
+            return betAmount;
         }
-        return effectiveTurnover;
     }
 
     @Override
