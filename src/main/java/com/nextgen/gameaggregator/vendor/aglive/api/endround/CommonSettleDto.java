@@ -67,12 +67,12 @@ public class CommonSettleDto implements BetResultData {
         BigDecimal winAmount = this.getWinAmount();
         BigDecimal betAmount = this.settleDto.getValidBetAmount();
 
-        if (winAmount.compareTo(betAmount) == 0) {
-            //Return 0 when win amount is same with bet amount
-            return BigDecimal.ZERO;
-        } else if (winAmount.compareTo(betAmount) < 0) {
+        if (winAmount.compareTo(betAmount) < 0) {
             //Return win amount when win amount less than bet amount.
             return winAmount;
+        } else if (winAmount.compareTo(betAmount) == 0 && betAmount.compareTo(BigDecimal.ZERO) != 0) {
+            //Return 0 when win amount is same with bet amount
+            return BigDecimal.ZERO;
         } else {
             // Return bet amount when none of the above conditions are met
             // (i.e. win amount is 0 or greater than the bet amount)
