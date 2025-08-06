@@ -19,17 +19,17 @@ public class LogContext {
 
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
-    private String timestamp;
+    private String time;
     private String type;
     private String url;
     private String traceId;
     private String logGroup;
 
     // Raw request body received from the client (e.g., operator system)
-    private Object body;
+    private String body;
 
     // Raw response body returned to the client
-    private Object response;
+    private String response;
     private long start;
     private long end;
     private long timeTaken;
@@ -63,7 +63,7 @@ public class LogContext {
         this.logGroup = "general";
         this.traceId = UuidUtil.newUuidV7StringRaw();
         this.start = System.currentTimeMillis();
-        this.timestamp = this.formatTimestamp(this.start);
+        this.time = this.formatTimestamp(this.start);
     }
 
     public void setEnd() {
@@ -109,7 +109,7 @@ public class LogContext {
     public String toJson() {
         try {
             Map<String, Object> base = new LinkedHashMap<>();
-            base.put("timestamp", timestamp);
+            base.put("timestamp", time);
             base.put("logGroup", logGroup);
             base.put("traceId", traceId);
             base.put("type", type);
