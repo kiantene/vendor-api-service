@@ -40,16 +40,16 @@ public class InoutGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequ
         String subId = accessor.getValue(Credentials.NAME);
 
         return GameLaunchRequest.builder()
-                .gameMode(context.getVendorGameCode())
                 .aggregatorId(UUID.fromString(operatorId))
+                .subId(subId)
+                .gameMode(context.getVendorGameCode())
                 .currency(context.getVendorCurrencyCode())
                 .authToken(context.getToken())
                 .lang(context.getVendorLanguageCode())
-                .themeId(UUID.fromString(operatorId))
-                .lobbyUrl(context.getLobbyUrl())
-                .subId(subId)
+                .adaptive(false)
                 .isDemoPlay(false)
                 .token(sign(operatorId + ":" + subId, secretKey))
+                .lobbyUrl(context.getLobbyUrl())
                 .build();
     }
 }
