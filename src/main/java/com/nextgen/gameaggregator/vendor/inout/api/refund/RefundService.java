@@ -9,12 +9,17 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -43,12 +48,13 @@ public class RefundService {
         this.gameSessionService = gameSessionService;
     }
 
-    public CommonVo refund(HttpRequestLog httpRequestLog) {
+    public CommonVo refund(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonDto<RefundDto> dto = new CommonDto<>();
         CommonVo responseVo = new CommonVo();
         boolean isRequestExists = false;
+        httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(httpServletRequest));
 
         try {
             // 1. Retrieve request body and convert into dto

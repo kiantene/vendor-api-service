@@ -8,7 +8,9 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -17,6 +19,7 @@ import java.math.BigDecimal;
 @Service
 public class AuthenticateService {
     private final HttpService httpService;
+    private final VendorService vendorService;
     private final WalletService walletService;
     private final VendorLineService vendorLineService;
     private final VendorGameService vendorGameService;
@@ -24,12 +27,14 @@ public class AuthenticateService {
     private final AgentPlayerService agentPlayerService;
 
     public AuthenticateService(HttpService httpService,
+                               VendorService vendorService,
                                WalletService walletService,
                                VendorLineService vendorLineService,
                                VendorGameService vendorGameService,
                                GameSessionService gameSessionService,
                                AgentPlayerService agentPlayerService) {
         this.httpService = httpService;
+        this.vendorService = vendorService;
         this.walletService = walletService;
         this.vendorLineService = vendorLineService;
         this.vendorGameService = vendorGameService;
@@ -37,10 +42,11 @@ public class AuthenticateService {
         this.agentPlayerService = agentPlayerService;
     }
 
-    public CommonVo initSession(HttpRequestLog httpRequestLog) {
+    public CommonVo initSession(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonVo responseVo = new CommonVo();
+        httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(httpServletRequest));
 
         try {
             // 1. Retrieve request body and convert into dto

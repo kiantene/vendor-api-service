@@ -63,7 +63,7 @@ public class GeneralAction {
 
             this.doVerification(body, secretKey, xSign);
 
-            vo = this.actionHandling(httpRequestLog, dto);
+            vo = this.actionHandling(httpRequestLog, request, dto);
 
         } catch (Exception e) {
             vo.setError(ResponseCode.INVALID_TOKEN);
@@ -80,13 +80,13 @@ public class GeneralAction {
         ValidationUtils.isEquals(requestSignature, xSign);
     }
 
-    private CommonVo actionHandling(HttpRequestLog httpRequestLog, CommonDto<GeneralActionDto> commonDto) {
+    private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto) {
         CommonVo vo = new CommonVo();
 
         switch (commonDto.getAction()) {
 
             case Actions.INITIALIZE:
-                vo = authenticateService.initSession(httpRequestLog);
+                vo = authenticateService.initSession(httpRequestLog, httpServletRequest);
                 break;
 
             case Actions.BET:
@@ -96,7 +96,7 @@ public class GeneralAction {
                 break;
 
             case Actions.ROLLBACK:
-                vo = refundService.refund(httpRequestLog);
+                vo = refundService.refund(httpRequestLog, httpServletRequest);
                 break;
 
             default:
