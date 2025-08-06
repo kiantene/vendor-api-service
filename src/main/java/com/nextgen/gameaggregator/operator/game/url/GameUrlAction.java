@@ -73,7 +73,7 @@ public class GameUrlAction {
             GameUrlDto dto = this.initRequest(httpRequestLog, responseVo);
             LogContext logContext = LogContextHolder.get();
             if (logContext != null) {
-                logContext.setBody(dto);
+                logContext.setBody(dto.toString());
             }
             String traceId = dto.getTraceId();
 
