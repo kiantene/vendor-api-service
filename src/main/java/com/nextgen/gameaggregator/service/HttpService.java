@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -345,7 +346,7 @@ public class HttpService {
                 requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
                 requestLog.setRootCause(rootCause);
-            } else if (exception instanceof AmbiguousTimeoutException || exception instanceof IncorrectResultSizeDataAccessException || exception instanceof IndexOutOfBoundsException) {
+            } else if (exception instanceof AmbiguousTimeoutException || exception instanceof IncorrectResultSizeDataAccessException || exception instanceof IndexOutOfBoundsException || exception instanceof ExhaustedRetryException) {
                 requestLog.setErrorMessage(getStackTrace(exception));
             } else {
                 requestLog.setErrorMessage(exception.toString());
