@@ -113,7 +113,6 @@ public class RollbackAction {
             rollbackContext.setGameSession(gameSession);
             rollbackContext.setVendorService(vendorService);
             rollbackContext.setHttpRequestLog(httpRequestLog);
-            rollbackContext.setHttpServletRequest(request);
             walletRollbackServiceWrapper.asyncRollbackSettledBet(rollbackContext);
 
         } catch (RecordNotFoundException recordNotFoundException) {
