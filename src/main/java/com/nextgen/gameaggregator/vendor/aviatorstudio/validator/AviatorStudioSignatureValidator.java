@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.validator;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -9,6 +8,7 @@ import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
 import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
@@ -28,6 +28,11 @@ public class AviatorStudioSignatureValidator implements VendorSignatureValidator
     public static final String CLAIM_USER_ID = "userId";
     private final VendorPlayerService vendorPlayerService;
     private final VendorLineService vendorLineService;
+
+    public static String getUsername(String jwtToken) {
+        DecodedJWT decodedJWT = JWT.decode(jwtToken);
+        return decodedJWT.getClaim(CLAIM_USER_ID).asString();
+    }
 
     @Override
     public String getVendorClassName() {
@@ -63,14 +68,26 @@ public class AviatorStudioSignatureValidator implements VendorSignatureValidator
         return new VendorErrorResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, responseVo);
     }
 
-    private DecodedJWT verifyAndDecode(String jwtToken, String jwtSecret) throws JWTVerificationException {
-        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
-        JWTVerifier verifier = JWT.require(algorithm).build();
-        return verifier.verify(jwtToken);
-    }
+    private DecodedJWT verifyAndDecode(String jwtToken, String jwtSecret) throws JWTVerificationException, AuthenticationException {
+//        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+//        JWTVerifier verifier = JWT.require(algorithm).build();
+//        return verifier.verify(jwtToken);
 
-    public static String getUsername(String jwtToken) {
-        DecodedJWT decodedJWT = JWT.decode(jwtToken);
-        return decodedJWT.getClaim(CLAIM_USER_ID).asString();
+        Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
+
+        // Decode token WITHOUT verifying claims like `iat`
+        DecodedJWT decoded = JWT.decode(jwtToken);
+
+        algorithm.verify(decoded); // Signature check only
+
+        long issuedAtMillis = decoded.getClaim("iat").asLong();
+        long nowMillis = System.currentTimeMillis();
+        long twoDaysMillis = 2L * 24 * 60 * 60 * 1000;
+
+        if (Math.abs(nowMillis - issuedAtMillis) > twoDaysMillis) {
+            throw new AuthenticationException();
+        }
+
+        return decoded;
     }
 }

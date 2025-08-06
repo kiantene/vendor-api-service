@@ -13,7 +13,6 @@ import java.security.Security;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Date;
 
 public class JwtUtil {
     private static final String CLAIM_USER_ID = "userId";
@@ -37,7 +36,8 @@ public class JwtUtil {
 
         return JWT.create()
                 .withClaim(CLAIM_USER_ID, userId)
-                .withIssuedAt(Date.from(now))
+                .withClaim("iat", System.currentTimeMillis())
+//                .withIssuedAt(Date.from(now))
                 .sign(algorithm);
     }
 

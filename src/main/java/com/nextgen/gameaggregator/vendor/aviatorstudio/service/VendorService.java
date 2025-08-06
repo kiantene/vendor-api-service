@@ -24,9 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.Instant;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Enumeration;
 
 @Setter
@@ -62,8 +60,7 @@ public class VendorService extends BaseVendorService {
         Algorithm algorithm = Algorithm.HMAC256(jwtSecret);
         String jwt = JWT.create()
                 .withClaim(CLAIM_USER_ID, userId)
-//                .withClaim("iat", issuedAtMillis)
-                .withIssuedAt(Date.from(Instant.now()))
+                .withClaim("iat", issuedAtMillis)
                 .sign(algorithm);
 
         return encrypt(publicKey, jwt);
