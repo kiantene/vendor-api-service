@@ -98,7 +98,7 @@ public class BetDto implements BetResultData {
             result = this.getBetAmount();
             // Use availableBet if present
             DetailDto detaildto = this.getDetailDto();
-            if (detail != null && detaildto.getAvailableBet() != null) {
+            if (detaildto != null && detaildto.getAvailableBet() != null) {
                 result = detaildto.getAvailableBet();
             }
         }
