@@ -24,5 +24,6 @@ public class GameLaunchContext {
     Map<String, VendorLineCredential> vendorCredentials;
 
     private String vendorToken;
+    private String vendorFormData;
     private String gameUrl;
 }

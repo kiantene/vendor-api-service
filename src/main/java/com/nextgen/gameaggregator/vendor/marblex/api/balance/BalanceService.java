@@ -89,7 +89,7 @@ public class BalanceService {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
 //        // Verify Currency from dto is equal
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), InvalidCurrencyException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidCurrencyException::new);
 
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
     }
