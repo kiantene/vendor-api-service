@@ -41,7 +41,7 @@ public class CashTransferInOutAction {
     private final LoggingService loggingService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorGameCodeService vendorGameCodeService;
-    private final PGSoftPromoPayoutService promoPayoutService;
+//    private final PGSoftPromoPayoutService promoPayoutService;
 
     public CashTransferInOutAction(HttpService httpService,
                                    GameSessionService gameSessionService,
@@ -52,8 +52,8 @@ public class CashTransferInOutAction {
                                    ValidationService validationService,
                                    LoggingService loggingService,
                                    RequestIdempotentLogService requestIdempotentLogService,
-                                   VendorGameCodeService vendorGameCodeService,
-                                   PGSoftPromoPayoutService promoPayoutService) {
+                                   VendorGameCodeService vendorGameCodeService) {
+//                                   PGSoftPromoPayoutService promoPayoutService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -65,7 +65,7 @@ public class CashTransferInOutAction {
         this.loggingService = loggingService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorGameCodeService = vendorGameCodeService;
-        this.promoPayoutService = promoPayoutService;
+//        this.promoPayoutService = promoPayoutService;
     }
 
     @PostMapping(path = Endpoints.BET)
@@ -82,9 +82,9 @@ public class CashTransferInOutAction {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
 
             // TODO : catch new exception and error mapping to vendor
-            if (promoPayoutService.isPromoPayout(dto)) {
-                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
-            }
+//            if (promoPayoutService.isPromoPayout(dto)) {
+//                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
+//            }
 
             vendorCurrencyCode = dto.getCurrencyCode();
 
