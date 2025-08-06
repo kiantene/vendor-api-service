@@ -113,9 +113,6 @@ public class RollbackAction {
             rollbackContext.setGameSession(gameSession);
             rollbackContext.setVendorService(vendorService);
             rollbackContext.setHttpRequestLog(httpRequestLog);
-            ResponseVo rollbackVo = new ResponseVo();
-            rollbackVo.setErrorCode(ErrorCodes.SUCCESS);
-            rollbackContext.setResponseVo(rollbackVo);
             rollbackContext.setHttpServletRequest(request);
             walletRollbackServiceWrapper.asyncRollbackSettledBet(rollbackContext);
 
