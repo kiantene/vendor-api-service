@@ -25,15 +25,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class GeneralAction {
 
     private final HttpService httpService;
+    private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
     private final RefundService refundService;
 
-    public GeneralAction(HttpService httpService,
+    public GeneralAction(HttpService httpService, VendorService vendorService,
                          VendorLineService vendorLineService,
                          AuthenticateService authenticateService,
                          RefundService refundService) {
         this.httpService = httpService;
+        this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
         this.refundService = refundService;
@@ -68,6 +70,7 @@ public class GeneralAction {
         } catch (Exception e) {
             vo.setError(ResponseCode.INVALID_TOKEN);
         } finally {
+            httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
             httpService.end(httpRequestLog, vo);
         }
 
