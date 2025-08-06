@@ -65,11 +65,10 @@ public class GeneralAction {
 
             vo = this.actionHandling(httpRequestLog, dto);
 
-        } catch (InvalidRequestException e) {
-            vo.setError(ResponseCode.INVALID_TOKEN);
-
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            vo.setError(ResponseCode.INVALID_TOKEN);
+        } finally {
+            httpService.end(httpRequestLog, vo);
         }
 
         return vo;

@@ -66,7 +66,9 @@ public class AuthenticateService {
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setOperator(dto.getData().getOperator());
         } catch (Exception e) {
-            this.handleException(e, responseVo, httpRequestLog);
+            responseVo.setOperator(httpRequestLog.getRequestBody());
+            return responseVo;
+            //this.handleException(e, responseVo, httpRequestLog);
         }
 
         return responseVo;
