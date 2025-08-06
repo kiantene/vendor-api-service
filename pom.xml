@@ -38,15 +38,15 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
+        <ga-core.version>1.0.25</ga-core.version>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.nextgen.nextgen-core</groupId>
-            <artifactId>nextgen-core</artifactId>
-            <version>1.0.19</version>
+            <groupId>com.nextgen.ga-core</groupId>
+            <artifactId>game-aggregator-core</artifactId>
+            <version>${ga-core.version}</version>
         </dependency>
-
         <dependency>
             <groupId>com.nextgen.sas</groupId>
             <artifactId>core</artifactId>
@@ -99,14 +99,14 @@
             <version>${logstash-logback-encoder.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <scope>runtime</scope>
-            <version>${mariadb-java-client.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-couchbase</artifactId>
+        </dependency>
+        <!-- Couchbase Native SDK -->
+       <dependency>
+           <groupId>com.couchbase.client</groupId>
+           <artifactId>java-client</artifactId>
+           <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -226,11 +226,10 @@
 
     <repositories>
         <repository>
-            <id>gitlab-maven-nextgen-core</id>
+            <id>gitlab-maven-ga-core</id>
             <name>GitLab Maven Registry</name>
-            <url>https://gitlab.newnextgen.site/api/v4/projects/629/packages/maven</url>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/631/packages/maven</url>
         </repository>
-
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>

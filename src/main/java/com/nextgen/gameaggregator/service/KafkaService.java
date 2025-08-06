@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
+import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -36,6 +37,7 @@ public class KafkaService {
     private final VendorService vendorService;
     private final VendorGameCodeService vendorGameCodeService;
     private final AgentService agentService;
+    private final ObjectMapper objectMapper;
 
     @Value("${logging.log-to-kafka:true}")
     private boolean logToKafka;
@@ -52,7 +54,8 @@ public class KafkaService {
                         S3BetService s3BetService,
                         VendorService vendorService,
                         VendorGameCodeService vendorGameCodeService,
-                        AgentService agentService
+                        AgentService agentService,
+                        ObjectMapper objectMapper
     ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
@@ -65,6 +68,7 @@ public class KafkaService {
         this.vendorService = vendorService;
         this.vendorGameCodeService = vendorGameCodeService;
         this.agentService = agentService;
+        this.objectMapper = objectMapper;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -243,6 +247,14 @@ public class KafkaService {
         }
     }
 
+    public void producePromoPayoutHistory(PromoPayoutHistory promoPayoutHistory) {
+        try {
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, promoPayoutHistory.getVendorPlayerUsername(), this.objectMapper.writeValueAsString(promoPayoutHistory));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
     public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB, BigDecimal conversionRate) {
         try {
             sportUnsettledBetMariaDB.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(sportUnsettledBetMariaDB.getBetAmount(), conversionRate));
@@ -296,6 +308,7 @@ public class KafkaService {
             log.info(new Gson().toJson(apiRequestLog));
         }
     }
+
     public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
         if (this.logToKafka) {
             try {
@@ -312,9 +325,9 @@ public class KafkaService {
     public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
         try {
             BetTransactionLog betTransactionLog;
-            if(betResultData!=null){
+            if (betResultData != null) {
                 betTransactionLog = new BetTransactionLog(betInformation, betResultData);
-            }else{
+            } else {
                 // set back to original data
                 betTransactionLog = new BetTransactionLog(betInformation);
             }

@@ -384,19 +384,23 @@ public class HttpService {
             result = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
 
         } else {
-            StringBuilder requestBody = new StringBuilder();
-            try {
-                BufferedReader reader = request.getReader();
-                int value;
-                while ((value = reader.read()) != -1) {
-                    requestBody.append((char) value);
+            if (request.getAttribute("rawBody") != null) {
+                result = (String) request.getAttribute("rawBody");
+            } else {
+                StringBuilder requestBody = new StringBuilder();
+                try {
+                    BufferedReader reader = request.getReader();
+                    int value;
+                    while ((value = reader.read()) != -1) {
+                        requestBody.append((char) value);
+                    }
+                    result = requestBody.toString();
+                } catch (EOFException exception) {
+                    // log request body and details,
+                    // because getReader only can use one time
+                    loggingService.logRequestDetails(request, requestBody, this.traceId);
+                    throw new EOFException();
                 }
-                result = requestBody.toString();
-            } catch (EOFException exception) {
-                // log request body and details,
-                // because getReader only can use one time
-                loggingService.logRequestDetails(request, requestBody, this.traceId);
-                throw new EOFException();
             }
         }
 
