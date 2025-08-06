@@ -67,6 +67,8 @@ public class AuthenticateService {
             responseVo.setOperator(dto.getData().getOperator());
         } catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;
