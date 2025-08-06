@@ -70,7 +70,7 @@ public class CommonSettleDto implements BetResultData {
         if (winAmount.compareTo(betAmount) < 0) {
             //Return win amount when win amount less than bet amount.
             return winAmount;
-        } else if (winAmount.compareTo(betAmount) == 0 && betAmount.compareTo(BigDecimal.ZERO) != 0) {
+        } else if (winAmount.compareTo(betAmount) == 0 && betAmount.compareTo(BigDecimal.ZERO) == 0) {
             //Return 0 when win amount is same with bet amount
             return BigDecimal.ZERO;
         } else {
