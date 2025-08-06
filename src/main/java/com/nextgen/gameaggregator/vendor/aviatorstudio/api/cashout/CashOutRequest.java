@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
+@JsonDeserialize(builder = CashOutRequest.CashOutRequestBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CashOutRequest {
     @NotNull
