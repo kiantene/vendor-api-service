@@ -46,7 +46,7 @@ public class LoggingManager {
         if (responseBody != null && !responseBody.isEmpty()) {
             logContext.setResponse(responseBody);
         }
-        if (ex != null) {
+        if (ex != null && logContext.getException() == null) {
             logContext.setException(ex);
         }
         final String logJson = logContext.toJson();

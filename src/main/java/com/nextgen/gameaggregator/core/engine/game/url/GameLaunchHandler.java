@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.nextgen.core.webclient.WebClientHandler;
+import com.nextgen.core.webclient.WebClientRequest;
 
 /**
  * A generic interface for handling vendor-specific game launch workflows.
@@ -78,4 +79,8 @@ public interface GameLaunchHandler<Q, R> extends WebClientHandler<Q, R, GameLaun
      * @param response the deserialized response object
      */
     void onSuccess(GameLaunchContext context, R response);
+
+    @Override
+    default void beforeSend(WebClientRequest<Q> request) {
+    }
 }
