@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -213,7 +212,6 @@ public class HttpService {
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
-            httpRequestLog.setServer(request.getLocalName());
 
         } catch (Exception exception) {
             log.error(exception.getMessage());
@@ -221,7 +219,7 @@ public class HttpService {
         }
         return httpRequestLog;
     }
-    
+
     public HttpRequestLog startInternalRollback(HttpRequestLog oldHttpRequestLog) {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
@@ -301,23 +299,6 @@ public class HttpService {
 
         try {
             httpRequestLog.setUrl("processEndRoundLog Success");
-            httpRequestLog.setStatus(PROCESSING);
-            httpRequestLog.setStartTime(System.currentTimeMillis());
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage());
-            exception.printStackTrace();
-        }
-
-        return httpRequestLog;
-    }
-
-    public HttpRequestLog startRefundConsumerLog() {
-
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-
-        try {
-            httpRequestLog.setUrl("process refundConsumerLog Success");
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());
 
