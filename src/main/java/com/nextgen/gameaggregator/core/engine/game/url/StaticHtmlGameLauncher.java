@@ -1,19 +1,18 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
-import org.springframework.core.ParameterizedTypeReference;
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import org.springframework.http.MediaType;
 
 public abstract class StaticHtmlGameLauncher<T> extends AbstractGameLaunchHandler<T, String> {
-    private static final ParameterizedTypeReference<String> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
+
+    protected StaticHtmlGameLauncher(VendorCredentialUtils credentialUtils, String vendorClassName) {
+
+        super(credentialUtils, vendorClassName, String.class);
+    }
 
     @Override
     public GameLaunchMode getLaunchMode() {
         return GameLaunchMode.STATIC_HTML;
-    }
-
-    @Override
-    public ParameterizedTypeReference<String> getResponseType() {
-        return RESPONSE_TYPE;
     }
 
     @Override
@@ -27,7 +26,12 @@ public abstract class StaticHtmlGameLauncher<T> extends AbstractGameLaunchHandle
     }
 
     @Override
-    public String getPath() {
+    public String getPath(GameLaunchContext context) {
         return null;
+    }
+
+    @Override
+    public boolean isSuccess(String response) {
+        return true;
     }
 }

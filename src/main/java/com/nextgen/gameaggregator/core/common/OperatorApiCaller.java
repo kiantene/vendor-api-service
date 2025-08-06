@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.core.webclient.WebClientErrorHandlers;
 import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
@@ -85,8 +86,8 @@ public class OperatorApiCaller {
 
             ResponseEntity<String> clientBalanceResponse = requestHeadersSpec
                     .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
-                    .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
+                    .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
+                    .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
                     .toEntity(String.class)
                     .retryWhen(
                             Retry.backoff(3, Duration.ofSeconds(1)) // Retry up to 3 times with exponential backoff: 1s, 2s, 4s delays
@@ -137,16 +138,6 @@ public class OperatorApiCaller {
 
             throw new OperatorApiException("Unexpected client error", e);
         }
-    }
-
-    private Mono<? extends Throwable> handle4xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http4xxException(response.statusCode().value(), body));
-    }
-
-    private Mono<? extends Throwable> handle5xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http5xxException(response.statusCode().value(), body));
     }
 
     private String removeTrailingSlash(String url) {

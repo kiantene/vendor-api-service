@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.common;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.webclient.WebClientErrorHandlers;
 import com.nextgen.gameaggregator.core.exception.Http4xxException;
 import com.nextgen.gameaggregator.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
@@ -19,10 +20,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
-import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
@@ -97,8 +96,8 @@ public class WebClientApiCaller {
             }
             T response = requestHeadersSpec
                     .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
-                    .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
+                    .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
+                    .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
                     .bodyToMono(typeRef)
                     .block();
 
@@ -140,16 +139,6 @@ public class WebClientApiCaller {
         } finally {
             setEndTime(logContext);
         }
-    }
-
-    private Mono<? extends Throwable> handle4xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http4xxException(response.statusCode().value(), body));
-    }
-
-    private Mono<? extends Throwable> handle5xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http5xxException(response.statusCode().value(), body));
     }
 
     private String removeTrailingSlash(String url) {
