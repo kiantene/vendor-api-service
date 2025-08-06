@@ -44,7 +44,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                     httpRequestLog.getId(),
                     gameSession,
                     betResultData,
-                    logContext.getBody(),
+                    logContext.getBody().toString(),
                     httpRequestLog
             );
 
@@ -77,7 +77,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody());
+        httpRequestLog.setRequestBody(logContext.getBody().toString());
         httpRequestLog.setStatus(PROCESSING);
         return httpRequestLog;
     }

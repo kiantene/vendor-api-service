@@ -46,7 +46,7 @@ public class AuthenticateServiceWrapper {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody());
+        httpRequestLog.setRequestBody(logContext.getBody().toString());
         httpRequestLog.setStatus(PROCESSING);
         return httpRequestLog;
     }
