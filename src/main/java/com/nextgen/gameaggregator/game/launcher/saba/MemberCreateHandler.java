@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class MemberCreateHandler extends AbstractGameLaunchHandler<MemberCreateRequest, MemberCreateResponse> {
 
     public MemberCreateHandler(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, null, MemberCreateResponse.class);
+        super(credentialUtils, EndPoints.CLASS_NAME + "MemberCreateHandler", MemberCreateResponse.class);
     }
 
     @Override

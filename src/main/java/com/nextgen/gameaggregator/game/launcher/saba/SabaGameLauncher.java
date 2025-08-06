@@ -37,10 +37,15 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     }
 
     @Override
+    public AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> prepareLaunchRequest(GameLaunchContext context) {
+        memberCreateService.process(context);
+        return super.prepareLaunchRequest(context);
+    }
+
+    @Override
     public GameLaunchRequest buildRequestBody(GameLaunchContext context) {
         VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
         String vendorId = credentialAccessor.getValue(Credentials.VENDOR_ID);
-        memberCreateService.process(context);
 
         return GameLaunchRequest.builder()
                 .vendorId(vendorId)

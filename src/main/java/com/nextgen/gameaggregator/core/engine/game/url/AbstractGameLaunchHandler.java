@@ -2,6 +2,9 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.nextgen.core.webclient.ApiExecutor;
 import com.nextgen.core.webclient.HandlerResult;
+import com.nextgen.core.webclient.WebClientRequest;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
@@ -54,6 +57,17 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
         return credentialUtils.of(raw);
     }
 
+    protected AbstractGameLaunchHandler<Q, R> prepareLaunchRequest(GameLaunchContext context) {
+        LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Game");
+        logContext.setType("Launcher");
+        logContext.setAgentId(context.getAgentId());
+        logContext.setVendorId(context.getVendorId());
+        logContext.setUsername(context.getAgentPlayerUsername());
+
+        return this;
+    }
+
     public final HandlerResult<Q, R> execute(ApiExecutor executor, GameLaunchContext context) {
         return executor.execute(context, this);
     }
@@ -71,5 +85,13 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
     @Override
     public MediaType getContentType() {
         return MediaType.APPLICATION_FORM_URLENCODED;
+    }
+
+    @Override
+    public void beforeSend(WebClientRequest<Q> request) {
+        LogContext logContext = LogContextHolder.get();
+
+        logContext.setApiBody(request.body());
+        logContext.setApiUrl(request.url());
     }
 }
