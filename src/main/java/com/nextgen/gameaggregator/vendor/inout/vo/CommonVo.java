@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.inout.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
@@ -25,11 +24,9 @@ public class CommonVo implements HttpResponse {
 
     private String message;
 
-    @JsonIgnore
-    private ResponseCode responseCode;
-
     public CommonVo() {
-        this.setResponseCode(ResponseCode.OK);
+        this.code = ResponseCode.OK.code;
+        this.message = ResponseCode.OK.message;
     }
 
     public void setError(ResponseCode responseCode) {
@@ -39,6 +36,6 @@ public class CommonVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return this.responseCode != ResponseCode.OK;
+        return !"OK".equalsIgnoreCase(this.code);
     }
 }
