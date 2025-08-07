@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.inout.api.bet;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto implements BetResultData {
     @NotBlank
     @Size(max = 255)
@@ -37,8 +38,7 @@ public class BetDto implements BetResultData {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("gameId")
-    private String ioGameId;
+    private String gameId;
 
     @Override
     public String getExternalTransactionId() {
@@ -52,11 +52,10 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.getIoGameId();
+        return this.getGameId();
     }
 
     @Override
-    @JsonIgnore
     public String getGameId() {
         return null;
     }
@@ -83,7 +82,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
