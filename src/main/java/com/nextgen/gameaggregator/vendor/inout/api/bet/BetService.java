@@ -5,7 +5,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
@@ -18,35 +21,29 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class BetService {
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
-    private final VendorLineService vendorLineService;
+    private final ValidationService validationService;
     private final VendorService vendorService;
     private final WalletService walletService;
-    private final AgentPlayerService agentPlayerService;
-    private final VendorGameService vendorGameService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
-                      VendorLineService vendorLineService,
+                      ValidationService validationService,
                       VendorService vendorService,
-                      WalletService walletService,
-                      AgentPlayerService agentPlayerService,
-                      VendorGameService vendorGameService) {
+                      WalletService walletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
+        this.validationService = validationService;
         this.vendorService = vendorService;
         this.walletService = walletService;
-        this.agentPlayerService = agentPlayerService;
-        this.vendorGameService = vendorGameService;
     }
 
-    public CommonVo bet(HttpRequestLog httpRequestLog){
+    public CommonVo bet(HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();
         CommonVo responseVo = new CommonVo();
         String body = httpRequestLog.getRequestBody();
         CommonDto commonDto;
 
-        try{
+        try {
             // 1. Retrieve request body and convert into dto
             CommonDto<BetDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
@@ -63,7 +60,7 @@ public class BetService {
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonDto.getGameMode(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession);
+            this.doVerification(dto, gameSession);
 
             // 5. Create bet event and process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
@@ -72,7 +69,7 @@ public class BetService {
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(String.valueOf(betEvent.getLastBalance()));
 
-        }catch (Exception e){
+        } catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
 
         }
@@ -85,29 +82,20 @@ public class BetService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(String currency, String gameMode, GameSession gameSession) throws
+    private void doVerification(CommonDto<BetDto> dto, GameSession gameSession) throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            DisabledGameException {
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+            DisabledGameException, InvalidPlayerException {
+        //1. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getData().getUserId());
 
-        // 1. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // 2. Verify Currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getData().getCurrency(), AuthenticationException::new);
 
-        // 2. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 3. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // 4. Verify Currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, AuthenticationException::new);
-
-        // 5. Verify GameMode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
+        // 3. Verify GameMode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameMode(), AuthenticationException::new);
     }
-
 
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class, InsufficientBalanceException.class})
@@ -116,7 +104,7 @@ public class BetService {
             responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        }else if (e instanceof InsufficientBalanceException) {
+        } else if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
         } else if (e instanceof DisabledVendorLineException ||
                 e instanceof DisabledGameException ||
