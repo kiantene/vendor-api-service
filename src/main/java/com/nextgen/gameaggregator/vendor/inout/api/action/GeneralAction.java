@@ -9,7 +9,9 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
+import com.nextgen.gameaggregator.vendor.inout.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.inout.api.refund.RefundService;
+import com.nextgen.gameaggregator.vendor.inout.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
 import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.EndPoints;
@@ -32,19 +34,25 @@ public class GeneralAction {
     private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
     private final RefundService refundService;
+    private final BetService betService;
+    private final SettleService settleService;
 
     public GeneralAction(HttpService httpService,
                          VendorService vendorService,
                          GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
                          AuthenticateService authenticateService,
-                         RefundService refundService) {
+                         RefundService refundService,
+                         BetService betService,
+                         SettleService settleService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
         this.refundService = refundService;
+        this.betService = betService;
+        this.settleService = settleService;
     }
 
     @PostMapping
@@ -98,10 +106,13 @@ public class GeneralAction {
                 break;
 
             case Actions.BET:
+                vo = betService.bet(httpRequestLog);
                 break;
 
             case Actions.WITHDRAW:
+                vo = settleService.settle(httpRequestLog);
                 break;
+
 
             case Actions.ROLLBACK:
                 vo = refundService.refund(httpRequestLog, httpServletRequest);
