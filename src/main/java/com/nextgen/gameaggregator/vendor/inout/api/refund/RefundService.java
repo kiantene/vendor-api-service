@@ -71,7 +71,7 @@ public class RefundService {
             }
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = vendorService.checkGameSession(traceId, dto.getData().getUser_id(), dto.getGameMode(), dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
