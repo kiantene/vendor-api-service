@@ -4,6 +4,8 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,17 +27,20 @@ public class VendorService extends BaseVendorService {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final ValidationService validationService;
+    private final HttpService httpService;
 
     public VendorService(VendorLineService vendorLineService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
-                         ValidationService validationService) {
+                         ValidationService validationService,
+                         HttpService httpService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.validationService = validationService;
+        this.httpService = httpService;
     }
 
     public static String hashHMACSha256(String data, String secret) {
@@ -108,5 +113,23 @@ public class VendorService extends BaseVendorService {
 
         validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
 
+    }
+
+    public CommonVo exceptionHandler(Exception e, CommonVo responseVo){
+        if (e instanceof InvalidRequestException) {
+            responseVo.setError(ResponseCode.INVALID_TOKEN);
+        } else if (e instanceof AuthenticationException) {
+            responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
+        }else if (e instanceof InsufficientBalanceException) {
+            responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
+        } else if (e instanceof DisabledVendorLineException ||
+                e instanceof DisabledGameException ||
+                e instanceof DisabledAgentPlayerException) {
+            responseVo.setError(ResponseCode.GAME_DISABLED);
+        } else {
+            responseVo.setError(ResponseCode.UNKNOWN_ERROR);
+        }
+
+        return responseVo;
     }
 }

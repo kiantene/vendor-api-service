@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
@@ -60,9 +62,7 @@ public class SettleService {
 
             GameSession gameSession = vendorService.checkGameSession(traceId, settleDto.getUserId(), dto.getGameMode(), dto.getToken());
 
-            VendorLine vendorLine =  vendorLineService.getVendorLineById(gameSession.getVendorLineId());
-
-            secretKey = vendorLineService.getCredentialValueByName(vendorLine.getId(), "SecretKey");
+            secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             this.doValidation(dto);
 
@@ -96,20 +96,7 @@ public class SettleService {
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class, InsufficientBalanceException.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
-        if (e instanceof InvalidRequestException) {
-            responseVo.setError(ResponseCode.INVALID_TOKEN);
-        } else if (e instanceof AuthenticationException) {
-            responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        }else if (e instanceof InsufficientBalanceException) {
-            responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
-        } else if (e instanceof DisabledVendorLineException ||
-                e instanceof DisabledGameException ||
-                e instanceof DisabledAgentPlayerException) {
-            responseVo.setError(ResponseCode.GAME_DISABLED);
-        } else {
-            responseVo.setError(ResponseCode.UNKNOWN_ERROR);
-        }
-
+        vendorService.exceptionHandler(e, responseVo);
         httpService.logError(httpRequestLog, e);
     }
 }
