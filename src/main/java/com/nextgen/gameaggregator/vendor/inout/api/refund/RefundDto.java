@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.inout.api.refund;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +13,8 @@ import lombok.Setter;
 public class RefundDto implements RollbackData {
     @NotBlank
     @Size(max = 255)
-    private String user_id;
+    @JsonProperty("user_id")
+    private String userId;
 
     @NotBlank
     @Size(max = 255)
@@ -31,10 +34,10 @@ public class RefundDto implements RollbackData {
 
     @NotBlank
     @Size(max = 255)
-    private String gameId;
+    @JsonProperty("gameId")
+    private String ioGameId;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotNull
     private Boolean isFinished;
 
     @NotBlank
@@ -43,7 +46,7 @@ public class RefundDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return debitId;
+        return this.debitId;
     }
 
     @Override
@@ -53,6 +56,6 @@ public class RefundDto implements RollbackData {
 
     @Override
     public String getRoundId() {
-        return gameId;
+        return this.ioGameId;
     }
 }

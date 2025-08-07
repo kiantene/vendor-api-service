@@ -26,7 +26,6 @@ public class CommonVo implements HttpResponse {
 
     public CommonVo() {
         this.code = ResponseCode.OK.code;
-        this.message = ResponseCode.OK.message;
     }
 
     public void setError(ResponseCode responseCode) {
