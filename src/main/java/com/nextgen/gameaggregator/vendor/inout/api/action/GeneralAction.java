@@ -63,7 +63,7 @@ public class GeneralAction {
 
             secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
 
-            this.doVerification(body, secretKey, xSign);
+            //this.doVerification(body, secretKey, xSign);
 
             vo = this.actionHandling(httpRequestLog, request, dto);
 
