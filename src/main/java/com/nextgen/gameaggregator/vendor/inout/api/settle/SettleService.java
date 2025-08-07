@@ -1,10 +1,10 @@
-package com.nextgen.gameaggregator.vendor.inout.api.bet;
+package com.nextgen.gameaggregator.vendor.inout.api.settle;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
@@ -14,8 +14,10 @@ import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.math.BigDecimal;
+
 @Service
-public class BetService {
+public class SettleService {
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
@@ -24,63 +26,59 @@ public class BetService {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
 
-    public BetService(HttpService httpService,
-                      GameSessionService gameSessionService,
-                      VendorLineService vendorLineService,
-                      VendorService vendorService,
-                      WalletService walletService,
-                      AgentPlayerService agentPlayerService,
-                      VendorGameService vendorGameService) {
+    public SettleService(VendorService vendorService,
+                         HttpService httpService,
+                         GameSessionService gameSessionService,
+                         VendorLineService vendorLineService,
+                         WalletService walletService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService) {
+        this.vendorService = vendorService;
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
-        this.vendorService = vendorService;
         this.walletService = walletService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
     }
 
-    public CommonVo bet(HttpRequestLog httpRequestLog){
+    public CommonVo settle(HttpRequestLog httpRequestLog){
+        CommonVo responseVo = null;
         String traceId = httpRequestLog.getId();
-        CommonVo responseVo = new CommonVo();
         String body = httpRequestLog.getRequestBody();
         CommonDto commonDto;
-
-        try{
-            // 1. Retrieve request body and convert into dto
-            CommonDto<BetDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
+        try {
+            CommonDto<SettleDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
 
-            BetDto betDto = dto.getData();
+            SettleDto settleDto = dto.getData();
 
             commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
 
-            // 2. Validate request parameters (Non-database calls)
-            this.doValidation(dto);
-
-            // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonDto.getGameMode(), gameSession);
 
-            // 4. Verify remaining parameters (Verify against database values)
+            this.doValidation(dto);
+
             this.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession);
 
-            // 5. Create bet event and process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
+            ResultType resultType = settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
 
-            // 6. Set operator response to responseVO to vendor
+            BigDecimal betResultAmount = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
+
             responseVo.setCode(ResponseCode.OK.code);
-            responseVo.setBalance(String.valueOf(betEvent.getLastBalance()));
+            responseVo.setBalance(String.valueOf(betResultAmount));
 
-        }catch (Exception e){
+        } catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
 
         }
+
         return responseVo;
 
     }
 
-    private void doValidation(CommonDto<BetDto> dto) throws InvalidRequestException {
+    private void doValidation(CommonDto<SettleDto> dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
@@ -107,8 +105,6 @@ public class BetService {
         // 5. Verify GameMode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
     }
-
-
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class, InsufficientBalanceException.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
