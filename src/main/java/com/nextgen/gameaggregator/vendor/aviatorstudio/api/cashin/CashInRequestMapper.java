@@ -16,7 +16,7 @@ class CashInRequestMapper implements BetResultContextMapper<CashInRequest> {
                 .vendorBetId(request.getTransactionId())
                 .vendorCurrency(request.getCurrency())
                 .vendorSessionToken(request.getSessionId())
-                .betAmount(request.getAmount())
+                .winAmount(request.getAmount())
                 .vendorSettleTime(System.currentTimeMillis())
                 .build();
     }
