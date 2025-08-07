@@ -94,7 +94,7 @@ public class GeneralAction {
         switch (commonDto.getAction()) {
 
             case Actions.INITIALIZE:
-                vo = authenticateService.initSession(httpRequestLog, httpServletRequest);
+                vo = authenticateService.initSession(httpRequestLog);
                 break;
 
             case Actions.BET:
@@ -104,7 +104,7 @@ public class GeneralAction {
                 break;
 
             case Actions.ROLLBACK:
-                vo = refundService.refund(httpRequestLog, httpServletRequest);
+                vo = refundService.refund(httpRequestLog);
                 break;
 
             default:
