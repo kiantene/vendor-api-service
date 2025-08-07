@@ -60,7 +60,7 @@ public class AuthenticateService {
 
             // 4. Verify remaining parameters (Verify against database values)
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
+            this.doVerification(dto.getData().getCurrency(), dto.getGameMode(),gameSession);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 

@@ -66,14 +66,17 @@ public class RefundService {
             // 3. Verify session token
             GameSession gameSession = vendorService.checkGameSession(traceId, dto.getData().getUserId(), dto.getGameMode(), dto.getToken());
 
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession, body, xSign);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), dto.getData().getUserId(), gameSession, secretKey, body, xSign);
 
             BigDecimal balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
 
             // 5. Set response data
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
+
         } catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
         } finally {
@@ -88,20 +91,6 @@ public class RefundService {
     private void doValidation(CommonDto<RefundDto> dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-    }
-
-    private void doVerification(CommonDto<RefundDto> dto, GameSession gameSession, String body, String xSign) throws
-            AuthenticationException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-        // 1. Verify
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
-
-        // 2. Verify UserId
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getData().getUserId(), AuthenticationException::new);
-
-        // 3. Verify OperatorId
-        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
-        ValidationUtils.isEquals(operatorId, dto.getData().getOperator(), AuthenticationException::new);
     }
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})

@@ -102,7 +102,7 @@ public class GeneralAction {
         switch (commonDto.getAction()) {
 
             case Actions.INITIALIZE:
-                vo = authenticateService.initSession(httpRequestLog, httpServletRequest);
+                vo = authenticateService.initSession(httpRequestLog, httpServletRequest.getHeader("x-signature"));
                 break;
 
             case Actions.BET:
@@ -113,9 +113,8 @@ public class GeneralAction {
                 vo = settleService.settle(httpRequestLog, httpServletRequest.getHeader("x-signature"));
                 break;
 
-
             case Actions.ROLLBACK:
-                vo = refundService.refund(httpRequestLog, httpServletRequest);
+                vo = refundService.refund(httpRequestLog, httpServletRequest.getHeader("x-signature"));
                 break;
 
             default:
