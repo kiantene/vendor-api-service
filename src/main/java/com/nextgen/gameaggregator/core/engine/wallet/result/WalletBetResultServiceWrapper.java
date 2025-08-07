@@ -108,7 +108,7 @@ public class WalletBetResultServiceWrapper {
 
     private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
         logContext.setStart(httpRequestLog.getBetStart());
-        logContext.setEnd(httpRequestLog.getBetEnd());
+        logContext.setEnd();
         logContext.setApiStart(httpRequestLog.getOperatorStart());
         logContext.setApiEnd(httpRequestLog.getOperatorEnd());
     }
