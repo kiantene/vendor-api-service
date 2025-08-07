@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
@@ -41,7 +42,7 @@ public class AuthenticateService {
         this.agentPlayerService = agentPlayerService;
     }
 
-    public CommonVo initSession(HttpRequestLog httpRequestLog) {
+    public CommonVo initSession(HttpRequestLog httpRequestLog, String xSign) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonVo responseVo = new CommonVo();
@@ -58,7 +59,8 @@ public class AuthenticateService {
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto.getData().getCurrency(), dto.getData().getGameMode(), gameSession);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 

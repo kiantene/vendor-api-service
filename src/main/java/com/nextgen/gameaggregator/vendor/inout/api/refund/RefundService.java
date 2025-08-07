@@ -5,11 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
-import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -30,24 +26,21 @@ public class RefundService {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
-    private final GameSessionService gameSessionService;
     private final RequestIdempotentLogService requestIdempotentLogService;
 
     public RefundService(HttpService httpService,
                          WalletService walletService,
                          VendorService vendorService,
                          VendorLineService vendorLineService,
-                         GameSessionService gameSessionService,
                          RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.requestIdempotentLogService = requestIdempotentLogService;
-        this.gameSessionService = gameSessionService;
     }
 
-    public CommonVo refund(HttpRequestLog httpRequestLog) {
+    public CommonVo refund(HttpRequestLog httpRequestLog, String xSign) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonDto<RefundDto> dto = new CommonDto<>();
@@ -63,18 +56,18 @@ public class RefundService {
             this.doValidation(dto);
 
             // Request idempotent checking.
-            if (requestIdempotentLogService.checkExists(dto.getData(), dto.getData().getUser_id()) == null) {
-                requestIdempotentLogService.create(dto.getData(), dto.getData().getUser_id());
+            if (requestIdempotentLogService.checkExists(dto.getData(), dto.getData().getUserId()) == null) {
+                requestIdempotentLogService.create(dto.getData(), dto.getData().getUserId());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
 
             // 3. Verify session token
-            GameSession gameSession = vendorService.checkGameSession(traceId, dto.getData().getUser_id(), dto.getGameMode(), dto.getToken());
+            GameSession gameSession = vendorService.checkGameSession(traceId, dto.getData().getUserId(), dto.getGameMode(), dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
+            this.doVerification(dto, gameSession, body, xSign);
 
             BigDecimal balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
 
@@ -86,7 +79,7 @@ public class RefundService {
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
-                requestIdempotentLogService.delete(dto.getData(), dto.getData().getUser_id());
+                requestIdempotentLogService.delete(dto.getData(), dto.getData().getUserId());
             }
         }
         return responseVo;
@@ -97,18 +90,16 @@ public class RefundService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto<RefundDto> dto, GameSession gameSession) throws
-            AuthenticationException, CredentialNotFoundException {
-        // 1. Verify GameMode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameMode(), AuthenticationException::new);
+    private void doVerification(CommonDto<RefundDto> dto, GameSession gameSession, String body, String xSign) throws
+            AuthenticationException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        // 1. Verify
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
 
         // 2. Verify UserId
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getData().getUser_id(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getData().getUserId(), AuthenticationException::new);
 
-        // 3. Verify Currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getData().getCurrency(), AuthenticationException::new);
-
-        // 4. Verify OperatorId
+        // 3. Verify OperatorId
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, dto.getData().getOperator(), AuthenticationException::new);
     }

@@ -13,7 +13,8 @@ import lombok.Setter;
 public class RefundDto implements RollbackData {
     @NotBlank
     @Size(max = 255)
-    private String user_id;
+    @JsonProperty("user_id")
+    private String userId;
 
     @NotBlank
     @Size(max = 255)

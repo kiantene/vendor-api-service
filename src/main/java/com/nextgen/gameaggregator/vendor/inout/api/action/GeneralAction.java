@@ -73,23 +73,24 @@ public class GeneralAction {
 
     private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto) {
         CommonVo vo = new CommonVo();
+        String xSign = httpServletRequest.getHeader("x-request-sign");
 
         switch (commonDto.getAction()) {
 
             case Actions.INITIALIZE:
-                vo = authenticateService.initSession(httpRequestLog, httpServletRequest);
+                vo = authenticateService.initSession(httpRequestLog, xSign);
                 break;
 
             case Actions.BET:
-                vo = betService.bet(httpRequestLog, httpServletRequest.getHeader("x-request-sign"));
+                vo = betService.bet(httpRequestLog, xSign);
                 break;
 
             case Actions.WITHDRAW:
-                vo = settleService.settle(httpRequestLog, httpServletRequest.getHeader("x-request-sign"));
+                vo = settleService.settle(httpRequestLog, xSign);
                 break;
 
             case Actions.ROLLBACK:
-                vo = refundService.refund(httpRequestLog, httpServletRequest);
+                vo = refundService.refund(httpRequestLog, xSign);
                 break;
 
             default:
