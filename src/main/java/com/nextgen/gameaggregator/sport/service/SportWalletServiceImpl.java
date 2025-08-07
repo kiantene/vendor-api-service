@@ -156,7 +156,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
     @Override
     @Deprecated
-    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
+    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
 
         String vendorPlayerUsername = sportBetResultData.getVendorPlayerUsername();
         String vendorBetId = sportBetResultData.getVendorBetId();
@@ -263,7 +263,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportUnsettledBetService.save(sportUnsettledBet);
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBet));
-            throw new InvalidOperatorResponseException();
+            throw e;
 
         }
 
