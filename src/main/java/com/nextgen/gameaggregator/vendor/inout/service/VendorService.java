@@ -24,15 +24,18 @@ public class VendorService extends BaseVendorService {
     private final GameSessionService gameSessionService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
+    private final ValidationService validationService;
 
     public VendorService(VendorLineService vendorLineService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
-                         VendorGameService vendorGameService) {
+                         VendorGameService vendorGameService,
+                         ValidationService validationService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
+        this.validationService = validationService;
     }
 
     public static String hashHMACSha256(String data, String secret) {
@@ -77,11 +80,12 @@ public class VendorService extends BaseVendorService {
         return headersString.toString();
     }
 
-    public void doVerification(String currency, String gameMode, GameSession gameSession, String secretKey, String body, String xSign) throws
+    public void doVerification(String currency, String gameMode, String vendorPlayerUsername, GameSession gameSession, String secretKey, String body, String xSign) throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            DisabledGameException {
+            DisabledGameException,
+            InvalidPlayerException {
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
@@ -101,5 +105,8 @@ public class VendorService extends BaseVendorService {
 
         //6. Verify X-SIGNATURE
         ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
+
+        validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
+
     }
 }

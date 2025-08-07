@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.inout.api.bet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
@@ -22,49 +23,58 @@ public class BetService {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       VendorService vendorService,
-                      WalletService walletService) {
+                      WalletService walletService,
+                      RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
         this.walletService = walletService;
 
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, String xSign){
         String traceId = httpRequestLog.getId();
         CommonVo responseVo = new CommonVo();
         String body = httpRequestLog.getRequestBody();
-        CommonDto commonDto;
         String secretKey;
+        boolean isRequestExists = false;
+        CommonDto<BetDto> dto = new CommonDto<>();
 
         try{
             // 1. Retrieve request body and convert into dto
-            CommonDto<BetDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
+            dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
 
             BetDto betDto = dto.getData();
 
-            commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
-
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
+            if (requestIdempotentLogService.checkExists(dto.getData(), dto.getData().getUserId()) == null) {
+                requestIdempotentLogService.create(dto.getData(), dto.getData().getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             // 3. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getUserId(), dto.getGameMode());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonDto.getGameMode(), gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameMode(), gameSession);
 
             VendorLine vendorLine =  vendorLineService.getVendorLineById(gameSession.getVendorLineId());
 
             secretKey = vendorLineService.getCredentialValueByName(vendorLine.getId(), "SecretKey");
 
             // 4. Verify remaining parameters (Verify against database values)
-            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), betDto.getUserId(), gameSession, secretKey, body, xSign);
 
             // 5. Create bet event and process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
@@ -76,6 +86,11 @@ public class BetService {
         }catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
 
+        }finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto.getData(), dto.getData().getUserId());
+            }
         }
         return responseVo;
 

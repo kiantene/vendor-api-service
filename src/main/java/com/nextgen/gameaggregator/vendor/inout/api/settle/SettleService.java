@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.inout.api.settle;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
@@ -20,41 +21,44 @@ import java.math.BigDecimal;
 @Service
 public class SettleService {
     private final HttpService httpService;
-    private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public SettleService(VendorService vendorService,
                          HttpService httpService,
-                         GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
-                         WalletService walletService) {
+                         WalletService walletService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
         this.vendorService = vendorService;
         this.httpService = httpService;
-        this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String xSign){
         CommonVo responseVo = null;
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
-        CommonDto commonDto = null;
         String secretKey;
-
+        boolean isRequestExists = false;
+        CommonDto<SettleDto> dto = new CommonDto<>();
         try {
-            CommonDto<SettleDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
+            dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
 
             SettleDto settleDto = dto.getData();
 
-            commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
+            if (requestIdempotentLogService.checkExists(dto.getData(), dto.getData().getUserId()) == null) {
+                requestIdempotentLogService.create(dto.getData(), dto.getData().getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
-            // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getUserId(), dto.getGameMode());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonDto.getGameMode(), gameSession);
+            GameSession gameSession = vendorService.checkGameSession(traceId, settleDto.getUserId(), dto.getGameMode(), dto.getToken());
 
             VendorLine vendorLine =  vendorLineService.getVendorLineById(gameSession.getVendorLineId());
 
@@ -62,7 +66,7 @@ public class SettleService {
 
             this.doValidation(dto);
 
-            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), settleDto.getUserId(),gameSession, secretKey, body, xSign);
 
             ResultType resultType = settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
 
@@ -74,6 +78,11 @@ public class SettleService {
         } catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
 
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto.getData(), dto.getData().getUserId());
+            }
         }
 
         return responseVo;
