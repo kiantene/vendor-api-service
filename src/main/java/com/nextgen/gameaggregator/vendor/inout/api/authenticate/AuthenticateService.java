@@ -6,11 +6,11 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -42,11 +42,10 @@ public class AuthenticateService {
         this.agentPlayerService = agentPlayerService;
     }
 
-    public CommonVo initSession(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
+    public CommonVo initSession(HttpRequestLog httpRequestLog, String xSign) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         CommonVo responseVo = new CommonVo();
-        httpRequestLog.setRequestBody("Request Body: \n" + body + "\n\nRequest Header: \n" + vendorService.getHeaders(httpServletRequest));
 
         try {
             // 1. Retrieve request body and convert into dto
@@ -60,7 +59,8 @@ public class AuthenticateService {
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto.getData().getCurrency(), dto.getData().getGameMode(), gameSession);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession, secretKey, body, xSign);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
