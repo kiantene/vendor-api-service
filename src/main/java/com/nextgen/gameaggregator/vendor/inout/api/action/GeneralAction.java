@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.inout.api.action;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
 import com.nextgen.gameaggregator.vendor.inout.api.bet.BetService;
@@ -27,29 +25,23 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
     private final BetService betService;
     private final SettleService settleService;
     private final RefundService refundService;
-    private final GameSessionService gameSessionService;
 
     public GeneralAction(HttpService httpService,
                          VendorService vendorService,
-                         VendorLineService vendorLineService,
                          AuthenticateService authenticateService,
                          BetService betService,
                          SettleService settleService,
-                         RefundService refundService,
-                         GameSessionService gameSessionService) {
+                         RefundService refundService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
-        this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
         this.betService = betService;
         this.settleService = settleService;
         this.refundService = refundService;
-        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping
