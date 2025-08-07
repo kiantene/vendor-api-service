@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.inout.api.action;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -26,16 +28,20 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
     private final RefundService refundService;
 
-    public GeneralAction(HttpService httpService, VendorService vendorService,
+    public GeneralAction(HttpService httpService,
+                         VendorService vendorService,
+                         GameSessionService gameSessionService,
                          VendorLineService vendorLineService,
                          AuthenticateService authenticateService,
                          RefundService refundService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
+        this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
         this.refundService = refundService;
@@ -59,11 +65,10 @@ public class GeneralAction {
 
             ValidationUtils.validateRequest(dto);
 
-            vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.OPERATOR_ID, dto.getData().getOperator());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-            secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
-
-            //this.doVerification(body, secretKey, xSign);
+            this.doVerification(body, secretKey, xSign);
 
             vo = this.actionHandling(httpRequestLog, request, dto);
 
