@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.inout.api.action;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.vendor.inout.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.inout.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.inout.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
-import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
@@ -33,6 +32,7 @@ public class GeneralAction {
     private final BetService betService;
     private final SettleService settleService;
     private final RefundService refundService;
+    private final GameSessionService gameSessionService;
 
     public GeneralAction(HttpService httpService,
                          VendorService vendorService,
@@ -40,7 +40,8 @@ public class GeneralAction {
                          AuthenticateService authenticateService,
                          BetService betService,
                          SettleService settleService,
-                         RefundService refundService) {
+                         RefundService refundService,
+                         GameSessionService gameSessionService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
@@ -48,15 +49,13 @@ public class GeneralAction {
         this.betService = betService;
         this.settleService = settleService;
         this.refundService = refundService;
+        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping
     public CommonVo action(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String xSign = request.getHeader("X-REQUEST-SIGN");
-        String secretKey;
-        Integer vendorLineId;
 
         CommonVo vo = new CommonVo();
 
@@ -67,12 +66,6 @@ public class GeneralAction {
             });
 
             ValidationUtils.validateRequest(dto);
-
-            vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.OPERATOR_ID, dto.getData().getOperator());
-
-            secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
-
-            //this.doVerification(body, secretKey, xSign);
 
             vo = this.actionHandling(httpRequestLog, request, dto);
 
@@ -86,12 +79,6 @@ public class GeneralAction {
         return vo;
     }
 
-    private void doVerification(String body, String secretKey, String xSign) throws InvalidRequestException {
-
-        String requestSignature = VendorService.hashHMACSha256(body, secretKey);
-        ValidationUtils.isEquals(requestSignature, xSign);
-    }
-
     private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto) {
         CommonVo vo = new CommonVo();
 
@@ -102,11 +89,11 @@ public class GeneralAction {
                 break;
 
             case Actions.BET:
-                vo = betService.bet(httpRequestLog);
+                vo = betService.bet(httpRequestLog, httpServletRequest.getHeader("x-request-sign"));
                 break;
 
             case Actions.WITHDRAW:
-                vo = settleService.settle(httpRequestLog);
+                vo = settleService.settle(httpRequestLog, httpServletRequest.getHeader("x-request-sign"));
                 break;
 
             case Actions.ROLLBACK:
