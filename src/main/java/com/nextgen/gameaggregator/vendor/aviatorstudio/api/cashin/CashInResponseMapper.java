@@ -10,7 +10,7 @@ class CashInResponseMapper implements VendorResponseMapper<BetResultContext, Cas
     @Override
     public CashInResponse toVendor(BetResultContext context, PlayerBalanceData balanceData) {
         return CashInResponse.builder()
-                .id(context.getVendorPlayerId().toString())
+                .id(context.getVendorPlayerUsername())
                 .username(context.getVendorPlayerUsername())
                 .balance(balanceData.getBalance())
                 .build();
