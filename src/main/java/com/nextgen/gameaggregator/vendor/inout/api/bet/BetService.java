@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.inout.api.bet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -21,49 +23,58 @@ public class BetService {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final WalletService walletService;
-    private final AgentPlayerService agentPlayerService;
-    private final VendorGameService vendorGameService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(HttpService httpService,
                       GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       VendorService vendorService,
                       WalletService walletService,
-                      AgentPlayerService agentPlayerService,
-                      VendorGameService vendorGameService) {
+                      RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
         this.walletService = walletService;
-        this.agentPlayerService = agentPlayerService;
-        this.vendorGameService = vendorGameService;
+
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    public CommonVo bet(HttpRequestLog httpRequestLog){
+    public CommonVo bet(HttpRequestLog httpRequestLog, String xSign){
         String traceId = httpRequestLog.getId();
         CommonVo responseVo = new CommonVo();
         String body = httpRequestLog.getRequestBody();
-        CommonDto commonDto;
+        String secretKey;
+        boolean isRequestExists = false;
+        CommonDto<BetDto> dto = new CommonDto<>();
 
         try{
             // 1. Retrieve request body and convert into dto
-            CommonDto<BetDto> dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
+            dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
 
             BetDto betDto = dto.getData();
 
-            commonDto = HttpService.convertJsonToDto(body, CommonDto.class);
-
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
+            if (requestIdempotentLogService.checkExists(dto.getData(), dto.getData().getUserId()) == null) {
+                requestIdempotentLogService.create(dto.getData(), dto.getData().getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonDto.getGameMode(), gameSession);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getUserId(), dto.getGameMode());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameMode(), gameSession);
+
+            VendorLine vendorLine =  vendorLineService.getVendorLineById(gameSession.getVendorLineId());
+
+            secretKey = vendorLineService.getCredentialValueByName(vendorLine.getId(), "SecretKey");
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto.getData().getCurrency(), dto.getGameMode(), gameSession);
+            vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), betDto.getUserId(), gameSession, secretKey, body, xSign);
 
             // 5. Create bet event and process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
@@ -75,6 +86,11 @@ public class BetService {
         }catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
 
+        }finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto.getData(), dto.getData().getUserId());
+            }
         }
         return responseVo;
 
@@ -84,31 +100,6 @@ public class BetService {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
-
-    private void doVerification(String currency, String gameMode, GameSession gameSession) throws
-            AuthenticationException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException {
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
-
-        // 1. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 2. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 3. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // 4. Verify Currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, AuthenticationException::new);
-
-        // 5. Verify GameMode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
-    }
-
-
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class, InsufficientBalanceException.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {

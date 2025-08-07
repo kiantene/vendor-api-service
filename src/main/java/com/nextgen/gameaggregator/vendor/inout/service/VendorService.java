@@ -1,13 +1,9 @@
 package com.nextgen.gameaggregator.vendor.inout.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
-import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,11 +22,20 @@ public class VendorService extends BaseVendorService {
 
     private final VendorLineService vendorLineService;
     private final GameSessionService gameSessionService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final ValidationService validationService;
 
     public VendorService(VendorLineService vendorLineService,
-                         GameSessionService gameSessionService) {
+                         GameSessionService gameSessionService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService,
+                         ValidationService validationService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.validationService = validationService;
     }
 
     public static String hashHMACSha256(String data, String secret) {
@@ -73,5 +78,35 @@ public class VendorService extends BaseVendorService {
                     .append("\n");
         }
         return headersString.toString();
+    }
+
+    public void doVerification(String currency, String gameMode, String vendorPlayerUsername, GameSession gameSession, String secretKey, String body, String xSign) throws
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidPlayerException {
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+        // 1. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 2. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 3. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // 4. Verify Currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, AuthenticationException::new);
+
+        // 5. Verify GameMode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
+
+        //6. Verify X-SIGNATURE
+        ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
+
+        validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
+
     }
 }
