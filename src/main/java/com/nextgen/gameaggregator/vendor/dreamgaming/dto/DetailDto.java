@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -20,7 +21,7 @@ public class DetailDto {
     @Size(max = 255)
     private String parentBetId;
 
-    @Size(max = 255)
+    @Digits(integer = 20, fraction = 8)
     private BigDecimal availableBet;
 
 }
