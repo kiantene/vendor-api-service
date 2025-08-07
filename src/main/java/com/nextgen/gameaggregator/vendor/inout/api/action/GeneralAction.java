@@ -106,11 +106,11 @@ public class GeneralAction {
                 break;
 
             case Actions.BET:
-                vo = betService.bet(httpRequestLog);
+                vo = betService.bet(httpRequestLog, httpServletRequest.getHeader("x-signature"));
                 break;
 
             case Actions.WITHDRAW:
-                vo = settleService.settle(httpRequestLog);
+                vo = settleService.settle(httpRequestLog, httpServletRequest.getHeader("x-signature"));
                 break;
 
 
