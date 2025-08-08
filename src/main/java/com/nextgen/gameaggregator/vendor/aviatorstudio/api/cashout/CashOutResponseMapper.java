@@ -10,7 +10,6 @@ class CashOutResponseMapper implements VendorResponseMapper<BetContext, CashOutR
     @Override
     public CashOutResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return CashOutResponse.builder()
-//                .id(context.getVendorPlayerId().toString())
                 .id(context.getVendorPlayerUsername())
                 .username(context.getVendorPlayerUsername())
                 .balance(balanceData.getBalance())
