@@ -18,7 +18,7 @@ public class CashOutController {
     private final CashOutRequestMapper requestMapper;
     private final CashOutResponseMapper responseMapper;
 
-    @PostMapping(path = EndPoints.CASHOUT + "/v2")
+    @PostMapping(path = EndPoints.CASHOUT)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashOutResponse> betAction(
             @Valid @RequestBody CashOutRequest request,
