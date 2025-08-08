@@ -1,11 +1,17 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
+import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
+import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -22,22 +28,8 @@ public class AuthenticateServiceWrapper {
     public PlayerBalanceData process(AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Authenticate");
-        String vendorPlayerUsername = context.getVendorPlayerUsername();
-        String vendorSessionToken = context.getVendorSessionToken();
-        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
-        // update to use vendor's session token
-        gameSessionService.regenerateVendorToken(gameSession, vendorSessionToken);
-        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
-        try {
-            BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-            return this.toPlayerBalanceData(context, balance, httpRequestLog);
-
-        } catch (Exception ex) {
-            throw new InternalServerException(ex.getMessage(), ex);
-        } finally {
-//            this.updateLogContext(logContext, httpRequestLog);
-//            httpService.end(httpRequestLog, null);
-        }
+        GameSession gameSession = getGameSession(context);
+        return getBalance(context, gameSession, logContext);
     }
 
     private HttpRequestLog toHttpRequestLog(LogContext logContext) {
@@ -60,5 +52,91 @@ public class AuthenticateServiceWrapper {
         playerBalanceData.setTimestamp(httpRequestLog.getOperatorEnd());
 
         return playerBalanceData;
+    }
+
+    private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
+        logContext.setStart(httpRequestLog.getBetStart());
+        logContext.setEnd(httpRequestLog.getBetEnd());
+        logContext.setApiStart(httpRequestLog.getOperatorStart());
+        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
+    }
+
+    private GameSession getGameSession(AuthenticateContext context) {
+        validateContext(context);
+
+        String token = context.getToken();
+        if (token != null) {
+            return getGameSessionByToken(token);
+        }
+
+        String vendorSessionToken = context.getVendorSessionToken();
+        String vendorPlayerUsername = context.getVendorPlayerUsername();
+        if (vendorSessionToken != null && vendorPlayerUsername != null) {
+            return getGameSessionByVendorToken(vendorPlayerUsername, vendorSessionToken);
+        }
+
+        throw new InvalidRequestException("Session token not present");
+    }
+
+    private void validateContext(AuthenticateContext context) {
+        String token = context.getToken();
+        String username = context.getVendorPlayerUsername();
+        if (token == null && username == null) {
+            throw new InvalidRequestException("username and token are missing");
+        }
+    }
+
+    private GameSession getGameSessionByToken(String token) {
+        try {
+            GameSession gameSession = gameSessionService.verifyToken(token);
+            if (shouldRefreshToken(gameSession)) {
+                gameSessionService.refreshToken(gameSession);
+            }
+
+            return gameSession;
+        } catch (AuthenticationException ex) {
+            throw new GameSessionExpiredException("Game session has expired");
+        }
+    }
+
+    private boolean shouldRefreshToken(GameSession gameSession) {
+        long createTime = gameSession.getCreateTime();
+        if (createTime <= 0) {
+            return false;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long sessionAgeHours = (currentTime - createTime) / (1000 * 60 * 60); // Convert milliseconds to hours
+
+        return sessionAgeHours < 6;
+    }
+
+    private GameSession getGameSessionByVendorToken(String vendorPlayerUsername, String vendorSessionToken) {
+        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+
+        if (gameSession == null) {
+            throw new GameSessionExpiredException("Game session has expired");
+        }
+
+        gameSessionService.regenerateVendorToken(gameSession, vendorSessionToken);
+        return gameSession;
+    }
+
+    private PlayerBalanceData getBalance(AuthenticateContext context, GameSession gameSession, LogContext logContext) {
+        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
+        try {
+            BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
+            return this.toPlayerBalanceData(context, balance, httpRequestLog);
+
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
+
+            throw new InternalConfigurationException(ex.getMessage(), ex);
+        } catch (Exception ex) {
+
+            throw new InternalServerException(ex.getMessage(), ex);
+        } finally {
+            this.updateLogContext(logContext, httpRequestLog);
+        }
     }
 }

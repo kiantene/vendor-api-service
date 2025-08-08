@@ -61,6 +61,11 @@ public class GameSessionService {
         return session;
     }
 
+    public void refreshToken(GameSession gameSession) {
+        rawGameSessionRepository.delete(gameSession);
+        rawGameSessionRepository.save(gameSession);
+    }
+
     public void checkGameSessionTerminated(Integer status) throws GameTerminatedException {
         if (status.equals(0)) {
             throw new GameTerminatedException();
