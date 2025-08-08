@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -41,6 +42,7 @@ public class WalletBetResultAction {
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
     private final HttpService httpService;
+    private final LogContextService logContextService;
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
     private final Set<Integer> betLoseVendorList;
@@ -53,7 +55,9 @@ public class WalletBetResultAction {
                                  AuthenticationService authenticationService,
                                  CurrencyConversionService currencyConversionService,
                                  BetResultRetryLogService betResultRetryLogService,
-                                 HttpService httpService, AgentApiVersionService agentApiVersionService) {
+                                 HttpService httpService,
+                                 LogContextService logContextService,
+                                 AgentApiVersionService agentApiVersionService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -61,6 +65,7 @@ public class WalletBetResultAction {
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.httpService = httpService;
+        this.logContextService = logContextService;
         this.agentApiVersionService = agentApiVersionService;
         this.forceSuccessResultTypeList = new HashSet<>();
         this.betWinVendorList = new HashSet<>();
@@ -127,6 +132,7 @@ public class WalletBetResultAction {
         }
 
         try {
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BET_RESULT, dto);
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
@@ -261,8 +267,9 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
+        ResponseEntity<String> apiResponse = null;
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -275,6 +282,7 @@ public class WalletBetResultAction {
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                     .block();
 
+            logContextService.logEnd(apiResponse);
             setEnd(httpRequestLog);
             if (apiResponse != null) {
                 httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
@@ -305,6 +313,7 @@ public class WalletBetResultAction {
 
         } finally {
             setEnd(httpRequestLog);
+            logContextService.logEnd(apiResponse);
         }
 
         return responseVo;

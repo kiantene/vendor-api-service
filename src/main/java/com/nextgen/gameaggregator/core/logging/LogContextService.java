@@ -28,11 +28,15 @@ public class LogContextService {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;
 
-        logContext.setApiEnd(System.currentTimeMillis());
+        if (logContext.getApiEnd() == 0) {
+            logContext.setApiEnd(System.currentTimeMillis());
+        }
 
         if (response == null) return;
-        logContext.setApiResponse(response.getBody());
-        logContext.setApiStatusCode(response.getStatusCode().value());
+        if (logContext.getApiResponse() == null) {
+            logContext.setApiResponse(response.getBody());
+            logContext.setApiStatusCode(response.getStatusCode().value());
+        }
     }
 
     public void logApiRequest(LogContext logContext, HttpServletRequest request, String responseBody) {
@@ -52,7 +56,11 @@ public class LogContextService {
             httpRequestLog.setOperatorEnd(logContext.getApiEnd());
             try {
                 httpRequestLog.setOperatorData(objectMapper.writeValueAsString(logContext.getApiBody()));
-                httpRequestLog.setOperatorResponse(objectMapper.writeValueAsString(logContext.getApiResponse()));
+                if (logContext.getApiResponse() instanceof String) {
+                    httpRequestLog.setOperatorResponse(logContext.getApiResponse().toString());
+                } else {
+                    httpRequestLog.setOperatorResponse(objectMapper.writeValueAsString(logContext.getApiResponse()));
+                }
             } catch (Exception ex) {
                 httpRequestLog.setOperatorData(logContext.getApiBody().toString());
                 httpRequestLog.setOperatorData(logContext.getApiResponse().toString());
