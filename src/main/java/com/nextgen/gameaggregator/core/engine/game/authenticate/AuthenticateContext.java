@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class AuthenticateContext {
+    private String token;
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private String vendorSessionToken;

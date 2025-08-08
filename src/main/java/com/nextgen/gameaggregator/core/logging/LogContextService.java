@@ -75,6 +75,7 @@ public class LogContextService {
             }
 
             kafkaService.produceApiRequestLog(new ApiRequestLog(httpRequestLog));
+            logContext.delete(HttpRequestLog.class.getSimpleName());
         }
     }
 }

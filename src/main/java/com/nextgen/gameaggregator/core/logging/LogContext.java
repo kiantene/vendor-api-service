@@ -101,6 +101,9 @@ public class LogContext {
     public void put(String key, Object value) {
         extraFields.put(key, value);
     }
+    public void delete(String key) {
+        extraFields.remove(key);
+    }
 
     public static void putField(String key, Object value) {
         LogContext context = LogContextHolder.get();

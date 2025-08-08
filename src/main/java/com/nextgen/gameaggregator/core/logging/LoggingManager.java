@@ -32,10 +32,9 @@ public class LoggingManager {
     public void onRequestCompleted(HttpServletRequest request, String responseBody, Exception ex) {
         LogContext logContext = LogContextHolder.get();
         if (logContext != null) {
-            this.logAsync(logContext, responseBody, ex);
-
             // for backward compatibility with httpRequestLog/apiRequestLog, will be removed in the future
             logContextService.logApiRequest(logContext, request, responseBody);
+            this.logAsync(logContext, responseBody, ex);
         }
     }
 
