@@ -43,7 +43,7 @@ public class CashInAction {
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    @PostMapping(path = EndPoints.CASHIN + "/v2")
+    @PostMapping(path = EndPoints.CASHIN)
     public ResponseEntity<CommonVo> settleAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
