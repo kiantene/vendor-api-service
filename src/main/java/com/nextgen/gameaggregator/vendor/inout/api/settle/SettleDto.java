@@ -51,8 +51,7 @@ public class SettleDto implements BetResultData {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("gameId")
-    private String ioGameId;
+    private String gameId;
 
     @Override
     public String getExternalTransactionId() {
@@ -66,7 +65,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.getIoGameId();
+        return this.gameId;
     }
 
     @Override
