@@ -41,7 +41,7 @@ public class SettleService {
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String xSign){
-        CommonVo responseVo = null;
+        CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         String secretKey;
