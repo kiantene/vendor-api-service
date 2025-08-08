@@ -265,9 +265,9 @@ public class SportWalletServiceImpl implements SportWalletService {
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBet));
             throw e;
 
+        } finally {
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
-
-        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
@@ -587,7 +587,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             //         (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
-            
+
             //resettle will insert into resettlement date change
             kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
