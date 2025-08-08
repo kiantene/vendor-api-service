@@ -59,8 +59,7 @@ public class AuthenticateService {
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-            this.doVerification(dto.getData().getCurrency(), dto.getGameMode(),gameSession);
+            this.doVerification(dto.getData().getCurrency(), dto.getData().getGameMode(), xSign, body, gameSession);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -85,26 +84,30 @@ public class AuthenticateService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(String currency, String gameMode, GameSession gameSession) throws
+    private void doVerification(String currency, String gameMode, String xSign, String body, GameSession gameSession) throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            DisabledGameException {
+            DisabledGameException,
+            CredentialNotFoundException {
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
+        // 1. Verify X-SIGNATURE
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
 
-        // 1. Verify vendor line is active
+        // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 2. Verify agent player is active
+        // 3. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 3. Verify vendor game is active
+        // 4. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // 4. Verify Currency
+        // 5. Verify Currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), currency, AuthenticationException::new);
 
-        // 5. Verify GameMode
+        // 6. Verify GameMode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
     }
 
