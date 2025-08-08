@@ -1,25 +1,21 @@
 package com.nextgen.gameaggregator.vendor.inout.api.action;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
 import com.nextgen.gameaggregator.vendor.inout.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.inout.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.inout.api.settle.SettleService;
 import com.nextgen.gameaggregator.vendor.inout.constant.Actions;
-import com.nextgen.gameaggregator.vendor.inout.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.inout.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.inout.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.inout.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.inout.service.VendorService;
 import com.nextgen.gameaggregator.vendor.inout.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.kafka.common.errors.InvalidRequestException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,8 +26,6 @@ public class GeneralAction {
 
     private final HttpService httpService;
     private final VendorService vendorService;
-    private final GameSessionService gameSessionService;
-    private final VendorLineService vendorLineService;
     private final AuthenticateService authenticateService;
     private final RefundService refundService;
     private final BetService betService;
@@ -39,16 +33,12 @@ public class GeneralAction {
 
     public GeneralAction(HttpService httpService,
                          VendorService vendorService,
-                         GameSessionService gameSessionService,
-                         VendorLineService vendorLineService,
                          AuthenticateService authenticateService,
                          RefundService refundService,
                          BetService betService,
                          SettleService settleService) {
         this.httpService = httpService;
         this.vendorService = vendorService;
-        this.gameSessionService = gameSessionService;
-        this.vendorLineService = vendorLineService;
         this.authenticateService = authenticateService;
         this.refundService = refundService;
         this.betService = betService;
@@ -59,9 +49,6 @@ public class GeneralAction {
     public CommonVo action(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String xSign = request.getHeader("X-REQUEST-SIGN");
-        String secretKey;
-        Integer vendorLineId;
 
         CommonVo vo = new CommonVo();
 
@@ -73,15 +60,11 @@ public class GeneralAction {
 
             ValidationUtils.validateRequest(dto);
 
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-            secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-
-            this.doVerification(body, secretKey, xSign);
-
             vo = this.actionHandling(httpRequestLog, request, dto);
 
         } catch (Exception e) {
             vo.setError(ResponseCode.INVALID_TOKEN);
+
         } finally {
             httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
             httpService.end(httpRequestLog, vo);
@@ -90,13 +73,8 @@ public class GeneralAction {
         return vo;
     }
 
-    private void doVerification(String body, String secretKey, String xSign) throws InvalidRequestException {
-
-        String requestSignature = VendorService.hashHMACSha256(body, secretKey);
-        ValidationUtils.isEquals(requestSignature, xSign);
-    }
-
-    private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto) {
+    private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto)
+            throws InvalidRequestException {
         CommonVo vo = new CommonVo();
 
         switch (commonDto.getAction()) {
@@ -118,6 +96,7 @@ public class GeneralAction {
                 break;
 
             default:
+                vo.setError(ResponseCode.INVALID_TOKEN);
                 break;
 
         }
