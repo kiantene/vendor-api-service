@@ -51,12 +51,13 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
         }
 
         String rawBody = new String(wrapped.getContentAsByteArray(), request.getCharacterEncoding());
+        LogContext logContext = LogContextHolder.get();
+        logContext.setBody(rawBody);
         Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);
 
         try {
             validator.validate(wrapped, parsedFields, rawBody);
         } catch (SignatureValidationException ex) {
-            LogContext logContext = LogContextHolder.get();
             logContext.setException(ex);
             VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
             writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode());

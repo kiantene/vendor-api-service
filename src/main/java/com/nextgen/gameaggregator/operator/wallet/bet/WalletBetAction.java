@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -37,6 +38,7 @@ public class WalletBetAction {
     private final AuthenticationService authenticationService;
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
+    private final LogContextService logContextService;
     private final Set<Integer> vendorsWithTwoPointFiveSecondTimeout;
     private final Set<Integer> vendorsWithThreePointFiveSecondTimeout;
     private final Set<Integer> vendorsWithFourPointFiveSecondTimeout;
@@ -49,12 +51,14 @@ public class WalletBetAction {
                            AgentApiCredentialService agentApiCredentialService,
                            AuthenticationService authenticationService,
                            VendorService vendorService,
-                           CurrencyConversionService currencyConversionService) {
+                           CurrencyConversionService currencyConversionService,
+                           LogContextService logContextService) {
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
+        this.logContextService = logContextService;
         this.vendorsWithTwoPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithThreePointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
@@ -108,6 +112,7 @@ public class WalletBetAction {
         }
 
         try {
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BET, dto);
             apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
@@ -122,6 +127,8 @@ public class WalletBetAction {
                     .block();
 
             long endTime = System.currentTimeMillis();
+            logContextService.logEnd(apiResponse);
+
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
@@ -192,6 +199,8 @@ public class WalletBetAction {
                 }
             }
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+        } finally {
+            logContextService.logEnd(apiResponse);
         }
         return responseVo;
     }

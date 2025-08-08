@@ -50,6 +50,7 @@ public class LogContext {
     private long apiStart;
     private long apiEnd;
     private long apiTimeTaken;
+    private int apiStatusCode;
     private String exception;
     private String rootCause;
     private String errorMessage;
@@ -136,6 +137,7 @@ public class LogContext {
             base.put("apiStart", apiStart);
             base.put("apiEnd", apiEnd);
             base.put("apiTimeTaken", apiTimeTaken);
+            base.put("apiStatusCode", apiStatusCode);
             base.put("status", status);
 
             // Exception
