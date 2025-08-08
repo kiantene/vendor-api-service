@@ -82,12 +82,7 @@ public class VendorService extends BaseVendorService {
                 gameSession.getPlatformId(),
                 gameSession.getVendorId());
     }
-
-    @Override
-    public boolean shouldRejectCancelRequest() {
-        return false;
-    }
-
+    
     public ResultType getResultType(BetDto dto) {
         ResultType resultType = ResultType.WIN; // Default value is win
 
