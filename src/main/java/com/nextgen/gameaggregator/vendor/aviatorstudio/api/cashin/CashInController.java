@@ -20,7 +20,7 @@ public class CashInController {
     private final CashInResponseMapper responseMapper;
     private final VendorService vendorService;
 
-    @PostMapping(path = EndPoints.CASHIN)
+    @PostMapping(path = EndPoints.CASHIN + "/v2")
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashInResponse> settleAction(
             @Valid @RequestBody CashInRequest request,
