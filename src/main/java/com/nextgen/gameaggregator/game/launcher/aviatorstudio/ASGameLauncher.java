@@ -39,10 +39,10 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest
         String jwtSecret = accessor.getValue(Credentials.JWT_SECRET);
         String userid = context.getVendorPlayerUsername();
 
-        String token = JwtUtil.generateJwt(userid, jwtSecret);
-        LogContext.putField("jwt", token);
+        String jwt = JwtUtil.generateJwt(userid, context.getToken(), jwtSecret);
+        LogContext.putField("jwt", jwt);
         try {
-            String encrypted = EncryptUtil.encrypt(token, publicKey);
+            String encrypted = EncryptUtil.encrypt(jwt, publicKey);
             return GameLaunchRequest.builder()
                     .token(encrypted)
                     .providerId(accessor.getValue(Credentials.PROVIDER_ID))

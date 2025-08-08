@@ -22,15 +22,17 @@ public class AuthenticateController {
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CommonVo> account(
             @ModelAttribute AuthenticateRequest request,
+            @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
 
         AuthenticateContext context = requestMapper.toAuthenticateContext(request);
-        enrich(context, username);
+        enrich(context, token, username);
         PlayerBalanceData balanceData = authenticateService.process(context);
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
-    private void enrich(AuthenticateContext context, String username) {
+    private void enrich(AuthenticateContext context, String token, String username) {
+        context.setToken(token);
         context.setVendorPlayerUsername(username);
     }
 }
