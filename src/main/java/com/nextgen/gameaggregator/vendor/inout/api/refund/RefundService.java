@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -52,7 +49,6 @@ public class RefundService {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         BigDecimal balance = BigDecimal.ZERO;
-        UnsettledBet unsettledBet = new UnsettledBet();
         CommonDto<RefundDto> dto = new CommonDto<>();
         CommonVo responseVo = new CommonVo();
         boolean isRequestExists = false;
@@ -81,16 +77,10 @@ public class RefundService {
             // 4. Verify remaining parameters (Verify against database values)
             vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), dto.getData().getUserId(), gameSession, secretKey, body, xSign);
 
-            try {
-                unsettledBet = unsettledBetService.findBetsForRollback(gameSession.getVendorPlayerId(), dto.getData().getDebitId());
-            } catch (BetNotFoundException betNotFoundException) {
-                balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-            }
+            // 5. Check and Process Rollback
+            balance = checkRollback(traceId, dto, gameSession, httpRequestLog);
 
-            if (unsettledBet != null) {
-                balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
-            }
-            // 5. Set response data
+            // 6. Set response data
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
 
@@ -105,21 +95,32 @@ public class RefundService {
         return responseVo;
     }
 
+    private BigDecimal checkRollback(String traceId, CommonDto<RefundDto> dto, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
+        UnsettledBet unsettledBet = new UnsettledBet();
+        BigDecimal balance = BigDecimal.ZERO;
+        try {
+            unsettledBet = unsettledBetService.findBetsForRollback(gameSession.getVendorPlayerId(), dto.getData().getDebitId());
+        } catch (BetNotFoundException | TransactionStillProcessingException e) {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+        }
+
+        if (unsettledBet != null) {
+            balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
+        }
+        return balance;
+    }
+
     private void doValidation(CommonDto<RefundDto> dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
+    @ExceptionHandler({InvalidRequestException.class,
+            AuthenticationException.class,
+            DisabledVendorLineException.class,
+            Exception.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
-        if (e instanceof InvalidRequestException) {
-            responseVo.setError(ResponseCode.INVALID_TOKEN);
-        } else if (e instanceof AuthenticationException) {
-            responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        } else {
-            responseVo.setError(ResponseCode.UNKNOWN_ERROR);
-        }
-
+        vendorService.exceptionHandler(e, responseVo);
         httpService.logError(httpRequestLog, e);
     }
 }

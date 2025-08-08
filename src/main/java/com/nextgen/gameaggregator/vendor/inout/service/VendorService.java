@@ -108,19 +108,22 @@ public class VendorService extends BaseVendorService {
         // 5. Verify GameMode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
 
-        //6. Verify X-SIGNATURE
+        // 6. Verify X-SIGNATURE
         ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
 
         validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
 
     }
 
-    public CommonVo exceptionHandler(Exception e, CommonVo responseVo){
-        if (e instanceof InvalidRequestException) {
+    public CommonVo exceptionHandler(Exception e, CommonVo responseVo) {
+        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setCode(ResponseCode.OK.code);
+            responseVo.setBalance(String.valueOf(betResultIdempotentViolationException.getBalance()));
+        } else if (e instanceof InvalidRequestException) {
             responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        }else if (e instanceof InsufficientBalanceException) {
+        } else if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
         } else if (e instanceof DisabledVendorLineException ||
                 e instanceof DisabledGameException ||

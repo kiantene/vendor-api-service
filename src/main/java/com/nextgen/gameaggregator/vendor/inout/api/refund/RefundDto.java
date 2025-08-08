@@ -34,8 +34,7 @@ public class RefundDto implements RollbackData {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("gameId")
-    private String ioGameId;
+    private String gameId;
 
     @NotNull
     private Boolean isFinished;
@@ -56,6 +55,6 @@ public class RefundDto implements RollbackData {
 
     @Override
     public String getRoundId() {
-        return this.ioGameId;
+        return this.gameId;
     }
 }

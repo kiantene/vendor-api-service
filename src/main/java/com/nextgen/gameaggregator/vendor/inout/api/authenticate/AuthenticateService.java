@@ -19,23 +19,23 @@ import java.math.BigDecimal;
 @Service
 public class AuthenticateService {
     private final HttpService httpService;
-    private final VendorService vendorService;
     private final WalletService walletService;
+    private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final VendorGameService vendorGameService;
     private final GameSessionService gameSessionService;
     private final AgentPlayerService agentPlayerService;
 
     public AuthenticateService(HttpService httpService,
-                               VendorService vendorService,
                                WalletService walletService,
+                               VendorService vendorService,
                                VendorLineService vendorLineService,
                                VendorGameService vendorGameService,
                                GameSessionService gameSessionService,
                                AgentPlayerService agentPlayerService) {
         this.httpService = httpService;
-        this.vendorService = vendorService;
         this.walletService = walletService;
+        this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.vendorGameService = vendorGameService;
         this.gameSessionService = gameSessionService;
@@ -113,20 +113,7 @@ public class AuthenticateService {
 
     @ExceptionHandler({InvalidRequestException.class, AuthenticationException.class, Exception.class})
     private void handleException(Exception e, CommonVo responseVo, HttpRequestLog httpRequestLog) {
-        if (e instanceof InvalidRequestException) {
-            responseVo.setError(ResponseCode.INVALID_TOKEN);
-        } else if (e instanceof AuthenticationException) {
-            responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        } else if (e instanceof DisabledVendorLineException ||
-                e instanceof DisabledGameException ||
-                e instanceof DisabledAgentPlayerException) {
-            responseVo.setError(ResponseCode.GAME_DISABLED);
-        } else {
-            responseVo.setError(ResponseCode.UNKNOWN_ERROR);
-        }
-
+        vendorService.exceptionHandler(e, responseVo);
         httpService.logError(httpRequestLog, e);
     }
-
-
 }
