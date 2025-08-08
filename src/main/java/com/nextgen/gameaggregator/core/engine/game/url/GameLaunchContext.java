@@ -18,8 +18,10 @@ public class GameLaunchContext {
     private String vendorPlayerUsername;
     private String vendorCurrencyCode;
     private String vendorLanguageCode;
+    private String vendorPlatformCode;
     private Integer platformId;
     private String lobbyUrl;
+    private String ipAddress;
 
     Map<String, VendorLineCredential> vendorCredentials;
 

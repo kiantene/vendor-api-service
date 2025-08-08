@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.core.logging;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.util.UuidUtil;
+import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
 
 import java.time.Instant;
@@ -69,6 +69,26 @@ public class LogContext {
     public void setEnd() {
         this.end = System.currentTimeMillis();
         this.timeTaken = this.end - this.start;
+    }
+
+    public void setException(Exception ex) {
+        setException(ex.getClass().getSimpleName());
+        setErrorMessage(ex.getMessage());
+
+        if (ex instanceof RuntimeException && ex.getCause() != null) {
+            Throwable cause = ex.getCause();
+
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+
+            setRootCause(cause.getClass().getSimpleName());
+        }
+    }
+
+    public void setException(String ex) {
+        this.exception = ex;
+        this.status = -1;
     }
 
     public void put(String key, Object value) {
