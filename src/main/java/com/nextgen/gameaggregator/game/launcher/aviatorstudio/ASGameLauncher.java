@@ -3,7 +3,11 @@ package com.nextgen.gameaggregator.game.launcher.aviatorstudio;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
-import com.nextgen.gameaggregator.core.util.JwtUtil;
+import com.nextgen.gameaggregator.core.exception.GameLaunchException;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
@@ -35,19 +39,19 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest
         String jwtSecret = accessor.getValue(Credentials.JWT_SECRET);
         String userid = context.getVendorPlayerUsername();
 
+        String token = JwtUtil.generateJwt(userid, jwtSecret);
+        LogContext.putField("jwt", token);
         try {
-            //generate JWT token
-            String token = JwtUtil.generateJwt(userid, jwtSecret, publicKey);
+            String encrypted = EncryptUtil.encrypt(token, publicKey);
             return GameLaunchRequest.builder()
-                    .token(token)
+                    .token(encrypted)
                     .providerId(accessor.getValue(Credentials.PROVIDER_ID))
                     .currency(context.getVendorCurrencyCode())
                     .language(context.getVendorLanguageCode())
                     .gameId(context.getVendorGameCode())
                     .build();
-
-        } catch (Exception exception) {
-            throw new RuntimeException(exception.getMessage());
+        } catch (Exception ex) {
+            throw new GameLaunchException(ex.getMessage(), ex);
         }
     }
 }

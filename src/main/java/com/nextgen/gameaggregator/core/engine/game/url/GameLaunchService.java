@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.webclient.VendorApiExecutor;
+import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.service.S3Service;
@@ -64,6 +65,13 @@ public class GameLaunchService {
                 case QUERY_STRING_URL -> buildQueryStringUri(context, launchHandler);
                 default -> throw new UnsupportedOperationException("Unsupported launch mode");
             }
+        } catch (GameLaunchException ex) {
+            logContext.setException(ex);
+            throw ex;
+        } catch (Exception ex) {
+            GameLaunchException gameLaunchException = new GameLaunchException(ex.getMessage(), ex);
+            logContext.setException(gameLaunchException);
+            throw ex;
         } finally {
             long endTime = System.currentTimeMillis();
             logContext.setApiEnd(endTime);
@@ -73,7 +81,9 @@ public class GameLaunchService {
 
     private LogContext populateLogContext(GameLaunchContext context) {
         LogContext logContext = LogContextHolder.get();
-        if (logContext == null) return new LogContext();
+        if (logContext == null) {
+            logContext = new LogContext();
+        }
 
         logContext.setVendorId(context.getVendorId());
         logContext.setAgentId(context.getAgentId());

@@ -5,7 +5,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -14,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
+@Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LogContext {
 
@@ -26,10 +30,10 @@ public class LogContext {
     private String logGroup;
 
     // Raw request body received from the client (e.g., operator system)
-    private String body;
+    private Object body;
 
     // Raw response body returned to the client
-    private String response;
+    private Object response;
     private long start;
     private long end;
     private long timeTaken;
@@ -54,6 +58,7 @@ public class LogContext {
     private String exception;
     private String rootCause;
     private String errorMessage;
+    private String stackTrace;
     private int status;
     private String vendorClassName;
     private Integer vendorId;
@@ -75,6 +80,7 @@ public class LogContext {
     public void setException(Exception ex) {
         setException(ex.getClass().getSimpleName());
         setErrorMessage(ex.getMessage());
+        setStackTrace(getStackTrace(ex));
 
         if (ex instanceof RuntimeException && ex.getCause() != null) {
             Throwable cause = ex.getCause();
@@ -94,6 +100,13 @@ public class LogContext {
 
     public void put(String key, Object value) {
         extraFields.put(key, value);
+    }
+
+    public static void putField(String key, Object value) {
+        LogContext context = LogContextHolder.get();
+        if (context != null) {
+            context.put(key, value);
+        }
     }
 
     public Object get(String key) {
@@ -144,6 +157,7 @@ public class LogContext {
             base.put("exception", exception);
             base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
+            base.put("stackTrace", stackTrace);
             base.putAll(extraFields);
 
             ObjectMapper mapper = new ObjectMapper();
@@ -154,5 +168,12 @@ public class LogContext {
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
         }
+    }
+
+    private String getStackTrace(Exception exception) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        return sw.toString();
     }
 }
