@@ -80,7 +80,6 @@ public class WalletBetResultServiceWrapper {
         } finally {
             cleanup();
             this.updateLogContext(logContext, httpRequestLog);
-            httpService.end(httpRequestLog, null);
         }
     }
 
@@ -111,6 +110,7 @@ public class WalletBetResultServiceWrapper {
         logContext.setEnd();
         logContext.setApiStart(httpRequestLog.getOperatorStart());
         logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
