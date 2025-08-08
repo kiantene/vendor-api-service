@@ -131,9 +131,10 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
+        ResponseEntity<String> apiResponse = null;
         try {
             logContextService.logStart(apiUrl + EndPoints.WALLET_BET_RESULT, dto);
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -149,6 +150,7 @@ public class WalletBetResultAction {
                         return Mono.error(e);
                     })
                     .block();
+            logContextService.logEnd(apiResponse);
 
             setEnd(httpRequestLog);
             if (httpRequestLog != null && apiResponse != null) {
@@ -208,6 +210,7 @@ public class WalletBetResultAction {
             operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
+            logContextService.logEnd(apiResponse);
             if (isError) {
                 setEnd(httpRequestLog);
                 boolean shouldForceSuccess = false;
@@ -269,6 +272,7 @@ public class WalletBetResultAction {
 
         ResponseEntity<String> apiResponse = null;
         try {
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BET_RESULT, dto);
             apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
