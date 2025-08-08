@@ -18,13 +18,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 @Service
 public class BetService {
-    private static final Set<String> processedTransactions = Collections.synchronizedSet(new HashSet<>());
     private final GameSessionService gameSessionService;
     private final VendorLineService vendorLineService;
     private final WalletService walletService;
@@ -110,7 +106,7 @@ public class BetService {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE.code);
-        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
@@ -201,20 +197,6 @@ public class BetService {
         // bet
         if (betDto.getCode().equals(BetType.POINTIN)) {
             // unsettled
-            //testing
-            if ("1e91fwpzx4ka".equals(gameSession.getVendorPlayerUsername())) {
-                synchronized (processedTransactions) {
-                    if (processedTransactions.contains(betDto.getRoundId())) {
-                        try {
-                            Thread.sleep(4000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    } else {
-                        processedTransactions.add(betDto.getRoundId());
-                    }
-                }
-            }
             BetEvent betEvent = walletService.processBet(traceId,
                     gameSession,
                     betDto,
