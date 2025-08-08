@@ -87,4 +87,9 @@ public class VendorService extends BaseVendorService {
         // Handle for GPK BGAMING game, will be alwaus rollback by round
         return gameSession.getGameCode().startsWith("GPKBG");
     }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        return 2500;
+    }
 }

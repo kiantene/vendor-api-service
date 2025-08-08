@@ -59,8 +59,8 @@ public class WalletBetAction {
         this.vendorsWithThreePointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourSecondTimeout = new HashSet<>();
-        //ambs
-        this.vendorsWithTwoPointFiveSecondTimeout.add(38);
+        //ambs,gpk
+        this.vendorsWithTwoPointFiveSecondTimeout.addAll(Set.of(38, 45, 46, 49, 52, 54, 75, 85));
         //jili
         this.vendorsWithThreePointFiveSecondTimeout.add(4);
         //koolbet
