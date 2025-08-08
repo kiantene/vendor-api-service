@@ -67,7 +67,6 @@ public class WalletBetServiceWrapper implements WalletBetService {
             throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         } finally {
             this.updateLogContext(logContext, httpRequestLog);
-            httpService.end(httpRequestLog, null);
         }
     }
 
@@ -98,5 +97,6 @@ public class WalletBetServiceWrapper implements WalletBetService {
         logContext.setEnd(httpRequestLog.getBetEnd());
         logContext.setApiStart(httpRequestLog.getOperatorStart());
         logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 }

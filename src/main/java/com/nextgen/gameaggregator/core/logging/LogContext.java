@@ -95,6 +95,14 @@ public class LogContext {
         extraFields.put(key, value);
     }
 
+    public Object get(String key) {
+        return extraFields.get(key);
+    }
+
+    public boolean exists(String key) {
+        return extraFields.containsKey(key);
+    }
+
     private String formatTimestamp(Long timestamp) {
         // Convert timestamp to Instant
         Instant instant = Instant.ofEpochMilli(timestamp);
