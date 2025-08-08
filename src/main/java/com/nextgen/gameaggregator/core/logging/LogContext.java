@@ -109,7 +109,7 @@ public class LogContext {
     public String toJson() {
         try {
             Map<String, Object> base = new LinkedHashMap<>();
-            base.put("timestamp", time);
+            base.put("time", time);
             base.put("logGroup", logGroup);
             base.put("traceId", traceId);
             base.put("type", type);

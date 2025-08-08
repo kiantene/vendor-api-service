@@ -169,4 +169,9 @@ public class CashTransferInOutDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
+
+    @Override
+    public Integer isEndRound() {
+        return Boolean.TRUE.equals(this.isEndRound) ? 1 : 0;
+    }
 }
