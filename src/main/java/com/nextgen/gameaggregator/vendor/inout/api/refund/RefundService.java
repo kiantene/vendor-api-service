@@ -5,8 +5,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -27,22 +32,27 @@ public class RefundService {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final UnsettledBetService unsettledBetService;
 
     public RefundService(HttpService httpService,
                          WalletService walletService,
                          VendorService vendorService,
                          VendorLineService vendorLineService,
-                         RequestIdempotentLogService requestIdempotentLogService) {
+                         RequestIdempotentLogService requestIdempotentLogService,
+                         UnsettledBetService unsettledBetService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.unsettledBetService = unsettledBetService;
     }
 
     public CommonVo refund(HttpRequestLog httpRequestLog, String xSign) {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
+        BigDecimal balance = BigDecimal.ZERO;
+        UnsettledBet unsettledBet = new UnsettledBet();
         CommonDto<RefundDto> dto = new CommonDto<>();
         CommonVo responseVo = new CommonVo();
         boolean isRequestExists = false;
@@ -71,8 +81,15 @@ public class RefundService {
             // 4. Verify remaining parameters (Verify against database values)
             vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), dto.getData().getUserId(), gameSession, secretKey, body, xSign);
 
-            BigDecimal balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
+            try {
+                unsettledBet = unsettledBetService.findBetsForRollback(gameSession.getVendorPlayerId(), dto.getData().getDebitId());
+            } catch (BetNotFoundException betNotFoundException) {
+                balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            }
 
+            if (unsettledBet != null) {
+                balance = walletService.processRollback(traceId, dto.getData(), gameSession, vendorService, httpRequestLog);
+            }
             // 5. Set response data
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
