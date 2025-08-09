@@ -20,12 +20,7 @@ public class WalletExceptionTranslator {
             throw new InternalConfigurationException(ex.getMessage(), ex);
         }
 
-        if (ex instanceof CouchbaseDataIntegrityException || ex instanceof InvalidOperatorResponseException) {
-            throw new InternalServerException(ex.getMessage(), ex);
-        }
-
-        if (ex instanceof BetResultIdempotentViolationException) {
-            BetResultIdempotentViolationException idempotentEx = (BetResultIdempotentViolationException) ex;
+        if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
             throw new DuplicateBetException(idempotentEx.getBetId());
         }
 

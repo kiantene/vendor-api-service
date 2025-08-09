@@ -47,11 +47,10 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         try {
-            BetResultData betResultData = betResultDataMapper.toBetResultData(context);
             BetEvent betEvent = walletService.processBet(
                     httpRequestLog.getId(),
                     gameSession,
-                    betResultData,
+                    betResultDataMapper.toBetResultData(context),
                     logContext.getBody().toString(),
                     httpRequestLog
             );

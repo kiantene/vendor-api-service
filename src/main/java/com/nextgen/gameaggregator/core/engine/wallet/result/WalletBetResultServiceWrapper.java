@@ -1,18 +1,14 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
-import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.exception.InternalServerException;
+import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -29,27 +25,33 @@ public class WalletBetResultServiceWrapper {
     private final WalletService walletService;
     private final GameSessionDataService gameSessionDataService;
     private final BetResultDataMapper betResultDataMapper;
+    private final WalletExceptionTranslator walletExceptionTranslator;
 
     public PlayerBalanceData process() {
         BetResultContext context = state().getBetResultContext();
         context.setResultTime(System.currentTimeMillis());
         LogContext logContext = LogContextHolder.get();
-        final String vendorClassName = logContext.getVendorClassName();
 
-        validator.validateRequestContext(vendorClassName, context);
-
+        validator.validateRequestContext(logContext.getVendorClassName(), context);
         GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
 
         ResultType resultType = getResultType(context);
         validator.validateBusinessState(gameSession, context, resultType);
-        BetResultData betResultData = betResultDataMapper.toBetResultData(context);
-        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        return processBetResultTransaction(context, gameSession, resultType, logContext);
+    }
 
+    private PlayerBalanceData processBetResultTransaction(
+            BetResultContext context,
+            GameSession gameSession,
+            ResultType resultType,
+            LogContext logContext) {
+
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         try {
             BigDecimal balance = walletService.processBetResult(
                     httpRequestLog.getId(),
                     gameSession,
-                    betResultData,
+                    betResultDataMapper.toBetResultData(context),
                     resultType,
                     state().getVendorService(),
                     httpRequestLog
@@ -62,25 +64,9 @@ public class WalletBetResultServiceWrapper {
                     .timestamp(httpRequestLog.getOperatorEnd())
                     .build();
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
-
-            throw new InternalConfigurationException(ex.getMessage(), ex);
-
-        } catch (MergedBetDataIntegrityException | InvalidOperatorResponseException ex) {
-
-            throw new InternalServerException(ex.getMessage(), ex);
-        } catch (BetResultIdempotentViolationException ex) {
-
-            throw new DuplicateBetException(ex.getBetId());
-        } catch (TransactionStillProcessingException ex) {
-
-            throw new DuplicateBetException(ex.getMessage());
-        } catch (InsufficientBalanceException ex) {
-
-            throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         } catch (Exception ex) {
-            throw new InternalServerException(ex.getMessage(), ex);
-
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
