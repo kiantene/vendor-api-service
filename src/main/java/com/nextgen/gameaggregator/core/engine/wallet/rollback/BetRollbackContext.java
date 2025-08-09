@@ -22,4 +22,10 @@ public class BetRollbackContext {
     private BaseVendorService vendorService;
     private GameSession gameSession;
     private HttpRequestLog httpRequestLog;
+
+    /**
+     * Indicates whether settled bet data must be fetched from the warehouse
+     * before performing the rollback operation.
+     */
+    private boolean retrieveSettledBet;
 }
