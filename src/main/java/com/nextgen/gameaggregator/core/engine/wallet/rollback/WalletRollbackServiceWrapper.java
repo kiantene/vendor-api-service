@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +37,9 @@ public class WalletRollbackServiceWrapper {
         return this;
     }
 
-    public void process(BetRollbackContext context) {
-
+    public PlayerBalanceData process(BetRollbackContext context) {
+        enrich(context);
+        return processRollbackTransaction(context, context.getGameSession());
     }
 
     public void processAsync(BetRollbackContext context) {
@@ -56,6 +59,9 @@ public class WalletRollbackServiceWrapper {
             throw new IllegalArgumentException("BetRollbackContext cannot be null");
         }
 
+        LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Rollback");
+
         if (context.getGameSession() == null) {
             context.setGameSession(gameSessionDataService.getOrCreate(context));
         }
@@ -65,7 +71,6 @@ public class WalletRollbackServiceWrapper {
         }
 
         if (context.getHttpRequestLog() == null) {
-            LogContext logContext = LogContextHolder.get();
             context.setHttpRequestLog(LogContextService.toHttpRequestLog(logContext));
         }
     }
@@ -77,22 +82,18 @@ public class WalletRollbackServiceWrapper {
      * If settled bet retrieval is NOT required, just proceed with rollback.
      */
     private void processRollbackSettledBets(BetRollbackContext context) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.setLogGroup("Rollback");
-
         if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getBetId(), context.getTimestamp())) {
-            processRollbackTransaction(context, context.getGameSession(), logContext);
+            processRollbackTransaction(context, context.getGameSession());
         }
     }
 
-    private void processRollbackTransaction(
+    private PlayerBalanceData processRollbackTransaction(
             BetRollbackContext context,
-            GameSession gameSession,
-            LogContext logContext) {
+            GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         try {
-            walletService.processRollback(
+            BigDecimal balance = walletService.processRollback(
                     httpRequestLog.getId(),
                     rollbackDataMapper.toRollbackData(context),
                     gameSession,
@@ -100,12 +101,19 @@ public class WalletRollbackServiceWrapper {
                     httpRequestLog
             );
 
+            return PlayerBalanceData.builder()
+                    .username(context.getVendorPlayerUsername())
+                    .currency(gameSession.getVendorCurrencyCode())
+                    .balance(balance)
+                    .timestamp(httpRequestLog.getOperatorEnd())
+                    .build();
+
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
-
+            return null;
         } finally {
             cleanup();
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+            LogContextService.updateLogContextFromHttpRequestLog(LogContextHolder.get(), httpRequestLog);
         }
     }
 
