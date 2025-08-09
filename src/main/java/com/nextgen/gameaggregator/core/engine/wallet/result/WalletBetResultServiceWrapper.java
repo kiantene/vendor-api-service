@@ -33,7 +33,7 @@ public class WalletBetResultServiceWrapper {
         LogContext logContext = LogContextHolder.get();
 
         validator.validateRequestContext(logContext.getVendorClassName(), context);
-        GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
+        GameSession gameSession = gameSessionDataService.getGameSession(context);
 
         ResultType resultType = getResultType(context);
         validator.validateBusinessState(gameSession, context, resultType);

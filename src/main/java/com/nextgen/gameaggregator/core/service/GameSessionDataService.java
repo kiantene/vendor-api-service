@@ -14,19 +14,41 @@ import org.springframework.stereotype.Service;
 public class GameSessionDataService {
     private final GameSessionService gameSessionService;
 
+    /**
+     * Retrieves game session using available session identifiers in priority order:
+     * 1. GA session token
+     * 2. Vendor session token
+     * 3. Vendor player username, if both tokens are not present in the request
+     */
     public GameSession getGameSession(GameSessionData gameSessionData) {
         String token = gameSessionData.getToken();
         if (token != null) {
-            return getGameSessionByToken(token);
+            GameSession session = getByToken(token);
+            if (session != null) return session;
         }
 
         String vendorSessionToken = gameSessionData.getVendorSessionToken();
-        String vendorPlayerUsername = gameSessionData.getVendorPlayerUsername();
-        if (vendorSessionToken != null && vendorPlayerUsername != null) {
-            return getGameSessionByUsername(vendorPlayerUsername, vendorSessionToken);
+        if (vendorSessionToken != null) {
+            GameSession session = getByVendorToken(vendorSessionToken);
+            if (session != null) return session;
         }
 
-        throw new InvalidRequestException("Session token not present");
+        String vendorPlayerUsername = gameSessionData.getVendorPlayerUsername();
+        if (vendorPlayerUsername != null) {
+            GameSession session = getByVendorPlayerUsername(vendorPlayerUsername);
+            if (session != null) return session;
+        }
+
+        throw new InvalidRequestException("No valid session found");
+    }
+
+    // TODO: move caching to GameSessionCacheService
+    public GameSession getByToken(String token) {
+        try {
+            return gameSessionService.verifyToken(token);
+        } catch (AuthenticationException ex) {
+            throw new GameSessionExpiredException(token + " has expired");
+        }
     }
 
     // TODO: very low probability but token may not be unique, suggest to add vendorId or playerId
@@ -34,15 +56,6 @@ public class GameSessionDataService {
     public GameSession getByVendorToken(String token) {
         try {
             return gameSessionService.verifyVendorToken(token);
-        } catch (AuthenticationException ex) {
-            throw new GameSessionExpiredException(token + " has expired");
-        }
-    }
-
-    // TODO: move caching to GameSessionCacheService
-    public GameSession getByToken(String token) {
-        try {
-            return gameSessionService.verifyToken(token);
         } catch (AuthenticationException ex) {
             throw new GameSessionExpiredException(token + " has expired");
         }
@@ -58,48 +71,9 @@ public class GameSessionDataService {
         return gameSession;
     }
 
-    private void updateVendorToken(GameSession gameSession, String newToken) {
+    public void updateVendorToken(GameSession gameSession, String newToken) {
         // TODO: change to use Couchbase collection mutateIn
         gameSessionService.regenerateVendorToken(gameSession, newToken);
     }
-
-    private GameSession getGameSessionByToken(String token) {
-        GameSession gameSession = getByToken(token);
-        // TODO: to assess if we need to refresh the token's TTL
-//        if (shouldRefreshToken(gameSession)) {
-//            refreshToken(gameSession);
-//        }
-
-        return gameSession;
-    }
-
-    private GameSession getGameSessionByUsername(String vendorPlayerUsername, String vendorSessionToken) {
-        GameSession gameSession = getByVendorPlayerUsername(vendorPlayerUsername);
-
-        if (gameSession == null) {
-            throw new GameSessionExpiredException("Game session has expired");
-        }
-
-        updateVendorToken(gameSession, vendorSessionToken);
-        return gameSession;
-    }
-
-//    private void refreshToken(GameSession gameSession) {
-//        // TODO: use Couchbase collection update ttl
-//        repository.delete(gameSession);
-//        repository.save(gameSession);
-//    }
-//
-//    private boolean shouldRefreshToken(GameSession gameSession) {
-//        long createTime = gameSession.getCreateTime();
-//        if (createTime <= 0) {
-//            return false;
-//        }
-//
-//        long currentTime = System.currentTimeMillis();
-//        long sessionAgeHours = (currentTime - createTime) / (1000 * 60 * 60); // Convert milliseconds to hours
-//
-//        return sessionAgeHours < 6;
-//    }
 }
 
