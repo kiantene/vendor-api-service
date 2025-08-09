@@ -44,6 +44,12 @@ public class WalletRollbackServiceWrapper {
         if (context == null) {
             throw new IllegalArgumentException("BetRollbackContext cannot be null");
         }
+
+        if (context.getGameSession() == null) {
+            // retrieve gameSession based on vendorToken
+            // if not found, create new game session based on vendorPlayerUsername
+        }
+
         if (context.getVendorService() == null) {
             InternalVendorService vendorService = new InternalVendorService();
             applicationContext.getAutowireCapableBeanFactory().autowireBean(vendorService);
