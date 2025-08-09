@@ -1,12 +1,17 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.warehouse.BetHistory;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -21,26 +26,38 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class WalletRollbackServiceWrapper {
     private static class InternalVendorService extends BaseVendorService {}
+    private static final ThreadLocal<BetRollbackWrapperContext> stateHolder = new ThreadLocal<>();
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
+    private final ApplicationContext applicationContext;
     private final WalletService walletService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final SettledBetService settledBetService;
     private final RollbackDataMapper rollbackDataMapper;
-    private final ApplicationContext applicationContext;
+    private final WalletExceptionTranslator walletExceptionTranslator;
 
-    public void asyncRollbackSettledBet(BetRollbackContext context) {
-        asyncRollbackSettledBet(context, DEFAULT_DELAY_MILLISECONDS);
+    public WalletRollbackServiceWrapper initialise(BetRollbackContext context) {
+        BetRollbackWrapperContext state = new BetRollbackWrapperContext(context);
+        stateHolder.set(state);
+        return this;
     }
 
-    public void asyncRollbackSettledBet(BetRollbackContext context, long delayMilliseconds) {
-        validateContext(context);
+    public void process(BetRollbackContext context) {
+
+    }
+
+    public void processAsync(BetRollbackContext context) {
+        processAsync(context, DEFAULT_DELAY_MILLISECONDS);
+    }
+
+    public void processAsync(BetRollbackContext context, long delayMilliseconds) {
+        enrich(context);
         CompletableFuture.runAsync(
-                () -> processAsyncRollback(context),
+                () -> processRollbackSettledBets(context),
                 CompletableFuture.delayedExecutor(delayMilliseconds, TimeUnit.MILLISECONDS)
         );
     }
 
-    private void validateContext(BetRollbackContext context) {
+    private void enrich(BetRollbackContext context) {
         if (context == null) {
             throw new IllegalArgumentException("BetRollbackContext cannot be null");
         }
@@ -52,60 +69,36 @@ public class WalletRollbackServiceWrapper {
 
         if (context.getVendorService() == null) {
             InternalVendorService vendorService = new InternalVendorService();
+            // due to BaseVendorService field level autowired, manual autowire dependencies are required.
             applicationContext.getAutowireCapableBeanFactory().autowireBean(vendorService);
             context.setVendorService(vendorService);
         }
     }
 
-    private HttpRequestLog toHttpRequestLog(LogContext logContext) {
-        final Integer PROCESSING = 1;
-
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-        logContext.setTraceId(httpRequestLog.getId());
-        httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody().toString());
-        httpRequestLog.setStatus(PROCESSING);
-        return httpRequestLog;
-    }
-
-    private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
-        logContext.setStart(httpRequestLog.getBetStart());
-        logContext.setEnd(httpRequestLog.getBetEnd());
-        logContext.setApiStart(httpRequestLog.getOperatorStart());
-        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
-        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
-    }
-
-    private void processAsyncRollback(BetRollbackContext context) {
+    private void processRollbackSettledBets(BetRollbackContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Rollback");
-        HttpRequestLog httpRequestLog = toHttpRequestLog(logContext);
-
-        try {
-            executeRollback(context, httpRequestLog);
-
-        } catch (Exception e) {
-
-
-        } finally {
-            this.updateLogContext(logContext, httpRequestLog);
+        if (prepareSettledBets(context)) {
+            processRollbackTransaction(context, context.getGameSession(), logContext);
         }
     }
 
-    private void executeRollback(BetRollbackContext context, HttpRequestLog httpRequestLog) throws Exception {
-        List<BetHistory> betHistoryList = this.findSettledBet(context);
-
-        if (betHistoryList == null || betHistoryList.isEmpty())
-            throw new BetNotFoundException("betHistoryList null or empty");
+    private boolean prepareSettledBets(BetRollbackContext context) {
+        List<BetHistory> betHistoryList = this.findSettledBets(context);
+        if (betHistoryList == null || betHistoryList.isEmpty()) return false;
 
         List<SettledBet> settledBetList = buildSettledBetDocuments(betHistoryList);
         storeSettledBetDocuments(settledBetList);
 
-        processWalletRollback(context, httpRequestLog);
+        return true;
     }
 
-    private List<BetHistory> findSettledBet(BetRollbackContext context) {
-        return warehouseBetHistoryService.findByExternalTransactionIdAndVendorSettleTime(context.getBetId(), context.getTimestamp());
+    private List<BetHistory> findSettledBets(BetRollbackContext context) {
+        return warehouseBetHistoryService
+                .findByExternalTransactionIdAndVendorSettleTime(
+                        context.getBetId(),
+                        context.getTimestamp()
+                );
     }
 
     private List<SettledBet> buildSettledBetDocuments(List<BetHistory> betHistoryList) {
@@ -134,13 +127,31 @@ public class WalletRollbackServiceWrapper {
         }
     }
 
-    private void processWalletRollback(BetRollbackContext context, HttpRequestLog httpRequestLog) throws Exception {
-        walletService.processRollback(
-                httpRequestLog.getId(),
-                rollbackDataMapper.toRollbackData(context),
-                context.getGameSession(),
-                context.getVendorService(),
-                httpRequestLog
-        );
+    private void processRollbackTransaction(
+            BetRollbackContext context,
+            GameSession gameSession,
+            LogContext logContext) {
+
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        try {
+            walletService.processRollback(
+                    httpRequestLog.getId(),
+                    rollbackDataMapper.toRollbackData(context),
+                    gameSession,
+                    context.getVendorService(),
+                    httpRequestLog
+            );
+
+        } catch (Exception ex) {
+            walletExceptionTranslator.translateAndThrow(ex);
+
+        } finally {
+            cleanup();
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
+    }
+
+    private void cleanup() {
+        stateHolder.remove();
     }
 }

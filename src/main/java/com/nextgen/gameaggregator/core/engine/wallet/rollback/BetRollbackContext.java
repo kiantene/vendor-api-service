@@ -14,6 +14,7 @@ public class BetRollbackContext {
     private String idempotencyKey;
     private String betId;
     private String roundId;
+    private String token;
     private String vendorPlayerUsername;
     private String vendorSessionToken;
     private Long timestamp;
