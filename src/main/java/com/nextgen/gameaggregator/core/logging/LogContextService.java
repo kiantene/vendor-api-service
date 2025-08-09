@@ -39,6 +39,27 @@ public class LogContextService {
         }
     }
 
+    // Backward compatible function
+    public static void updateLogContextFromHttpRequestLog(LogContext logContext, HttpRequestLog httpRequestLog) {
+        logContext.setStart(httpRequestLog.getBetStart());
+        logContext.setEnd(httpRequestLog.getBetEnd());
+        logContext.setApiStart(httpRequestLog.getOperatorStart());
+        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
+    }
+
+    // Backward compatible function
+    public static HttpRequestLog toHttpRequestLog(LogContext logContext) {
+        final Integer PROCESSING = 1;
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        logContext.setTraceId(httpRequestLog.getId());
+        httpRequestLog.setUrl(logContext.getUrl());
+        httpRequestLog.setRequestBody(logContext.getBody().toString());
+        httpRequestLog.setStatus(PROCESSING);
+        return httpRequestLog;
+    }
+
     public void logApiRequest(LogContext logContext, HttpServletRequest request, String responseBody) {
         // This function will only apply to the following request types
         // WalletBalanceAction, WalletBetAction, WalletBetResultAction, WalletRollbackAction
