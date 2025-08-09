@@ -75,10 +75,17 @@ public class WalletRollbackServiceWrapper {
         }
     }
 
+    /**
+     * If settled bet retrieval is required, prepareSettledBets must be successful
+     * in order to proceed with the rollback.
+     * OR
+     * If settled bet retrieval is NOT required, just proceed with rollback.
+     */
     private void processRollbackSettledBets(BetRollbackContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Rollback");
-        if (prepareSettledBets(context)) {
+
+        if (!context.isRetrieveSettledBet() || prepareSettledBets(context)) {
             processRollbackTransaction(context, context.getGameSession(), logContext);
         }
     }
