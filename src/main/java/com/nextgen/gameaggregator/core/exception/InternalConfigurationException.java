@@ -8,4 +8,8 @@ public class InternalConfigurationException extends RuntimeException {
     public InternalConfigurationException(String message) {
         super(message);
     }
+
+    public InternalConfigurationException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
