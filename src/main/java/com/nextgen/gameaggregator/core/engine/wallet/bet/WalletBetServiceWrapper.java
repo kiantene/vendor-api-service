@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.exception.InternalServerException;
+import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
@@ -11,7 +9,6 @@ import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +21,33 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
     private final BetResultDataMapper betResultDataMapper;
+    private final WalletExceptionTranslator walletExceptionTranslator;
 
     @Override
     public PlayerBalanceData process(BetContext context) {
         LogContext logContext = LogContextHolder.get();
-        final String vendorClassName = logContext.getVendorClassName();
+        walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
+        GameSession gameSession = retrieveGameSession(context);
+        return processBetTransaction(context, gameSession, logContext);
+    }
 
-        walletBetValidator.validateRequestContext(vendorClassName, context);
+    private GameSession retrieveGameSession(BetContext context) {
         GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
-        // TODO: need to add support for vendor that does not return session token
+
+        // TODO: Implement support for vendors that don't return session tokens
+
         walletBetValidator.validateBusinessState(gameSession, context);
+        return gameSession;
+    }
 
-        BetResultData betResultData = betResultDataMapper.toBetResultData(context);
+    private PlayerBalanceData processBetTransaction(
+            BetContext context,
+            GameSession gameSession,
+            LogContext logContext) {
+
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
-
         try {
+            BetResultData betResultData = betResultDataMapper.toBetResultData(context);
             BetEvent betEvent = walletService.processBet(
                     httpRequestLog.getId(),
                     gameSession,
@@ -54,21 +63,9 @@ public class WalletBetServiceWrapper implements WalletBetService {
                     .timestamp(httpRequestLog.getOperatorEnd())
                     .build();
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
-
-            throw new InternalConfigurationException(ex.getMessage(), ex);
-        } catch (CouchbaseDataIntegrityException | InvalidOperatorResponseException ex) {
-
-            throw new InternalServerException(ex.getMessage(), ex);
-        } catch (BetResultIdempotentViolationException ex) {
-
-            throw new DuplicateBetException(ex.getBetId());
-        } catch (TransactionStillProcessingException ex) {
-
-            throw new DuplicateBetException(ex.getMessage());
-        } catch (InsufficientBalanceException ex) {
-
-            throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
+        } catch (Exception ex) {
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }

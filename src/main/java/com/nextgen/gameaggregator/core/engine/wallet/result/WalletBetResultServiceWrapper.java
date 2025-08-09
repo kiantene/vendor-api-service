@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;

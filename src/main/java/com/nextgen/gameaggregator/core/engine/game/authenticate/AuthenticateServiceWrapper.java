@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 public class AuthenticateServiceWrapper {
     private final GameSessionDataService gameSessionDataService;
     private final WalletService walletService;
+    private final WalletExceptionTranslator walletExceptionTranslator;
 
     public PlayerBalanceData process(AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
@@ -41,12 +43,9 @@ public class AuthenticateServiceWrapper {
                     .timestamp(httpRequestLog.getOperatorEnd())
                     .build();
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
-
-            throw new InternalConfigurationException(ex.getMessage(), ex);
         } catch (Exception ex) {
-
-            throw new InternalServerException(ex.getMessage(), ex);
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
