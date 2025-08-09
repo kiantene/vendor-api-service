@@ -31,7 +31,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
     }
 
     private GameSession retrieveGameSession(BetContext context) {
-        GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
+        GameSession gameSession = gameSessionDataService.getGameSession(context);
 
         // TODO: Implement support for vendors that don't return session tokens
 
