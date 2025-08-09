@@ -1,10 +1,8 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
-import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
@@ -27,7 +25,7 @@ public class AuthenticateServiceWrapper {
     public PlayerBalanceData process(AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Authenticate");
-        GameSession gameSession = getGameSession(context);
+        GameSession gameSession = gameSessionDataService.getGameSession(context);
         return getBalance(context, gameSession, logContext);
     }
 
@@ -59,51 +57,6 @@ public class AuthenticateServiceWrapper {
         logContext.setApiStart(httpRequestLog.getOperatorStart());
         logContext.setApiEnd(httpRequestLog.getOperatorEnd());
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
-    }
-
-    private GameSession getGameSession(AuthenticateContext context) {
-        validateContext(context);
-
-        String token = context.getToken();
-        if (token != null) {
-            return getGameSessionByToken(token);
-        }
-
-        String vendorSessionToken = context.getVendorSessionToken();
-        String vendorPlayerUsername = context.getVendorPlayerUsername();
-        if (vendorSessionToken != null && vendorPlayerUsername != null) {
-            return getGameSessionByUsername(vendorPlayerUsername, vendorSessionToken);
-        }
-
-        throw new InvalidRequestException("Session token not present");
-    }
-
-    private void validateContext(AuthenticateContext context) {
-        String token = context.getToken();
-        String username = context.getVendorPlayerUsername();
-        if (token == null && username == null) {
-            throw new InvalidRequestException("username and token are missing");
-        }
-    }
-
-    private GameSession getGameSessionByToken(String token) {
-        GameSession gameSession = gameSessionDataService.getByToken(token);
-        if (gameSessionDataService.shouldRefreshToken(gameSession)) {
-            gameSessionDataService.refreshToken(gameSession);
-        }
-
-        return gameSession;
-    }
-
-    private GameSession getGameSessionByUsername(String vendorPlayerUsername, String vendorSessionToken) {
-        GameSession gameSession = gameSessionDataService.getByVendorPlayerUsername(vendorPlayerUsername);
-
-        if (gameSession == null) {
-            throw new GameSessionExpiredException("Game session has expired");
-        }
-
-        gameSessionDataService.updateVendorToken(gameSession, vendorSessionToken);
-        return gameSession;
     }
 
     private PlayerBalanceData getBalance(AuthenticateContext context, GameSession gameSession, LogContext logContext) {

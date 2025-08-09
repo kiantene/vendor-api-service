@@ -1,85 +1,105 @@
 package com.nextgen.gameaggregator.core.service;
 
+import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
+import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class GameSessionDataService {
+    private final GameSessionService gameSessionService;
 
-    private final RawGameSessionRepository repository;
-
-    // TODO: very low probability but token may not be unique, suggest to add vendorId or playerId
-    // TODO: move cacheable to GameSessionCacheService
-    @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
-    public GameSession getByVendorToken(String token) {
-        return Optional.ofNullable(repository.findByVendorToken(token))
-                .orElseThrow(() -> new GameSessionExpiredException(token + " has expired"));
-    }
-
-    // TODO: move cacheable to GameSessionCacheService
-    @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
-    public GameSession getByToken(String token) {
-        return Optional.ofNullable(repository.findByToken(token))
-                .orElseThrow(() -> new GameSessionExpiredException(token + " has expired"));
-    }
-
-    @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
-    public GameSession getByVendorPlayerUsername(String username) {
-        validateUsername(username);
-        List<GameSession> gameSessionList = repository.findByVendorPlayerUsername(username);
-
-        return findMostRecentGameSession(gameSessionList);
-    }
-
-    public void refreshToken(GameSession gameSession) {
-        repository.delete(gameSession);
-        repository.save(gameSession);
-    }
-
-    public boolean shouldRefreshToken(GameSession gameSession) {
-        long createTime = gameSession.getCreateTime();
-        if (createTime <= 0) {
-            return false;
+    public GameSession getGameSession(GameSessionData gameSessionData) {
+        String token = gameSessionData.getToken();
+        if (token != null) {
+            return getGameSessionByToken(token);
         }
 
-        long currentTime = System.currentTimeMillis();
-        long sessionAgeHours = (currentTime - createTime) / (1000 * 60 * 60); // Convert milliseconds to hours
+        String vendorSessionToken = gameSessionData.getVendorSessionToken();
+        String vendorPlayerUsername = gameSessionData.getVendorPlayerUsername();
+        if (vendorSessionToken != null && vendorPlayerUsername != null) {
+            return getGameSessionByUsername(vendorPlayerUsername, vendorSessionToken);
+        }
 
-        return sessionAgeHours < 6;
+        throw new InvalidRequestException("Session token not present");
     }
 
-    // TODO: change to use Couchbase collection mutateIn
-    public GameSession updateVendorToken(GameSession gameSession, String newToken) {
-        gameSession.setVendorToken(newToken);
-        repository.save(gameSession);
+    // TODO: very low probability but token may not be unique, suggest to add vendorId or playerId
+    // TODO: move caching to GameSessionCacheService
+    public GameSession getByVendorToken(String token) {
+        try {
+            return gameSessionService.verifyVendorToken(token);
+        } catch (AuthenticationException ex) {
+            throw new GameSessionExpiredException(token + " has expired");
+        }
+    }
+
+    // TODO: move caching to GameSessionCacheService
+    public GameSession getByToken(String token) {
+        try {
+            return gameSessionService.verifyToken(token);
+        } catch (AuthenticationException ex) {
+            throw new GameSessionExpiredException(token + " has expired");
+        }
+    }
+
+    public GameSession getByVendorPlayerUsername(String username) {
+        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(username);
+
+        if (gameSession == null) {
+            throw new GameSessionExpiredException("Game session has expired");
+        }
 
         return gameSession;
     }
 
-    private GameSession findMostRecentGameSession(List<GameSession> gameSessionList) {
-        if (gameSessionList == null || gameSessionList.isEmpty()) {
-            return null;
-        }
-
-        return gameSessionList.stream()
-                .filter(g -> g != null && g.getCreateTime() != null)
-                .max(Comparator.comparingLong(GameSession::getCreateTime))
-                .orElse(null);
+    private void updateVendorToken(GameSession gameSession, String newToken) {
+        // TODO: change to use Couchbase collection mutateIn
+        gameSessionService.regenerateVendorToken(gameSession, newToken);
     }
 
-    private void validateUsername(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
-        }
+    private GameSession getGameSessionByToken(String token) {
+        GameSession gameSession = getByToken(token);
+        // TODO: to assess if we need to refresh the token's TTL
+//        if (shouldRefreshToken(gameSession)) {
+//            refreshToken(gameSession);
+//        }
+
+        return gameSession;
     }
+
+    private GameSession getGameSessionByUsername(String vendorPlayerUsername, String vendorSessionToken) {
+        GameSession gameSession = getByVendorPlayerUsername(vendorPlayerUsername);
+
+        if (gameSession == null) {
+            throw new GameSessionExpiredException("Game session has expired");
+        }
+
+        updateVendorToken(gameSession, vendorSessionToken);
+        return gameSession;
+    }
+
+//    private void refreshToken(GameSession gameSession) {
+//        // TODO: use Couchbase collection update ttl
+//        repository.delete(gameSession);
+//        repository.save(gameSession);
+//    }
+//
+//    private boolean shouldRefreshToken(GameSession gameSession) {
+//        long createTime = gameSession.getCreateTime();
+//        if (createTime <= 0) {
+//            return false;
+//        }
+//
+//        long currentTime = System.currentTimeMillis();
+//        long sessionAgeHours = (currentTime - createTime) / (1000 * 60 * 60); // Convert milliseconds to hours
+//
+//        return sessionAgeHours < 6;
+//    }
 }
 
