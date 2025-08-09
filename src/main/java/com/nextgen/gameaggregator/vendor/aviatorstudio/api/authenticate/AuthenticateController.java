@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateCont
 import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class AuthenticateController {
     @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CommonVo> account(
-            @ModelAttribute AuthenticateRequest request,
+            @Valid @ModelAttribute AuthenticateRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
 

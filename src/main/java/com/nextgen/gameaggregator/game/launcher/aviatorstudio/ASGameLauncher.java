@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
@@ -23,8 +22,8 @@ public class ASGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
-        VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
-        return credentialAccessor.getValue(Credentials.API_URL);
+        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
+        return accessor.getValue(Credentials.API_URL);
     }
 
     @Override
