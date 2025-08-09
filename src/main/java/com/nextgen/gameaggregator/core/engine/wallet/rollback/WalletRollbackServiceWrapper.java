@@ -6,10 +6,10 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
@@ -119,18 +119,5 @@ public class WalletRollbackServiceWrapper {
 
     private void cleanup() {
         stateHolder.remove();
-    }
-
-    private static class InternalVendorService extends BaseVendorService {
-        /**
-         * Temporary factory method for InternalVendorService during BaseVendorService deprecation.
-         * TODO: Remove this class once BaseVendorService is fully deprecated.
-         */
-        public static InternalVendorService getInstance(ApplicationContext applicationContext) {
-            InternalVendorService vendorService = new InternalVendorService();
-            // due to BaseVendorService field level autowired, manual autowire dependencies are required.
-            applicationContext.getAutowireCapableBeanFactory().autowireBean(vendorService);
-            return vendorService;
-        }
     }
 }

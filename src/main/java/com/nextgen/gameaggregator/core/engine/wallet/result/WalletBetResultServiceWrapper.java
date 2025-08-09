@@ -6,12 +6,14 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WalletBetResultServiceWrapper {
     private static final ThreadLocal<BetResultWrapperContext> stateHolder = new ThreadLocal<>(); // thread safe, context object won't be shared across threads
+    private final ApplicationContext applicationContext;
     private final WalletBetResultValidator validator;
     private final WalletService walletService;
     private final GameSessionDataService gameSessionDataService;
@@ -29,7 +32,7 @@ public class WalletBetResultServiceWrapper {
 
     public PlayerBalanceData process() {
         BetResultContext context = state().getBetResultContext();
-        context.setResultTime(System.currentTimeMillis());
+        enrich(context);
         LogContext logContext = LogContextHolder.get();
 
         validator.validateRequestContext(logContext.getVendorClassName(), context);
@@ -38,6 +41,14 @@ public class WalletBetResultServiceWrapper {
         ResultType resultType = getResultType(context);
         validator.validateBusinessState(gameSession, context, resultType);
         return processBetResultTransaction(context, gameSession, resultType, logContext);
+    }
+
+    private void enrich(BetResultContext context) {
+        context.setResultTime(System.currentTimeMillis());
+
+        if (state().getVendorService() == null) {
+            state().setVendorService(InternalVendorService.getInstance(applicationContext));
+        }
     }
 
     private PlayerBalanceData processBetResultTransaction(
