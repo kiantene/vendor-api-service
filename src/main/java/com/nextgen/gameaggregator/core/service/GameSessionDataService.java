@@ -39,7 +39,16 @@ public class GameSessionDataService {
             if (session != null) return session;
         }
 
-        throw new InvalidRequestException("No valid session found");
+        throw new GameSessionExpiredException();
+    }
+
+    public GameSession getOrCreate(GameSessionData gameSessionData) {
+        try {
+            return getGameSession(gameSessionData);
+        } catch (GameSessionExpiredException ex) {
+            // TODO: create new with vendorUsername
+            return new GameSession();
+        }
     }
 
     // TODO: move caching to GameSessionCacheService
