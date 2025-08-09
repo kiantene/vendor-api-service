@@ -6,13 +6,13 @@ import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,6 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final GameSessionDataService gameSessionDataService;
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
-    private final HttpService httpService;
     private final BetResultDataMapper betResultDataMapper;
 
     @Override
@@ -37,7 +36,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         walletBetValidator.validateBusinessState(gameSession, context);
 
         BetResultData betResultData = betResultDataMapper.toBetResultData(context);
-        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
             BetEvent betEvent = walletService.processBet(
@@ -48,7 +47,12 @@ public class WalletBetServiceWrapper implements WalletBetService {
                     httpRequestLog
             );
 
-            return this.toPlayerBalanceData(context, betEvent, httpRequestLog);
+            return PlayerBalanceData.builder()
+                    .username(context.getVendorPlayerUsername())
+                    .currency(context.getVendorCurrency())
+                    .balance(betEvent.getLastBalance())
+                    .timestamp(httpRequestLog.getOperatorEnd())
+                    .build();
 
         } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
 
@@ -66,37 +70,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
             throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         } finally {
-            this.updateLogContext(logContext, httpRequestLog);
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-    }
-
-    private HttpRequestLog toHttpRequestLog(LogContext logContext) {
-        final Integer PROCESSING = 1;
-
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-        logContext.setTraceId(httpRequestLog.getId());
-        httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody().toString());
-        httpRequestLog.setStatus(PROCESSING);
-        return httpRequestLog;
-    }
-
-    private PlayerBalanceData toPlayerBalanceData(BetContext context, BetEvent betEvent, HttpRequestLog httpRequestLog) {
-        PlayerBalanceData playerBalanceData = new PlayerBalanceData();
-
-        playerBalanceData.setUsername(context.getVendorPlayerUsername());
-        playerBalanceData.setBalance(betEvent.getLastBalance());
-        playerBalanceData.setCurrency(context.getVendorCurrency());
-        playerBalanceData.setTimestamp(httpRequestLog.getOperatorEnd()); // as we do not have this info, default to operatorEnd
-
-        return playerBalanceData;
-    }
-
-    private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
-        logContext.setStart(httpRequestLog.getBetStart());
-        logContext.setEnd(httpRequestLog.getBetEnd());
-        logContext.setApiStart(httpRequestLog.getOperatorStart());
-        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
-        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 }

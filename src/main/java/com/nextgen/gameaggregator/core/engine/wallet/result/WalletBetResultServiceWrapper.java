@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -13,7 +14,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ public class WalletBetResultServiceWrapper {
     private static final ThreadLocal<BetResultWrapperContext> stateHolder = new ThreadLocal<>(); // thread safe, context object won't be shared across threads
     private final WalletBetResultValidator validator;
     private final WalletService walletService;
-    private final HttpService httpService;
     private final GameSessionDataService gameSessionDataService;
     private final BetResultDataMapper betResultDataMapper;
 
@@ -44,7 +43,7 @@ public class WalletBetResultServiceWrapper {
         ResultType resultType = getResultType(context);
         validator.validateBusinessState(gameSession, context, resultType);
         BetResultData betResultData = betResultDataMapper.toBetResultData(context);
-        HttpRequestLog httpRequestLog = this.toHttpRequestLog(logContext);
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
             BigDecimal balance = walletService.processBetResult(
@@ -56,7 +55,12 @@ public class WalletBetResultServiceWrapper {
                     httpRequestLog
             );
 
-            return this.toPlayerBalanceData(context, balance, httpRequestLog);
+            return PlayerBalanceData.builder()
+                    .username(context.getVendorPlayerUsername())
+                    .currency(context.getVendorCurrency())
+                    .balance(balance)
+                    .timestamp(httpRequestLog.getOperatorEnd())
+                    .build();
 
         } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException ex) {
 
@@ -79,38 +83,8 @@ public class WalletBetResultServiceWrapper {
 
         } finally {
             cleanup();
-            this.updateLogContext(logContext, httpRequestLog);
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-    }
-
-    private HttpRequestLog toHttpRequestLog(LogContext logContext) {
-        final Integer PROCESSING = 1;
-
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-        logContext.setTraceId(httpRequestLog.getId());
-        httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody().toString());
-        httpRequestLog.setStatus(PROCESSING);
-        return httpRequestLog;
-    }
-
-    private PlayerBalanceData toPlayerBalanceData(BetResultContext context, BigDecimal balance, HttpRequestLog httpRequestLog) {
-        PlayerBalanceData playerBalanceData = new PlayerBalanceData();
-
-        playerBalanceData.setUsername(context.getVendorPlayerUsername());
-        playerBalanceData.setBalance(balance);
-        playerBalanceData.setCurrency(context.getVendorCurrency());
-        playerBalanceData.setTimestamp(httpRequestLog.getOperatorEnd());
-
-        return playerBalanceData;
-    }
-
-    private void updateLogContext(LogContext logContext, HttpRequestLog httpRequestLog) {
-        logContext.setStart(httpRequestLog.getBetStart());
-        logContext.setEnd();
-        logContext.setApiStart(httpRequestLog.getOperatorStart());
-        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
-        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
