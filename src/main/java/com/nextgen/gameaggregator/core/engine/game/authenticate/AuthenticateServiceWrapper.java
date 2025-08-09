@@ -7,12 +7,11 @@ import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,7 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 public class AuthenticateServiceWrapper {
-    private final GameSessionService gameSessionService;
+    private final GameSessionDataService gameSessionDataService;
     private final WalletService walletService;
 
     public PlayerBalanceData process(AuthenticateContext context) {
@@ -73,7 +72,7 @@ public class AuthenticateServiceWrapper {
         String vendorSessionToken = context.getVendorSessionToken();
         String vendorPlayerUsername = context.getVendorPlayerUsername();
         if (vendorSessionToken != null && vendorPlayerUsername != null) {
-            return getGameSessionByVendorToken(vendorPlayerUsername, vendorSessionToken);
+            return getGameSessionByUsername(vendorPlayerUsername, vendorSessionToken);
         }
 
         throw new InvalidRequestException("Session token not present");
@@ -88,38 +87,22 @@ public class AuthenticateServiceWrapper {
     }
 
     private GameSession getGameSessionByToken(String token) {
-        try {
-            GameSession gameSession = gameSessionService.verifyToken(token);
-            if (shouldRefreshToken(gameSession)) {
-                gameSessionService.refreshToken(gameSession);
-            }
-
-            return gameSession;
-        } catch (AuthenticationException ex) {
-            throw new GameSessionExpiredException("Game session has expired");
-        }
-    }
-
-    private boolean shouldRefreshToken(GameSession gameSession) {
-        long createTime = gameSession.getCreateTime();
-        if (createTime <= 0) {
-            return false;
+        GameSession gameSession = gameSessionDataService.getByToken(token);
+        if (gameSessionDataService.shouldRefreshToken(gameSession)) {
+            gameSessionDataService.refreshToken(gameSession);
         }
 
-        long currentTime = System.currentTimeMillis();
-        long sessionAgeHours = (currentTime - createTime) / (1000 * 60 * 60); // Convert milliseconds to hours
-
-        return sessionAgeHours < 6;
+        return gameSession;
     }
 
-    private GameSession getGameSessionByVendorToken(String vendorPlayerUsername, String vendorSessionToken) {
-        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+    private GameSession getGameSessionByUsername(String vendorPlayerUsername, String vendorSessionToken) {
+        GameSession gameSession = gameSessionDataService.getByVendorPlayerUsername(vendorPlayerUsername);
 
         if (gameSession == null) {
             throw new GameSessionExpiredException("Game session has expired");
         }
 
-        gameSessionService.regenerateVendorToken(gameSession, vendorSessionToken);
+        gameSessionDataService.updateVendorToken(gameSession, vendorSessionToken);
         return gameSession;
     }
 
