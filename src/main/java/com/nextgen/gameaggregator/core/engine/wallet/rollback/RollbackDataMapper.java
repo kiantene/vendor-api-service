@@ -10,7 +10,7 @@ class RollbackDataMapper {
             @Override
             public String getRollbackId() {
                 return switch (context.getRollbackType()) {
-                    case BY_BET -> context.getBetId();
+                    case BY_BET -> context.getVendorBetId();
                     case BY_ROUND -> context.getRoundId();
                 };
             }
