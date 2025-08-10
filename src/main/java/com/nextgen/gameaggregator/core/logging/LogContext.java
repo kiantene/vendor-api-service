@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -20,7 +21,6 @@ import java.util.Map;
 @Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LogContext {
-
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
@@ -28,6 +28,8 @@ public class LogContext {
     private String url;
     private String traceId;
     private String logGroup;
+
+    private HttpMethod method;
 
     // Raw request body received from the client (e.g., operator system)
     private Object body;
@@ -160,7 +162,10 @@ public class LogContext {
             base.put("exception", exception);
             base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
-            base.put("stackTrace", stackTrace);
+            if (log.isDebugEnabled()) {
+                base.put("method", method.name());
+                base.put("stackTrace", stackTrace);
+            }
             base.putAll(extraFields);
 
             ObjectMapper mapper = new ObjectMapper();

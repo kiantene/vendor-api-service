@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.filter;
 
+import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
 import jakarta.servlet.FilterChain;
@@ -27,43 +28,46 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
 
         LogContext logContext = loggingManager.onRequestStart(request);
-        String requestURI = request.getRequestURI();
-        String vendorClassName = SupportedVendors.extractVendorClassName(requestURI);
+        String vendorClassName = SupportedVendors.extractVendorClassName(request.getRequestURI());
+        ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
-        if (!vendorClassName.isEmpty()) {
-            request.setAttribute("vendorClassName", vendorClassName);
-            logContext.setVendorClassName(vendorClassName);
-            ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
-            ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
-
-            try {
-                String rawBody;
-                if (hasBody(request)) { // POST,PUT,PATCH
-                    rawBody = wrappedRequest.getCachedBody();
-                } else { // GET
-                    rawBody = request.getQueryString();
-                }
-                logContext.setBody(rawBody);
-                request.setAttribute("rawBody", rawBody);
-                filterChain.doFilter(wrappedRequest, wrappedResponse);
-            } finally {
-                String responseBody = getResponseBody(wrappedResponse, response);
-                loggingManager.onRequestCompleted(request, responseBody, null);
-            }
-        } else {
-            filterChain.doFilter(request, response);
+        if (vendorClassName.isBlank()) {
+            filterChain.doFilter(wrappedRequest, wrappedResponse);
             loggingManager.onRequestCompleted(request, "", null);
+            return;
+        }
+
+        request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorClassName);
+        logContext.setVendorClassName(vendorClassName);
+
+        try {
+            cacheRawBody(request, wrappedRequest, logContext);
+            filterChain.doFilter(wrappedRequest, wrappedResponse);
+        } finally {
+            String responseBody = getResponseBody(wrappedResponse, response);
+            loggingManager.onRequestCompleted(request, responseBody, null);
         }
     }
 
-    private String getResponseBody(ContentCachingResponseWrapper wrappedResponse, HttpServletResponse response) throws IOException {
+    private String getResponseBody(ContentCachingResponseWrapper wrappedResponse, HttpServletResponse response)
+            throws IOException {
         byte[] content = wrappedResponse.getContentAsByteArray();
         wrappedResponse.copyBodyToResponse();
         return new String(content, response.getCharacterEncoding());
     }
 
-    private boolean hasBody(HttpServletRequest request) {
+    private void cacheRawBody(HttpServletRequest request,
+                              ResettableRequestWrapper wrappedRequest,
+                              LogContext logContext) {
         String method = request.getMethod();
-        return "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+        boolean hasBody = "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+
+        String rawBody = hasBody
+                ? wrappedRequest.getCachedBody()
+                : request.getQueryString();
+
+        request.setAttribute(RequestAttributes.RAW_BODY, rawBody);
+        logContext.setBody(rawBody);
     }
 }
