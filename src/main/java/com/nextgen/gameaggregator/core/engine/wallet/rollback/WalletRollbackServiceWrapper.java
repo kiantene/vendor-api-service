@@ -82,7 +82,7 @@ public class WalletRollbackServiceWrapper {
      * If settled bet retrieval is NOT required, just proceed with rollback.
      */
     private void processRollbackSettledBets(BetRollbackContext context) {
-        if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getBetId(), context.getTimestamp())) {
+        if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getVendorBetId(), context.getTimestamp())) {
             processRollbackTransaction(context, context.getGameSession());
         }
     }
