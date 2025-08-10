@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
     }
 
     private GameSession retrieveGameSession(BetContext context) {
-        GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken());
+        GameSession gameSession = gameSessionDataService.getGameSession(context);
 
         // TODO: Implement support for vendors that don't return session tokens
 

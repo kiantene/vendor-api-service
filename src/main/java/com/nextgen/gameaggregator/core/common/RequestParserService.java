@@ -13,12 +13,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class RequestParserService {
-
-    private final ObjectMapper objectMapper;
-
-    public RequestParserService(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public Map<String, String> parse(String contentType, String rawBody) {
         if (contentType == null) return Map.of();

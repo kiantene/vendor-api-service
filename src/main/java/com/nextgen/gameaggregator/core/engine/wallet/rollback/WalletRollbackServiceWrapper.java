@@ -1,19 +1,21 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +37,9 @@ public class WalletRollbackServiceWrapper {
         return this;
     }
 
-    public void process(BetRollbackContext context) {
-
+    public PlayerBalanceData process(BetRollbackContext context) {
+        enrich(context);
+        return processRollbackTransaction(context, context.getGameSession());
     }
 
     public void processAsync(BetRollbackContext context) {
@@ -56,6 +59,9 @@ public class WalletRollbackServiceWrapper {
             throw new IllegalArgumentException("BetRollbackContext cannot be null");
         }
 
+        LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Rollback");
+
         if (context.getGameSession() == null) {
             context.setGameSession(gameSessionDataService.getOrCreate(context));
         }
@@ -65,7 +71,6 @@ public class WalletRollbackServiceWrapper {
         }
 
         if (context.getHttpRequestLog() == null) {
-            LogContext logContext = LogContextHolder.get();
             context.setHttpRequestLog(LogContextService.toHttpRequestLog(logContext));
         }
     }
@@ -77,22 +82,18 @@ public class WalletRollbackServiceWrapper {
      * If settled bet retrieval is NOT required, just proceed with rollback.
      */
     private void processRollbackSettledBets(BetRollbackContext context) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.setLogGroup("Rollback");
-
-        if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getBetId(), context.getTimestamp())) {
-            processRollbackTransaction(context, context.getGameSession(), logContext);
+        if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getVendorBetId(), context.getTimestamp())) {
+            processRollbackTransaction(context, context.getGameSession());
         }
     }
 
-    private void processRollbackTransaction(
+    private PlayerBalanceData processRollbackTransaction(
             BetRollbackContext context,
-            GameSession gameSession,
-            LogContext logContext) {
+            GameSession gameSession) {
 
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         try {
-            walletService.processRollback(
+            BigDecimal balance = walletService.processRollback(
                     httpRequestLog.getId(),
                     rollbackDataMapper.toRollbackData(context),
                     gameSession,
@@ -100,29 +101,23 @@ public class WalletRollbackServiceWrapper {
                     httpRequestLog
             );
 
+            return PlayerBalanceData.builder()
+                    .username(context.getVendorPlayerUsername())
+                    .currency(gameSession.getVendorCurrencyCode())
+                    .balance(balance)
+                    .timestamp(httpRequestLog.getOperatorEnd())
+                    .build();
+
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
-
+            return null;
         } finally {
             cleanup();
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+            LogContextService.updateLogContextFromHttpRequestLog(LogContextHolder.get(), httpRequestLog);
         }
     }
 
     private void cleanup() {
         stateHolder.remove();
-    }
-
-    private static class InternalVendorService extends BaseVendorService {
-        /**
-         * Temporary factory method for InternalVendorService during BaseVendorService deprecation.
-         * TODO: Remove this class once BaseVendorService is fully deprecated.
-         */
-        public static InternalVendorService getInstance(ApplicationContext applicationContext) {
-            InternalVendorService vendorService = new InternalVendorService();
-            // due to BaseVendorService field level autowired, manual autowire dependencies are required.
-            applicationContext.getAutowireCapableBeanFactory().autowireBean(vendorService);
-            return vendorService;
-        }
     }
 }

@@ -1,82 +1,73 @@
 package com.nextgen.gameaggregator.core.filter;
 
+import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class RequestLoggingFilter extends OncePerRequestFilter {
-
     private final LoggingManager loggingManager;
 
-    public RequestLoggingFilter(LoggingManager loggingManager) {
-        this.loggingManager = loggingManager;
-    }
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(@NotNull HttpServletRequest request,
+                                    @NotNull HttpServletResponse response,
+                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
 
         LogContext logContext = loggingManager.onRequestStart(request);
-        String requestURI = request.getRequestURI();
-        String vendorClassName = SupportedVendors.extractVendorClassName(requestURI);
+        String vendorClassName = SupportedVendors.extractVendorClassName(request.getRequestURI());
+        ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
+        ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
-        if (!vendorClassName.isEmpty()) {
-            logContext.setVendorClassName(vendorClassName);
-            ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
-            ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
-
-            try {
-                String rawBody;
-                if (hasBody(request)) { // POST,PUT,PATCH
-                    rawBody = getRawRequestBody(wrappedRequest, request);
-                } else { // GET
-                    rawBody = request.getQueryString();
-                }
-                logContext.setBody(rawBody);
-                filterChain.doFilter(wrappedRequest, wrappedResponse);
-            } finally {
-                String responseBody = getResponseBody(wrappedResponse, response);
-                loggingManager.onRequestCompleted(request, responseBody, null);
-            }
-        } else {
-            filterChain.doFilter(request, response);
+        if (vendorClassName.isBlank()) {
+            filterChain.doFilter(wrappedRequest, wrappedResponse);
             loggingManager.onRequestCompleted(request, "", null);
+            return;
+        }
+
+        request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorClassName);
+        logContext.setVendorClassName(vendorClassName);
+
+        try {
+            cacheRawBody(request, wrappedRequest, logContext);
+            filterChain.doFilter(wrappedRequest, wrappedResponse);
+        } finally {
+            String responseBody = getResponseBody(wrappedResponse, response);
+            loggingManager.onRequestCompleted(request, responseBody, null);
         }
     }
 
-    private String getRawRequestBody(ContentCachingRequestWrapper wrappedRequest, HttpServletRequest request) throws UnsupportedEncodingException {
-        wrappedRequest.getParameterMap();
-
-        byte[] body = wrappedRequest.getContentAsByteArray();
-        String rawBody = "";
-        if (body.length > 0) {
-
-            // TODO: need to test encoding
-            rawBody = new String(body, request.getCharacterEncoding());
-            request.setAttribute("rawBody", rawBody); // store for later
-        }
-        return rawBody;
-    }
-
-    private String getResponseBody(ContentCachingResponseWrapper wrappedResponse, HttpServletResponse response) throws IOException {
+    private String getResponseBody(ContentCachingResponseWrapper wrappedResponse, HttpServletResponse response)
+            throws IOException {
         byte[] content = wrappedResponse.getContentAsByteArray();
         wrappedResponse.copyBodyToResponse();
         return new String(content, response.getCharacterEncoding());
     }
 
-    private boolean hasBody(HttpServletRequest request) {
+    private void cacheRawBody(HttpServletRequest request,
+                              ResettableRequestWrapper wrappedRequest,
+                              LogContext logContext) {
         String method = request.getMethod();
-        return "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+        boolean hasBody = "POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method);
+
+        String rawBody = hasBody
+                ? wrappedRequest.getCachedBody()
+                : request.getQueryString();
+
+        request.setAttribute(RequestAttributes.RAW_BODY, rawBody);
+        logContext.setBody(rawBody);
     }
 }
