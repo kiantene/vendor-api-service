@@ -221,6 +221,25 @@ public class HttpService {
         return httpRequestLog;
     }
 
+    public HttpRequestLog startInternalRollback(HttpRequestLog oldHttpRequestLog) {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl(oldHttpRequestLog.getUrl() + " (Internal use)");
+            httpRequestLog.setRequestBody(oldHttpRequestLog.getRequestBody());
+            httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
     public HttpRequestLog startInternalConsumerForRawSettledBet() {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
