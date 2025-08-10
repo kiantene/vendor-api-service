@@ -1,11 +1,12 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.settle;
 
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextMapper;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.CashInRequest;
 import org.springframework.stereotype.Component;
 
 @Component
-class CashInRequestMapper implements BetResultContextMapper<CashInRequest> {
+class SettleRequestMapper implements BetResultContextMapper<CashInRequest> {
     @Override
     public BetResultContext toBetResultContext(CashInRequest request) {
         return BetResultContext.builder()

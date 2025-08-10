@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
 
-import com.nextgen.gameaggregator.core.common.VendorResponseMapper;
+import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import org.springframework.stereotype.Component;
