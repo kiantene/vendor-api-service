@@ -30,6 +30,6 @@ public class CashInController {
     }
 
     private boolean isSettle(CashInRequest request) {
-        return !ReasonCode.isRefundReason(request.getReason());
+        return ReasonCode.isSettleReason(request.getReason());
     }
 }

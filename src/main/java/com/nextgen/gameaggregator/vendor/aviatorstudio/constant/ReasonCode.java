@@ -18,7 +18,16 @@ public class ReasonCode {
             "INTERNAL_ERROR"
     );
 
+    private static final Set<String> SETTLE_REASONS = Set.of(
+            "BET_LOST",
+            "NORMAL_WIN"
+    );
+
     public static boolean isRefundReason(String reason) {
         return reason != null && REFUND_REASONS.contains(reason);
+    }
+
+    public static boolean isSettleReason(String reason) {
+        return reason != null && SETTLE_REASONS.contains(reason);
     }
 }
