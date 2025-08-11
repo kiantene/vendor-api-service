@@ -60,7 +60,7 @@ public class RequestValidationExceptionHandler {
 
         return new ResponseEntity<>(
                 responseBody,
-                HttpStatusCode.valueOf(errorResponse.getStatusCode())
+                errorResponse.getStatusCode()
         );
     }
 

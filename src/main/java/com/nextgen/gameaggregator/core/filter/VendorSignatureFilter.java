@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -70,7 +71,14 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
         } catch (SignatureValidationException ex) {
             LogContextHolder.get().setException(ex);
             VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
-            writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode());
+            if (errorResponse == null || errorResponse.getBody() == null) {
+                errorResponse = new VendorErrorResponse(
+                        HttpStatus.UNAUTHORIZED,
+                        "Default signature validator - VendorSignatureValidator not implemented"
+                );
+            }
+
+            writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value());
             return false;
         }
     }
