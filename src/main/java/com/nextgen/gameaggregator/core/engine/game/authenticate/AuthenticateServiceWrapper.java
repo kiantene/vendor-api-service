@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
-import com.nextgen.gameaggregator.core.engine.wallet.WalletExceptionTranslator;
+import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;

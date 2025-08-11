@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.core.service;
 
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
-import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.service.GameSessionService;

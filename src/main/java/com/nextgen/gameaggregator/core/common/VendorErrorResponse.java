@@ -9,7 +9,7 @@ public class VendorErrorResponse {
     private final Object body;
 
     public VendorErrorResponse(Object body) {
-        this(HttpServletResponse.SC_UNAUTHORIZED, body); // default to 401
+        this(HttpServletResponse.SC_OK, body); // default to 200, unless override
     }
 
     public VendorErrorResponse(int statusCode, Object body) {
