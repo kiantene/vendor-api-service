@@ -32,14 +32,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
-        if (vendorClassName.isBlank()) {
-            filterChain.doFilter(wrappedRequest, wrappedResponse);
-            loggingManager.onRequestCompleted(request, "", null);
-            return;
+        if (!vendorClassName.isBlank()) {
+            request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorClassName);
+            logContext.setVendorClassName(vendorClassName);
         }
-
-        request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorClassName);
-        logContext.setVendorClassName(vendorClassName);
 
         try {
             cacheRawBody(request, wrappedRequest, logContext);
