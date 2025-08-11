@@ -1,16 +1,14 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.exception;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutVo;
+import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PGSoftExceptionMapper implements VendorExceptionMapper<ResponseVo<CashTransferInOutVo>> {
+public class PGSoftExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public String getVendorClassName() {
@@ -18,23 +16,47 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper<ResponseVo<C
     }
 
     @Override
-    public ResponseVo<CashTransferInOutVo> onInternalConfigurationError(InternalConfigurationException ex) {
-
+    public VendorErrorResponse onGameSessionExpired(GameSessionExpiredException ex) {
         return null;
     }
 
     @Override
-    public ResponseVo<CashTransferInOutVo> onAuthenticationError(AuthenticationException ex) {
+    public VendorErrorResponse onGameTerminated(GameTerminatedException ex) {
         return null;
     }
 
     @Override
-    public ResponseVo<CashTransferInOutVo> onInsufficientBalance(InsufficientBalanceException ex) {
+    public VendorErrorResponse onInsufficientBalance(InsufficientBalanceException ex) {
         return null;
     }
 
     @Override
-    public ResponseVo<CashTransferInOutVo> onInternalError(Throwable ex) {
+    public VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex) {
+        return null;
+    }
+
+    @Override
+    public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
+        return null;
+    }
+
+    @Override
+    public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
+        return null;
+    }
+
+    @Override
+    public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
+        return null;
+    }
+
+    @Override
+    public VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex) {
+        return null;
+    }
+
+    @Override
+    public VendorErrorResponse onInternalError(InternalServerException ex) {
         return null;
     }
 }

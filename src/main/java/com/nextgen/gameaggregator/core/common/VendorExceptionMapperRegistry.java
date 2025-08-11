@@ -9,9 +9,9 @@ import java.util.stream.Collectors;
 
 @Component
 public class VendorExceptionMapperRegistry {
-    private final Map<String, VendorExceptionMapper<?>> handlerMap;
+    private final Map<String, VendorExceptionMapper> handlerMap;
 
-    public VendorExceptionMapperRegistry(List<VendorExceptionMapper<?>> handlers) {
+    public VendorExceptionMapperRegistry(List<VendorExceptionMapper> handlers) {
         this.handlerMap = handlers.stream()
                 .filter(h -> h.getVendorClassName() != null)
                 .collect(Collectors.toMap(
@@ -20,9 +20,7 @@ public class VendorExceptionMapperRegistry {
                 ));
     }
 
-    public VendorExceptionMapper<Object> getMapper(String vendorClassName) {
-        @SuppressWarnings("unchecked")
-        VendorExceptionMapper<Object> mapper = (VendorExceptionMapper<Object>) handlerMap.get(vendorClassName);
-        return mapper;
+    public VendorExceptionMapper getMapper(String vendorClassName) {
+        return handlerMap.get(vendorClassName);
     }
 }
