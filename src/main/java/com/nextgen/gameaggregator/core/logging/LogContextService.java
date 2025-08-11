@@ -84,7 +84,7 @@ public class LogContextService {
                 }
             } catch (Exception ex) {
                 httpRequestLog.setOperatorData(logContext.getApiBody().toString());
-                httpRequestLog.setOperatorData(logContext.getApiResponse().toString());
+                httpRequestLog.setOperatorResponse(logContext.getApiResponse().toString());
             }
 
             if (logContext.getException() != null) {
