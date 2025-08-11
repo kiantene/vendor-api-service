@@ -14,7 +14,7 @@ class SettleRequestMapper implements BetResultContextMapper<CashInRequest> {
 //                .vendorPlayerUsername() // get from JWT
                 .gameCode(request.getGameId())
                 .roundId(request.getRoundId())
-                .vendorBetId(request.getTransactionId())
+                .vendorBetId(request.getPreviousTransactionId())
                 .vendorCurrency(request.getCurrency())
                 .vendorSessionToken(request.getSessionId())
                 .winAmount(request.getAmount())
