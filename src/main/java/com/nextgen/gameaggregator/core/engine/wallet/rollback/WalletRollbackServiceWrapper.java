@@ -73,6 +73,10 @@ public class WalletRollbackServiceWrapper {
         if (context.getHttpRequestLog() == null) {
             context.setHttpRequestLog(LogContextService.toHttpRequestLog(logContext));
         }
+
+        if (context.getTimestamp() == null) {
+            context.setTimestamp(System.currentTimeMillis());
+        }
     }
 
     /**
