@@ -106,7 +106,7 @@ public class BetService {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE.code);
-        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.SUCCESS.code);
