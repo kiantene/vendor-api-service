@@ -11,7 +11,7 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.Map;
 @Component
 public class AviatorStudioSignatureValidator extends AbstractVendorSignatureValidator implements VendorSignatureValidator {
     private record JwtAuthData(String token, String username) {}
-    public static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String REQUEST_ATTR_TOKEN = "token";
     private static final String REQUEST_ATTR_USERNAME = "username";
     protected AviatorStudioSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
@@ -53,7 +53,7 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
         CommonVo responseVo = new CommonVo();
         responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
 
-        return new VendorErrorResponse(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, responseVo);
+        return new VendorErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, responseVo);
     }
 
     private String extractAuthorizationHeader(HttpServletRequest request) throws SignatureValidationException {
