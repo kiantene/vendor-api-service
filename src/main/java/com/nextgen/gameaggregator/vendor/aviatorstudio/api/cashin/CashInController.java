@@ -17,7 +17,7 @@ public class CashInController {
     private final SettleService settleService;
     private final RollbackService rollbackService;
 
-    @PostMapping(path = EndPoints.CASHIN + "/v2")
+    @PostMapping(path = EndPoints.CASHIN)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<CashInResponse> doCashIn(
             @Valid @RequestBody CashInRequest request,
