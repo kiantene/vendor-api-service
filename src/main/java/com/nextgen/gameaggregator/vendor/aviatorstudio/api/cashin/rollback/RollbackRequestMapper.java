@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.CashInRequest;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RollbackRequestMapper implements BetRollbackContextMapper<CashInRequest> {
+class RollbackRequestMapper implements BetRollbackContextMapper<CashInRequest> {
     @Override
     public BetRollbackContext toBetRollbackContext(CashInRequest vendorRequest) {
         return BetRollbackContext.builder()

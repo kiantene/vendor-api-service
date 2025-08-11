@@ -7,10 +7,13 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.CashInResponse
 import org.springframework.stereotype.Component;
 
 @Component
-public class RollbackResponseMapper implements VendorResponseMapper<BetRollbackContext, CashInResponse> {
-
+class RollbackResponseMapper implements VendorResponseMapper<BetRollbackContext, CashInResponse> {
     @Override
     public CashInResponse toVendor(BetRollbackContext context, PlayerBalanceData balanceData) {
-        return null;
+        return CashInResponse.builder()
+                .id(context.getVendorPlayerUsername())
+                .username(context.getVendorPlayerUsername())
+                .balance(balanceData.getBalance())
+                .build();
     }
 }
