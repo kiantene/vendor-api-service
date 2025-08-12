@@ -1,0 +1,31 @@
+package com.nextgen.gameaggregator.core.engine.game.url;
+
+import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
+import lombok.Builder;
+import lombok.Data;
+
+import java.util.Map;
+
+@Builder
+@Data
+public class GameLaunchContext {
+    private Integer agentId;
+    private String agentPlayerUsername;
+    private String vendorClassName;
+    private String token;
+    private String vendorGameCode;
+    private Integer vendorId;
+    private String vendorPlayerUsername;
+    private String vendorCurrencyCode;
+    private String vendorLanguageCode;
+    private String vendorPlatformCode;
+    private Integer platformId;
+    private String lobbyUrl;
+    private String ipAddress;
+
+    Map<String, VendorLineCredential> vendorCredentials;
+
+    private String vendorToken;
+    private String vendorFormData;
+    private String gameUrl;
+}

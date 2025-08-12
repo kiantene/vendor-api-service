@@ -87,4 +87,16 @@ public class VendorService extends BaseVendorService {
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
         return betInfo.getEffectiveTurnover();
     }
+
+    @Override
+    public boolean shouldDoRollbackByRound(GameSession gameSession) {
+        // Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return true;
+    }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        //will proceed to do cancel bet if the bet is settled. due to endround may come first.
+        return false;
+    }
 }

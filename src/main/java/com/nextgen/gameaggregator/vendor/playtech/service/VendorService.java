@@ -78,4 +78,8 @@ public class VendorService extends BaseVendorService {
             return BigDecimal.ZERO;
         }
     }
+
+    public String getExtractToken(String token) {
+        return token.substring(token.indexOf("_") + 1);
+    }
 }

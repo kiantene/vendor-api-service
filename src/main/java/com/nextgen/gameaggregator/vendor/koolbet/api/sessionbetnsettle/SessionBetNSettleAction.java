@@ -12,7 +12,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
@@ -71,6 +71,7 @@ public class SessionBetNSettleAction {
 
             //get rawGameSession by token id
             gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetNSettleDto.getGame()), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(sessionBetNSettleDto, gameSession);

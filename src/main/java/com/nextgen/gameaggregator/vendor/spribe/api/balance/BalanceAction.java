@@ -62,7 +62,7 @@ public class BalanceAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
 
             // 4. Check game session status (0 = inactive)
             if (gameSession.getStatus() == 0) throw new AuthenticationException();

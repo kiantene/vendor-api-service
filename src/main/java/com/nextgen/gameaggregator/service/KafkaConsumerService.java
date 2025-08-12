@@ -10,17 +10,19 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
+import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,29 +32,47 @@ import java.util.concurrent.Executors;
 public class KafkaConsumerService {
     private static final Integer THREAD_SIZE = 64;
     private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    private final WalletBetResultAction walletBetResultAction;
+    private final WalletRollbackAction walletRollbackAction;
+    private final SettledBetService settledBetService;
+    private final KafkaService kafkaService;
+    private final UnsettledBetService unsettledBetService;
+    private final VendorService vendorService;
+    private final SportWalletService sportWalletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorPlayerService vendorPlayerService;
+    private final CachingService cachingService;
+    private final AgentApiVersionService agentApiVersionService;
+    private final Set<Integer> skipVendorList;
 
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private KafkaService kafkaService;
-    @Autowired
-    private RequestService requestService;
-    @Autowired
-    private UnsettledBetService unsettledBetService;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private SportWalletService sportWalletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
+    public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
+                                WalletRollbackAction walletRollbackAction,
+                                SettledBetService settledBetService,
+                                KafkaService kafkaService,
+                                UnsettledBetService unsettledBetService,
+                                VendorService vendorService,
+                                SportWalletService sportWalletService,
+                                HttpService httpService,
+                                AgentPlayerService agentPlayerService,
+                                VendorPlayerService vendorPlayerService,
+                                CachingService cachingService,
+                                AgentApiVersionService agentApiVersionService) {
+        
+        this.walletBetResultAction = walletBetResultAction;
+        this.walletRollbackAction = walletRollbackAction;
+        this.settledBetService = settledBetService;
+        this.kafkaService = kafkaService;
+        this.unsettledBetService = unsettledBetService;
+        this.vendorService = vendorService;
+        this.sportWalletService = sportWalletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorPlayerService = vendorPlayerService;
+        this.cachingService = cachingService;
+        this.agentApiVersionService = agentApiVersionService;
+        this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
+    }
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
@@ -113,8 +133,7 @@ public class KafkaConsumerService {
             //prepare delete unsettledBet
             unsettledBetService.delete(unsettledBet);
 
-            //prepare and send endRound to operator
-            this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBet, settledBet, httpRequestLog);
+            this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBet, httpRequestLog);
 
         } catch (GameNotSupportedException e) {
             exception = e;
@@ -131,6 +150,20 @@ public class KafkaConsumerService {
                 processEndRoundLog.setEndTime(System.currentTimeMillis());
                 RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
             }
+        }
+    }
+
+    private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog) {
+
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
+
+        if (agentApiVersion == 2 && this.skipVendorList.contains(vendorPlayer.getVendorId())) {
+            // Skip notifyEndRoundProcess for version 2
+            httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
+        } else {
+            this.notifyEndRoundProcess(traceId, agentPlayer, vendorPlayer, gameSession, settledBet,
+                    vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(),
+                    endRoundSettledBet, settledBet, httpRequestLog);
         }
     }
 
@@ -194,8 +227,10 @@ public class KafkaConsumerService {
             unsettledBetService.delete(unsettledBet);
 
             //prepare and send endRound to operator
+
             if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
-                this.notifyEndRoundProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), endRoundSettledBetForPatching, settledBet, httpRequestLog);
+                this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBetForPatching, httpRequestLog);
+
             } else {
                 GeneralVo vo = new GeneralVo();
                 vo.setResponseCode(ResponseCode.SUCCESS);
@@ -265,7 +300,6 @@ public class KafkaConsumerService {
 
             } finally {
                 httpRequestLog.setBetEnd(System.currentTimeMillis());
-                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
                 httpService.end(httpRequestLog, vo);
 
             }

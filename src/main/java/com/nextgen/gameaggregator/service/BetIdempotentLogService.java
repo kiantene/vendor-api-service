@@ -62,6 +62,15 @@ public class BetIdempotentLogService {
 
     }
 
+    private String generateBetIdempotentId(String vendorBetId, String roundId, String vendorPlayerUsername) {
+
+        String betIdempotentId = vendorBetId + "_" + roundId + "_" + vendorPlayerUsername;
+        betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
+
+        return betIdempotentId;
+
+    }
+
     //2 hours differences in millie seconds
     public Long getTimingDifference() {
         Long twoHoursInMillis = 2L * 60L * 60L * 1000L;
@@ -86,6 +95,14 @@ public class BetIdempotentLogService {
     @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
     public RawBetIdempotentLog checkExists(BetResultData betResultData, GameSession gameSession) {
         String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);
+
+        return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
+
+    }
+
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#vendorBetId, #roundId, #vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
+    public RawBetIdempotentLog checkExists(String vendorBetId, String roundId, String vendorPlayerUsername) {
+        String betIdempotentId = this.generateBetIdempotentId(vendorBetId, roundId, vendorPlayerUsername);
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 

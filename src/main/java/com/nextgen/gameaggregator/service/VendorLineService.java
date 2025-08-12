@@ -12,10 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,6 +71,15 @@ public class VendorLineService {
         return credential.getValue();
     }
 
+    @Cacheable(value = "LatestVendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager", unless = "#result == null")
+    public VendorLineCredential getLatestCredentialByLineIdAndName(Integer vendorLineId, String name) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findAllByVendorLineIdAndNameAndStatus(vendorLineId, name, Status.ACTIVE.code);
+
+        return credentials.stream()
+            .max(Comparator.comparing(VendorLineCredential::getVersion))
+            .orElse(null);
+    }
+
     @Cacheable(value = "VendorLineCredentials", key = "{#name, #value}", cacheManager = "cacheManager")
     public Integer getVendorLineIdByNameAndValue(String name, String value) throws CredentialNotFoundException {
         final Integer ACTIVE = Status.ACTIVE.code;
@@ -103,10 +111,33 @@ public class VendorLineService {
         return Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
     }
 
-    public Map<String, String> toCredentialMap(VendorLine vendorLine) {
-        return vendorLine.getCredentials().stream()
-                .filter(v -> v.getStatus().equals(Status.ACTIVE.code))
-                .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
+    @Cacheable(value = "VendorLineCredentials", key = "#vendorLineId", cacheManager = "cacheManager")
+    public Map<String, String> toCredentialMap(Integer vendorLineId) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findByVendorLineIdAndStatus(vendorLineId, Status.ACTIVE.code);
+        return credentials.stream()
+                .collect(Collectors.toMap(
+                        VendorLineCredential::getName,
+                        Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparing(VendorLineCredential::getVersion))
+                ))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().getValue()
+                ));
+    }
+
+    @Cacheable(value = "VendorLineCredentialMap", key = "#vendorLineId", cacheManager = "cacheManager")
+    public Map<String, VendorLineCredential> mapCredentialsByName(Integer vendorLineId) {
+        List<VendorLineCredential> credentials = vendorLineCredentialRepository.findByVendorLineIdAndStatus(vendorLineId, Status.ACTIVE.code);
+
+        return credentials.stream()
+                .collect(Collectors.toMap(
+                        VendorLineCredential::getName,
+                        Function.identity(),
+                        BinaryOperator.maxBy(Comparator.comparing(VendorLineCredential::getVersion))
+                ));
     }
 
     // deprecated, thrown exceptions will not be cached, use getVendorLine/checkStatus to separate cacheable and exceptions

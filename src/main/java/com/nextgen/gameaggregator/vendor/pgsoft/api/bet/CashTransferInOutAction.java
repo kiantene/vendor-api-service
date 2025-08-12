@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pgsoft.service.PGSoftPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ public class CashTransferInOutAction {
     private final LoggingService loggingService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final VendorGameCodeService vendorGameCodeService;
+//    private final PGSoftPromoPayoutService promoPayoutService;
 
     public CashTransferInOutAction(HttpService httpService,
                                    GameSessionService gameSessionService,
@@ -51,6 +53,7 @@ public class CashTransferInOutAction {
                                    LoggingService loggingService,
                                    RequestIdempotentLogService requestIdempotentLogService,
                                    VendorGameCodeService vendorGameCodeService) {
+//                                   PGSoftPromoPayoutService promoPayoutService) {
 
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
@@ -62,6 +65,7 @@ public class CashTransferInOutAction {
         this.loggingService = loggingService;
         this.requestIdempotentLogService = requestIdempotentLogService;
         this.vendorGameCodeService = vendorGameCodeService;
+//        this.promoPayoutService = promoPayoutService;
     }
 
     @PostMapping(path = Endpoints.BET)
@@ -76,6 +80,12 @@ public class CashTransferInOutAction {
 
         try {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
+
+            // TODO : catch new exception and error mapping to vendor
+//            if (promoPayoutService.isPromoPayout(dto)) {
+//                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
+//            }
+
             vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
@@ -92,6 +102,8 @@ public class CashTransferInOutAction {
             // 2. Verify session token
             String newToken = (dto.getOperatorPlayerSession() != null) ? dto.getOperatorPlayerSession() : traceId;
             GameSession gameSession = this.getGameSession(newToken, dto);
+            //GA-10954: for temporary using for log agent id
+            httpRequestLog.setAgentId(gameSession.getAgentId());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);

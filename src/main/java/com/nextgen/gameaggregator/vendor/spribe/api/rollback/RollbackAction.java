@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -34,6 +35,7 @@ public class RollbackAction {
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public RollbackAction(HttpService httpService,
@@ -43,7 +45,8 @@ public class RollbackAction {
                           VendorLineService vendorLineService,
                           AgentPlayerService agentPlayerService,
                           VendorGameService vendorGameService,
-                          VendorService vendorService) {
+                          VendorService vendorService,
+                          RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.settledBetService = settledBetService;
@@ -53,6 +56,7 @@ public class RollbackAction {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = Endpoints.ROLLBACK)
@@ -66,31 +70,40 @@ public class RollbackAction {
         String currency = null;
         String provider = null;
         String providerTxId = null;
+        boolean isRequestExists = false;
+        RollbackDto dto = new RollbackDto();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
+            dto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // 3. Verify session token
+            // 3. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(dto, dto.getUser_id()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUser_id());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 4. Verify session token
             GameSession gameSession;
-            String newToken = (dto.getSession_token() != null) ? dto.getSession_token() : traceId;
 
             try {
-                gameSession = gameSessionService.verifyToken(dto.getSession_token());
+                gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUser_id());
                 gameSessionService.updateByVendorGameCode(gameSession, dto.getGame());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(newToken);
-                gameSession.setVendorToken(newToken);
+                gameSession.setVendorToken(dto.getSession_token());
+                gameSession.setToken(dto.getSession_token());
             }
 
-            // 4. Verify remaining parameters (Verify against database values)
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -98,18 +111,18 @@ public class RollbackAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Check whether if the request is a place bet not result
+            // 6. Check whether if the request is a place bet not result
 //            SettledBet rawSettledBet = this.checkSettledBetRequest(dto, gameSession);
 //            BigDecimal winAmount = rawSettledBet.getWinAmount();
 //            Integer freeSpin = rawSettledBet.getIsFreespin();
 
-            // 6. Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
+            // 7. Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
 //            this.checkValidRollback(winAmount, freeSpin);
 
-            // 7. Send rollback request to Operator
+            // 8. Send rollback request to Operator
             WalletRequest walletRequest = walletService.processRollback(dto, gameSession, vendorService, httpRequestLog);
 
-            // 8. Set response data
+            // 9. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(walletRequest.getBalanceAfter()));
             data.setOld_balance(AmountConverter.convertBalanceToUnit(walletRequest.getBalanceBefore()));
@@ -167,6 +180,10 @@ public class RollbackAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUser_id());
+            }
             httpService.end(httpRequestLog, vo);
         }
 

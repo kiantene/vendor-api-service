@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.exception;
 public class InvalidOperatorResponseException extends Exception {
 
     private Integer operatorStatus = null;
+    private String rootCause;
 
     public InvalidOperatorResponseException() {
         super();
@@ -42,5 +43,13 @@ public class InvalidOperatorResponseException extends Exception {
 
     public void setOperatorStatus(Integer operatorStatus) {
         this.operatorStatus = operatorStatus;
+    }
+
+    public void setRootCause(String rootCause) {
+        this.rootCause = rootCause;
+    }
+
+    public String getRootCause() {
+        return this.rootCause;
     }
 }

@@ -100,7 +100,7 @@ public class CreditAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(balance.toBigIntegerExact());
+            responseVo.setBalance(balance.toBigInteger());
             responseVo.setCurrency(gameSession.getCurrencyCode());
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
