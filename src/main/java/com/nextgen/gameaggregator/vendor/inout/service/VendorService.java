@@ -116,10 +116,7 @@ public class VendorService extends BaseVendorService {
     }
 
     public CommonVo exceptionHandler(Exception e, CommonVo responseVo) {
-        if (e instanceof BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setCode(ResponseCode.OK.code);
-            responseVo.setBalance(String.valueOf(betResultIdempotentViolationException.getBalance()));
-        } else if (e instanceof InvalidRequestException) {
+        if (e instanceof InvalidRequestException) {
             responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
