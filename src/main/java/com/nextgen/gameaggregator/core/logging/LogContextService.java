@@ -60,17 +60,11 @@ public class LogContextService {
         return httpRequestLog;
     }
 
-    public void logApiRequest(LogContext logContext, HttpServletRequest request, String responseBody) {
+    public void logApiRequest(LogContext logContext, String responseBody) {
         // This function will only apply to the following request types
         // WalletBalanceAction, WalletBetAction, WalletBetResultAction, WalletRollbackAction
         if (logContext.exists(HttpRequestLog.class.getSimpleName())) {
             HttpRequestLog httpRequestLog = (HttpRequestLog) logContext.get(HttpRequestLog.class.getSimpleName());
-            if (request.getAttribute("rawBody") != null) {
-                httpRequestLog.setRequestBody(request.getAttribute("rawBody").toString());
-            }
-            httpRequestLog.setUrl(request.getRequestURI());
-            httpRequestLog.setMethod(request.getMethod());
-            httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setResponseBody(responseBody);
             httpRequestLog.setEndTime(System.currentTimeMillis());
             httpRequestLog.setOperatorStart(logContext.getApiStart());

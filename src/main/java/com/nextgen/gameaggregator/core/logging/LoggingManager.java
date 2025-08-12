@@ -33,7 +33,7 @@ public class LoggingManager {
         LogContext logContext = LogContextHolder.get();
         if (logContext != null) {
             // for backward compatibility with httpRequestLog/apiRequestLog, will be removed in the future
-            logContextService.logApiRequest(logContext, request, responseBody);
+            logContextService.logApiRequest(logContext, responseBody);
             this.logAsync(logContext, responseBody, ex);
         }
     }
