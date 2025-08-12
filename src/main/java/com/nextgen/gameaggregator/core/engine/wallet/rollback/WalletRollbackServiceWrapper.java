@@ -30,6 +30,7 @@ public class WalletRollbackServiceWrapper {
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final LogContextService logContextService;
 
     public WalletRollbackServiceWrapper initialise(BetRollbackContext context) {
         BetRollbackWrapperContext state = new BetRollbackWrapperContext(context);
@@ -39,7 +40,7 @@ public class WalletRollbackServiceWrapper {
 
     public PlayerBalanceData process(BetRollbackContext context) {
         enrich(context);
-        return processRollbackTransaction(context, context.getGameSession(), LogContextHolder.get());
+        return processRollbackTransaction(context, context.getGameSession(), LogContextHolder.get(), false);
     }
 
     public void processAsync(BetRollbackContext context) {
@@ -88,14 +89,15 @@ public class WalletRollbackServiceWrapper {
      */
     private void processRollbackSettledBets(BetRollbackContext context, LogContext logContext) {
         if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getVendorBetId(), context.getTimestamp())) {
-            processRollbackTransaction(context, context.getGameSession(), logContext);
+            processRollbackTransaction(context, context.getGameSession(), logContext, true);
         }
     }
 
     private PlayerBalanceData processRollbackTransaction(
             BetRollbackContext context,
             GameSession gameSession,
-            LogContext logContext) {
+            LogContext logContext,
+            boolean isAsync) {
 
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         try {
@@ -120,6 +122,9 @@ public class WalletRollbackServiceWrapper {
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+            if (isAsync) {
+                logContextService.logApiRequest(logContext, "");
+            }
         }
     }
 
