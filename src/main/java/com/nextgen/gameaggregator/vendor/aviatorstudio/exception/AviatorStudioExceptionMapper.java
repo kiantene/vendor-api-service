@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -34,17 +34,17 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex) {
-        return null;
+        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
     }
 
     @Override
     public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
-        return null;
+        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
     }
 
     @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
-        return null;
+        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
@@ -63,8 +63,6 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
     }
 
     private VendorErrorResponse getErrorResponse(ResponseCode responseCode, HttpStatus httpStatus) {
-        CommonVo responseVo = new CommonVo();
-        responseVo.setResponseCode(responseCode);
-        return new VendorErrorResponse(httpStatus, responseVo);
+        return new VendorErrorResponse(httpStatus, new ErrorResponse(responseCode));
     }
 }

@@ -8,11 +8,8 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BetResponse {
     private String id;
     private BigDecimal balance;
     private String username;
-    private Integer error;
-    private String message;
 }

@@ -8,8 +8,8 @@ import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -50,10 +50,7 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
 
     @Override
     public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
-        CommonVo responseVo = new CommonVo();
-        responseVo.setResponseCode(ResponseCode.SERVER_ERROR);
-
-        return new VendorErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, responseVo);
+        return new VendorErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, new ErrorResponse(ResponseCode.SERVER_ERROR));
     }
 
     private String extractAuthorizationHeader(HttpServletRequest request) throws SignatureValidationException {

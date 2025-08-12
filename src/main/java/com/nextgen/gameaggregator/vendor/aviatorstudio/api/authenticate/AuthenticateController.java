@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateContext;
 import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.vo.CommonVo;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
