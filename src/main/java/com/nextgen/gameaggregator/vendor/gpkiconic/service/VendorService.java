@@ -82,7 +82,7 @@ public class VendorService extends BaseVendorService {
                 gameSession.getPlatformId(),
                 gameSession.getVendorId());
     }
-    
+
     public ResultType getResultType(BetDto dto) {
         ResultType resultType = ResultType.WIN; // Default value is win
 
@@ -91,5 +91,10 @@ public class VendorService extends BaseVendorService {
         }
 
         return resultType;
+    }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
     }
 }
