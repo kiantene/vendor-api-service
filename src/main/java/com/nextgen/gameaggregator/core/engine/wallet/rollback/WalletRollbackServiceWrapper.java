@@ -39,7 +39,7 @@ public class WalletRollbackServiceWrapper {
 
     public PlayerBalanceData process(BetRollbackContext context) {
         enrich(context);
-        return processRollbackTransaction(context, context.getGameSession());
+        return processRollbackTransaction(context, context.getGameSession(), LogContextHolder.get());
     }
 
     public void processAsync(BetRollbackContext context) {
@@ -47,9 +47,10 @@ public class WalletRollbackServiceWrapper {
     }
 
     public void processAsync(BetRollbackContext context, long delayMilliseconds) {
+        LogContext logContext = LogContextHolder.get();
         enrich(context);
         CompletableFuture.runAsync(
-                () -> processRollbackSettledBets(context),
+                () -> processRollbackSettledBets(context, logContext),
                 CompletableFuture.delayedExecutor(delayMilliseconds, TimeUnit.MILLISECONDS)
         );
     }
@@ -85,15 +86,16 @@ public class WalletRollbackServiceWrapper {
      * OR
      * If settled bet retrieval is NOT required, just proceed with rollback.
      */
-    private void processRollbackSettledBets(BetRollbackContext context) {
+    private void processRollbackSettledBets(BetRollbackContext context, LogContext logContext) {
         if (!context.isRetrieveSettledBet() || settledBetDataService.prepareSettledBets(context.getVendorBetId(), context.getTimestamp())) {
-            processRollbackTransaction(context, context.getGameSession());
+            processRollbackTransaction(context, context.getGameSession(), logContext);
         }
     }
 
     private PlayerBalanceData processRollbackTransaction(
             BetRollbackContext context,
-            GameSession gameSession) {
+            GameSession gameSession,
+            LogContext logContext) {
 
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
         try {
@@ -117,7 +119,7 @@ public class WalletRollbackServiceWrapper {
             return null;
         } finally {
             cleanup();
-            LogContextService.updateLogContextFromHttpRequestLog(LogContextHolder.get(), httpRequestLog);
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 
