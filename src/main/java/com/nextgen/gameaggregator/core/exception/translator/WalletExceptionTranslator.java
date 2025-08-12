@@ -30,7 +30,7 @@ public class WalletExceptionTranslator {
      */
 
     /** WalletBetResult exceptions
-     * BetNotFoundException – TODO: to be discussed
+     * BetNotFoundException – throw as InternalServerException
      * InvalidOperatorResponseException - throw as InternalServerException
      * InvalidAgentApiCredentialException - throw as InternalConfigurationException
      * MergedBetDataIntegrityException - throw as InternalServerException
@@ -42,7 +42,7 @@ public class WalletExceptionTranslator {
      */
 
     /** WalletRollback exceptions
-     * BetNotFoundException – TODO: to be discussed
+     * BetNotFoundException – throw as InternalServerException
      * RecordNotFoundException – Generic exception for orphan records
      * InvalidAgentApiCredentialException - throw as InternalConfigurationException
      * InvalidOperatorResponseException - throw as InternalServerException
@@ -158,6 +158,9 @@ public class WalletExceptionTranslator {
             throw new InternalConfigurationException(ex.getMessage(), ex);
         }
 
+        /**
+         * BetNotFoundException will fall under InternalServerException
+         */
         // Handle unexpected exceptions
         log.error("Unexpected exception during wallet operation", ex);
         throw new InternalServerException("Unexpected error during wallet operation", ex);
