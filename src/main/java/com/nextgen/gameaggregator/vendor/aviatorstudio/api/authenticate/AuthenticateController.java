@@ -21,7 +21,7 @@ public class AuthenticateController {
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<AuthenticateResponse> account(
+    public ResponseEntity<AuthenticateResponse> authenticate(
             @Valid @ModelAttribute AuthenticateRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {

@@ -1,15 +1,15 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.result;
 
 import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import org.springframework.stereotype.Component;
 
 @Component
-class CashOutResponseMapper implements VendorResponseMapper<BetContext, CashOutResponse> {
+class BetResultResponseMapper implements VendorResponseMapper<BetResultContext, BetResultResponse> {
     @Override
-    public CashOutResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
-        return CashOutResponse.builder()
+    public BetResultResponse toVendor(BetResultContext context, PlayerBalanceData balanceData) {
+        return BetResultResponse.builder()
                 .id(context.getVendorPlayerUsername())
                 .username(context.getVendorPlayerUsername())
                 .balance(balanceData.getBalance())

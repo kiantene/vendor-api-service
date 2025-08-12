@@ -1,13 +1,13 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.bet;
 
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContextMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-class CashOutRequestMapper implements BetContextMapper<CashOutRequest> {
+class BetRequestMapper implements BetContextMapper<BetRequest> {
     @Override
-    public BetContext toBetContext(CashOutRequest request) {
+    public BetContext toBetContext(BetRequest request) {
         return BetContext.builder()
                 .idempotencyKey(request.getTransactionId())
 //                .vendorPlayerUsername() // get from JWT

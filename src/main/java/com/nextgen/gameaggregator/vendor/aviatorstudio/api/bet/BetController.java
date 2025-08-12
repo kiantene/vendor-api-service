@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.bet;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -13,15 +13,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @RequiredArgsConstructor
-public class CashOutController {
+public class BetController {
     private final WalletBetService walletService;
-    private final CashOutRequestMapper requestMapper;
-    private final CashOutResponseMapper responseMapper;
+    private final BetRequestMapper requestMapper;
+    private final BetResponseMapper responseMapper;
 
     @PostMapping(path = EndPoints.CASHOUT)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<CashOutResponse> betAction(
-            @Valid @RequestBody CashOutRequest request,
+    public ResponseEntity<BetResponse> doBet(
+            @Valid @RequestBody BetRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
 

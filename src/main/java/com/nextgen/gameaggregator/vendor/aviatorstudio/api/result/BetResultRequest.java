@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashout;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,9 +13,13 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-@JsonDeserialize(builder = CashOutRequest.CashOutRequestBuilder.class)
+@JsonDeserialize(builder = BetResultRequest.BetResultRequestBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CashOutRequest {
+public class BetResultRequest {
+    @NotBlank
+    @Size(max = 255)
+    private String previousTransactionId;
+
     @NotNull
     @Digits(integer = 20, fraction = 8)
     private BigDecimal amount;
@@ -39,4 +43,6 @@ public class CashOutRequest {
     @NotBlank
     @Size(max = 255)
     private String sessionId;
+
+    private String reason;
 }

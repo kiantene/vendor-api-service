@@ -1,22 +1,20 @@
-package com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.settle;
+package com.nextgen.gameaggregator.vendor.aviatorstudio.api.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.CashInRequest;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.api.cashin.CashInResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class SettleService {
-    private final SettleRequestMapper requestMapper;
-    private final SettleResponseMapper responseMapper;
+public class BetResultService {
+    private final BetResultRequestMapper requestMapper;
+    private final BetResultResponseMapper responseMapper;
     private final WalletBetResultServiceWrapper walletService;
 
-    public ResponseEntity<CashInResponse> doSettle(CashInRequest request, String token, String username) {
+    public ResponseEntity<BetResultResponse> doSettle(BetResultRequest request, String token, String username) {
         BetResultContext context = requestMapper.toBetResultContext(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService
