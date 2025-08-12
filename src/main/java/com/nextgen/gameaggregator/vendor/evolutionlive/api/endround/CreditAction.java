@@ -67,6 +67,7 @@ public class CreditAction {
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
+            vendorGameCode = creditDto.getGame().getDetails().getTable().getId();
 
             if (requestIdempotentLogService.checkExists(creditDto, creditDto.getUserId()) == null) {
                 requestIdempotentLogService.create(creditDto, creditDto.getUserId());
@@ -81,7 +82,6 @@ public class CreditAction {
             // 2. Verify session token
             try {
                 gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
-                vendorGameCode = creditDto.getGame().getDetails().getTable().getId();
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
             } catch (AuthenticationException e) {
                 gameSession = gameSessionService.generateNewSessionToken(creditDto.getUserId());
