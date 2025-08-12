@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkiconic.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -27,13 +28,14 @@ public class BetService {
     private final ValidationService validationService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetService(GameSessionService gameSessionService,
                       VendorLineService vendorLineService,
                       WalletService walletService,
                       ValidationService validationService,
                       HttpService httpService,
-                      VendorService vendorService) {
+                      VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -41,6 +43,7 @@ public class BetService {
         this.validationService = validationService;
         this.httpService = httpService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
@@ -49,6 +52,7 @@ public class BetService {
         BetDataVo betDataVo = new BetDataVo();
         BigDecimal balance = BigDecimal.ZERO;
         GameSession gameSession = new GameSession();
+        boolean isRequestExists = false;
         BigDecimal money;
 
         try {
@@ -59,6 +63,12 @@ public class BetService {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getUser()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getUser());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
             // Verify session
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
@@ -139,6 +149,11 @@ public class BetService {
             httpService.logError(httpRequestLog,
                     e);
             vo.setCodeMsg(ResponseCodes.ERROR.code);
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getUser());
+            }
         }
         return vo;
     }
