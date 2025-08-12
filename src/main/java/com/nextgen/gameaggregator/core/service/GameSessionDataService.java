@@ -45,7 +45,7 @@ public class GameSessionDataService {
         try {
             return getGameSession(gameSessionData);
         } catch (GameSessionExpiredException ex) {
-            // TODO: create new with vendorUsername
+            // TODO: regenerate token
             return new GameSession();
         }
     }
