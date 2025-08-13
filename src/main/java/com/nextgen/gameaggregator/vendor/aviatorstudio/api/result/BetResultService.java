@@ -14,14 +14,14 @@ public class BetResultService {
     private final BetResultResponseMapper responseMapper;
     private final WalletBetResultServiceWrapper walletService;
 
-    public ResponseEntity<BetResultResponse> doSettle(BetResultRequest request, String token, String username) {
+    public BetResultResponse doSettle(BetResultRequest request, String token, String username) {
         BetResultContext context = requestMapper.toBetResultContext(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService
                 .initialise(context)
                 .isBetTxn(false)
                 .process();
-        return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
+        return responseMapper.toVendor(context, balanceData);
     }
 
     private void enrich(BetResultContext context, String token, String username) {

@@ -18,7 +18,7 @@ public class BetResultController {
 
     @PostMapping(path = EndPoints.CASHIN)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<BetResultResponse> doBetResult(
+    public BetResultResponse doBetResult(
             @Valid @RequestBody BetResultRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {

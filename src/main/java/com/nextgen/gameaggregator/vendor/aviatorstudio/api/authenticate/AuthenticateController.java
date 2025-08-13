@@ -20,7 +20,7 @@ public class AuthenticateController {
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<AuthenticateResponse> authenticate(
+    public AuthenticateResponse authenticate(
             @Valid @ModelAttribute AuthenticateRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
@@ -28,7 +28,7 @@ public class AuthenticateController {
         AuthenticateContext context = requestMapper.toAuthenticateContext(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = authenticateService.process(context);
-        return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
+        return responseMapper.toVendor(context, balanceData);
     }
 
     private void enrich(AuthenticateContext context, String token, String username) {
