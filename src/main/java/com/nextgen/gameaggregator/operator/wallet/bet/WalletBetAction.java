@@ -37,6 +37,7 @@ public class WalletBetAction {
     private final AuthenticationService authenticationService;
     private final VendorService vendorService;
     private final CurrencyConversionService currencyConversionService;
+    private final Set<Integer> vendorsWithTwoPointTwoSecondTimeout;
     private final Set<Integer> vendorsWithTwoPointFiveSecondTimeout;
     private final Set<Integer> vendorsWithThreePointFiveSecondTimeout;
     private final Set<Integer> vendorsWithFourPointFiveSecondTimeout;
@@ -55,12 +56,15 @@ public class WalletBetAction {
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
         this.currencyConversionService = currencyConversionService;
+        this.vendorsWithTwoPointTwoSecondTimeout = new HashSet<>();
         this.vendorsWithTwoPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithThreePointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourSecondTimeout = new HashSet<>();
-        //ambs,gpk
-        this.vendorsWithTwoPointFiveSecondTimeout.addAll(Set.of(38, 45, 46, 49, 52, 54, 75, 85));
+        //gpk
+        this.vendorsWithTwoPointTwoSecondTimeout.addAll(Set.of(38, 45, 46, 49, 52, 54, 75, 85));
+        //ambs
+        this.vendorsWithTwoPointFiveSecondTimeout.add(38);
         //jili
         this.vendorsWithThreePointFiveSecondTimeout.add(4);
         //koolbet
@@ -217,7 +221,10 @@ public class WalletBetAction {
 
     private Integer operatorTimeoutConfig(GameSession gameSession) {
 
-        if (this.vendorsWithTwoPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
+        if (this.vendorsWithTwoPointTwoSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 2.5sec
+            return 2200;
+        } else if (this.vendorsWithTwoPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
             //operator timeout set to 2.5sec
             return 2500;
         } else if (this.vendorsWithThreePointFiveSecondTimeout.contains(gameSession.getVendorId())) {
