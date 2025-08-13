@@ -58,7 +58,7 @@ public class KafkaConsumerService {
                                 VendorPlayerService vendorPlayerService,
                                 CachingService cachingService,
                                 AgentApiVersionService agentApiVersionService) {
-        
+
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
         this.settledBetService = settledBetService;
@@ -118,13 +118,11 @@ public class KafkaConsumerService {
             //prepare insert new betHistory data
             BetHistory betHistory = new BetHistory(settledBet);
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
                 // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
                 // kafkaService.produceWarehouseBetHistory
                 //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
@@ -210,13 +208,11 @@ public class KafkaConsumerService {
             //prepare insert new betHistory data
             BetHistory betHistory = new BetHistory(settledBet);
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
                 // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
                 // kafkaService.produceWarehouseBetHistory
                 //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
