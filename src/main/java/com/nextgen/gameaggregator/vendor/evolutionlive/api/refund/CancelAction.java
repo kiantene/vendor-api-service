@@ -150,14 +150,11 @@ public class CancelAction {
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            GameNotSupportedException,
             CurrencyNotSupportedException,
             InvalidPlayerException {
 
-        // 1. Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(gameSession.getVendorToken(), cancelDto.getSid(), AuthenticationException::new);
+        // 1. Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
-        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
