@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.game.launcher.crystal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
@@ -13,9 +12,9 @@ import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.util.HmacUtils;
-import com.nextgen.gameaggregator.util.MapUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -67,7 +66,14 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
 
     @Override
     public boolean isSuccess(GameLaunchResponse gameLaunchResponse) {
-        return false;
+        return gameLaunchResponse != null
+                && gameLaunchResponse.getData() != null
+                && gameLaunchResponse.getData().getUrl() != null;
+    }
+
+    @Override
+    public MediaType getContentType() {
+        return MediaType.APPLICATION_JSON;
     }
 
     @Override
@@ -78,8 +84,8 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
         String signature;
         try {
             MultiValueMap<String, String> formData = this.formDataBuilder(context);
-            Map<String, Object> normalizedMap = MapUtils.convertMultiValueMapToMap(formData);
-            signature = HmacUtils.generate("HmacSHA256", secretKey, new Gson().toJson(normalizedMap));
+            String compactJson = convertToCompactJson(formData);
+            signature = HmacUtils.generate("HmacSHA256", secretKey, compactJson);
 
         } catch (Exception e) {
             throw new GameLaunchException(e.getMessage(), e);
@@ -103,6 +109,7 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
 
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
-
+        String gameUrl = response.getData().getUrl();
+        context.setGameUrl(gameUrl);
     }
 }
