@@ -20,7 +20,7 @@ public class BetController {
 
     @PostMapping(path = EndPoints.CASHOUT)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public BetResponse doBet(
+    public ResponseEntity<BetResponse> doBet(
             @Valid @RequestBody BetRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
@@ -28,7 +28,7 @@ public class BetController {
         BetContext context = requestMapper.toBetContext(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService.process(context);
-        return responseMapper.toVendor(context, balanceData);
+        return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
 
     private void enrich(BetContext context, String token, String username) {

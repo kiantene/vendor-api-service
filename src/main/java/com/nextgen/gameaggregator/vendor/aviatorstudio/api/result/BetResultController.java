@@ -18,14 +18,16 @@ public class BetResultController {
 
     @PostMapping(path = EndPoints.CASHIN)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public BetResultResponse doBetResult(
+    public ResponseEntity<BetResultResponse> doBetResult(
             @Valid @RequestBody BetResultRequest request,
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
 
-        return isSettle(request)
+        return ResponseEntity.ok(
+                isSettle(request)
                 ? betResultService.doSettle(request, token, username)
-                : rollbackService.doRollback(request, token, username);
+                : rollbackService.doRollback(request, token, username)
+        );
     }
 
     private boolean isSettle(BetResultRequest request) {
