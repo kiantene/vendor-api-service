@@ -156,7 +156,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
     @Override
     @Deprecated
-    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
+    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
 
         String vendorPlayerUsername = sportBetResultData.getVendorPlayerUsername();
         String vendorBetId = sportBetResultData.getVendorBetId();
@@ -263,11 +263,11 @@ public class SportWalletServiceImpl implements SportWalletService {
             sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportUnsettledBetService.save(sportUnsettledBet);
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBet));
-            throw new InvalidOperatorResponseException();
+            throw e;
 
+        } finally {
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
-
-        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
@@ -587,7 +587,7 @@ public class SportWalletServiceImpl implements SportWalletService {
             //         (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
-            
+
             //resettle will insert into resettlement date change
             kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
