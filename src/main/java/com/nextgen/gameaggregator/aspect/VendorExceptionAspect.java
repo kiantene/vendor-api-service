@@ -66,6 +66,10 @@ public class VendorExceptionAspect {
             logContext.setException(ex);
             errorResponse = mapper.onDuplicateBet(ex);
 
+        } catch (DuplicateRequestException ex) {
+            logContext.setException(ex);
+            errorResponse = mapper.onDuplicateRequest(ex);
+
         } catch (EntityNotFoundException ex) {
             InternalConfigurationException configurationException = new InternalConfigurationException(ex.getMessage(), ex);
             logContext.setException(ex);
