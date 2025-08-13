@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -41,9 +42,12 @@ public class WalletBetResultAction {
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
     private final HttpService httpService;
+    private final LogContextService logContextService;
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
     private final Set<Integer> betLoseVendorList;
+    private final Set<Integer> skipVendorList;
+    private final AgentApiVersionService agentApiVersionService;
 
     @Autowired
     public WalletBetResultAction(RequestService requestService,
@@ -51,7 +55,9 @@ public class WalletBetResultAction {
                                  AuthenticationService authenticationService,
                                  CurrencyConversionService currencyConversionService,
                                  BetResultRetryLogService betResultRetryLogService,
-                                 HttpService httpService) {
+                                 HttpService httpService,
+                                 LogContextService logContextService,
+                                 AgentApiVersionService agentApiVersionService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -59,6 +65,8 @@ public class WalletBetResultAction {
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.httpService = httpService;
+        this.logContextService = logContextService;
+        this.agentApiVersionService = agentApiVersionService;
         this.forceSuccessResultTypeList = new HashSet<>();
         this.betWinVendorList = new HashSet<>();
         this.betLoseVendorList = new HashSet<>();
@@ -69,6 +77,7 @@ public class WalletBetResultAction {
 
         this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1, 86, 17, 18));
         this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75, 86, 17, 18));
+        this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
     public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
@@ -105,10 +114,9 @@ public class WalletBetResultAction {
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
-        long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorStart(startTime);
+            httpRequestLog.setOperatorStart(System.currentTimeMillis());
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
@@ -123,8 +131,10 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
+        ResponseEntity<String> apiResponse = null;
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BET_RESULT, dto);
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -140,13 +150,11 @@ public class WalletBetResultAction {
                         return Mono.error(e);
                     })
                     .block();
+            logContextService.logEnd(apiResponse);
 
-            long endTime = System.currentTimeMillis();
-            if (httpRequestLog != null) {
-                httpRequestLog.setOperatorEnd(endTime);
-                if (apiResponse != null) {
-                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-                }
+            setEnd(httpRequestLog);
+            if (httpRequestLog != null && apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
             }
 
             if (isTimeout.get()) {
@@ -202,7 +210,9 @@ public class WalletBetResultAction {
             operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
+            logContextService.logEnd(apiResponse);
             if (isError) {
+                setEnd(httpRequestLog);
                 boolean shouldForceSuccess = false;
 
                 if (this.forceSuccessResultTypeList.contains(resultType.code)) {
@@ -232,9 +242,6 @@ public class WalletBetResultAction {
                         betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
                     }
                 }
-
-            } else {
-                //this is not error.
             }
         }
         return responseVo;
@@ -244,8 +251,6 @@ public class WalletBetResultAction {
             throws InvalidAgentApiCredentialException {
 
         WalletBalanceVo responseVo;
-        Long startTime = System.currentTimeMillis();
-        Long endTime = 0L;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
@@ -256,7 +261,7 @@ public class WalletBetResultAction {
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         String jsonApiResponse = new Gson().toJson(dto);
 
-        httpRequestLog.setOperatorStart(startTime);
+        httpRequestLog.setOperatorStart(System.currentTimeMillis());
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
 
@@ -265,8 +270,10 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
+        ResponseEntity<String> apiResponse = null;
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BET_RESULT, dto);
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -279,10 +286,10 @@ public class WalletBetResultAction {
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                     .block();
 
-            endTime = System.currentTimeMillis();
+            logContextService.logEnd(apiResponse);
+            setEnd(httpRequestLog);
             if (apiResponse != null) {
                 httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
             }
 
             // 1. validate HTTP Response Code
@@ -309,8 +316,8 @@ public class WalletBetResultAction {
             betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
 
         } finally {
-            endTime = (endTime.equals(0L) ? System.currentTimeMillis() : endTime);
-            httpRequestLog.setOperatorEnd(endTime);
+            setEnd(httpRequestLog);
+            logContextService.logEnd(apiResponse);
         }
 
         return responseVo;
@@ -359,17 +366,33 @@ public class WalletBetResultAction {
         walletBetResultDto.setWinLoss(winLossAmount);
         walletBetResultDto.setResultType(resultType);
         walletBetResultDto.setIsFreespin(betInformation.getIsFreespin());
-        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
         walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
         walletBetResultDto.setToken((betInformation.getGameSessionToken() != null) ? betInformation.getGameSessionToken() : gameSession.getToken());
         walletBetResultDto.setGameCode(gameSession.getGameCode());
         walletBetResultDto.setBetTime(betInformation.getVendorBetTime());
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());
+        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
+
+        Integer agentId = Optional.ofNullable(betInformation.getAgentId()).orElse(gameSession.getAgentId());
+        Integer vendorId = Optional.ofNullable(betInformation.getVendorId()).orElse(gameSession.getVendorId());
+
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentId);
+
+        if (betInformation.getIsEndRound() != null && agentApiVersion == 2 && this.skipVendorList.contains(vendorId)) {
+            //if isEndRound configure not empty from DTO, and agentApiVersion is 2, and is PGSOFT and SPADEGAMING then set the isEndRound value
+            walletBetResultDto.setIsEndRound(betInformation.getIsEndRound());
+        }
 
         return walletBetResultDto;
     }
 
     private BigDecimal stripZeroToString(BigDecimal value) {
         return new BigDecimal(value.stripTrailingZeros().toPlainString());
+    }
+
+    private void setEnd(HttpRequestLog httpRequestLog) {
+        if (httpRequestLog != null && httpRequestLog.getOperatorEnd() == null) {
+            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
+        }
     }
 }

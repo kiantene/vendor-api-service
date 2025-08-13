@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBetForPatching;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -25,7 +27,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -180,6 +181,22 @@ public class RequestService {
         WalletBalanceVo balanceVo = new WalletBalanceVo();
         balanceVo.setData(responseData);
         return balanceVo;
+    }
+
+    public ClientBalanceResponse getClientBalanceResponse(String traceId, String currency, String username) {
+        PlayerBalanceData playerBalanceData = PlayerBalanceData.builder()
+                .username(username)
+                .currency(currency)
+                .balance(BigDecimal.ONE)
+                .timestamp(System.currentTimeMillis())
+                .build();
+
+        ClientBalanceResponse response = new ClientBalanceResponse();
+        response.setStatus(ResponseCodes.Status.SC_OK.toString());
+        response.setTraceId(traceId);
+        response.setMessage(ResponseCodes.Status.SC_OK.description + " : Skip Stub");
+        response.setData(playerBalanceData);
+        return response;
     }
 
     public Boolean shouldSkipStubCall(String username) {

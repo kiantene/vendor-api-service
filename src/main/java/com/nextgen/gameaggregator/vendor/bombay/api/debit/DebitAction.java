@@ -21,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -36,8 +38,6 @@ public class DebitAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
     @Autowired
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
@@ -55,11 +55,11 @@ public class DebitAction {
 
         GameSession gameSession = new GameSession();
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             // get x-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
@@ -77,19 +77,19 @@ public class DebitAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().toBigIntegerExact());
+            responseVo.setBalance(betEvent.getLastBalance().toBigInteger());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
-        } catch(AuthenticationException e){
+        } catch (AuthenticationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
-        } catch(InsufficientBalanceException e){
+        } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_NOT_ENOUGH_MONEY);
-        } catch(InvalidSignatureException e){
+        } catch (InvalidSignatureException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
-        } catch(InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
@@ -100,25 +100,25 @@ public class DebitAction {
                         .orElse(ResponseCodes.RS_ERROR_UNKNOWN); // if there's no value, set it to the default value
                 responseVo.setStatus(violation);
             }
-        } catch(InvalidPlayerException e){
+        } catch (InvalidPlayerException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
-        } catch(BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
-        } catch(InvalidAgentApiCredentialException |
-                VendorCurrencyNotSupportException |
-                DisabledAgentPlayerException |
-                DisabledGameException |
-                InvalidOperatorResponseException |
-                TransactionStillProcessingException |
-                DisabledVendorLineException e){
+        } catch (InvalidAgentApiCredentialException |
+                 VendorCurrencyNotSupportException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 TransactionStillProcessingException |
+                 DisabledVendorLineException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } finally{
+        } finally {
             responseVo.setRequest_uuid(debitDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
@@ -131,7 +131,7 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto,GameSession gameSession, String x_signature, String request_body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String x_signature, String request_body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
@@ -146,7 +146,7 @@ public class DebitAction {
         Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
 
         // validateSignature not equal to true mean credential problem or this data is not from vendor
-        if(!validateSignature){
+        if (!validateSignature) {
             throw new InvalidSignatureException();
         }
     }

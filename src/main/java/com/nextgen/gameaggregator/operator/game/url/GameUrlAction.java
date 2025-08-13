@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -68,6 +71,10 @@ public class GameUrlAction {
         try {
             // Retrieve request body in original string format and convert into dto
             GameUrlDto dto = this.initRequest(httpRequestLog, responseVo);
+            LogContext logContext = LogContextHolder.get();
+            if (logContext != null) {
+                logContext.setBody(dto);
+            }
             String traceId = dto.getTraceId();
 
             String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
@@ -131,7 +138,7 @@ public class GameUrlAction {
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
             // Request game url from vendor
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(gameCode, gameSession, lineCredentials, vendorLine, httpRequestLog, gameLaunchDto);
             warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currencyId);
             responseVo.setData(gameUrlData);
 
@@ -226,6 +233,7 @@ public class GameUrlAction {
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
+            updateLogging(httpRequestLog);
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
             httpService.end(httpRequestLog, responseVo);
         }
@@ -251,6 +259,8 @@ public class GameUrlAction {
         String body = httpRequestLog.getRequestBody();
         GameLaunchDto gameLaunchDto = new GameLaunchDto();
         gameLaunchDto.setTraceId(traceId);
+        gameLaunchDto.setLobbyUrl(dto.getLobbyUrl());
+        gameLaunchDto.setIpAddress(dto.getIpAddress());
 
         // 1. Validate all fields in the request object
         loggingService.logStart();
@@ -299,5 +309,24 @@ public class GameUrlAction {
         gameLaunchDto.setLanguageId(language.getId());
 
         return gameLaunchDto;
+    }
+
+    public void updateLogging(HttpRequestLog httpRequestLog) {
+        LogContext logContext = LogContextHolder.get();
+        if (logContext == null) return;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            if (httpRequestLog.getRequestBody() == null && logContext.getApiBody() != null) {
+                httpRequestLog.setRequestBody(objectMapper.writeValueAsString(logContext.getApiBody()));
+            }
+            if (httpRequestLog.getResponseBody() == null && logContext.getApiResponse() != null) {
+                httpRequestLog.setResponseBody(logContext.getApiResponse().toString());
+            }
+        } catch (Exception ex) {
+            logContext.setException(ex.getClass().getName());
+            logContext.setErrorMessage(ex.getMessage());
+        }
     }
 }

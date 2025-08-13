@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.136</version>
+    <version>1.1.141</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-07-02T10:02:08Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-08-06T09:49:56Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
@@ -38,9 +38,15 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
+        <ga-core.version>1.0.25</ga-core.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.nextgen.ga-core</groupId>
+            <artifactId>game-aggregator-core</artifactId>
+            <version>${ga-core.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.nextgen.sas</groupId>
             <artifactId>core</artifactId>
@@ -73,10 +79,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-rest</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -96,14 +99,14 @@
             <version>${logstash-logback-encoder.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <scope>runtime</scope>
-            <version>${mariadb-java-client.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-couchbase</artifactId>
+        </dependency>
+        <!-- Couchbase Native SDK -->
+       <dependency>
+           <groupId>com.couchbase.client</groupId>
+           <artifactId>java-client</artifactId>
+           <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -151,14 +154,6 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         <dependency>
             <groupId>org.modelmapper</groupId>
@@ -213,9 +208,28 @@
             <artifactId>janino</artifactId>
             <version>3.1.6</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>4.12.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>gitlab-maven-ga-core</id>
+            <name>GitLab Maven Registry</name>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/631/packages/maven</url>
+        </repository>
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2/</url>

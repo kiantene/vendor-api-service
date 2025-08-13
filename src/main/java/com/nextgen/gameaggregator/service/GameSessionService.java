@@ -180,6 +180,7 @@ public class GameSessionService {
     }
 
     // deprecated, use getLastGameSessionByVendorPlayerUsername instead
+    @Deprecated
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
@@ -294,7 +295,7 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
     })
     public GameSession regenerateVendorToken(GameSession gameSession, String newToken) {
-
+        // TODO: to refactor to use mutateIn
         gameSession.setVendorToken(newToken);
         rawGameSessionRepository.save(gameSession);
 
@@ -372,11 +373,16 @@ public class GameSessionService {
 
         if (vendorId == null) return;
 
-        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
-        gameSession.setVendorGameId(vendorGame.getId());
-        gameSession.setGameCode(vendorGame.getCode());
-        gameSession.setVendorGameCode(vendorGameCode);
-        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+        VendorGame vendorGame = vendorGameService.getByVendorGameCode(vendorGameCode, vendorId);
+        if (vendorGame != null) {
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setVendorGameCode(vendorGameCode);
+            gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+        } else {
+            //if vendor's game not found throw GameNotSupportedException
+            throw new GameNotSupportedException();
+        }
     }
 
     public void updateByVendorGameId(GameSession gameSession, Integer vendorGameId) throws GameNotSupportedException {
