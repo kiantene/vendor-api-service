@@ -171,7 +171,7 @@ public class KafkaConsumerService {
         }
     }
 
-    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V3, groupId = KafkaConstant.GROUP_ID + "33312", containerFactory = "customKafkaListenerContainerFactory")
+    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V3, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV3(String message) {
 
         //prepare endRoundProcess Log
