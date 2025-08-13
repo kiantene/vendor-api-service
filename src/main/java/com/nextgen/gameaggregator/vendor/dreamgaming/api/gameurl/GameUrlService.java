@@ -137,4 +137,10 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         return headers;
     }
 
+    @Override
+    protected DGGameUrlVo onResponseSuccess(DGGameUrlVo responseVo, GameSession gameSession) {
+        responseVo.setTableId(gameSession.getVendorGameCode());
+        return responseVo;
+    }
+
 }
