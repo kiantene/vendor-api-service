@@ -61,7 +61,7 @@ public class WalletBetAction {
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourSecondTimeout = new HashSet<>();
         this.vendorsWithTwoPointTwoSecondTimeout = new HashSet<>();
-        //gpk
+        //ambs
         this.vendorsWithTwoPointFiveSecondTimeout.add(38);
         //jili
         this.vendorsWithThreePointFiveSecondTimeout.add(4);
