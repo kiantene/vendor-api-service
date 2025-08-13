@@ -69,16 +69,19 @@ public class LogContextService {
             httpRequestLog.setEndTime(System.currentTimeMillis());
             httpRequestLog.setOperatorStart(logContext.getApiStart());
             httpRequestLog.setOperatorEnd(logContext.getApiEnd());
-            try {
-                httpRequestLog.setOperatorData(objectMapper.writeValueAsString(logContext.getApiBody()));
-                if (logContext.getApiResponse() instanceof String) {
+
+            if (httpRequestLog.getOperatorData() == null) {
+                try {
+                    httpRequestLog.setOperatorData(objectMapper.writeValueAsString(logContext.getApiBody()));
+                    if (logContext.getApiResponse() instanceof String) {
+                        httpRequestLog.setOperatorResponse(logContext.getApiResponse().toString());
+                    } else {
+                        httpRequestLog.setOperatorResponse(objectMapper.writeValueAsString(logContext.getApiResponse()));
+                    }
+                } catch (Exception ex) {
+                    httpRequestLog.setOperatorData(logContext.getApiBody().toString());
                     httpRequestLog.setOperatorResponse(logContext.getApiResponse().toString());
-                } else {
-                    httpRequestLog.setOperatorResponse(objectMapper.writeValueAsString(logContext.getApiResponse()));
                 }
-            } catch (Exception ex) {
-                httpRequestLog.setOperatorData(logContext.getApiBody().toString());
-                httpRequestLog.setOperatorResponse(logContext.getApiResponse().toString());
             }
 
             if (logContext.getException() != null) {
