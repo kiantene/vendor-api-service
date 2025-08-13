@@ -36,7 +36,7 @@ public abstract class BaseVendorService {
         BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
 
         //if in the end betData still have null/0 effectiveTurnover, will be using betAmount as effectiveTurnover
-        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+        if (effectiveTurnover == null) {
             effectiveTurnover = betInfo.getBetAmount();
         }
 
