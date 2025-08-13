@@ -156,7 +156,7 @@ public class SportWalletServiceImpl implements SportWalletService {
 
     @Override
     @Deprecated
-    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws Exception {
+    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
 
         String vendorPlayerUsername = sportBetResultData.getVendorPlayerUsername();
         String vendorBetId = sportBetResultData.getVendorBetId();

@@ -33,7 +33,8 @@ public interface SportWalletService {
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidRequestException, InvalidPlayerException;
 
     BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog)
-            throws Exception;
+            throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException,
+            InvalidOperatorResponseException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException;
 
     WalletRequest refund(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
