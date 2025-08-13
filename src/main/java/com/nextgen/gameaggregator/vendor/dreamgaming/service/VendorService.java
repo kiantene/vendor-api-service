@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.service;
 
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Service
@@ -61,5 +63,18 @@ public class VendorService extends BaseVendorService {
             gameSession.setVendorToken(traceId);
         }
         return gameSession;
+    }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //if get effective turnover is 0 then return 0.
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = BigDecimal.ZERO;
+        }
+
+        return effectiveTurnover;
     }
 }
