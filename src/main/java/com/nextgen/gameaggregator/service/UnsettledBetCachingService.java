@@ -13,6 +13,9 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class UnsettledBetCachingService {
@@ -62,6 +65,11 @@ public class UnsettledBetCachingService {
             throw new BetNotFoundException();
         }
         return unsettledBet;
+    }
+
+    public List<UnsettledBet> getByRoundId(String roundId) {
+        return Optional.ofNullable(rawUnsettledBetRepository.findByRoundId(roundId))
+                .orElse(List.of());
     }
 
     @Recover

@@ -8,5 +8,6 @@ import lombok.NoArgsConstructor;
 public class EndRoundSettledBetForPatching extends EndRoundSettledBet {
 
     private Integer sendToOperator = 1;
+    private String operatorResultType = "END";
 
 }

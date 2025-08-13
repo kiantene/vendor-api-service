@@ -51,5 +51,15 @@ public enum ResultType {
         put(99, "END");
     }};
 
+    public static ResultType getResultTypeByDescription(String description) {
+        for (ResultType resultType : values()) {
+            if (resultType.description.equalsIgnoreCase(description)) {
+                return resultType;
+            }
+        }
+        // run as END if nothing is matched
+        return ResultType.END;
+    }
+
 
 }

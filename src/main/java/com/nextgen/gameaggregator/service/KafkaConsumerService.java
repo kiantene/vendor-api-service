@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -45,6 +46,7 @@ public class KafkaConsumerService {
     private final CachingService cachingService;
     private final AgentApiVersionService agentApiVersionService;
     private final Set<Integer> skipVendorList;
+    private final UnsettledBetCachingService unsettledBetCachingService;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -57,7 +59,8 @@ public class KafkaConsumerService {
                                 AgentPlayerService agentPlayerService,
                                 VendorPlayerService vendorPlayerService,
                                 CachingService cachingService,
-                                AgentApiVersionService agentApiVersionService) {
+                                AgentApiVersionService agentApiVersionService,
+                                UnsettledBetCachingService unsettledBetCachingService) {
         
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -71,6 +74,7 @@ public class KafkaConsumerService {
         this.vendorPlayerService = vendorPlayerService;
         this.cachingService = cachingService;
         this.agentApiVersionService = agentApiVersionService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
@@ -133,7 +137,7 @@ public class KafkaConsumerService {
             //prepare delete unsettledBet
             unsettledBetService.delete(unsettledBet);
 
-            this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBet, httpRequestLog);
+            this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBet, httpRequestLog, "END");
 
         } catch (GameNotSupportedException e) {
             exception = e;
@@ -153,7 +157,7 @@ public class KafkaConsumerService {
         }
     }
 
-    private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog) {
+    private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog, String operatorResultType) {
 
         Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
 
@@ -163,11 +167,11 @@ public class KafkaConsumerService {
         } else {
             this.notifyEndRoundProcess(traceId, agentPlayer, vendorPlayer, gameSession, settledBet,
                     vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(),
-                    endRoundSettledBet, settledBet, httpRequestLog);
+                    endRoundSettledBet, settledBet, httpRequestLog, operatorResultType);
         }
     }
 
-    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V3, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V3, groupId = KafkaConstant.GROUP_ID + "33312", containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV3(String message) {
 
         //prepare endRoundProcess Log
@@ -187,6 +191,14 @@ public class KafkaConsumerService {
             endRoundSettledBetForPatching.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             SettledBet settledBet = new SettledBet(endRoundSettledBetForPatching);
             settledBet.setResultType(endRoundSettledBetForPatching.getGaResultType());
+
+            //TODO TO BE REVISITED FOR FUTURE ENHANCEMENT TO EASE RECON TEAM WORK
+            //For WIN, will require to get unsettledBet.betId to overwrite for settledBet
+            //For BET_WIN, will not require because it will consider as new transaction.
+            //For END, might require to get from unsettledBet too, TO BE REVISITED.
+//            if (endRoundSettledBetForPatching.getOperatorResultType().equals("WIN")) {
+//                this.processResultTypeWin(settledBet);
+//            }
 
             processEndRoundLog.setRawBody(endRoundSettledBetForPatching.getRawData());
             processEndRoundLog.setRoundId(settledBet.getRoundId());
@@ -229,7 +241,7 @@ public class KafkaConsumerService {
             //prepare and send endRound to operator
 
             if (endRoundSettledBetForPatching.getSendToOperator() == 1) {
-                this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBetForPatching, httpRequestLog);
+                this.toSendOrNotToSend(newTraceId, agentPlayer, vendorPlayer, gameSession, settledBet, vendorCurrency, endRoundSettledBetForPatching, httpRequestLog, endRoundSettledBetForPatching.getOperatorResultType());
 
             } else {
                 GeneralVo vo = new GeneralVo();
@@ -270,13 +282,27 @@ public class KafkaConsumerService {
         }
     }
 
-    private void notifyEndRoundProcess(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, BetInformation betInformation, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet, HttpRequestLog httpRequestLog) {
+    private void processResultTypeWin(SettledBet settledBet) {
+
+        List<UnsettledBet> unsettledBetList = unsettledBetCachingService.getByRoundId(settledBet.getRoundId());
+
+        UnsettledBet unsettledBet = unsettledBetList.stream()
+                .filter(unsettledBetData -> settledBet.getVendorBetId().equals(unsettledBetData.getVendorBetId()))
+                .findFirst()
+                .orElse(null);
+
+        settledBet.setBetId((unsettledBet != null) ? unsettledBet.getBetId() : settledBet.getBetId());
+
+    }
+
+    private void notifyEndRoundProcess(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, BetInformation betInformation, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet, HttpRequestLog httpRequestLog, String operatorResultType) {
         THREAD_POOL.submit(() -> {
             Exception exception = null;
             GeneralVo vo = new GeneralVo();
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
 
             try {
+                ResultType resultType = ResultType.getResultTypeByDescription(operatorResultType);
                 httpRequestLog.setId(traceId);
                 httpRequestLog.setRoundId(settledBet.getRoundId());
                 httpRequestLog.setRequestBody(endRoundSettledBet.getRawData());
@@ -287,7 +313,7 @@ public class KafkaConsumerService {
                 httpRequestLog.setVendorId(settledBet.getVendorId());
                 httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
                 httpRequestLog.setGameToken(settledBet.getGameSessionToken());
-                walletBetResultAction.callProcessEndRound(traceId, agentPlayer.getAgentId(), gameSession, betInformation, ResultType.END, fromVendorConversionRate, toVendorConversionRate, httpRequestLog);
+                walletBetResultAction.callProcessEndRound(traceId, agentPlayer.getAgentId(), gameSession, betInformation, resultType, fromVendorConversionRate, toVendorConversionRate, httpRequestLog);
                 vo.setResponseCode(ResponseCode.SUCCESS);
 
             } catch (InvalidAgentApiCredentialException e) {
