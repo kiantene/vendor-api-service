@@ -70,9 +70,9 @@ public class VendorService extends BaseVendorService {
 
         BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
 
-        //if get effective turnover is 0 then return 0.
-        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
-            effectiveTurnover = BigDecimal.ZERO;
+        //if get effective turnover is null return 0
+        if (effectiveTurnover == null) {
+            effectiveTurnover = betInfo.getBetAmount();
         }
 
         return effectiveTurnover;
