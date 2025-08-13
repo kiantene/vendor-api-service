@@ -70,7 +70,8 @@ public class VendorService extends BaseVendorService {
 
         BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
 
-        //if get effective turnover is null return 0
+
+        //if in the end betData still have null effectiveTurnover, will be using betAmount as effectiveTurnover
         if (effectiveTurnover == null) {
             effectiveTurnover = betInfo.getBetAmount();
         }
