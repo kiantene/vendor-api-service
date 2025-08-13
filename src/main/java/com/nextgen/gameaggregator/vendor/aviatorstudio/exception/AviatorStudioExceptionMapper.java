@@ -43,6 +43,11 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
     }
 
     @Override
+    public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
+        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+    }
+
+    @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
         return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
