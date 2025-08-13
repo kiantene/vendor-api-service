@@ -26,7 +26,7 @@ public class VendorExceptionAspect {
     }
 
     @Around("@annotation(vendorHandler)")
-    public ResponseEntity<Object> handleVendorExceptions(ProceedingJoinPoint joinPoint,
+    public Object handleVendorExceptions(ProceedingJoinPoint joinPoint,
                                                     VendorExceptionHandler vendorHandler) throws Throwable {
 
         String vendorClassName = vendorHandler.className();
@@ -40,7 +40,7 @@ public class VendorExceptionAspect {
         VendorErrorResponse errorResponse;
 
         try {
-            return ResponseEntity.ok(joinPoint.proceed());
+            return joinPoint.proceed();
 
         } catch (GameSessionExpiredException ex) {
             logContext.setException(ex);
