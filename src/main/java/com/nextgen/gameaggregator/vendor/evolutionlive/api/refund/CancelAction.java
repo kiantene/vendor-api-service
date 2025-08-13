@@ -60,6 +60,7 @@ public class CancelAction {
         String traceId = httpRequestLog.getId();
         CancelDto cancelDto = new CancelDto();
         boolean isRequestExists = false;
+        GameSession gameSession;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -69,6 +70,7 @@ public class CancelAction {
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cancelDto);
+            String vendorGameCode = cancelDto.getGame().getDetails().getTable().getId();
 
             if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getUserId()) == null) {
                 requestIdempotentLogService.create(cancelDto, cancelDto.getUserId());
@@ -78,22 +80,21 @@ public class CancelAction {
             }
 
             // 2. Verify session token
-            GameSession gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), gameSession);
-
+            try {
+                gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(cancelDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             this.doVerification(cancelDto, gameSession);
-
-            // check if cancel bet exist in unsettled bet will not process rollback
-//            String mergeId = cancelDto.getTransaction().getRefId() + '_' + cancelDto.getGame().getId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId();
-//            UnsettledBet unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
-//            if (unsettledBet != null) {
-//                throw new BetNotFoundException();
-//            }
 
             // 3. Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
-//            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
             responseVo.setBalance(balance);
             responseVo.setUuid(cancelDto.getUuid());
 

@@ -58,7 +58,6 @@ public class CreditAction {
         CreditDto creditDto = new CreditDto();
         GameSession gameSession;
         boolean isRequestExists = false;
-        String vendorGameCode = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -67,7 +66,7 @@ public class CreditAction {
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
-            vendorGameCode = creditDto.getGame().getDetails().getTable().getId();
+            String vendorGameCode = creditDto.getGame().getDetails().getTable().getId();
 
             if (requestIdempotentLogService.checkExists(creditDto, creditDto.getUserId()) == null) {
                 requestIdempotentLogService.create(creditDto, creditDto.getUserId());
