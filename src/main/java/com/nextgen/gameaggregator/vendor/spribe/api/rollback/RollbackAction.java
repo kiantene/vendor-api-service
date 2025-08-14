@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContext;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServiceWrapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -16,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping(path = Endpoints.PATH)
 public class RollbackAction {
 
@@ -31,33 +35,10 @@ public class RollbackAction {
     private final SettledBetService settledBetService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
-    private final VendorLineService vendorLineService;
-    private final AgentPlayerService agentPlayerService;
-    private final VendorGameService vendorGameService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
-
-    @Autowired
-    public RollbackAction(HttpService httpService,
-                          SettledBetService settledBetService,
-                          GameSessionService gameSessionService,
-                          WalletService walletService,
-                          VendorLineService vendorLineService,
-                          AgentPlayerService agentPlayerService,
-                          VendorGameService vendorGameService,
-                          VendorService vendorService,
-                          RequestIdempotentLogService requestIdempotentLogService) {
-
-        this.httpService = httpService;
-        this.settledBetService = settledBetService;
-        this.gameSessionService = gameSessionService;
-        this.walletService = walletService;
-        this.vendorLineService = vendorLineService;
-        this.agentPlayerService = agentPlayerService;
-        this.vendorGameService = vendorGameService;
-        this.vendorService = vendorService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
-    }
+    private final RollbackContextMapper rollbackContextMapper;
+    private final WalletRollbackServiceWrapper walletRollbackServiceWrapper;
 
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
@@ -72,6 +53,7 @@ public class RollbackAction {
         String providerTxId = null;
         boolean isRequestExists = false;
         RollbackDto dto = new RollbackDto();
+        GameSession gameSession = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -88,9 +70,6 @@ public class RollbackAction {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
-
-            // 4. Verify session token
-            GameSession gameSession;
 
             try {
                 gameSession = gameSessionService.verifyVendorToken(dto.getSession_token());
@@ -133,9 +112,22 @@ public class RollbackAction {
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
-        } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundException) {
+        } catch (BetNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, betNotFoundException);
+
+            // find and insert settled bet to process rollback
+            BetRollbackContext rollbackContext = rollbackContextMapper.toBetRollbackContext(dto);
+            rollbackContext.setTraceId(traceId);
+            rollbackContext.setGameSession(gameSession);
+            rollbackContext.setVendorService(vendorService);
+            rollbackContext.setRetrieveSettledBet(true);
+            walletRollbackServiceWrapper.processAsync(rollbackContext);
+
+            vo.setErrorCode(ErrorCodes.SUCCESS);
+
+        } catch (RecordNotFoundException recordNotFoundException) {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, transactionNotFoundException);
+            httpService.logError(httpRequestLog, recordNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
