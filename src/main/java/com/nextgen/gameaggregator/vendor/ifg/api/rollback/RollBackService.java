@@ -12,32 +12,32 @@ import com.nextgen.gameaggregator.vendor.ifg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ifg.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.ErrorVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@Slf4j
 public class RollBackService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
 
-    public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId){
+    public RollBackService(GameSessionService gameSessionService, VendorLineService vendorLineService, WalletService walletService, HttpService httpService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, VendorService vendorService) {
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+    }
+
+    public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
         RollBackServiceDto rollBackServiceDto = new RollBackServiceDto();
         RollBackServiceVo vo = new RollBackServiceVo();
         ErrorVo errorVo = new ErrorVo();
@@ -45,9 +45,9 @@ public class RollBackService {
         BalanceVo balanceVo = new BalanceVo();
         XmlMapper xmlMapper = new XmlMapper();
         GameSession gameSession = new GameSession();
-        BigDecimal balance = null;
+        BigDecimal balance;
 
-        try{
+        try {
             rollBackServiceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), RollBackServiceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -122,7 +122,7 @@ public class RollBackService {
             vo.setRefund(refundVo);
 
             httpService.logError(httpRequestLog, e);
-        } catch(Exception e) {
+        } catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -136,7 +136,7 @@ public class RollBackService {
             vo.setRefund(refundVo);
 
             httpService.logError(httpRequestLog, e);
-        } finally{
+        } finally {
             vo.setSession(rollBackServiceDto.getSession());
             vo.setTime(rollBackServiceDto.getTime());
         }

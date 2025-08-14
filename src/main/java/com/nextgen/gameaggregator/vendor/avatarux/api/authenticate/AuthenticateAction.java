@@ -69,7 +69,7 @@ public class AuthenticateAction {
             responseVo.setNativeId(dto.getOperator());
             responseVo.setToken(gameSession.getToken());
             responseVo.setBalance(balance);
-            responseVo.setCurrency(gameSession.getCurrencyCode().toLowerCase());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode().toLowerCase());
             responseVo.setBrand("ONEAPI");
 
         } catch (InvalidSignatureException e) {

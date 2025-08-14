@@ -137,6 +137,15 @@ public class SportWalletServiceImpl implements SportWalletService {
     }
 
     @Override
+    public WalletRequest refundAll(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException,
+            InvalidPlayerException, InvalidRequestException {
+
+        return sportRefundProcessor.processRefundSettledBet(walletRequest);
+    }
+
+    @Override
     public WalletRequest settle(WalletRequest walletRequest) throws
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException,
@@ -578,7 +587,9 @@ public class SportWalletServiceImpl implements SportWalletService {
             //         (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername());
-
+            
+            //resettle will insert into resettlement date change
+            kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBetService.save(sportSettledBet);

@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -62,7 +59,6 @@ public class WalletService {
     private int retryMaxAttempts;
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
     private String retryVendorList;
-
 
     @Autowired
     public WalletService(BetResultLogService betResultLogService,
@@ -98,6 +94,7 @@ public class WalletService {
         this.betIdempotentLogService = betIdempotentLogService;
         this.taskScheduler = taskScheduler;
         this.redisTemplate = redisTemplate;
+
     }
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -452,7 +449,6 @@ public class WalletService {
         loggingService.logStart();
         //settle by round
         if (!betResultData.getShouldSettleByBet()) {
-
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
 
@@ -1004,7 +1000,7 @@ public class WalletService {
                     unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
                     loggingService.logProcessTime("unsettledBetService.findBetsForRollback", traceId);
                 } catch (BetNotFoundException betNotFoundException) {
-                    betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
+                    betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED, gameSession.getVendorId());
                     throw betNotFoundException;
                 }
 
