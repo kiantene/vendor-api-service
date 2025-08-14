@@ -166,6 +166,10 @@ public class KafkaConsumerService {
 
         Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
 
+        if (operatorResultType == null || operatorResultType.isEmpty()) {
+            operatorResultType.equals("END");
+        }
+
         if (agentApiVersion == 2 && this.skipVendorList.contains(vendorPlayer.getVendorId())) {
             // Skip notifyEndRoundProcess for version 2
             httpRequestLog.setUrl(httpRequestLog.getUrl() + " (SKIP PROCESS END ROUND FOR VERSION 2)");
@@ -196,14 +200,6 @@ public class KafkaConsumerService {
             endRoundSettledBetForPatching.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             SettledBet settledBet = new SettledBet(endRoundSettledBetForPatching);
             settledBet.setResultType(endRoundSettledBetForPatching.getGaResultType());
-
-            //TODO TO BE REVISITED FOR FUTURE ENHANCEMENT TO EASE RECON TEAM WORK
-            //For WIN, will require to get unsettledBet.betId to overwrite for settledBet
-            //For BET_WIN, will not require because it will consider as new transaction.
-            //For END, might require to get from unsettledBet too, TO BE REVISITED.
-//            if (endRoundSettledBetForPatching.getOperatorResultType().equals("WIN")) {
-//                this.processResultTypeWin(settledBet);
-//            }
 
             processEndRoundLog.setRawBody(endRoundSettledBetForPatching.getRawData());
             processEndRoundLog.setRoundId(settledBet.getRoundId());
