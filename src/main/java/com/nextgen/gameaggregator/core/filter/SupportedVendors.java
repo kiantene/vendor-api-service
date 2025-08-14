@@ -5,7 +5,7 @@ import java.util.List;
 public class SupportedVendors {
 
     private static List<String> VENDOR_PATHS = List.of(
-            "aviator"
+            com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints.CLASS_NAME
     );
 
     private SupportedVendors() {}

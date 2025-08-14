@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
@@ -29,7 +30,7 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
 
     @Override
     public String getVendorClassName() {
-        return "aviator";
+        return EndPoints.CLASS_NAME;
     }
 
     @Override
