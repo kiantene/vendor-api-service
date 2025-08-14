@@ -47,10 +47,10 @@ public class LogContextService {
         }
         logContext.setStart(httpRequestLog.getBetStart());
         logContext.setEnd(httpRequestLog.getBetEnd());
-        if (logContext.getApiStart() == 0) {
+        if (logContext.getApiStart() == 0 && httpRequestLog.getOperatorStart() != null) {
             logContext.setApiStart(httpRequestLog.getOperatorStart());
         }
-        if (logContext.getApiEnd() == 0) {
+        if (logContext.getApiEnd() == 0 && httpRequestLog.getOperatorEnd() != null) {
             logContext.setApiEnd(httpRequestLog.getOperatorEnd());
         }
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
@@ -76,8 +76,12 @@ public class LogContextService {
             HttpRequestLog httpRequestLog = (HttpRequestLog) logContext.get(HttpRequestLog.class.getSimpleName());
             httpRequestLog.setResponseBody(responseBody);
             httpRequestLog.setEndTime(System.currentTimeMillis());
-            httpRequestLog.setOperatorStart(logContext.getApiStart());
-            httpRequestLog.setOperatorEnd(logContext.getApiEnd());
+            if (httpRequestLog.getOperatorStart() == null && logContext.getApiStart() > 0) {
+                httpRequestLog.setOperatorStart(logContext.getApiStart());
+            }
+            if (httpRequestLog.getOperatorEnd() == null && logContext.getApiEnd() > 0) {
+                httpRequestLog.setOperatorEnd(logContext.getApiEnd());
+            }
 
             if (httpRequestLog.getOperatorData() == null) {
                 try {
