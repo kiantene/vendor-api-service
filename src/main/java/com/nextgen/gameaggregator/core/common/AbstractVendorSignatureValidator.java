@@ -5,8 +5,11 @@ import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import jakarta.servlet.http.HttpServletRequest;
 
-public abstract class AbstractVendorSignatureValidator {
+import java.util.Map;
+
+public abstract class AbstractVendorSignatureValidator implements VendorSignatureValidator {
     private final VendorPlayerDataService vendorPlayerDataService;
     private final VendorLineService vendorLineService;
 
@@ -25,5 +28,17 @@ public abstract class AbstractVendorSignatureValidator {
         } catch (CredentialNotFoundException ex) {
             throw new InternalConfigurationException("vendorLineId: " + vendorLineId + " : " + credentialName + " not found", ex);
         }
+    }
+
+    @Override
+    public boolean shouldValidate(HttpServletRequest request, String endpoint) {
+        return true;
+    }
+
+    @Override
+    public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
+        return new VendorErrorResponse(
+                Map.of("error", "Invalid signature")
+        );
     }
 }
