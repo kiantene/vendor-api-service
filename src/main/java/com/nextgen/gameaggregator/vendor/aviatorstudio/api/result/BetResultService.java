@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.api.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class BetResultService {
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService
                 .initialise(context)
+                .configure(config -> config.setSettleType(SettleType.BET))
                 .isBetTxn(false)
                 .process();
         return responseMapper.toVendor(context, balanceData);
