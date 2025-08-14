@@ -31,16 +31,22 @@ public class WalletBetResultServiceWrapper {
     private final WalletExceptionTranslator walletExceptionTranslator;
 
     public PlayerBalanceData process() {
-        BetResultContext context = state().getBetResultContext();
-        enrich(context);
         LogContext logContext = LogContextHolder.get();
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        try {
+            BetResultContext context = state().getBetResultContext();
+            enrich(context);
 
-        validator.validateRequestContext(logContext.getVendorClassName(), context);
-        GameSession gameSession = gameSessionDataService.getOrCreate(context);
+            validator.validateRequestContext(logContext.getVendorClassName(), context);
+            GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
-        ResultType resultType = getResultType(context);
-        validator.validateBusinessState(gameSession, context, resultType);
-        return processBetResultTransaction(context, gameSession, resultType, logContext);
+            ResultType resultType = getResultType(context);
+            validator.validateBusinessState(gameSession, context, resultType);
+            return processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+        } finally {
+            cleanup();
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
     }
 
     private void enrich(BetResultContext context) {
@@ -55,9 +61,8 @@ public class WalletBetResultServiceWrapper {
             BetResultContext context,
             GameSession gameSession,
             ResultType resultType,
-            LogContext logContext) {
+            HttpRequestLog httpRequestLog) {
 
-        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         try {
             BigDecimal balance = walletService.processBetResult(
                     httpRequestLog.getId(),
@@ -78,9 +83,6 @@ public class WalletBetResultServiceWrapper {
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
-        } finally {
-            cleanup();
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 

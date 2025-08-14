@@ -25,9 +25,15 @@ public class WalletBetServiceWrapper implements WalletBetService {
     @Override
     public PlayerBalanceData process(BetContext context) {
         LogContext logContext = LogContextHolder.get();
-        walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
-        GameSession gameSession = retrieveGameSession(context);
-        return processBetTransaction(context, gameSession, logContext);
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
+        try {
+            walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
+            GameSession gameSession = retrieveGameSession(context);
+            return processBetTransaction(context, gameSession, httpRequestLog);
+        } finally {
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
     }
 
     private GameSession retrieveGameSession(BetContext context) {
@@ -42,15 +48,14 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private PlayerBalanceData processBetTransaction(
             BetContext context,
             GameSession gameSession,
-            LogContext logContext) {
+            HttpRequestLog httpRequestLog) {
 
-        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         try {
             BetEvent betEvent = walletService.processBet(
                     httpRequestLog.getId(),
                     gameSession,
                     betResultDataMapper.toBetResultData(context),
-                    logContext.getBody().toString(),
+                    httpRequestLog.getRequestBody(),
                     httpRequestLog
             );
 
@@ -64,8 +69,6 @@ public class WalletBetServiceWrapper implements WalletBetService {
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
-        } finally {
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 }
