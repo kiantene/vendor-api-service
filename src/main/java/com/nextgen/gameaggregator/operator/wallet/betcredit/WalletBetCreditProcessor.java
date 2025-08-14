@@ -71,7 +71,7 @@ public class WalletBetCreditProcessor {
             BetHistory betHistory = this.prepareBetHistoryEntity(walletTransaction, walletRequest);
 
             if (!walletRequest.getIsPreProcessBet()) {
-                kafkaService.produceBetHistoryV3(betHistory, null, null, null, walletRequest.getOperatorUsername(), walletRequest.getVendorPlayerUsername());
+                kafkaService.produceBetHistoryV3(betHistory, null, null, null, walletRequest.getOperatorUsername(), walletRequest.getVendorPlayerUsername(), walletRequest.getFromVendorRate());
             } else {
                 kafkaService.producePreprocessingBetHistory(betHistory, walletRequest.getOperatorUsername(), walletRequest.getVendorPlayerUsername(), walletRequest.getFromVendorRate());
             }
