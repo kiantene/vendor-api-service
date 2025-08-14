@@ -28,6 +28,7 @@ public class KafkaConstant {
     public static final String TOPIC_BET_TRANSACTION_LOG = "topic_bet_transaction_log_v1";
     public static final String TOPIC_RESETTLEMENT_DATE_CHANGE = "topic_resettlement_date_change";
     public static final String TOPIC_PROMO_PAYOUT_HISTORY = "promo_payout_history";
+    public static final String TOPIC_RECON_FOR_UNSETTLED_BET = "topic_recon_for_unsettled_bet";
 
 
 }

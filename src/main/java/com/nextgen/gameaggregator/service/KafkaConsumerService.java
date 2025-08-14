@@ -11,6 +11,8 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
+import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
+import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
@@ -20,11 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,6 +47,8 @@ public class KafkaConsumerService {
     private final AgentApiVersionService agentApiVersionService;
     private final Set<Integer> skipVendorList;
     private final UnsettledBetCachingService unsettledBetCachingService;
+    private final WalletService walletService;
+    private final GameSessionService gameSessionService;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -60,8 +62,9 @@ public class KafkaConsumerService {
                                 VendorPlayerService vendorPlayerService,
                                 CachingService cachingService,
                                 AgentApiVersionService agentApiVersionService,
-                                UnsettledBetCachingService unsettledBetCachingService) {
-        
+                                UnsettledBetCachingService unsettledBetCachingService,
+                                WalletService walletService, GameSessionService gameSessionService) {
+
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
         this.settledBetService = settledBetService;
@@ -75,6 +78,8 @@ public class KafkaConsumerService {
         this.cachingService = cachingService;
         this.agentApiVersionService = agentApiVersionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
+        this.walletService = walletService;
+        this.gameSessionService = gameSessionService;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
@@ -367,5 +372,126 @@ public class KafkaConsumerService {
             httpService.end(httpRequestLog, vo);
 
         }
+    }
+
+    @KafkaListener(topics = KafkaConstant.TOPIC_RECON_FOR_UNSETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void consumeReconDataPatching(String message) {
+        HttpRequestLog log = httpService.startEndRoundConsumerLog();
+        String traceId = log.getId();
+        GeneralVo vo = new GeneralVo();
+
+        try {
+            // convert to Object
+            EndRoundSettledBetForPatching endRoundSettledBetForPatching = parseMessage(message);
+            // validate vendorPlayerId or vendorPlayerUsername
+            validateBetData(endRoundSettledBetForPatching);
+            // generate gameSession by vendorPlayerId or vendorPlayerUsername
+            GameSession session = initGameSession(endRoundSettledBetForPatching);
+
+            // process Rollback or BetResult
+            if (endRoundSettledBetForPatching.isRefund()) {
+                processRollbackCase(endRoundSettledBetForPatching, session, log);
+            } else {
+                processSettleCase(traceId, endRoundSettledBetForPatching, session, log);
+            }
+
+            vo.setResponseCode(ResponseCode.SUCCESS);
+        } catch (Exception e) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(log, e);
+        } finally {
+            httpService.end(log, vo);
+        }
+    }
+
+    private EndRoundSettledBetForPatching parseMessage(String message) throws IOException {
+        return new ObjectMapper().readValue(message, EndRoundSettledBetForPatching.class);
+    }
+
+    private void validateBetData(EndRoundSettledBetForPatching betData) throws InvalidRequestException {
+        String username = betData.getVendorPlayerUsername();
+        Long vendorPlayerId = betData.getVendorPlayerId();
+        if (vendorPlayerId == null && (username == null || username.isBlank())) {
+            throw new InvalidRequestException();
+        }
+    }
+
+    private GameSession initGameSession(EndRoundSettledBetForPatching betData) throws InvalidPlayerException {
+        Long vendorPlayerId = betData.getVendorPlayerId();
+        String username = betData.getVendorPlayerUsername();
+        return (vendorPlayerId != null)
+                ? gameSessionService.generateNewSessionTokenByVendorPlayerId(vendorPlayerId)
+                : gameSessionService.generateNewSessionToken(username);
+    }
+
+    private void processRollbackCase(EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException, GameNotSupportedException {
+        UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(
+                session.getVendorId(),
+                betData.getExternalTransactionId()
+        );
+
+        gameSessionService.updateByVendorCurrencyId(session);
+        gameSessionService.updateByVendorGameId(session, unsettledBet.getVendorGameId());
+        session.setToken(unsettledBet.getGameSessionToken());
+        session.setVendorToken(unsettledBet.getGameSessionToken());
+
+        GeneralRollbackDto dto = new GeneralRollbackDto();
+        dto.setRoundId(unsettledBet.getRoundId());
+        dto.setRollbackId(unsettledBet.getExternalTransactionId());
+        dto.setVendorSettledTime(betData.getVendorSettleTime());
+
+        walletService.processRollback(dto, session, new GeneralVendorService(), log);
+    }
+
+    private void processSettleCase(String traceId, EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException, GameNotSupportedException {
+        List<UnsettledBet> unsettledBetList = unsettledBetCachingService
+                .getByRoundId(betData.getRoundId())
+                .stream()
+                .filter(bet -> Objects.equals(bet.getVendorPlayerId(), session.getVendorPlayerId()))
+                .toList();
+
+        BigDecimal totalBetAmount = calculateTotalBetAmount(unsettledBetList);
+
+        gameSessionService.updateByVendorCurrencyId(session);
+        gameSessionService.updateByVendorGameId(session, unsettledBetList.get(0).getVendorGameId());
+        session.setToken(unsettledBetList.get(0).getGameSessionToken());
+        session.setVendorToken(unsettledBetList.get(0).getGameSessionToken());
+
+        ResultType resultType = determineResultType(totalBetAmount, betData.getBetAmount());
+
+        GeneralSettleDto dto = generateGeneralSettleDto(betData, totalBetAmount);
+        walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log);
+    }
+
+    private BigDecimal calculateTotalBetAmount(List<UnsettledBet> unsettledBetList) {
+        return unsettledBetList.stream()
+                .map(UnsettledBet::getBetAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private ResultType determineResultType(BigDecimal totalBet, BigDecimal expectedBet) {
+        return (totalBet.compareTo(expectedBet) != 0) ? ResultType.BET_WIN : ResultType.WIN;
+    }
+
+    private GeneralSettleDto generateGeneralSettleDto(EndRoundSettledBetForPatching endRoundSettledBetForPatching, BigDecimal totalBetAmount) {
+
+        BigDecimal betAmount = endRoundSettledBetForPatching.getBetAmount();
+        if (totalBetAmount.compareTo(betAmount) != 0) {
+            betAmount = betAmount.subtract(totalBetAmount);
+        }
+
+        GeneralSettleDto dto = new GeneralSettleDto();
+        dto.setExternalTransactionId(endRoundSettledBetForPatching.getExternalTransactionId());
+        dto.setVendorBetId(endRoundSettledBetForPatching.getVendorBetId());
+        dto.setRoundId(endRoundSettledBetForPatching.getRoundId());
+        dto.setBetAmount(betAmount);
+        dto.setWinAmount(endRoundSettledBetForPatching.getWinAmount());
+        dto.setWinLoss(endRoundSettledBetForPatching.getWinLoss());
+        dto.setEffectiveTurnover(endRoundSettledBetForPatching.getEffectiveTurnover());
+        dto.setVendorBetTime(endRoundSettledBetForPatching.getVendorBetTime());
+        dto.setVendorSettleTime(endRoundSettledBetForPatching.getVendorSettleTime());
+        dto.setResultTime(endRoundSettledBetForPatching.getResultTime());
+        dto.setBetStatus(BetStatus.SETTLED);
+        return dto;
     }
 }
