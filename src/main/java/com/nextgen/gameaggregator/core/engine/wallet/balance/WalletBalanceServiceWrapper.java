@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.WalletService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,17 +22,24 @@ public class WalletBalanceServiceWrapper {
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
 
-    public PlayerBalanceData process(BalanceContext context) {
-        GameSession gameSession = gameSessionDataService.getGameSession(context);
-        return doGetBalance(context, gameSession, LogContextHolder.get());
+    public PlayerBalanceData process(@NotNull BalanceContext context) {
+        LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Balance");
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
+        try {
+            GameSession gameSession = gameSessionDataService.getGameSession(context);
+            return doGetBalance(context, gameSession, httpRequestLog);
+        } finally {
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
     }
 
     private PlayerBalanceData doGetBalance(
             BalanceContext context,
             GameSession gameSession,
-            LogContext logContext) {
+            HttpRequestLog httpRequestLog) {
 
-        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         try {
             BigDecimal balance = walletService.getBalance(
                     httpRequestLog.getId(),
@@ -39,18 +47,16 @@ public class WalletBalanceServiceWrapper {
                     httpRequestLog
             );
 
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(balance)
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
+            return new PlayerBalanceData(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    balance,
+                    httpRequestLog.getOperatorEnd()
+            );
 
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
-        } finally {
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 }

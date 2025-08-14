@@ -32,7 +32,9 @@ public class WalletBetResultServiceWrapper {
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Result");
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
         try {
             BetResultContext context = state().getBetResultContext();
             enrich(context);
@@ -73,12 +75,12 @@ public class WalletBetResultServiceWrapper {
                     httpRequestLog
             );
 
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(balance)
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
+            return new PlayerBalanceData(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    balance,
+                    httpRequestLog.getOperatorEnd()
+            );
 
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
