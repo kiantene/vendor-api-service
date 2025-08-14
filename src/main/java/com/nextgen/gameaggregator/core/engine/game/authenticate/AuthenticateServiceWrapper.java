@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.WalletService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,32 +23,36 @@ public class AuthenticateServiceWrapper {
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
 
-    public PlayerBalanceData process(AuthenticateContext context) {
+    public PlayerBalanceData process(@NotNull AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Authenticate");
-        GameSession gameSession = gameSessionDataService.getGameSession(context);
-        if (shouldUpdateVendorToken(context, gameSession)) {
-            gameSessionDataService.updateVendorToken(gameSession, context.getVendorSessionToken());
+        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
+        try {
+            GameSession gameSession = gameSessionDataService.getGameSession(context);
+            if (shouldUpdateVendorToken(context, gameSession)) {
+                gameSessionDataService.updateVendorToken(gameSession, context.getVendorSessionToken());
+            }
+            return getBalance(context, gameSession, httpRequestLog);
+        } finally {
+            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return getBalance(context, gameSession, logContext);
     }
 
-    private PlayerBalanceData getBalance(AuthenticateContext context, GameSession gameSession, LogContext logContext) {
-        HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+    private PlayerBalanceData getBalance(AuthenticateContext context, GameSession gameSession, HttpRequestLog httpRequestLog) {
         try {
             BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(balance)
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
+
+            return new PlayerBalanceData(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    balance,
+                    httpRequestLog.getOperatorEnd()
+            );
 
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
-        } finally {
-            LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 

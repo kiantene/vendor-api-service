@@ -41,10 +41,19 @@ public class LogContextService {
 
     // Backward compatible function
     public static void updateLogContextFromHttpRequestLog(LogContext logContext, HttpRequestLog httpRequestLog) {
+        if (httpRequestLog == null) return;
+
+        if (httpRequestLog.getBetEnd() == null) {
+            httpRequestLog.setBetEnd(System.currentTimeMillis());
+        }
         logContext.setStart(httpRequestLog.getBetStart());
         logContext.setEnd(httpRequestLog.getBetEnd());
-        logContext.setApiStart(httpRequestLog.getOperatorStart());
-        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        if (logContext.getApiStart() == 0) {
+            logContext.setApiStart(httpRequestLog.getOperatorStart());
+        }
+        if (logContext.getApiEnd() == 0) {
+            logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        }
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
@@ -56,6 +65,7 @@ public class LogContextService {
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
         httpRequestLog.setRequestBody(logContext.getBody().toString());
+        httpRequestLog.setBetStart(System.currentTimeMillis());
         httpRequestLog.setStatus(PROCESSING);
         return httpRequestLog;
     }
