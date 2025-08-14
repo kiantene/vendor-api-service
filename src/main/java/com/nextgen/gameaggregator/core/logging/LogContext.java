@@ -5,7 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -14,9 +18,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
+@Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LogContext {
-
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
@@ -25,11 +29,13 @@ public class LogContext {
     private String traceId;
     private String logGroup;
 
+    private HttpMethod method;
+
     // Raw request body received from the client (e.g., operator system)
-    private String body;
+    private Object body;
 
     // Raw response body returned to the client
-    private String response;
+    private Object response;
     private long start;
     private long end;
     private long timeTaken;
@@ -50,9 +56,11 @@ public class LogContext {
     private long apiStart;
     private long apiEnd;
     private long apiTimeTaken;
+    private int apiStatusCode;
     private String exception;
     private String rootCause;
     private String errorMessage;
+    private String stackTrace;
     private int status;
     private String vendorClassName;
     private Integer vendorId;
@@ -74,6 +82,7 @@ public class LogContext {
     public void setException(Exception ex) {
         setException(ex.getClass().getSimpleName());
         setErrorMessage(ex.getMessage());
+        setStackTrace(getStackTrace(ex));
 
         if (ex instanceof RuntimeException && ex.getCause() != null) {
             Throwable cause = ex.getCause();
@@ -93,6 +102,24 @@ public class LogContext {
 
     public void put(String key, Object value) {
         extraFields.put(key, value);
+    }
+    public void delete(String key) {
+        extraFields.remove(key);
+    }
+
+    public static void putField(String key, Object value) {
+        LogContext context = LogContextHolder.get();
+        if (context != null) {
+            context.put(key, value);
+        }
+    }
+
+    public Object get(String key) {
+        return extraFields.get(key);
+    }
+
+    public boolean exists(String key) {
+        return extraFields.containsKey(key);
     }
 
     private String formatTimestamp(Long timestamp) {
@@ -128,12 +155,17 @@ public class LogContext {
             base.put("apiStart", apiStart);
             base.put("apiEnd", apiEnd);
             base.put("apiTimeTaken", apiTimeTaken);
+            base.put("apiStatusCode", apiStatusCode);
             base.put("status", status);
 
             // Exception
             base.put("exception", exception);
             base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
+            if (log.isDebugEnabled()) {
+                base.put("method", method.name());
+                base.put("stackTrace", stackTrace);
+            }
             base.putAll(extraFields);
 
             ObjectMapper mapper = new ObjectMapper();
@@ -144,5 +176,12 @@ public class LogContext {
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
         }
+    }
+
+    private String getStackTrace(Exception exception) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        return sw.toString();
     }
 }
