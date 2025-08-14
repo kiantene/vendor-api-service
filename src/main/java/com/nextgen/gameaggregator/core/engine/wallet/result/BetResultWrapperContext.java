@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.Data;
 
@@ -9,5 +8,5 @@ public class BetResultWrapperContext {
     private BetResultContext betResultContext;
     private BaseVendorService vendorService;
     private Boolean isBetTxn;
-    private ResultType resultType;
+    private BetResultConfig config = new BetResultConfig();
 }
