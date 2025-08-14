@@ -459,7 +459,7 @@ public class KafkaConsumerService {
 
         ResultType resultType = determineResultType(totalBetAmount, betData.getBetAmount());
 
-        GeneralSettleDto dto = generateGeneralSettleDto(betData, totalBetAmount);
+        GeneralSettleDto dto = generateGeneralSettleDto(betData, totalBetAmount, unsettledBetList.get(0).getVendorBetTime());
         walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log);
     }
 
@@ -473,11 +473,13 @@ public class KafkaConsumerService {
         return (totalBet.compareTo(expectedBet) != 0) ? ResultType.BET_WIN : ResultType.WIN;
     }
 
-    private GeneralSettleDto generateGeneralSettleDto(EndRoundSettledBetForPatching endRoundSettledBetForPatching, BigDecimal totalBetAmount) {
+    private GeneralSettleDto generateGeneralSettleDto(EndRoundSettledBetForPatching endRoundSettledBetForPatching, BigDecimal totalBetAmount, Long vendorBetTime) {
 
         BigDecimal betAmount = endRoundSettledBetForPatching.getBetAmount();
-        if (totalBetAmount.compareTo(betAmount) != 0) {
+        if (totalBetAmount.compareTo(betAmount) > 0) {
             betAmount = betAmount.subtract(totalBetAmount);
+        } else {
+            betAmount = BigDecimal.ZERO;
         }
 
         GeneralSettleDto dto = new GeneralSettleDto();
@@ -487,8 +489,8 @@ public class KafkaConsumerService {
         dto.setBetAmount(betAmount);
         dto.setWinAmount(endRoundSettledBetForPatching.getWinAmount());
         dto.setWinLoss(endRoundSettledBetForPatching.getWinLoss());
-        dto.setEffectiveTurnover(endRoundSettledBetForPatching.getEffectiveTurnover());
-        dto.setVendorBetTime(endRoundSettledBetForPatching.getVendorBetTime());
+        dto.setEffectiveTurnover(endRoundSettledBetForPatching.getEffectiveTurnover() != null ? endRoundSettledBetForPatching.getEffectiveTurnover() : null);
+        dto.setVendorBetTime(endRoundSettledBetForPatching.getVendorBetTime() != null ? endRoundSettledBetForPatching.getVendorBetTime() : vendorBetTime);
         dto.setVendorSettleTime(endRoundSettledBetForPatching.getVendorSettleTime());
         dto.setResultTime(endRoundSettledBetForPatching.getResultTime());
         dto.setBetStatus(BetStatus.SETTLED);
