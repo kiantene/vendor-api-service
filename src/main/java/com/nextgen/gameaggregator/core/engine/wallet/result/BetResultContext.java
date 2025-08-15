@@ -54,7 +54,6 @@ public class BetResultContext implements GameSessionData {
      */
     private String agentPlayerUsername;
     private String currencyCode;
-    private String externalTransactionId;
     private String betId;
     private Long resultTime;
 

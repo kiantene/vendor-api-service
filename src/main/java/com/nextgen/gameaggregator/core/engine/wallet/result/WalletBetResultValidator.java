@@ -26,6 +26,8 @@ public class WalletBetResultValidator {
         final String ACTION = "betresult";
         final String idempotencyKey = context.getIdempotencyKey();
 
+        // TODO: validate context object
+
         duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
     }
 
