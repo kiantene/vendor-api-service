@@ -94,21 +94,21 @@ public class KafkaConsumerService {
         ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
         processEndRoundLog.setStartTime(System.currentTimeMillis());
         processEndRoundLog.setTraceId(newTraceId);
-
-        //prepare endRound and settleBet info
-        EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
-        endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-        SettledBet settledBet = new SettledBet(endRoundSettledBet);
-        settledBet.setResultType(endRoundSettledBet.getGaResultType());
-
-        //check if unsettledBet still exist, if no longer exist, throw BetNotFoundException
-        UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
-
-        processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
-        processEndRoundLog.setRoundId(settledBet.getRoundId());
-        processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
-
+        EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet();
         try {
+            //prepare endRound and settleBet info
+            endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
+            endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            SettledBet settledBet = new SettledBet(endRoundSettledBet);
+            settledBet.setResultType(endRoundSettledBet.getGaResultType());
+
+            //check if unsettledBet still exist, if no longer exist, throw BetNotFoundException
+            UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+
+            processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
+            processEndRoundLog.setRoundId(settledBet.getRoundId());
+            processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+
             httpRequestLog.setBetStart(System.currentTimeMillis());
 
             AgentPlayer agentPlayer = agentPlayerService.get(endRoundSettledBet.getAgentPlayerId());
@@ -445,6 +445,8 @@ public class KafkaConsumerService {
                 .stream()
                 .filter(bet -> Objects.equals(bet.getVendorPlayerId(), session.getVendorPlayerId()))
                 .toList();
+
+        if (unsettledBetList.isEmpty()) throw new BetNotFoundException();
 
         BigDecimal totalBetAmount = calculateTotalBetAmount(unsettledBetList);
 
