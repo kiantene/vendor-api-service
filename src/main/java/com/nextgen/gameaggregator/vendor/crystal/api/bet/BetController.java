@@ -27,7 +27,6 @@ public class BetController {
             @Valid @RequestBody BetRequest request) {
 
         BetContext context = requestMapper.toBetContext(request);
-//        enrich(context, token, username);
         PlayerBalanceData balanceData = walletService.process(context);
         return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
     }
