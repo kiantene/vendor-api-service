@@ -18,6 +18,8 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.maxpayout.AgentMaxPayoutService;
+import com.nextgen.gameaggregator.service.maxpayout.AgentPayout;
 import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +56,7 @@ public class WalletService {
     private final BetNotFoundLogService betNotFoundLogService;
     private final VendorService vendorCurrencyConversionService;
     private final BetIdempotentLogService betIdempotentLogService;
+    private final AgentMaxPayoutService agentMaxPayoutService;
     private final ThreadPoolTaskScheduler taskScheduler;
     private final RedisTemplate<String, Object> redisTemplate;
     @Value("${endround-process.retry-interval-in-seconds:5}")
@@ -78,6 +81,7 @@ public class WalletService {
                          BetNotFoundLogService betNotFoundLogService,
                          VendorService vendorCurrencyConversionService,
                          BetIdempotentLogService betIdempotentLogService,
+                         AgentMaxPayoutService agentMaxPayoutService,
                          ThreadPoolTaskScheduler taskScheduler,
                          RedisTemplate<String, Object> redisTemplate) {
 
@@ -95,6 +99,7 @@ public class WalletService {
         this.betNotFoundLogService = betNotFoundLogService;
         this.vendorCurrencyConversionService = vendorCurrencyConversionService;
         this.betIdempotentLogService = betIdempotentLogService;
+        this.agentMaxPayoutService = agentMaxPayoutService;
         this.taskScheduler = taskScheduler;
         this.redisTemplate = redisTemplate;
 
@@ -282,11 +287,21 @@ public class WalletService {
         List<UnsettledBet> unsettledBetList = null;
 
         if (!retry) {
+            // apply payout cap if configured
+            AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
+                    gameSession.getAgentId(),
+                    gameSession.getVendorId(),
+                    gameSession.getCurrencyId(),
+                    settledBet.getWinAmount()
+            );
+
             if (resultType == ResultType.BET_WIN || resultType == ResultType.BET_LOSE) { // PGSoft
                 unsettledBet = unsettledBetService.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                 walletBetResultData = settledBet;
                 updateCachingSettledBet = settledBet;
+                settledBet.setWinAmount(agentPayout.getWinAmount());
+                // TODO: need to calculate winloss
             } else {
                 loggingService.logStart();
                 unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
