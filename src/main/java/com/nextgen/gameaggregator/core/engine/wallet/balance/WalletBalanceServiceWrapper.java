@@ -2,12 +2,11 @@ package com.nextgen.gameaggregator.core.engine.wallet.balance;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -28,35 +27,38 @@ public class WalletBalanceServiceWrapper {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
-            GameSession gameSession = gameSessionDataService.getGameSession(context);
-            return doGetBalance(context, gameSession, httpRequestLog);
+            // TODO: add validator
+            return getBalance(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    gameSessionDataService.getGameSession(context),
+                    httpRequestLog
+            );
+        } catch (Exception ex) {
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
     }
 
-    private PlayerBalanceData doGetBalance(
-            BalanceContext context,
+    public PlayerBalanceData getBalance(
+            String playerUsername,
+            String currency,
             GameSession gameSession,
-            HttpRequestLog httpRequestLog) {
+            HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
 
-        try {
-            BigDecimal balance = walletService.getBalance(
-                    httpRequestLog.getId(),
-                    gameSession,
-                    httpRequestLog
-            );
+        BigDecimal balance = walletService.getBalance(
+                httpRequestLog.getId(),
+                gameSession,
+                httpRequestLog
+        );
 
-            return new PlayerBalanceData(
-                    context.getVendorPlayerUsername(),
-                    context.getVendorCurrency(),
-                    balance,
-                    httpRequestLog.getOperatorEnd()
-            );
-
-        } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
-        }
+        return new PlayerBalanceData(
+                playerUsername,
+                currency,
+                balance,
+                httpRequestLog.getOperatorEnd()
+        );
     }
 }

@@ -45,9 +45,13 @@ public class GameSessionDataService {
         try {
             return getGameSession(gameSessionData);
         } catch (GameSessionExpiredException ex) {
-            // TODO: regenerate token
-            return new GameSession();
+            return regenerateGameSession(gameSessionData);
         }
+    }
+
+    private GameSession regenerateGameSession(GameSessionData gameSessionData) {
+        // TODO: regenerate token
+        return new GameSession();
     }
 
     // TODO: move caching to GameSessionCacheService
