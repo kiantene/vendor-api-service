@@ -2,47 +2,40 @@ package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
+import com.nextgen.gameaggregator.core.engine.wallet.balance.WalletBalanceServiceWrapper;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.service.WalletService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticateServiceWrapper {
     private final GameSessionDataService gameSessionDataService;
-    private final WalletService walletService;
+    private final WalletBalanceServiceWrapper walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
 
-    public PlayerBalanceData process(AuthenticateContext context) {
+    public PlayerBalanceData process(@NotNull AuthenticateContext context) {
         LogContext logContext = LogContextHolder.get();
         logContext.setLogGroup("Authenticate");
-        GameSession gameSession = gameSessionDataService.getGameSession(context);
-        if (shouldUpdateVendorToken(context, gameSession)) {
-            gameSessionDataService.updateVendorToken(gameSession, context.getVendorSessionToken());
-        }
-        return getBalance(context, gameSession, logContext);
-    }
-
-    private PlayerBalanceData getBalance(AuthenticateContext context, GameSession gameSession, LogContext logContext) {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
-        try {
-            BigDecimal balance = walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog);
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(balance)
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
 
+        try {
+            // TODO: add validator
+            GameSession gameSession = gameSessionDataService.getGameSession(context);
+            if (shouldUpdateVendorToken(context, gameSession)) {
+                gameSessionDataService.updateVendorToken(gameSession, context.getVendorSessionToken());
+            }
+            return walletService.getBalance(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    gameSession,
+                    httpRequestLog
+            );
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler

@@ -1,28 +1,28 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
 public class WalletBetResultServiceWrapper {
-    private static final ThreadLocal<BetResultWrapperContext> stateHolder = new ThreadLocal<>(); // thread safe, context object won't be shared across threads
     private final ApplicationContext applicationContext;
     private final WalletBetResultValidator validator;
     private final WalletService walletService;
@@ -32,7 +32,9 @@ public class WalletBetResultServiceWrapper {
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get();
+        logContext.setLogGroup("Result");
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
         try {
             BetResultContext context = state().getBetResultContext();
             enrich(context);
@@ -42,7 +44,13 @@ public class WalletBetResultServiceWrapper {
 
             ResultType resultType = getResultType(context);
             validator.validateBusinessState(gameSession, context, resultType);
-            return processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            doProcessBatch(context);
+
+            return playerBalance;
+        } catch (Exception ex) {
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -57,60 +65,63 @@ public class WalletBetResultServiceWrapper {
         }
     }
 
+    private void doProcessBatch(BetResultContext context) {
+        BetResultConfig config = state().getConfig();
+
+        if (config.getProcessingMode().isBatchMode()) {
+            List<BetTransaction> txnList = context.getBetTransactions();
+
+            if (txnList == null || txnList.isEmpty()) return;
+
+//            batchService.processBatch(txnList, context);
+        }
+    }
+
     private PlayerBalanceData processBetResultTransaction(
             BetResultContext context,
             GameSession gameSession,
             ResultType resultType,
-            HttpRequestLog httpRequestLog) {
+            HttpRequestLog httpRequestLog) throws
+                InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
+                BetResultIdempotentViolationException, MergedBetDataIntegrityException,
+                InsufficientBalanceException, TransactionStillProcessingException,
+                BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
-        try {
-            BigDecimal balance = walletService.processBetResult(
-                    httpRequestLog.getId(),
-                    gameSession,
-                    betResultDataMapper.toBetResultData(context),
-                    resultType,
-                    state().getVendorService(),
-                    httpRequestLog
-            );
+        BigDecimal balance = walletService.processBetResult(
+                httpRequestLog.getId(),
+                gameSession,
+                betResultDataMapper.toBetResultData(context),
+                resultType,
+                state().getVendorService(),
+                httpRequestLog
+        );
 
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(balance)
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
-
-        } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
-        }
+        return new PlayerBalanceData(
+                context.getVendorPlayerUsername(),
+                context.getVendorCurrency(),
+                balance,
+                httpRequestLog.getOperatorEnd()
+        );
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
         BetResultWrapperContext state = new BetResultWrapperContext();
         state.setBetResultContext(context);
-        stateHolder.set(state);
+        BetResultContextHolder.set(state);
         return this;
     }
 
     private BetResultWrapperContext state() {
-        BetResultWrapperContext ctx = stateHolder.get();
-        if (ctx == null) throw new IllegalStateException("BetResultWrapperContext not initialized");
-        return ctx;
+        return BetResultContextHolder.getRequired();
+    }
+
+    public WalletBetResultServiceWrapper configure(Consumer<BetResultConfig> configurer) {
+        configurer.accept(state().getConfig());
+        return this;
     }
 
     public WalletBetResultServiceWrapper isBetTxn(boolean flag) {
         state().setIsBetTxn(flag);
-        return this;
-    }
-
-    public WalletBetResultServiceWrapper resultType(ResultType resultType) {
-        state().setResultType(resultType);
-        return this;
-    }
-
-    public WalletBetResultServiceWrapper vendorService(BaseVendorService vendorService) {
-        state().setVendorService(vendorService);
         return this;
     }
 
@@ -122,7 +133,7 @@ public class WalletBetResultServiceWrapper {
      * 4. END        -> Non-bet transaction with no win (default fallback)
      */
     private ResultType getResultType(BetResultContext context) {
-        if (state().getResultType() != null) return state().getResultType();
+        if (state().getConfig().getResultType() != null) return state().getConfig().getResultType();
 
         boolean isBet = Optional.ofNullable(state().getIsBetTxn()).orElse(false);
         BigDecimal winAmount = Optional.ofNullable(context.getWinAmount()).orElse(BigDecimal.ZERO);
@@ -138,6 +149,6 @@ public class WalletBetResultServiceWrapper {
     }
 
     private void cleanup() {
-        stateHolder.remove();
+        BetResultContextHolder.clear();
     }
 }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.service.KafkaService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -41,10 +40,19 @@ public class LogContextService {
 
     // Backward compatible function
     public static void updateLogContextFromHttpRequestLog(LogContext logContext, HttpRequestLog httpRequestLog) {
+        if (httpRequestLog == null) return;
+
+        if (httpRequestLog.getBetEnd() == null) {
+            httpRequestLog.setBetEnd(System.currentTimeMillis());
+        }
         logContext.setStart(httpRequestLog.getBetStart());
         logContext.setEnd(httpRequestLog.getBetEnd());
-        logContext.setApiStart(httpRequestLog.getOperatorStart());
-        logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        if (logContext.getApiStart() == 0 && httpRequestLog.getOperatorStart() != null) {
+            logContext.setApiStart(httpRequestLog.getOperatorStart());
+        }
+        if (logContext.getApiEnd() == 0 && httpRequestLog.getOperatorEnd() != null) {
+            logContext.setApiEnd(httpRequestLog.getOperatorEnd());
+        }
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
@@ -56,6 +64,7 @@ public class LogContextService {
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
         httpRequestLog.setRequestBody(logContext.getBody().toString());
+        httpRequestLog.setBetStart(System.currentTimeMillis());
         httpRequestLog.setStatus(PROCESSING);
         return httpRequestLog;
     }
@@ -67,8 +76,12 @@ public class LogContextService {
             HttpRequestLog httpRequestLog = (HttpRequestLog) logContext.get(HttpRequestLog.class.getSimpleName());
             httpRequestLog.setResponseBody(responseBody);
             httpRequestLog.setEndTime(System.currentTimeMillis());
-            httpRequestLog.setOperatorStart(logContext.getApiStart());
-            httpRequestLog.setOperatorEnd(logContext.getApiEnd());
+            if (httpRequestLog.getOperatorStart() == null && logContext.getApiStart() > 0) {
+                httpRequestLog.setOperatorStart(logContext.getApiStart());
+            }
+            if (httpRequestLog.getOperatorEnd() == null && logContext.getApiEnd() > 0) {
+                httpRequestLog.setOperatorEnd(logContext.getApiEnd());
+            }
 
             if (httpRequestLog.getOperatorData() == null) {
                 try {
