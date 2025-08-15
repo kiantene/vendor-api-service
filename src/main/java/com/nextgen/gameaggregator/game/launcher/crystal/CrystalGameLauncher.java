@@ -6,12 +6,10 @@ import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
+import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.util.HmacUtils;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import org.springframework.http.MediaType;
@@ -25,7 +23,7 @@ import java.util.Map;
 public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
 
     public CrystalGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class);
+        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class, SigningStrategyType.HMAC_SHA256);
     }
 
     private String convertToCompactJson(MultiValueMap<String, String> formData) {
@@ -85,7 +83,7 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
         try {
             MultiValueMap<String, String> formData = this.formDataBuilder(context);
             String compactJson = convertToCompactJson(formData);
-            signature = HmacUtils.generate("HmacSHA256", secretKey, compactJson);
+            signature = sign(compactJson, secretKey);
 
         } catch (Exception e) {
             throw new GameLaunchException(e.getMessage(), e);
@@ -96,7 +94,7 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
         );
     }
 
-    private MultiValueMap<String, String> formDataBuilder(GameLaunchContext context) throws InvalidVendorLineException, InvalidFormatException {
+    private MultiValueMap<String, String> formDataBuilder(GameLaunchContext context) {
         VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
         String branCode = accessor.getValue(Credentials.BRAND_CODE);
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
