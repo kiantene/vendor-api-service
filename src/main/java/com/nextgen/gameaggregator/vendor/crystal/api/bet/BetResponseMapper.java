@@ -12,11 +12,10 @@ class BetResponseMapper implements VendorResponseMapper<BetContext, BetResponse>
     @Override
     public BetResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return BetResponse.builder()
-                .dataVo(BetResponse.DataVo.builder()
+                .data(BetResponse.Data.builder()
                         .balance(balanceData.getBalance().setScale(2, RoundingMode.DOWN))
                         .actionId(context.getExternalTransactionId())
                         .build())
-                .errorVo(null)
                 .build();
     }
 }

@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.crystal.vo.ErrorVo;
+import com.nextgen.gameaggregator.vendor.crystal.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -68,7 +68,14 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
         return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    private VendorErrorResponse getErrorResponse(ResponseCodes responseCode, HttpStatus httpStatus) {
-        return new VendorErrorResponse(httpStatus, new ErrorVo(responseCode.code, responseCode.message));
+    private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes, HttpStatus httpStatus) {
+        return new VendorErrorResponse(httpStatus,
+                ErrorResponse.builder()
+                        .error(ErrorResponse.Error.builder()
+                                .code(String.valueOf(responseCodes.code))
+                                .message(responseCodes.message)
+                                .build())
+                        .build());
     }
+
 }

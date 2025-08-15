@@ -1,15 +1,13 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.bet;
+package com.nextgen.gameaggregator.vendor.crystal.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.math.BigDecimal;
-
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class BetResponse {
+public class ErrorResponse {
 
     private Data data;
     private Error error;
@@ -17,14 +15,16 @@ public class BetResponse {
     @Getter
     @Builder
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class Data {
-        private BigDecimal balance;
-        private String actionId;
+    public static class Error {
+        private String code;
+        private String message;
     }
-
+    
     @Getter
     @Builder
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class Error {
+    public static class Data {
     }
+
+
 }
