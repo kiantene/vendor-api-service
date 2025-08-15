@@ -14,7 +14,7 @@ class BetResponseMapper implements VendorResponseMapper<BetContext, BetResponse>
         return BetResponse.builder()
                 .data(BetResponse.Data.builder()
                         .balance(balanceData.getBalance().setScale(2, RoundingMode.DOWN))
-                        .actionId(context.getExternalTransactionId())
+                        .actionId(context.getVendorBetId())
                         .build())
                 .build();
     }
