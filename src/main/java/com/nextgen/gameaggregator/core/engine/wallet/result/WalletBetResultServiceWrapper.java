@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
@@ -15,6 +16,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -42,7 +44,10 @@ public class WalletBetResultServiceWrapper {
 
             ResultType resultType = getResultType(context);
             validator.validateBusinessState(gameSession, context, resultType);
-            return processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            doProcessBatch(context);
+
+            return playerBalance;
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
@@ -57,6 +62,18 @@ public class WalletBetResultServiceWrapper {
 
         if (state().getVendorService() == null) {
             state().setVendorService(InternalVendorService.getInstance(applicationContext));
+        }
+    }
+
+    private void doProcessBatch(BetResultContext context) {
+        BetResultConfig config = state().getConfig();
+
+        if (config.getProcessingMode().isBatchMode()) {
+            List<BetTransaction> txnList = context.getBetTransactions();
+
+            if (txnList == null || txnList.isEmpty()) return;
+
+//            batchService.processBatch(txnList, context);
         }
     }
 
