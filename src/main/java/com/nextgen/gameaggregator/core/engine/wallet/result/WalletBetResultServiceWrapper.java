@@ -2,13 +2,12 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +43,9 @@ public class WalletBetResultServiceWrapper {
             ResultType resultType = getResultType(context);
             validator.validateBusinessState(gameSession, context, resultType);
             return processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+        } catch (Exception ex) {
+            walletExceptionTranslator.translateAndThrow(ex);
+            return null; // Never reached, but satisfies compiler
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -62,29 +64,27 @@ public class WalletBetResultServiceWrapper {
             BetResultContext context,
             GameSession gameSession,
             ResultType resultType,
-            HttpRequestLog httpRequestLog) {
+            HttpRequestLog httpRequestLog) throws
+                InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
+                BetResultIdempotentViolationException, MergedBetDataIntegrityException,
+                InsufficientBalanceException, TransactionStillProcessingException,
+                BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
-        try {
-            BigDecimal balance = walletService.processBetResult(
-                    httpRequestLog.getId(),
-                    gameSession,
-                    betResultDataMapper.toBetResultData(context),
-                    resultType,
-                    state().getVendorService(),
-                    httpRequestLog
-            );
+        BigDecimal balance = walletService.processBetResult(
+                httpRequestLog.getId(),
+                gameSession,
+                betResultDataMapper.toBetResultData(context),
+                resultType,
+                state().getVendorService(),
+                httpRequestLog
+        );
 
-            return new PlayerBalanceData(
-                    context.getVendorPlayerUsername(),
-                    context.getVendorCurrency(),
-                    balance,
-                    httpRequestLog.getOperatorEnd()
-            );
-
-        } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
-        }
+        return new PlayerBalanceData(
+                context.getVendorPlayerUsername(),
+                context.getVendorCurrency(),
+                balance,
+                httpRequestLog.getOperatorEnd()
+        );
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
