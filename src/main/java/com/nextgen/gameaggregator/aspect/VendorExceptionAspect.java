@@ -13,8 +13,13 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Aspect
 @Component
@@ -87,6 +92,18 @@ public class VendorExceptionAspect {
         } catch (Exception ex) {
             logContext.setException(ex);
             errorResponse = mapper.onInternalError(new InternalServerException(ex.getMessage(), ex));
+        }
+        if (errorResponse == null) {
+            String ex = logContext.getException();
+            logContext.setRootCause(ex + " is not handled");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("timestamp", Instant.now().toString());
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.put("error", "Unhandled exception");
+            response.put("message", "Request failed");
+
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return new ResponseEntity<>(errorResponse.getBody(), errorResponse.getStatusCode());
     }
