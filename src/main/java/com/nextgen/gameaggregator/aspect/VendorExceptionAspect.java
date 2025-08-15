@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.aspect;
 
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
+import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
 import com.nextgen.gameaggregator.core.common.VendorExceptionMapperRegistry;
 import com.nextgen.core.exception.InternalConfigurationException;
@@ -12,7 +13,13 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Aspect
 @Component
@@ -25,7 +32,7 @@ public class VendorExceptionAspect {
 
     @Around("@annotation(vendorHandler)")
     public Object handleVendorExceptions(ProceedingJoinPoint joinPoint,
-                                         VendorExceptionHandler vendorHandler) throws Throwable {
+                                                    VendorExceptionHandler vendorHandler) throws Throwable {
 
         String vendorClassName = vendorHandler.className();
         VendorExceptionMapper mapper = registry.getMapper(vendorClassName);
@@ -35,52 +42,69 @@ public class VendorExceptionAspect {
         }
 
         LogContext logContext = LogContextHolder.get();
+        VendorErrorResponse errorResponse;
 
         try {
             return joinPoint.proceed();
 
         } catch (GameSessionExpiredException ex) {
             logContext.setException(ex);
-            return mapper.onGameSessionExpired(ex);
+            errorResponse = mapper.onGameSessionExpired(ex);
 
         } catch (GameTerminatedException ex) {
             logContext.setException(ex);
-            return mapper.onGameTerminated(ex);
+            errorResponse = mapper.onGameTerminated(ex);
 
         } catch (InsufficientBalanceException ex) {
             logContext.setException(ex);
-            return mapper.onInsufficientBalance(ex);
+            errorResponse = mapper.onInsufficientBalance(ex);
 
         } catch (PlayerDisabledException ex) {
             logContext.setException(ex);
-            return mapper.onPlayerDisabled(ex);
+            errorResponse = mapper.onPlayerDisabled(ex);
 
         } catch (BetNotAllowedException ex) {
             logContext.setException(ex);
-            return mapper.onBetNotAllowed(ex);
+            errorResponse = mapper.onBetNotAllowed(ex);
 
         } catch (DuplicateBetException ex) {
             logContext.setException(ex);
-            return mapper.onDuplicateBet(ex);
+            errorResponse = mapper.onDuplicateBet(ex);
+
+        } catch (DuplicateRequestException ex) {
+            logContext.setException(ex);
+            errorResponse = mapper.onDuplicateRequest(ex);
 
         } catch (EntityNotFoundException ex) {
             InternalConfigurationException configurationException = new InternalConfigurationException(ex.getMessage(), ex);
             logContext.setException(ex);
-            return mapper.onInternalConfigurationError(configurationException);
+            errorResponse = mapper.onInternalConfigurationError(configurationException);
 
         } catch (InternalConfigurationException ex) {
             logContext.setException(ex);
-            return mapper.onInternalConfigurationError(ex);
+            errorResponse = mapper.onInternalConfigurationError(ex);
 
         } catch (InvalidOperatorResponseException ex) {
             logContext.setException(ex);
             logContext.setRootCause(ex.getRootCause());
-            return mapper.onInternalError(new InternalServerException(ex.getMessage(), ex));
+            errorResponse = mapper.onInternalError(new InternalServerException(ex.getMessage(), ex));
 
         } catch (Exception ex) {
             logContext.setException(ex);
-            return mapper.onInternalError(new InternalServerException(ex.getMessage(), ex));
-
+            errorResponse = mapper.onInternalError(new InternalServerException(ex.getMessage(), ex));
         }
+        if (errorResponse == null) {
+            String ex = logContext.getException();
+            logContext.setRootCause(ex + " is not handled");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("timestamp", Instant.now().toString());
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.put("error", "Unhandled exception");
+            response.put("message", "Request failed");
+
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return new ResponseEntity<>(errorResponse.getBody(), errorResponse.getStatusCode());
     }
 }

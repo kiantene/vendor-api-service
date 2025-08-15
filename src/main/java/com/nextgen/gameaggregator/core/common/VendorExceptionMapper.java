@@ -14,6 +14,7 @@ public interface VendorExceptionMapper {
     VendorErrorResponse onInsufficientBalance(InsufficientBalanceException ex);
     VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex);
     VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex);
+    VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex);
     VendorErrorResponse onDuplicateBet(DuplicateBetException ex);
 
     /**

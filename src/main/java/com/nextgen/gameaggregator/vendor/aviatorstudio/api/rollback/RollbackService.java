@@ -16,11 +16,11 @@ public class RollbackService {
     private final RollbackResponseMapper responseMapper;
     private final WalletRollbackServiceWrapper walletService;
 
-    public ResponseEntity<BetResultResponse> doRollback(BetResultRequest request, String token, String username) {
+    public BetResultResponse doRollback(BetResultRequest request, String token, String username) {
         BetRollbackContext context = requestMapper.toBetRollbackContext(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService.process(context);
-        return ResponseEntity.ok(responseMapper.toVendor(context, balanceData));
+        return responseMapper.toVendor(context, balanceData);
     }
 
     private void enrich(BetRollbackContext context, String token, String username) {

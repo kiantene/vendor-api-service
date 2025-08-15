@@ -184,12 +184,12 @@ public class RequestService {
     }
 
     public ClientBalanceResponse getClientBalanceResponse(String traceId, String currency, String username) {
-        PlayerBalanceData playerBalanceData = PlayerBalanceData.builder()
-                .username(username)
-                .currency(currency)
-                .balance(BigDecimal.ONE)
-                .timestamp(System.currentTimeMillis())
-                .build();
+        PlayerBalanceData playerBalanceData = new PlayerBalanceData(
+                username,
+                currency,
+                BigDecimal.ONE,
+                System.currentTimeMillis()
+        );
 
         ClientBalanceResponse response = new ClientBalanceResponse();
         response.setStatus(ResponseCodes.Status.SC_OK.toString());

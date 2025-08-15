@@ -58,7 +58,7 @@ class BetResultDataMapper {
 
             @Override
             public Long getResultTime() {
-                return System.currentTimeMillis();
+                return context.getResultTime();
             }
 
             @Override

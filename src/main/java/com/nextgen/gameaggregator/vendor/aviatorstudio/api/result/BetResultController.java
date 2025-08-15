@@ -23,9 +23,11 @@ public class BetResultController {
             @RequestAttribute("token") String token,
             @RequestAttribute("username") String username) {
 
-        return isSettle(request)
+        return ResponseEntity.ok(
+                isSettle(request)
                 ? betResultService.doSettle(request, token, username)
-                : rollbackService.doRollback(request, token, username);
+                : rollbackService.doRollback(request, token, username)
+        );
     }
 
     private boolean isSettle(BetResultRequest request) {

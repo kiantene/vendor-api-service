@@ -5,6 +5,8 @@ import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.constant.WalletServiceConstant;
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -28,7 +30,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -381,12 +386,10 @@ public class WalletService {
 
             loggingService.logStart();
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 // kafkaService.produceWarehouseBetHistory
                 //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
@@ -446,8 +449,24 @@ public class WalletService {
             httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
 
+        doEndRoundProcess(traceId, betResultData, settledBet, vendorService, gameSession);
+
+        return balanceVo;
+    }
+
+    private void doEndRoundProcess(String traceId, BetResultData betResultData, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
+        // overwrite by new integration framework: WalletBetResultServiceWrapper
+        if (BetResultContextHolder.isInitialized()) {
+            SettleType settleType = BetResultContextHolder.getConfig().getSettleType();
+            if (settleType.equals(SettleType.BET)) return; // if settle by bet, don't run below
+        }
+
         loggingService.logStart();
-        //settle by round
+        /**
+         * The logic below indicates settle by round (default behaviour from old integration framework using BaseVendorService)
+         * In the new integration framework, default behaviour is settled by bet and BaseVendorService is no longer in used,
+         * replaced by BetResultConfig which sets the settleType (refer to above logic)
+         */
         if (!betResultData.getShouldSettleByBet()) {
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
@@ -464,8 +483,6 @@ public class WalletService {
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
-
-        return balanceVo;
     }
 
     private void processDefaultDataForSettledBet(BetInformation betInformation, SettledBet settledBet) {
@@ -1054,11 +1071,10 @@ public class WalletService {
 
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
-            kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             // kafkaService.produceWarehouseBetHistory
             //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 

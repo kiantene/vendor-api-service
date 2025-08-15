@@ -1,15 +1,17 @@
 package com.nextgen.gameaggregator.core.engine;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PlayerBalanceData {
     private String username;
-    private BigDecimal balance;
     private String currency;
+    private BigDecimal balance;
     private Long timestamp;
 }

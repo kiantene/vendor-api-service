@@ -63,6 +63,12 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
     private boolean doValidateSignature(VendorSignatureValidator validator,
                                         ResettableRequestWrapper request,
                                         HttpServletResponse response) throws IOException {
+
+        // Check if this endpoint should be validated
+        if (!validator.shouldValidate(request, request.getRequestURI())) {
+            return true; // Skip validation, continue with request
+        }
+
         try {
             String rawBody = request.getCachedBody();
             Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);

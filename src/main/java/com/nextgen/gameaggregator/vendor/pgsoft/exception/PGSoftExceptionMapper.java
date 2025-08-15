@@ -41,6 +41,11 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper {
     }
 
     @Override
+    public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
+        return null;
+    }
+
+    @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
         return null;
     }
