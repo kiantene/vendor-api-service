@@ -40,6 +40,10 @@ public interface SportWalletService {
             BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
             InvalidOperatorResponseException, TransactionStillProcessingException, InvalidPlayerException, InvalidRequestException;
 
+    WalletRequest refundAll(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, BetResultIdempotentViolationException,
+            InvalidOperatorResponseException, TransactionStillProcessingException, InvalidPlayerException, InvalidRequestException;
+
     BetEvent refund(String traceId, SportRefundData sportRefundData, HttpRequestLog httpRequestLog)
             throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException,

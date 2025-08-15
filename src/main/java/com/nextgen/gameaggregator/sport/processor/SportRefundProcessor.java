@@ -172,6 +172,24 @@ public class SportRefundProcessor {
         kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
     }
 
+    private void sendToKafkaForSettledBet(SportSettledBet settledBet, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal fromVendorRate) {
+        BetHistory betHistory = settledBet.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code);
+
+        BigDecimal newBetAmount = Optional.ofNullable(betHistory.getBetAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
+        BigDecimal newWinAmount = Optional.ofNullable(betHistory.getWinAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
+        BigDecimal newWinLoss = Optional.ofNullable(betHistory.getWinLoss()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
+        BigDecimal newEffectiveTurnover = Optional.ofNullable(betHistory.getEffectiveTurnover()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
+
+        betHistory.setBetAmount(newBetAmount);
+        betHistory.setWinAmount(newWinAmount);
+        betHistory.setWinLoss(newWinLoss);
+        betHistory.setEffectiveTurnover(newEffectiveTurnover);
+
+        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
+
+        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
+    }
+
     private void updateUnsettleBetStatus(SportUnsettledBet unsettledBet, BigDecimal fromVendorRate) {
         // Update status in sport_unsettled_bet (MariaDB) so that it doesn't show up in BO
         SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(unsettledBet);
@@ -194,5 +212,92 @@ public class SportRefundProcessor {
                 kafkaService.produceMasterUnsettledBet(sportMasterUnsettledBetMariaDB, fromVendorRate);
             }
         }
+    }
+
+    public WalletRequest processRefundSettledBet(WalletRequest walletRequest) throws
+            BetNotFoundException, BetNotAllowedException, InvalidOperatorResponseException,
+            BetResultIdempotentViolationException, InvalidPlayerException, InvalidRequestException {
+
+        walletRequest.setBetStart(System.currentTimeMillis());
+
+        // validate walletRequest
+        ValidationUtils.doValidation(new RefundWalletRequest(walletRequest), InvalidRequestException::new);
+
+        String vendorPlayerUsername = walletRequest.getVendorPlayerUsername();
+        walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
+
+        String agentPlayerUsername = walletRequest.getOperatorUsername();
+        String vendorBetId = walletRequest.getVendorBetId();
+        Integer vendorId = walletRequest.getVendorId();
+        BigDecimal fromVendorRate;
+        BigDecimal toVendorRate = BigDecimal.ONE; // Default to 1 if not found
+        Integer resettleNum = 0;
+        Integer unsettleResettleNum = 0;
+        SportSettledBet sportSettledBet;
+
+        try {
+            sportSettledBet = sportSettledBetService.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+
+            //check is idempotent when externalTransactionId is matched and bet status is REFUNDED
+            if (Objects.equals(sportSettledBet.getExternalTransactionId(), walletRequest.getExternalTransactionId())
+                    && Objects.equals(sportSettledBet.getStatus(), BetStatus.REFUNDED.code)) {
+                if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+                    throw new BetResultIdempotentViolationException("Process refund idempotent: " + walletRequest.getVendorPlayerUsername() + '_' + walletRequest.getExternalTransactionId());
+                } else {
+                // sportUnsettledBet.setInternalTransactionId(sportSettledBet.getInternalTransactionId());
+                    walletRequest.setTransactionId(sportSettledBet.getInternalTransactionId());
+                }
+
+            } else {
+                //if settledBet is found but externalTransactionId is not matched, then is new status changed of this bet
+                resettleNum = sportSettledBet.getResettleNum() + 1;
+                unsettleResettleNum = sportSettledBet.getUnsettledResettleNum();
+            }
+
+            Integer currencyId = sportSettledBet.getCurrencyId();
+            walletRequestService.updateByVendorGameId(walletRequest, sportSettledBet.getVendorGameId());
+            walletRequestService.updateByCurrencyId(walletRequest, currencyId);
+            VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
+            fromVendorRate = vendorCurrency.getFromVendorRate();
+            toVendorRate = vendorCurrency.getToVendorRate();
+            walletRequest.setBetId(sportSettledBet.getBetId());
+            walletRequest.setRoundId(sportSettledBet.getRoundId());
+
+            sportSettledBet.setBalance(walletRequest.getBalanceAfter());
+            sportSettledBet.setStatus(ResponseCodes.Status.SC_OK.code);
+            // sportSettledBet.setEffectiveTurnover(Objects.requireNonNullElse(sportUnsettledBet.getNewBetAmount(), sportUnsettledBet.getBetAmount()));
+            sportSettledBet.setResettleNum(resettleNum);
+            sportSettledBet.setUnsettledResettleNum(unsettleResettleNum);
+
+            // Insert record into sport_settled_bet (Couchbase)
+            sportSettledBetService.save(sportSettledBet);
+
+            this.sendToKafkaForSettledBet(sportSettledBet, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
+
+        } catch (VendorCurrencyNotSupportException exception) {
+            // this should not happen but will log the error if it does
+            log.error(exception.getMessage());
+            throw new BetNotFoundException(exception.getMessage());
+        }
+
+        try {
+            SportRefundDto dto = new SportRefundDto(walletRequest);
+            WalletBalanceVo walletBalanceVo = sportRefundAction.callToOperator(walletRequest, dto);
+            BigDecimal balance = walletRequestService.convertAmountToVendorRate(walletBalanceVo, toVendorRate);
+            walletRequest.setBalanceAfter(balance);
+            // sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            log.error(invalidOperatorResponseException.getMessage());
+
+            // initiate retry
+            // betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), sportUnsettledBet.getBetId(), sportUnsettledBet.getRoundId(), sportUnsettledBet.getInternalTransactionId(), EndPoints.SPORT_REFUND);
+        } finally {
+            walletRequest.setBetEnd(System.currentTimeMillis());
+        }
+
+        walletRequest.setBetEnd(System.currentTimeMillis());
+
+        return walletRequest;
     }
 }
