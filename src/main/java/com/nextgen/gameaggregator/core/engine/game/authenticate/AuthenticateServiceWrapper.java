@@ -27,6 +27,7 @@ public class AuthenticateServiceWrapper {
         try {
             // TODO: add validator
             GameSession gameSession = gameSessionDataService.getGameSession(context);
+            // TODO: do we need to validate gameSession status? eg. session terminated
             if (shouldUpdateVendorToken(context, gameSession)) {
                 gameSessionDataService.updateVendorToken(gameSession, context.getVendorSessionToken());
             }

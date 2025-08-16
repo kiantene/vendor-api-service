@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.core.exception.handler;
 
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.exception.InternalServerException;
+import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;

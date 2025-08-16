@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.exception;
 
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
+import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import org.springframework.stereotype.Component;
 
