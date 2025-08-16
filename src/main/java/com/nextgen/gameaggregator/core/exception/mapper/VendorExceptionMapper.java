@@ -1,6 +1,8 @@
-package com.nextgen.gameaggregator.core.common;
+package com.nextgen.gameaggregator.core.exception.mapper;
 
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.exception.*;
 
 public interface VendorExceptionMapper {

@@ -2,9 +2,9 @@ package com.nextgen.gameaggregator.aspect;
 
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapperRegistry;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapperRegistry;
 import com.nextgen.gameaggregator.core.exception.handler.VendorExceptionHandlerService;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -38,17 +38,16 @@ public class VendorExceptionAspect {
             throw new InternalConfigurationException("No exception mapper registered for vendor: " + vendorClassName);
         }
 
-        LogContext logContext = LogContextHolder.get();
-
         try {
             return joinPoint.proceed();
 
         } catch (Exception ex) {
-            return handleException(ex, mapper, logContext);
+            return handleException(ex, mapper);
         }
     }
 
-    private ResponseEntity<?> handleException(Exception ex, VendorExceptionMapper mapper, LogContext logContext) {
+    private ResponseEntity<?> handleException(Exception ex, VendorExceptionMapper mapper) {
+        LogContext logContext = LogContextHolder.get();
         // Log the exception
         logContext.setException(ex);
 
@@ -62,7 +61,7 @@ public class VendorExceptionAspect {
 
         // Final fallback if handler returns null
         if (errorResponse == null) {
-            String exceptionInfo = logContext.getException();
+            String exceptionInfo = ex.getMessage();
             logContext.setRootCause(exceptionInfo + " is not handled");
             return exceptionHandlerService.createDefaultErrorResponse(exceptionInfo);
         }

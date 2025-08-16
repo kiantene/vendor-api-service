@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.exception.handler;
 
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

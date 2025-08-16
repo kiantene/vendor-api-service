@@ -48,6 +48,7 @@ public class WalletBalanceServiceWrapper {
             GameSession gameSession,
             HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
 
+        // TODO: new logic -> if operator returns SC_USER_DISABLED, need to map and throw PlayerDisabledException
         BigDecimal balance = walletService.getBalance(
                 httpRequestLog.getId(),
                 gameSession,

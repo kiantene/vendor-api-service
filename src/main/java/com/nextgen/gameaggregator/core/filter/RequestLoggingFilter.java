@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.filter;
 
+import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
