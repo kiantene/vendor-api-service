@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
-@FunctionalInterface
-public interface BetResultContextMapper<V> {
-    BetResultContext toBetResultContext(V vendorRequest);
+import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
+
+public interface BetResultContextMapper<V> extends VendorRequestMapper<BetResultContext, V> {
+    @Override
+    BetResultContext toInternal(V vendorRequest);
 }

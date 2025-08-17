@@ -120,11 +120,6 @@ public class WalletBetResultServiceWrapper {
         return this;
     }
 
-    public WalletBetResultServiceWrapper isBetTxn(boolean flag) {
-        state().setIsBetTxn(flag);
-        return this;
-    }
-
     /**
      * Scenarios:
      * 1. WIN        -> Win transaction for a previous bet (not a bet)
@@ -133,9 +128,10 @@ public class WalletBetResultServiceWrapper {
      * 4. END        -> Non-bet transaction with no win (default fallback)
      */
     private ResultType getResultType(BetResultContext context) {
-        if (state().getConfig().getResultType() != null) return state().getConfig().getResultType();
+        BetResultConfig config = state().getConfig();
+        if (config.getResultType() != null) return config.getResultType();
 
-        boolean isBet = Optional.ofNullable(state().getIsBetTxn()).orElse(false);
+        boolean isBet = config.isBetTxn();
         BigDecimal winAmount = Optional.ofNullable(context.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmount = Optional.ofNullable(context.getJackpotAmount()).orElse(BigDecimal.ZERO);
         boolean hasWin = winAmount.compareTo(BigDecimal.ZERO) > 0;
