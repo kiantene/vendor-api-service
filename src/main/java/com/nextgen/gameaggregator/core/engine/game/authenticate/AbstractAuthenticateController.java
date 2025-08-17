@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import org.springframework.http.ResponseEntity;
+
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public abstract class AbstractAuthenticateController<Q, R> {
     protected final AuthenticateContextMapper<Q> requestMapper;
@@ -16,10 +18,34 @@ public abstract class AbstractAuthenticateController<Q, R> {
         this.authenticateService = authenticateService;
     }
 
-    protected ResponseEntity<R> doAuthenticate(Q request) {
+    protected R processRequest(Q request,
+                               Consumer<AuthenticateContext> preProcessHook,
+                               BiConsumer<AuthenticateContext, R> postProcessHook) {
+
         AuthenticateContext context = mapToInternal(request);
-        PlayerBalanceData balanceData = authenticateService.process(context);
-        return ResponseEntity.ok(mapToVendor(context, balanceData));
+
+        if (preProcessHook != null) preProcessHook.accept(context);
+
+        PlayerBalanceData balanceData = authenticateService
+                .process(context);
+
+        R response = mapToVendor(context, balanceData);
+
+        if (postProcessHook != null) postProcessHook.accept(context, response);
+
+        return response;
+    }
+
+    protected final R processRequest(Q request) {
+        return processRequest(request, null, null);
+    }
+
+    protected R processRequest(Q request, Consumer<AuthenticateContext> preProcessHook) {
+        return processRequest(request, preProcessHook, null);
+    }
+
+    protected R processRequest(Q request, BiConsumer<AuthenticateContext, R> postProcessHook) {
+        return processRequest(request, null, postProcessHook);
     }
 
     protected AuthenticateContext mapToInternal(Q request) {
