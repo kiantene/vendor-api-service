@@ -7,6 +7,5 @@ import lombok.Data;
 public class BetResultWrapperContext {
     private BetResultContext betResultContext;
     private BaseVendorService vendorService;
-    private Boolean isBetTxn;
     private BetResultConfig config = new BetResultConfig();
 }

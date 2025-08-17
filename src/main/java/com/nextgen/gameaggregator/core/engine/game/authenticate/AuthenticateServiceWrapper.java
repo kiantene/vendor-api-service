@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticateServiceWrapper {
+public class AuthenticateServiceWrapper implements AuthenticateService {
     private final GameSessionDataService gameSessionDataService;
     private final WalletBalanceServiceWrapper walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
