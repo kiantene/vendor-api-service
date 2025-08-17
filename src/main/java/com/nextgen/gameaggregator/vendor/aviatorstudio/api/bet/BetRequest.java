@@ -1,19 +1,15 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Getter
-@Builder
-@JsonDeserialize(builder = BetRequest.BetRequestBuilder.class)
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetRequest {
     @NotNull
