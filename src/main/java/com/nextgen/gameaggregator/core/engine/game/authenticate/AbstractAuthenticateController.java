@@ -1,17 +1,15 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
-import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import org.springframework.http.ResponseEntity;
 
 public abstract class AbstractAuthenticateController<Q, R> {
-    protected final VendorRequestMapper<AuthenticateContext, Q> requestMapper;
-    protected final VendorResponseMapper<AuthenticateContext, R> responseMapper;
+    protected final AuthenticateContextMapper<Q> requestMapper;
+    protected final AuthenticateVendorResponseMapper<R> responseMapper;
     protected final AuthenticateService authenticateService;
 
-    protected AbstractAuthenticateController(VendorRequestMapper<AuthenticateContext, Q> requestMapper,
-                                             VendorResponseMapper<AuthenticateContext, R> responseMapper,
+    protected AbstractAuthenticateController(AuthenticateContextMapper<Q> requestMapper,
+                                             AuthenticateVendorResponseMapper<R> responseMapper,
                                              AuthenticateService authenticateService) {
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
