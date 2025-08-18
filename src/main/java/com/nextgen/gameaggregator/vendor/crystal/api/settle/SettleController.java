@@ -5,9 +5,7 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.api.result.BetResultRequest;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.api.result.BetResultResponse;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +25,8 @@ public class SettleController {
 
     @PostMapping(path = EndPoints.SETTLE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<BetResultResponse> doSettle(
-            @Valid @RequestBody BetResultRequest request) {
+    public ResponseEntity<SettleResponse> doSettle(
+            @Valid @RequestBody SettleRequest request) {
 
         BetResultContext context = settleRequestMapper.toBetResultContext(request);
         PlayerBalanceData balanceData = walletService
@@ -36,10 +34,6 @@ public class SettleController {
                 .configure(config -> config.setSettleType(SettleType.BET))
                 .isBetTxn(false)
                 .process();
-        return settleResponseMapper.toVendor(context, balanceData);
+        return ResponseEntity.ok(settleResponseMapper.toVendor(context, balanceData));
     }
-
-//    private boolean isSettle(BetResultRequest request) {
-//        return ReasonCode.isSettleReason(request.getReason());
-//    }
 }

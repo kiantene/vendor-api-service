@@ -9,14 +9,12 @@ public class SettleRequestMapper implements BetResultContextMapper<SettleRequest
     @Override
     public BetResultContext toBetResultContext(SettleRequest vendorRequest) {
         return BetResultContext.builder()
-                .idempotencyKey(request.getTransactionId())
-//                .vendorPlayerUsername() // get from JWT
-                .gameCode(request.getGameId())
-                .roundId(request.getRoundId())
-                .vendorBetId(request.getPreviousTransactionId())
-                .vendorCurrency(request.getCurrency())
-                .vendorSessionToken(request.getSessionId())
-                .winAmount(request.getAmount())
+                .idempotencyKey(vendorRequest.getTransactionId())
+                .gameCode(vendorRequest.getGameCode())
+                .roundId(vendorRequest.getRoundId())
+                .vendorBetId(vendorRequest.getTransactionId())
+                .vendorCurrency(vendorRequest.getCurrencyCode())
+                .winAmount(vendorRequest.getAmount())
                 .vendorSettleTime(System.currentTimeMillis())
                 .build();
     }

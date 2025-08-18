@@ -18,13 +18,12 @@ import com.nextgen.gameaggregator.vendor.crystal.vo.ErrorVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+//@RequestMapping(path = EndPoints.PATH)
 public class SettleAction {
     private final HttpService httpService;
     private final VendorService vendorService;

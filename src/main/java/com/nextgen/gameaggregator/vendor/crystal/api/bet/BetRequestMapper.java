@@ -13,6 +13,7 @@ class BetRequestMapper implements BetContextMapper<BetRequest> {
                 .vendorPlayerUsername(request.getPlayerId())
                 .gameCode(request.getGameCode())
                 .roundId(request.getRoundId())
+                .vendorCurrency(request.getCurrencyCode())
                 .vendorBetId(request.getTransactionId())
                 .betAmount(request.getAmount())
                 .timestamp(System.currentTimeMillis())
