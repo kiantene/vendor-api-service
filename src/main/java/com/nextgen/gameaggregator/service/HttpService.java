@@ -406,4 +406,21 @@ public class HttpService {
 
         return result;
     }
+
+    public HttpRequestLog startRefundConsumerLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("process refundConsumerLog Success");
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
 }
