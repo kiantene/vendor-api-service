@@ -287,21 +287,13 @@ public class WalletService {
         List<UnsettledBet> unsettledBetList = null;
 
         if (!retry) {
-            // apply payout cap if configured
-            AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
-                    gameSession.getAgentId(),
-                    gameSession.getVendorId(),
-                    gameSession.getCurrencyId(),
-                    settledBet.getWinAmount()
-            );
 
             if (resultType == ResultType.BET_WIN || resultType == ResultType.BET_LOSE) { // PGSoft
                 unsettledBet = unsettledBetService.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                 walletBetResultData = settledBet;
                 updateCachingSettledBet = settledBet;
-                settledBet.setWinAmount(agentPayout.getWinAmount());
-                // TODO: need to calculate winloss
+
             } else {
                 loggingService.logStart();
                 unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
@@ -371,6 +363,20 @@ public class WalletService {
         try {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
+
+            // apply payout cap if configured
+            //TODO 1. AgentPayout winAmount is using a lot, we should use different name for maxPayoutCalculatedWinAmount
+            //TODO 2. Inside agentMaxPayoutService.applyPayoutCap function need include END condition to skip calculation
+            //TODO 3. After all pre-winloss is calculated, only apply the agentPayout
+            //TODO 4. Apply the calculate to walletBetResultData and settledBet.
+            //TODO 5. Add new param for BetInformation entity so walletBetResultAction.call setup dto can get maxPayoutCalculatedWinAmount
+            //TODO 6. For retry does not need to handle if 5. is configured properly.
+            AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
+                    gameSession.getAgentId(),
+                    gameSession.getVendorId(),
+                    gameSession.getCurrencyId(),
+                    settledBet.getWinAmount()
+            );
 
 
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {

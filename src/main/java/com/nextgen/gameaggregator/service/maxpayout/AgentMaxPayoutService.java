@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 public class AgentMaxPayoutService {
 
     public AgentPayout applyPayoutCap(Integer agentId, Integer vendorId, Integer currencyId, BigDecimal winAmount) {
+        //TODO: CONDITION MAY NEED ADD FOR SKIP END CONDITION.
         if (isZero(winAmount) || !isPayoutCapConfigured(agentId, vendorId, currencyId))
             return new AgentPayout(winAmount, winAmount);
 
