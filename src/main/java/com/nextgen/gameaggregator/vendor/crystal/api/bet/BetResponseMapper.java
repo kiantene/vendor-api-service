@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.math.RoundingMode;
 
 @Component
-class BetResponseMapper implements BetVendorResponseMapper<BetResponse> {
+public class BetResponseMapper implements BetVendorResponseMapper<BetResponse> {
     @Override
     public BetResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return BetResponse.builder()
