@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.common;
+package com.nextgen.gameaggregator.core.exception.mapper;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.core.exception.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.common.RequestAttributes;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapperRegistry;
-import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapperRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 

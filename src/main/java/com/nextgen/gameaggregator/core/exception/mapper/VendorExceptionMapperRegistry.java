@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.common;
+package com.nextgen.gameaggregator.core.exception.mapper;
 
 import org.springframework.stereotype.Component;
 

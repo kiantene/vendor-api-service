@@ -23,11 +23,17 @@ public class BetResultConfig {
         }
     }
 
+    private boolean betTxn = false;
     private ResultType resultType;
     private SettleType settleType = SettleType.BET; // Default is settled by bet
     private ProcessingMode processingMode = ProcessingMode.SINGLE;
 
     // Chaining methods
+    public BetResultConfig betTxn(boolean flag) {
+        this.betTxn = flag;
+        return this;
+    }
+
     public BetResultConfig resultType(ResultType resultType) {
         this.resultType = resultType;
         return this;
