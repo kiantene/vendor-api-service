@@ -17,7 +17,7 @@ public class RollbackService {
     private final WalletRollbackServiceWrapper walletService;
 
     public BetResultResponse doRollback(BetResultRequest request, String token, String username) {
-        BetRollbackContext context = requestMapper.toBetRollbackContext(request);
+        BetRollbackContext context = requestMapper.toInternal(request);
         enrich(context, token, username);
         PlayerBalanceData balanceData = walletService.process(context);
         return responseMapper.toVendor(context, balanceData);
