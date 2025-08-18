@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class RefundRequestMapper implements BetRollbackContextMapper<RefundRequest> {
 
     @Override
-    public BetRollbackContext toBetRollbackContext(RefundRequest vendorRequest) {
+    public BetRollbackContext toInternal(RefundRequest vendorRequest) {
         return BetRollbackContext.builder()
                 .rollbackType(RollbackType.BY_ROUND)
                 .idempotencyKey(vendorRequest.getRoundId())

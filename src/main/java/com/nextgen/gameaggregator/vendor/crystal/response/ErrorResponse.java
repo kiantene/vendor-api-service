@@ -6,7 +6,6 @@ import lombok.Getter;
 
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class ErrorResponse {
 
     private Data data;
@@ -14,12 +13,11 @@ public class ErrorResponse {
 
     @Getter
     @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
     public static class Error {
         private String code;
         private String message;
     }
-    
+
     @Getter
     @Builder
     @JsonInclude(JsonInclude.Include.ALWAYS)

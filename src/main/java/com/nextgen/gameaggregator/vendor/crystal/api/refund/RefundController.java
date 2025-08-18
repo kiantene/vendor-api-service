@@ -26,7 +26,7 @@ public class RefundController {
     @PostMapping(path = EndPoints.REFUND)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public RefundResponse doRollback(RefundRequest request) {
-        BetRollbackContext context = requestMapper.toBetRollbackContext(request);
+        BetRollbackContext context = requestMapper.toInternal(request);
         PlayerBalanceData balanceData = walletService.process(context);
         return responseMapper.toVendor(context, balanceData);
     }

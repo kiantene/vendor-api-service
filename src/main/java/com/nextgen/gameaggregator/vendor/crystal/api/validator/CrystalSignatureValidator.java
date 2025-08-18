@@ -72,7 +72,6 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
     @Override
     public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-                .data(ErrorResponse.Data.builder().build())
                 .error((ErrorResponse.Error.builder()
                         .code(String.valueOf(ResponseCodes.PLAYER_NOT_FOUND))
                         .message(ResponseCodes.PLAYER_NOT_FOUND.message))

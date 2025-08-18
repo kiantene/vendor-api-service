@@ -8,14 +8,12 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class RefundResponse {
     private Data data;
     private Error error;
 
     @Getter
     @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
     public static class Data {
         private BigDecimal balance;
         private String actionId;

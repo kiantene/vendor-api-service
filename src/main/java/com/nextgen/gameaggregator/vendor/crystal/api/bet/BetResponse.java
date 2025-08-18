@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.ALWAYS)
 public class BetResponse {
 
     private Data data;
@@ -16,7 +15,6 @@ public class BetResponse {
 
     @Getter
     @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
     public static class Data {
         private BigDecimal balance;
         private String actionId;
