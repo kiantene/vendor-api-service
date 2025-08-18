@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -76,21 +77,19 @@ public class BetAction {
             switch (betDto.getType()) {
                 case TransferType.BET:
                     //Bet
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
                     vo.getMember().setAmount(betDto.getBetAmount().abs().negate());
-                    vo.getMember().setBalance(balance);
+                    vo.getMember().setBalance(betEvent.getLastBalance().add(betDto.getBetAmount()));
                     break;
 
                 case TransferType.PAYOUT:
                     //Settle
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
-                    walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
 
                     vo.getMember().setAmount(betDto.getWinAmount());
-                    vo.getMember().setBalance(balance);
+                    vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
 
                 case TransferType.APPEND:
@@ -103,11 +102,10 @@ public class BetAction {
                     // Get settle bet to calculate adjustment amount
                     SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(appendDto.getParentBetId(), appendDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
                     appendDto.setAdjustmentAmount(appendDto.getMember().getAmount().subtract(settledBet.getWinAmount()));
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
+                    balance = walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
 
                     vo.getMember().setAmount(appendDto.getMember().getAmount());
-                    vo.getMember().setBalance(balance);
+                    vo.getMember().setBalance(balance.subtract(appendDto.getAdjustmentAmount()));
                     break;
 
                 default:
