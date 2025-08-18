@@ -7,8 +7,8 @@ import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.signature.HmacSha256SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
+import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
@@ -44,7 +44,7 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
 
         String appSecret = getCredentialValue(username, Credentials.SECRET_KEY);
         String compactJsonBody = this.convertToJson(rawBody);
-        SignatureStrategy signatureStrategy = new HmacSha256SignatureStrategy();
+        SignatureStrategy signatureStrategy = SigningStrategyType.HMAC_SHA256.getStrategy();
         String computedSignature = signatureStrategy.sign(compactJsonBody, appSecret);
         if (!computedSignature.equalsIgnoreCase(signatureHeader)) {
             throw new SignatureValidationException("Invalid signature");
