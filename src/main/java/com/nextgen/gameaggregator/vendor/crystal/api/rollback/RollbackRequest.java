@@ -1,19 +1,16 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.settle;
+package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Getter
-@Builder
-@JsonDeserialize(builder = SettleRequest.SettleRequestBuilder.class)
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SettleRequest {
+public class RollbackRequest {
+
     @NotBlank
     @Size(max = 255)
     @JsonProperty("currencyCode")
@@ -44,4 +41,5 @@ public class SettleRequest {
     @Size(max = 255)
     @JsonProperty("gameCode")
     private String gameCode;
+
 }

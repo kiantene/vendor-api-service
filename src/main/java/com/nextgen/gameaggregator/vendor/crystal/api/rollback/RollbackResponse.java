@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.settle;
+package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
@@ -8,14 +8,12 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.ALWAYS)
-public class SettleResponse {
+public class RollbackResponse {
     private Data data;
     private Error error;
 
     @Getter
     @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
     public static class Data {
         private BigDecimal balance;
         private String actionId;

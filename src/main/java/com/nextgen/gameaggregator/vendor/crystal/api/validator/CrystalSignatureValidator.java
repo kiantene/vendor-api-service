@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.crystal.api.validator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
@@ -43,21 +41,11 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
         }
 
         String appSecret = getCredentialValue(username, Credentials.SECRET_KEY);
-        String compactJsonBody = this.convertToJson(rawBody);
+        String compactJsonBody = rawBody.replaceAll("\\s+", "");
         SignatureStrategy signatureStrategy = SigningStrategyType.HMAC_SHA256.getStrategy();
         String computedSignature = signatureStrategy.sign(compactJsonBody, appSecret);
         if (!computedSignature.equalsIgnoreCase(signatureHeader)) {
             throw new SignatureValidationException("Invalid signature");
-        }
-    }
-
-    private String convertToJson(String jsonBody) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Object jsonObject = mapper.readValue(jsonBody, Object.class);
-            return mapper.writeValueAsString(jsonObject).replaceAll("\\s+", "");
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Invalid JSON format", e);
         }
     }
 

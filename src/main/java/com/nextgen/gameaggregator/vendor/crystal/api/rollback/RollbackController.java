@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.refund;
+package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class RefundController {
-    private final RefundRequestMapper requestMapper;
-    private final RefundResponseMapper responseMapper;
+public class RollbackController {
+    private final RollbackRequestMapper requestMapper;
+    private final RollbackResponseMapper responseMapper;
     private final WalletRollbackServiceWrapper walletService;
 
-    public RefundController(RefundRequestMapper requestMapper, RefundResponseMapper responseMapper, WalletRollbackServiceWrapper walletService) {
+    public RollbackController(RollbackRequestMapper requestMapper, RollbackResponseMapper responseMapper, WalletRollbackServiceWrapper walletService) {
         this.requestMapper = requestMapper;
         this.responseMapper = responseMapper;
         this.walletService = walletService;
@@ -25,7 +25,7 @@ public class RefundController {
 
     @PostMapping(path = EndPoints.REFUND)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public RefundResponse doRollback(RefundRequest request) {
+    public RollbackResponse doRollback(RollbackRequest request) {
         BetRollbackContext context = requestMapper.toInternal(request);
         PlayerBalanceData balanceData = walletService.process(context);
         return responseMapper.toVendor(context, balanceData);
