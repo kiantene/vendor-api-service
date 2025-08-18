@@ -338,4 +338,133 @@ public class KafkaConsumerService {
 
         }
     }
+
+
+    @KafkaListener(topics = KafkaConstant.TOPIC_REFUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void consumeRefundProcess(String message) {
+
+        //prepare endRoundProcess Log
+        Exception exception = null;
+        ObjectMapper objectMapper = new ObjectMapper();
+        EndRoundSettledBetForPatching refundedSettledBetForPatching = null;
+        String newTraceId = UUID.randomUUID().toString();
+        HttpRequestLog httpRequestLog = httpService.startRefundConsumerLog();
+
+        ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
+        processEndRoundLog.setStartTime(System.currentTimeMillis());
+        processEndRoundLog.setTraceId(newTraceId);
+
+        try {
+            //prepare endRound and settleBet info
+            refundedSettledBetForPatching = objectMapper.readValue(message, EndRoundSettledBetForPatching.class);
+            refundedSettledBetForPatching.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            SettledBet settledBet = new SettledBet(refundedSettledBetForPatching);
+            settledBet.setResultType(refundedSettledBetForPatching.getGaResultType());
+
+            //get unsettled bet
+            UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+            settledBet.setStatus(BetStatus.REFUNDED.code);
+
+            processEndRoundLog.setRawBody(refundedSettledBetForPatching.getRawData());
+            processEndRoundLog.setRoundId(settledBet.getRoundId());
+            processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+
+            AgentPlayer agentPlayer = agentPlayerService.get(refundedSettledBetForPatching.getAgentPlayerId());
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(refundedSettledBetForPatching.getVendorPlayerId(), null);
+
+            //refund, no need verify pre processing vendor game
+
+            //get vendorCurrencyRate for the vendor
+            GameSession gameSession = new GameSession(refundedSettledBetForPatching);
+            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
+
+            //update settledBet info
+            settledBetService.save(settledBet, settledBet.getRawData());
+
+            //prepare insert new betHistory data
+            BetHistory betHistory = new BetHistory(settledBet);
+
+            // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+            // kafkaService.produceWarehouseBetHistory
+            kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(), gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+
+            //prepare delete unsettledBet
+            unsettledBetService.delete(unsettledBet);
+
+            //prepare and send endRound to operator
+            if (refundedSettledBetForPatching.getSendToOperator() == 1) {
+                this.notifyRollbackProcess(newTraceId, agentPlayer, vendorPlayer, gameSession, vendorCurrency.getToVendorRate(), refundedSettledBetForPatching, settledBet, httpRequestLog);
+
+            } else {
+                GeneralVo vo = new GeneralVo();
+                vo.setResponseCode(ResponseCode.SUCCESS);
+
+                httpRequestLog.setId(newTraceId);
+                httpRequestLog.setRoundId(settledBet.getRoundId());
+                httpRequestLog.setRequestBody(refundedSettledBetForPatching.getRawData());
+                httpRequestLog.setAgentId(settledBet.getAgentId());
+                httpRequestLog.setVendorBetId(settledBet.getVendorBetId());
+                httpRequestLog.setVendorUsername(vendorPlayer.getUsername());
+                httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
+                httpRequestLog.setVendorId(settledBet.getVendorId());
+                httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
+                httpRequestLog.setGameToken(settledBet.getGameSessionToken());
+                httpRequestLog.setBetEnd(System.currentTimeMillis());
+                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
+                httpRequestLog.setOperatorStart(0L);
+                httpRequestLog.setOperatorEnd(0L);
+                httpService.end(httpRequestLog, vo);
+            }
+
+        } catch (Exception e) {
+            exception = e;
+
+        } finally {
+            if (exception != null) {
+                //prepare and save processEndRoundLog if exception not null;
+                processEndRoundLog.setEndTime(System.currentTimeMillis());
+                RequestService.processEndRoundLogPatching(processEndRoundLog, exception, refundedSettledBetForPatching);
+            }
+        }
+    }
+
+    private void notifyRollbackProcess(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, BigDecimal toVendorConversionRate, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet, HttpRequestLog httpRequestLog) {
+        THREAD_POOL.submit(() -> {
+            Exception exception = null;
+            GeneralVo vo = new GeneralVo();
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+
+            try {
+                httpRequestLog.setId(traceId);
+                httpRequestLog.setRoundId(settledBet.getRoundId());
+                httpRequestLog.setRequestBody(endRoundSettledBet.getRawData());
+                httpRequestLog.setAgentId(settledBet.getAgentId());
+                httpRequestLog.setVendorBetId(settledBet.getVendorBetId());
+                httpRequestLog.setVendorUsername(vendorPlayer.getUsername());
+                httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
+                httpRequestLog.setVendorId(settledBet.getVendorId());
+                httpRequestLog.setRequestType(WalletRollbackAction.class.getSimpleName());
+                httpRequestLog.setGameToken(settledBet.getGameSessionToken());
+
+                walletRollbackAction.callProcessRollback(traceId, agentPlayer.getAgentId(), gameSession, settledBet.getBetId(), settledBet.getRoundId(), settledBet.getVendorBetId(), settledBet.getVendorSettleTime(), settledBet.getInternalTransactionId(), httpRequestLog, 5000, toVendorConversionRate);
+                vo.setResponseCode(ResponseCode.SUCCESS);
+
+            } catch (InvalidAgentApiCredentialException e) {
+                httpService.logError(httpRequestLog, e);
+                exception = e;
+
+            } catch (Exception e) {
+                httpService.logError(httpRequestLog, e);
+                exception = e;
+
+            } finally {
+                httpRequestLog.setBetEnd(System.currentTimeMillis());
+                httpRequestLog.setBetTimeTaken(httpRequestLog.getBetEnd() - httpRequestLog.getBetStart());
+                httpService.end(httpRequestLog, vo);
+
+            }
+        });
+    }
 }
