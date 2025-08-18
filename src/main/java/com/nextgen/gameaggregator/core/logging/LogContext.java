@@ -184,4 +184,57 @@ public class LogContext {
         exception.printStackTrace(pw);
         return sw.toString();
     }
+
+    /**
+     * Create a defensive copy of this LogContext.
+     * - Preserves traceId/start/time (overwrites constructor defaults).
+     * - Deep-copies extraFields (new LinkedHashMap).
+     * - Copies references for body/response/apiBody/apiResponse (shallow).
+     */
+    public LogContext copy() {
+        LogContext clone = new LogContext();
+
+        clone.traceId = this.traceId;
+        clone.start = this.start;
+        clone.time = this.time;
+        clone.type = this.type;
+        clone.url = this.url;
+        clone.logGroup = this.logGroup;
+        clone.method = this.method;
+
+        // Payloads
+        clone.body = this.body;
+        clone.response = this.response;
+
+        // Timing
+        clone.end = this.end;
+        clone.timeTaken = this.timeTaken;
+
+        // Outbound API details
+        clone.apiUrl = this.apiUrl;
+        clone.apiBody = this.apiBody;
+        clone.apiResponse = this.apiResponse;
+        clone.apiStart = this.apiStart;
+        clone.apiEnd = this.apiEnd;
+        clone.apiTimeTaken = this.apiTimeTaken;
+        clone.apiStatusCode = this.apiStatusCode;
+
+        // Exception fields
+        clone.exception = this.exception;
+        clone.rootCause = this.rootCause;
+        clone.errorMessage = this.errorMessage;
+        clone.stackTrace = this.stackTrace;
+
+        // Status & identifiers
+        clone.status = this.status;
+        clone.vendorClassName = this.vendorClassName;
+        clone.vendorId = this.vendorId;
+        clone.agentId = this.agentId;
+        clone.username = this.username;
+
+        // Extra fields (deep copy of the map)
+        clone.extraFields.putAll(this.extraFields);
+
+        return clone;
+    }
 }
