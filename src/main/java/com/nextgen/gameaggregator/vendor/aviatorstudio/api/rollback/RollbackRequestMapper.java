@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.vendor.aviatorstudio.api.result.BetResultReque
 import org.springframework.stereotype.Component;
 
 @Component
-class RollbackRequestMapper implements BetRollbackContextMapper<BetResultRequest> {
+public class RollbackRequestMapper implements BetRollbackContextMapper<BetResultRequest> {
     @Override
     public BetRollbackContext toInternal(BetResultRequest vendorRequest) {
         return BetRollbackContext.builder()

@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateVend
 import org.springframework.stereotype.Component;
 
 @Component
-class AuthenticateResponseMapper implements AuthenticateVendorResponseMapper<AuthenticateResponse> {
+public class AuthenticateResponseMapper implements AuthenticateVendorResponseMapper<AuthenticateResponse> {
     @Override
     public AuthenticateResponse toVendor(AuthenticateContext context, PlayerBalanceData balanceData) {
         return AuthenticateResponse.builder()
