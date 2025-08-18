@@ -22,7 +22,7 @@ public class BetTransaction {
     /**
      * Types of bet (normal, parley, side-bets eg. 21+3, Perfect Pair)
      */
-    private String betType;
+    private Integer betType;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winLoss;
