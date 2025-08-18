@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dreamgaming.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dreamgaming.constant.Formats;
+import com.nextgen.gameaggregator.vendor.dreamgaming.constant.TransferType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -37,29 +39,52 @@ public class VendorService extends BaseVendorService {
         return input.replaceAll(Formats.JSON_LEADING_ZERO, "$1");
     }
 
-    public GameSession checkGameSession(String traceId, BetDto betDto) throws VendorCurrencyNotSupportException, InvalidPlayerException {
+    public GameSession checkGameSession(String traceId, BetDto betDto) throws
+            VendorCurrencyNotSupportException,
+            InvalidPlayerException,
+            AuthenticationException,
+            GameNotSupportedException {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getMember().getUsername().toLowerCase());
         } catch (AuthenticationException authenticationException) {
-            gameSession = gameSessionService.generateNewSessionToken(betDto.getMember().getUsername().toLowerCase());
-            gameSessionService.updateByVendorCurrencyId(gameSession);
-            gameSession.setToken(traceId);
-            gameSession.setVendorToken(traceId);
+            int type = betDto.getType();
+            if (type == TransferType.BET || type == TransferType.PAYOUT || type == TransferType.APPEND) {
+                gameSession = gameSessionService.generateNewSessionToken(betDto.getMember().getUsername().toLowerCase());
+                gameSessionService.updateByVendorGameCode(gameSession, betDto.getDetailDto().getTableId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            } else {
+                throw authenticationException;
+            }
         }
         return gameSession;
     }
 
-    public GameSession checkGameSession(String traceId, RollbackDto rollbackDto) throws VendorCurrencyNotSupportException, InvalidPlayerException {
+    public GameSession checkGameSession(String traceId, RollbackDto rollbackDto) throws
+            VendorCurrencyNotSupportException,
+            InvalidPlayerException,
+            GameNotSupportedException,
+            AuthenticationException {
         GameSession gameSession;
         try {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollbackDto.getMember().getUsername().toLowerCase());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(
+                    rollbackDto.getMember().getUsername().toLowerCase()
+            );
         } catch (AuthenticationException authenticationException) {
-            gameSession = gameSessionService.generateNewSessionToken(rollbackDto.getMember().getUsername().toLowerCase());
-            gameSessionService.updateByVendorCurrencyId(gameSession);
-            gameSession.setToken(traceId);
-            gameSession.setVendorToken(traceId);
+            int type = rollbackDto.getType();
+            if (type == TransferType.BET || type == TransferType.PAYOUT || type == TransferType.APPEND) {
+                gameSession = gameSessionService.generateNewSessionToken(rollbackDto.getMember().getUsername().toLowerCase());
+                gameSessionService.updateByVendorGameCode(gameSession, rollbackDto.getDetailDto().getTableId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            } else {
+                throw authenticationException;
+            }
         }
         return gameSession;
     }
+
 }

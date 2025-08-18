@@ -17,4 +17,7 @@ public class DetailDto {
 
     @Size(max = 255)
     private String parentBetId;
+
+    @Size(max = 255)
+    private String tableId;
 }

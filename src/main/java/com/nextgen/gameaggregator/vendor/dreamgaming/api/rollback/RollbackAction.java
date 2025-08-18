@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dreamgaming.api.rollback;
 
 import com.couchbase.client.core.error.InvalidArgumentException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -77,10 +78,9 @@ public class RollbackAction {
             switch (rollbackDto.getType()) {
                 case TransferType.BET:
                     // Retrieve the latest wallet balance from Operator
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
+                    WalletRequest walletRequest = walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
 
-                    responseVo.getMember().setBalance(balance);
+                    responseVo.getMember().setBalance(walletRequest.getBalanceBefore());
                     responseVo.getMember().setAmount(rollbackDto.getMember().getAmount());
                     break;
 
@@ -91,10 +91,9 @@ public class RollbackAction {
                     this.doValidation(betDto);
                     //Settle
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
                     responseVo.getMember().setAmount(betDto.getWinAmount());
-                    responseVo.getMember().setBalance(balance);
+                    responseVo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
 
                 case TransferType.APPEND:
