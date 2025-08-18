@@ -2,16 +2,12 @@ package com.nextgen.gameaggregator.vendor.crystal.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Getter
-@Builder
-@JsonDeserialize(builder = BetRequest.BetRequestBuilder.class)
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetRequest {
     @NotBlank

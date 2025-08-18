@@ -2,10 +2,10 @@ package com.nextgen.gameaggregator.vendor.crystal.api.validator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
-import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.signature.HmacSha256SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SignatureStrategy;

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 class BetRequestMapper implements BetContextMapper<BetRequest> {
     @Override
-    public BetContext toBetContext(BetRequest request) {
+    public BetContext toInternal(BetRequest request) {
         return BetContext.builder()
                 .idempotencyKey(request.getTransactionId())
                 .vendorPlayerUsername(request.getPlayerId())
