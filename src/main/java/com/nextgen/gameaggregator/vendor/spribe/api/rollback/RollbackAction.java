@@ -116,7 +116,7 @@ public class RollbackAction {
             httpService.logError(httpRequestLog, betNotFoundException);
 
             // find and insert settled bet to process rollback
-            BetRollbackContext rollbackContext = rollbackContextMapper.toBetRollbackContext(dto);
+            BetRollbackContext rollbackContext = rollbackContextMapper.toInternal(dto);
             rollbackContext.setTraceId(traceId);
             rollbackContext.setGameSession(gameSession);
             rollbackContext.setVendorService(vendorService);
