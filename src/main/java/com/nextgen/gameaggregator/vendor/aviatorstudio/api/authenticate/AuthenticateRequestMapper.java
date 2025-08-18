@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 class AuthenticateRequestMapper implements AuthenticateContextMapper<AuthenticateRequest> {
     @Override
-    public AuthenticateContext toAuthenticateContext(AuthenticateRequest vendorRequest) {
+    public AuthenticateContext toInternal(AuthenticateRequest vendorRequest) {
         return AuthenticateContext.builder()
                 .vendorCurrency(vendorRequest.getCurrency())
                 .vendorSessionToken(vendorRequest.getSessionId())

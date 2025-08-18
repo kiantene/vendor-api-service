@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 class BetResultRequestMapper implements BetResultContextMapper<BetResultRequest> {
     @Override
-    public BetResultContext toBetResultContext(BetResultRequest request) {
+    public BetResultContext toInternal(BetResultRequest request) {
         return BetResultContext.builder()
                 .idempotencyKey(request.getTransactionId())
 //                .vendorPlayerUsername() // get from JWT

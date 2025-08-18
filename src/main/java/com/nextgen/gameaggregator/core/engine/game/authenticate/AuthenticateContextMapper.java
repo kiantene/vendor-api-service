@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
-@FunctionalInterface
-public interface AuthenticateContextMapper<V> {
-    AuthenticateContext toAuthenticateContext(V vendorRequest);
+import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
+
+public interface AuthenticateContextMapper<V> extends VendorRequestMapper<AuthenticateContext, V> {
+    @Override
+    AuthenticateContext toInternal(V vendorRequest);
 }
