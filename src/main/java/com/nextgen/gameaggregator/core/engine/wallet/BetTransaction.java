@@ -6,8 +6,7 @@ import java.math.BigDecimal;
 
 @Data
 public class BetTransaction {
-    private String betId;
-    private String externalTransactionId;
+    private String vendorBetId;
     private String roundId;
     private String betType;
     private BigDecimal betAmount;
@@ -16,5 +15,4 @@ public class BetTransaction {
     private BigDecimal effectiveTurnover;
     private Long vendorBetTime;
     private Long vendorSettleTime;
-    private Long resultTime;
 }
