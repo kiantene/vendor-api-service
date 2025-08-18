@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.service;
 
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchMode;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
@@ -47,9 +48,10 @@ public class VendorService extends BaseVendorService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getMember().getUsername().toLowerCase());
+            gameSession = this.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getDetailDto().getTableId(), gameSession);
         } catch (AuthenticationException authenticationException) {
             int type = betDto.getType();
-            if (type == TransferType.BET || type == TransferType.PAYOUT || type == TransferType.APPEND) {
+            if (type == TransferType.PAYOUT || type == TransferType.APPEND) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getMember().getUsername().toLowerCase());
                 gameSessionService.updateByVendorGameCode(gameSession, betDto.getDetailDto().getTableId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
@@ -69,9 +71,8 @@ public class VendorService extends BaseVendorService {
             AuthenticationException {
         GameSession gameSession;
         try {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(
-                    rollbackDto.getMember().getUsername().toLowerCase()
-            );
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollbackDto.getMember().getUsername().toLowerCase());
+            gameSession = this.verifyAndRegenerateNewVendorGameCodeForGameSession(rollbackDto.getDetailDto().getTableId(), gameSession);
         } catch (AuthenticationException authenticationException) {
             int type = rollbackDto.getType();
             if (type == TransferType.BET || type == TransferType.PAYOUT || type == TransferType.APPEND) {
