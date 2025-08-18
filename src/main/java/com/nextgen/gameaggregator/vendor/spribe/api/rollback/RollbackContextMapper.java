@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class RollbackContextMapper implements BetRollbackContextMapper<RollbackDto> {
     @Override
-    public BetRollbackContext toBetRollbackContext(RollbackDto vendorRequest) {
+    public BetRollbackContext toInternal(RollbackDto vendorRequest) {
         return BetRollbackContext.builder()
                 .rollbackType(RollbackType.BY_BET)
                 .idempotencyKey(vendorRequest.getRollback_provider_tx_id())

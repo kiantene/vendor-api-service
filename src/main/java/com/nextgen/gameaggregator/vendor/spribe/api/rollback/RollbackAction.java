@@ -36,8 +36,8 @@ public class RollbackAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
-    private final WalletRollbackServiceWrapper walletRollbackServiceWrapper;
     private final RollbackContextMapper rollbackContextMapper;
+    private final WalletRollbackServiceWrapper walletRollbackServiceWrapper;
 
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
@@ -104,17 +104,17 @@ public class RollbackAction {
             vo.setData(data);
 
         } catch (BetNotFoundException betNotFoundException) {
-            vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, betNotFoundException);
 
             // find and insert settled bet to process rollback
-            BetRollbackContext rollbackContext = rollbackContextMapper.toBetRollbackContext(dto);
+            BetRollbackContext rollbackContext = rollbackContextMapper.toInternal(dto);
             rollbackContext.setTraceId(traceId);
             rollbackContext.setGameSession(gameSession);
             rollbackContext.setVendorService(vendorService);
-            rollbackContext.setHttpRequestLog(httpRequestLog);
             rollbackContext.setRetrieveSettledBet(true);
             walletRollbackServiceWrapper.processAsync(rollbackContext);
+
+            vo.setErrorCode(ErrorCodes.SUCCESS);
 
         } catch (RecordNotFoundException recordNotFoundException) {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
