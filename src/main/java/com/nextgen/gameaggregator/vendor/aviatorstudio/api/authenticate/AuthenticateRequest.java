@@ -3,11 +3,9 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.api.authenticate;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticateRequest {
     @NotBlank

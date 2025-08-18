@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.bet;
 
-import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
+import com.nextgen.gameaggregator.core.engine.wallet.bet.BetVendorResponseMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-class BetResponseMapper implements VendorResponseMapper<BetContext, BetResponse> {
+class BetResponseMapper implements BetVendorResponseMapper<BetResponse> {
     @Override
     public BetResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return BetResponse.builder()

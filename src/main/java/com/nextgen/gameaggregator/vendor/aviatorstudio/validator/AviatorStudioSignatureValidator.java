@@ -1,9 +1,8 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.validator;
 
+import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
-import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class AviatorStudioSignatureValidator extends AbstractVendorSignatureValidator implements VendorSignatureValidator {
+public class AviatorStudioSignatureValidator extends AbstractVendorSignatureValidator {
     private record JwtAuthData(String token, String username) {}
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String REQUEST_ATTR_TOKEN = "token";
