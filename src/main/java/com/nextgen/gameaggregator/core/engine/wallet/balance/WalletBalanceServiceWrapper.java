@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
-public class WalletBalanceServiceWrapper {
+public class WalletBalanceServiceWrapper implements WalletBalanceService {
     private final GameSessionDataService gameSessionDataService;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
