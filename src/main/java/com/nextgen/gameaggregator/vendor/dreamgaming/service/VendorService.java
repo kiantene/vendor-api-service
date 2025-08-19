@@ -1,18 +1,14 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchMode;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.AppendDto;
