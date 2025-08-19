@@ -57,6 +57,7 @@ public class VendorService extends BaseVendorService {
             gameSession = this.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getDetailDto().getTableId(), gameSession);
         } catch (AuthenticationException authenticationException) {
             int type = betDto.getType();
+            
             if (type == TransferType.PAYOUT || type == TransferType.APPEND) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getMember().getUsername().toLowerCase());
                 gameSessionService.updateByVendorGameCode(gameSession, betDto.getDetailDto().getTableId());
