@@ -5,7 +5,9 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContext;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServiceWrapper;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,7 +27,7 @@ public class RollbackController {
 
     @PostMapping(path = EndPoints.REFUND)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public RollbackResponse doRollback(RollbackRequest request) {
+    public RollbackResponse doRollback(@Valid @RequestBody RollbackRequest request) {
         BetRollbackContext context = requestMapper.toInternal(request);
         PlayerBalanceData balanceData = walletService.process(context);
         return responseMapper.toVendor(context, balanceData);
