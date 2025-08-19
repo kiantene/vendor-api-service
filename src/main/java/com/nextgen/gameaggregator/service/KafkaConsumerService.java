@@ -497,7 +497,7 @@ public class KafkaConsumerService {
 
     @KafkaListener(topics = KafkaConstant.TOPIC_RECON_FOR_UNSETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeReconDataPatching(String message) {
-        HttpRequestLog log = httpService.startEndRoundConsumerLog();
+        HttpRequestLog log = httpService.startReconDataPatchingLog();
         String traceId = log.getId();
         GeneralVo vo = new GeneralVo();
 
