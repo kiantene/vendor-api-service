@@ -17,12 +17,16 @@ public interface VendorExceptionMapper {
     VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex);
     VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex);
     VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex);
-    VendorErrorResponse onDuplicateBet(DuplicateBetException ex);
+    default VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
+        return onDuplicateRequest(new DuplicateRequestException(ex.getMessage(), ex));
+    }
 
     /**
      * These are unexpected errors
      */
     VendorErrorResponse onInvalidRequestError(InvalidRequestException ex); // Thrown by RequestValidationExceptionHandler from @Valid in controller
-    VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex);
+    default VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex) {
+        return onInternalError(new InternalServerException(ex.getMessage(), ex));
+    }
     VendorErrorResponse onInternalError(InternalServerException ex);
 }
