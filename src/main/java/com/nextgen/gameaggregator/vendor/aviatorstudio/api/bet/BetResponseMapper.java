@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.engine.wallet.bet.BetVendorResponseMapper
 import org.springframework.stereotype.Component;
 
 @Component
-class BetResponseMapper implements BetVendorResponseMapper<BetResponse> {
+public class BetResponseMapper implements BetVendorResponseMapper<BetResponse> {
     @Override
     public BetResponse toVendor(BetContext context, PlayerBalanceData balanceData) {
         return BetResponse.builder()

@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateCont
 import org.springframework.stereotype.Component;
 
 @Component
-class AuthenticateRequestMapper implements AuthenticateContextMapper<AuthenticateRequest> {
+public class AuthenticateRequestMapper implements AuthenticateContextMapper<AuthenticateRequest> {
     @Override
     public AuthenticateContext toInternal(AuthenticateRequest vendorRequest) {
         return AuthenticateContext.builder()

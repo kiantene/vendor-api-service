@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServ
 import com.nextgen.gameaggregator.vendor.aviatorstudio.api.result.BetResultRequest;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.api.result.BetResultResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
