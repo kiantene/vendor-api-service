@@ -57,7 +57,7 @@ public class VendorService extends BaseVendorService {
             gameSession = this.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getDetailDto().getTableId(), gameSession);
         } catch (AuthenticationException authenticationException) {
             int type = betDto.getType();
-            
+
             if (type == TransferType.PAYOUT || type == TransferType.APPEND) {
                 gameSession = gameSessionService.generateNewSessionToken(betDto.getMember().getUsername().toLowerCase());
                 gameSessionService.updateByVendorGameCode(gameSession, betDto.getDetailDto().getTableId());
@@ -132,9 +132,6 @@ public class VendorService extends BaseVendorService {
 
         if (status != null && status.equals("SC_OK")) {
             switch (rollbackDto.getType()) {
-                case TransferType.BET:
-                    vo.getMember().setBalance(balance.add(betDto.getBetAmount()));
-                    break;
                 case TransferType.PAYOUT:
                     vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
