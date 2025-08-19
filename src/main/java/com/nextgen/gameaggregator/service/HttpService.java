@@ -423,4 +423,21 @@ public class HttpService {
 
         return httpRequestLog;
     }
+
+    public HttpRequestLog startReconDataPatchingLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("Start Recon Data Patching");
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
 }
