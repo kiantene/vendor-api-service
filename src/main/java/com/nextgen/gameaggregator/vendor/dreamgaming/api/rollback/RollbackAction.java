@@ -82,7 +82,7 @@ public class RollbackAction {
                     WalletRequest walletRequest = walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
 
                     responseVo.getMember().setAmount(rollbackDto.getMember().getAmount());
-                    balance = walletRequest.getBalanceBefore();
+                    balance = walletRequest.getBalanceAfter();
                     break;
 
                 case TransferType.PAYOUT:

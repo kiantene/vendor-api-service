@@ -132,6 +132,9 @@ public class VendorService extends BaseVendorService {
 
         if (status != null && status.equals("SC_OK")) {
             switch (rollbackDto.getType()) {
+                case TransferType.BET:
+                    vo.getMember().setBalance(balance.subtract(rollbackDto.getMember().getAmount().abs()));
+                    break;
                 case TransferType.PAYOUT:
                     vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
