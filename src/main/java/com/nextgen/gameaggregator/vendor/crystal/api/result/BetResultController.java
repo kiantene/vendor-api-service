@@ -34,6 +34,6 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
     @Override
     public void configure(BetResultConfig config) {
         config.betTxn(false)
-                .setSettleType(SettleType.BET);
+                .setSettleType(SettleType.ROUND);
     }
 }

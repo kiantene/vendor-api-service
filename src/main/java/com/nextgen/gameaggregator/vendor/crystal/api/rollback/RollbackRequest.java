@@ -31,6 +31,11 @@ public class RollbackRequest {
     @JsonProperty("transactionId")
     private String transactionId;
 
+    @NotBlank
+    @Size(max = 255)
+    @JsonProperty("transactionId")
+    private String transactionOriginalId;
+
     @NotNull
     @Digits(integer = 20, fraction = 8)
     @DecimalMin(value = "0.0")
