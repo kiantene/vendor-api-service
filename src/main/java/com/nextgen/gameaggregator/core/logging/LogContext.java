@@ -79,6 +79,13 @@ public class LogContext {
         this.timeTaken = this.end - this.start;
     }
 
+    public void setApiEnd(Long apiEnd) {
+        this.apiEnd = apiEnd;
+        if (this.apiStart > 0) {
+            this.apiTimeTaken = this.apiEnd - this.apiStart;
+        }
+    }
+
     public void setException(Exception ex) {
         setException(ex.getClass().getSimpleName());
         setErrorMessage(ex.getMessage());

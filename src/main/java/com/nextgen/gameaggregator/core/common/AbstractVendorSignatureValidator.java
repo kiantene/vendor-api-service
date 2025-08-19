@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
@@ -59,5 +60,11 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
 
     protected String sign(Object payload, String secret) {
         return signatureStrategy.sign(payload, secret);
+    }
+
+    protected final void checkSignature(String expectedSignature, String payload, String secret) {
+        if (!expectedSignature.equals(sign(payload, secret))) {
+            throw new SignatureValidationException("Signature does not match");
+        }
     }
 }

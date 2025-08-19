@@ -53,6 +53,7 @@ public class LogContextService {
         if (logContext.getApiEnd() == 0 && httpRequestLog.getOperatorEnd() != null) {
             logContext.setApiEnd(httpRequestLog.getOperatorEnd());
         }
+        logContext.setApiStatusCode(httpRequestLog.getOperatorHttpStatusCode());
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
