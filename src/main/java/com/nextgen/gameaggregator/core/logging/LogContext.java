@@ -25,11 +25,10 @@ public class LogContext {
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
     private String type;
+    private String method;
     private String url;
     private String traceId;
     private String logGroup;
-
-    private HttpMethod method;
 
     // Raw request body received from the client (e.g., operator system)
     private Object body;
@@ -56,7 +55,7 @@ public class LogContext {
     private long apiStart;
     private long apiEnd;
     private long apiTimeTaken;
-    private int apiStatusCode;
+    private Integer apiStatusCode;
     private String exception;
     private String rootCause;
     private String errorMessage;
@@ -170,7 +169,7 @@ public class LogContext {
             base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
             if (log.isDebugEnabled()) {
-                base.put("method", method.name());
+                base.put("method", method);
                 base.put("stackTrace", stackTrace);
             }
             base.putAll(extraFields);
