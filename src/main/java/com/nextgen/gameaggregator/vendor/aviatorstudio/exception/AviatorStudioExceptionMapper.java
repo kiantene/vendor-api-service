@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.exception;
 
-import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
@@ -56,11 +55,6 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
-        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Override
-    public VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex) {
         return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

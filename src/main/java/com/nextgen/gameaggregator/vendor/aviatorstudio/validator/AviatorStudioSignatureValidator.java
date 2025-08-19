@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.validator;
 
 import com.nextgen.core.exception.SignatureValidationException;
-import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
+import com.nextgen.gameaggregator.core.validator.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
