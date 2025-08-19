@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
     private final CurrencyDataService currencyDataService;
     private final VendorDataService vendorDataService;
-    private final VendorGameDataService vendorGameDataService;
     private final GameCategoryDataService gameCategoryDataService;
     private final AgentDataService agentDataService;
 
@@ -22,10 +21,9 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
                                       VendorGameDataService vendorGameDataService,
                                       GameCategoryDataService gameCategoryDataService,
                                       AgentDataService agentDataService) {
-        super(agentPlayerDataService, vendorPlayerDataService);
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
         this.currencyDataService = currencyDataService;
         this.vendorDataService = vendorDataService;
-        this.vendorGameDataService = vendorGameDataService;
         this.gameCategoryDataService = gameCategoryDataService;
         this.agentDataService = agentDataService;
     }
@@ -34,7 +32,6 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         this.populateAgent(context);
         this.populateCurrency(context);
         this.populateVendor(context);
-        this.populateVendorGame(context);
         this.populateGameCategory(context);
     }
 
@@ -62,18 +59,6 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         try {
             Vendor vendor = vendorDataService.get(context.getVendorId());
             context.setVendorCode(vendor.getCode());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
-    }
-
-    private void populateVendorGame(PromoPayoutContext context) {
-        try {
-            VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
-            context.setVendorGameId(vendorGame.getId());
-            context.setGameCode(vendorGame.getCode());
-            context.setGameName(vendorGame.getName());
-            context.setGameCategoryId(vendorGame.getGameCategoryId());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }
