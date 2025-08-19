@@ -1,22 +1,32 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchMode;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.AppendDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dreamgaming.constant.Formats;
 import com.nextgen.gameaggregator.vendor.dreamgaming.constant.TransferType;
+import com.nextgen.gameaggregator.vendor.dreamgaming.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Service
@@ -88,4 +98,57 @@ public class VendorService extends BaseVendorService {
         return gameSession;
     }
 
+    public void setVoBalance(HttpRequestLog httpRequestLog, BigDecimal balance, BetDto betDto, ResponseVo vo, AppendDto appendDto) throws JsonProcessingException {
+        String status = null;
+        if (httpRequestLog.getOperatorResponse() != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(httpRequestLog.getOperatorResponse());
+            status = jsonNode.path("status").asText();
+        }
+
+        if (status != null && status.equals("SC_OK")) {
+            switch (betDto.getType()) {
+                case TransferType.BET:
+                    vo.getMember().setBalance(balance.add(betDto.getBetAmount()));
+                    break;
+                case TransferType.PAYOUT:
+                    vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
+                    break;
+                case TransferType.APPEND:
+                    vo.getMember().setBalance(balance.subtract(appendDto.getAdjustmentAmount()));
+                    break;
+                default:
+                    vo.getMember().setBalance(balance);
+            }
+        } else {
+            vo.getMember().setBalance(balance);
+        }
+    }
+
+    public void setVoBalance(HttpRequestLog httpRequestLog, BigDecimal balance, RollbackDto rollbackDto, BetDto betDto, ResponseVo vo, AppendDto appendDto) throws JsonProcessingException {
+        String status = null;
+        if (httpRequestLog.getOperatorResponse() != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(httpRequestLog.getOperatorResponse());
+            status = jsonNode.path("status").asText();
+        }
+
+        if (status != null && status.equals("SC_OK")) {
+            switch (rollbackDto.getType()) {
+                case TransferType.BET:
+                    vo.getMember().setBalance(balance.add(betDto.getBetAmount()));
+                    break;
+                case TransferType.PAYOUT:
+                    vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
+                    break;
+                case TransferType.APPEND:
+                    vo.getMember().setBalance(balance.subtract(appendDto.getAdjustmentAmount()));
+                    break;
+                default:
+                    vo.getMember().setBalance(balance);
+            }
+        } else {
+            vo.getMember().setBalance(balance);
+        }
+    }
 }

@@ -56,10 +56,11 @@ public class RollbackAction {
         String traceId = httpRequestLog.getId();
         ResponseVo responseVo = new ResponseVo();
         RollbackDto rollbackDto = null;
-        BetDto betDto;
-        BigDecimal balance;
+        BetDto betDto = null;
+        BigDecimal balance = null;
         BigDecimal appendBalance;
         GameSession gameSession;
+        AppendDto appendDto = null;
 
         try {
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
@@ -80,8 +81,8 @@ public class RollbackAction {
                     // Retrieve the latest wallet balance from Operator
                     WalletRequest walletRequest = walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
 
-                    responseVo.getMember().setBalance(walletRequest.getBalanceBefore());
                     responseVo.getMember().setAmount(rollbackDto.getMember().getAmount());
+                    balance = walletRequest.getBalanceBefore();
                     break;
 
                 case TransferType.PAYOUT:
@@ -93,12 +94,11 @@ public class RollbackAction {
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
                     balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
                     responseVo.getMember().setAmount(betDto.getWinAmount());
-                    responseVo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
 
                 case TransferType.APPEND:
                     //APPEND
-                    AppendDto appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
+                    appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
                     appendDto.setDetailDto(HttpService.convertJsonToDto(VendorService.removeLeadingZero(appendDto.getDetail()), DetailDto.class));
 
                     this.doValidation(appendDto);
@@ -116,6 +116,7 @@ public class RollbackAction {
                     throw new InvalidRequestException();
             }
             // Set response
+            vendorService.setVoBalance(httpRequestLog, balance, rollbackDto, betDto, responseVo, appendDto);
             responseVo.setCodeMsg(ResponseCode.SUCCESS.code);
             responseVo.getMember().setUsername(rollbackDto.getMember().getUsername());
 
@@ -146,13 +147,6 @@ public class RollbackAction {
         }
 
         return responseVo;
-    }
-
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
-        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
-
-        // Call the service with the duplicate log
-        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 
     private void doValidation(RollbackDto dto) throws InvalidRequestException {

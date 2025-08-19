@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.api.bet;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -59,8 +62,10 @@ public class BetAction {
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
         BetDto betDto = new BetDto();
-        BigDecimal balance;
+        BigDecimal balance = null;
         GameSession gameSession;
+        AppendDto appendDto = null;
+        BetEvent betEvent = null;
 
         try {
             betDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BetDto.class);
@@ -77,10 +82,10 @@ public class BetAction {
             switch (betDto.getType()) {
                 case TransferType.BET:
                     //Bet
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
                     vo.getMember().setAmount(betDto.getBetAmount().abs().negate());
-                    vo.getMember().setBalance(betEvent.getLastBalance().add(betDto.getBetAmount()));
+                    balance = betEvent.getLastBalance();
                     break;
 
                 case TransferType.PAYOUT:
@@ -89,12 +94,11 @@ public class BetAction {
                     balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
 
                     vo.getMember().setAmount(betDto.getWinAmount());
-                    vo.getMember().setBalance(balance.subtract(betDto.getWinAmount()));
                     break;
 
                 case TransferType.APPEND:
                     //APPEND
-                    AppendDto appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
+                    appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
                     appendDto.setDetailDto(HttpService.convertJsonToDto(VendorService.removeLeadingZero(appendDto.getDetail()), DetailDto.class));
                     // Validate request parameters from vendor (Non-database related)
                     this.doValidation(appendDto);
@@ -105,13 +109,12 @@ public class BetAction {
                     balance = walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
 
                     vo.getMember().setAmount(appendDto.getMember().getAmount());
-                    vo.getMember().setBalance(balance.subtract(appendDto.getAdjustmentAmount()));
                     break;
 
                 default:
                     throw new InvalidRequestException();
             }
-
+            vendorService.setVoBalance(httpRequestLog, balance, betDto, vo, appendDto);
             vo.setCodeMsg(ResponseCode.SUCCESS.code);
             vo.getMember().setUsername(betDto.getMember().getUsername());
 
@@ -139,13 +142,6 @@ public class BetAction {
             httpService.end(httpRequestLog, vo);
         }
         return vo;
-    }
-
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, final HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
-        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
-
-        // Call the service with the duplicate log
-        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 
     private void doValidation(BetDto dto) throws InvalidRequestException {
