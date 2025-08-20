@@ -1,10 +1,23 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
-import org.springframework.core.ParameterizedTypeReference;
+import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
+import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import org.springframework.http.MediaType;
 
 public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHandler<T, String> {
-    private static final ParameterizedTypeReference<String> RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
+
+    protected QueryStringUrlGameLauncher(VendorCredentialUtils credentialUtils,
+                                         String vendorClassName) {
+
+        super(credentialUtils, vendorClassName, String.class);
+    }
+
+    protected QueryStringUrlGameLauncher(VendorCredentialUtils credentialUtils,
+                                         String vendorClassName,
+                                         SigningStrategyType strategyType) {
+
+        super(credentialUtils, vendorClassName, String.class, strategyType);
+    }
 
     @Override
     public GameLaunchMode getLaunchMode() {
@@ -12,13 +25,13 @@ public abstract class QueryStringUrlGameLauncher<T> extends AbstractGameLaunchHa
     }
 
     @Override
-    public ParameterizedTypeReference<String> getResponseType() {
-        return RESPONSE_TYPE;
+    public MediaType getContentType() {
+        return MediaType.TEXT_PLAIN;
     }
 
     @Override
-    public MediaType getContentType() {
-        return MediaType.TEXT_PLAIN;
+    public boolean isSuccess(String response) {
+        return true;
     }
 
     @Override

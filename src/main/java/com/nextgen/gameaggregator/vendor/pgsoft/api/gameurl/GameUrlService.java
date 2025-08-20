@@ -124,48 +124,6 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
     }
 
-//    @Override
-//    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
-//            throws InvalidVendorLineException, InvalidVendorResponseException {
-//
-//        GameUrlVo responseVo = new GameUrlVo();
-//
-//        boolean checkExists = this.checkIsGameOpenInNewFormat(credentials.get(Credentials.GAME_VERSION), gameSession.getVendorGameCode());
-//
-//        if (checkExists) {
-//            responseVo = this.newCallFormat(formData, credentials, gameSession);
-//
-//        } else {
-//            responseVo = this.oldCallFormat(formData, credentials, gameSession);
-//
-//        }
-//
-//        return responseVo;
-//    }
-
-    private GameUrlVo oldCallFormat(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) {
-        GameUrlVo responseVo = new GameUrlVo();
-
-        // 4. Get Vendor URL Scheme by vendorPlayer's vendor_line_id
-        String urlScheme = credentials.get(Credentials.URL_SCHEME);
-        // 5. Lookup Game Code
-        String gameCode = formData.get("gameCode").get(0);
-        String language = formData.get("language").get(0);
-        // 6. Generate game session token to embed into urlScheme and save into game session table
-        String token = formData.get("token").get(0);
-        // 7. Retrieve Operator Token as it is required to form the Game URL
-        String operatorToken = credentials.get(Credentials.OPERATOR_TOKEN);
-        // 8. Retrieve Operator lobby URL
-        String lobbyUrl = gameSession.getLobbyUrl();
-        // 9. Construct the Game URL
-        String gameUrl = VendorService.generateGameUrl(urlScheme, gameCode, language, operatorToken, token, lobbyUrl);
-        // 10. Save this player's game session
-        // Set the game URL and return to Operator
-        responseVo.setGameUrl(gameUrl);
-
-        return responseVo;
-    }
-
     private GameUrlVo newCallFormat(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
 
         RequestLogVo requestLogVo = null;

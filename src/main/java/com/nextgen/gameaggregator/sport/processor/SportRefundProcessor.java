@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.sport.processor;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.SportMasterUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -165,11 +168,9 @@ public class SportRefundProcessor {
 
     private void sendToKafka(SportUnsettledBet unsettledBet, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal fromVendorRate) {
         BetHistory betHistory = unsettledBet.toBetHistory(BetStatus.REFUNDED.code, BetResultType.BET.code);
-
-        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
         // kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
 
-        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
+        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
     }
 
     private void sendToKafkaForSettledBet(SportSettledBet settledBet, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal fromVendorRate) {
@@ -184,10 +185,8 @@ public class SportRefundProcessor {
         betHistory.setWinAmount(newWinAmount);
         betHistory.setWinLoss(newWinLoss);
         betHistory.setEffectiveTurnover(newEffectiveTurnover);
-
-        kafkaService.produceBetHistory(betHistory, vendorPlayerUsername, fromVendorRate);
-
-        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
+        
+        kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
     }
 
     private void updateUnsettleBetStatus(SportUnsettledBet unsettledBet, BigDecimal fromVendorRate) {
@@ -244,7 +243,7 @@ public class SportRefundProcessor {
                 if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                     throw new BetResultIdempotentViolationException("Process refund idempotent: " + walletRequest.getVendorPlayerUsername() + '_' + walletRequest.getExternalTransactionId());
                 } else {
-                // sportUnsettledBet.setInternalTransactionId(sportSettledBet.getInternalTransactionId());
+                    // sportUnsettledBet.setInternalTransactionId(sportSettledBet.getInternalTransactionId());
                     walletRequest.setTransactionId(sportSettledBet.getInternalTransactionId());
                 }
 

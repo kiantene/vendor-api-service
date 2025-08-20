@@ -44,6 +44,8 @@ public class WalletBetResultAction {
     private final Set<Integer> forceSuccessResultTypeList;
     private final Set<Integer> betWinVendorList;
     private final Set<Integer> betLoseVendorList;
+    private final Set<Integer> skipVendorList;
+    private final AgentApiVersionService agentApiVersionService;
 
     @Autowired
     public WalletBetResultAction(RequestService requestService,
@@ -51,7 +53,7 @@ public class WalletBetResultAction {
                                  AuthenticationService authenticationService,
                                  CurrencyConversionService currencyConversionService,
                                  BetResultRetryLogService betResultRetryLogService,
-                                 HttpService httpService) {
+                                 HttpService httpService, AgentApiVersionService agentApiVersionService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -59,6 +61,7 @@ public class WalletBetResultAction {
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.httpService = httpService;
+        this.agentApiVersionService = agentApiVersionService;
         this.forceSuccessResultTypeList = new HashSet<>();
         this.betWinVendorList = new HashSet<>();
         this.betLoseVendorList = new HashSet<>();
@@ -69,6 +72,7 @@ public class WalletBetResultAction {
 
         this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1, 86, 17, 18));
         this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75, 86, 17, 18));
+        this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
     public WalletBalanceVo generateOperatorBetResultInfoAndForceRetry(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate) {
@@ -349,12 +353,22 @@ public class WalletBetResultAction {
         walletBetResultDto.setWinLoss(winLossAmount);
         walletBetResultDto.setResultType(resultType);
         walletBetResultDto.setIsFreespin(betInformation.getIsFreespin());
-        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
         walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
         walletBetResultDto.setToken((betInformation.getGameSessionToken() != null) ? betInformation.getGameSessionToken() : gameSession.getToken());
         walletBetResultDto.setGameCode(gameSession.getGameCode());
         walletBetResultDto.setBetTime(betInformation.getVendorBetTime());
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());
+        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
+
+        Integer agentId = Optional.ofNullable(betInformation.getAgentId()).orElse(gameSession.getAgentId());
+        Integer vendorId = Optional.ofNullable(betInformation.getVendorId()).orElse(gameSession.getVendorId());
+
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentId);
+
+        if (betInformation.getIsEndRound() != null && agentApiVersion == 2 && this.skipVendorList.contains(vendorId)) {
+            //if isEndRound configure not empty from DTO, and agentApiVersion is 2, and is PGSOFT and SPADEGAMING then set the isEndRound value
+            walletBetResultDto.setIsEndRound(betInformation.getIsEndRound());
+        }
 
         return walletBetResultDto;
     }

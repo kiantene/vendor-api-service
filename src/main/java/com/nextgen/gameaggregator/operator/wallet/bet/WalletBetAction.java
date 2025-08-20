@@ -40,11 +40,17 @@ public class WalletBetAction {
     private final Set<Integer> vendorsWithTwoPointFiveSecondTimeout;
     private final Set<Integer> vendorsWithThreePointFiveSecondTimeout;
     private final Set<Integer> vendorsWithFourPointFiveSecondTimeout;
+    private final Set<Integer> vendorsWithFourSecondTimeout;
+    private final Set<Integer> vendorsWithTwoPointTwoSecondTimeout;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
     @Autowired
-    public WalletBetAction(RequestService requestService, AgentApiCredentialService agentApiCredentialService, AuthenticationService authenticationService, VendorService vendorService, CurrencyConversionService currencyConversionService, Set<Integer> vendorsWithTwoPointFiveSecondTimeout, Set<Integer> vendorsWithThreePointFiveSecondTimeout, Set<Integer> vendorsWithFourPointFiveSecondTimeout) {
+    public WalletBetAction(RequestService requestService,
+                           AgentApiCredentialService agentApiCredentialService,
+                           AuthenticationService authenticationService,
+                           VendorService vendorService,
+                           CurrencyConversionService currencyConversionService) {
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
@@ -53,10 +59,17 @@ public class WalletBetAction {
         this.vendorsWithTwoPointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithThreePointFiveSecondTimeout = new HashSet<>();
         this.vendorsWithFourPointFiveSecondTimeout = new HashSet<>();
+        this.vendorsWithFourSecondTimeout = new HashSet<>();
+        this.vendorsWithTwoPointTwoSecondTimeout = new HashSet<>();
         //ambs
         this.vendorsWithTwoPointFiveSecondTimeout.add(38);
         //jili
         this.vendorsWithThreePointFiveSecondTimeout.add(4);
+        //koolbet
+        this.vendorsWithFourSecondTimeout.add(76);
+        //gpk
+        this.vendorsWithTwoPointTwoSecondTimeout.addAll(Set.of(45, 46, 49, 52, 54, 75, 85));
+
     }
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
@@ -215,9 +228,15 @@ public class WalletBetAction {
         } else if (this.vendorsWithThreePointFiveSecondTimeout.contains(gameSession.getVendorId())) {
             //operator timeout set to 3.5sec
             return 3500;
+        } else if (this.vendorsWithFourSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 4sec
+            return 4000;
         } else if (this.vendorsWithFourPointFiveSecondTimeout.contains(gameSession.getVendorId())) {
             //operator timeout set to 4.5sec
             return 4500;
+        } else if (this.vendorsWithTwoPointTwoSecondTimeout.contains(gameSession.getVendorId())) {
+            //operator timeout set to 2.2sec
+            return 2200;
         }
         //default operator timeout (5sec)
         return EndPoints.TIMEOUT;

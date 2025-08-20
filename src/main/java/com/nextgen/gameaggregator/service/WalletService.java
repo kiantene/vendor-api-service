@@ -63,7 +63,6 @@ public class WalletService {
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
     private String retryVendorList;
 
-
     @Autowired
     public WalletService(BetResultLogService betResultLogService,
                          BetRefundLogService betRefundLogService,
@@ -98,6 +97,7 @@ public class WalletService {
         this.betIdempotentLogService = betIdempotentLogService;
         this.taskScheduler = taskScheduler;
         this.redisTemplate = redisTemplate;
+
     }
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -384,12 +384,10 @@ public class WalletService {
 
             loggingService.logStart();
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_bet_history topic
-                kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 // kafkaService.produceWarehouseBetHistory
                 //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
@@ -452,7 +450,6 @@ public class WalletService {
         loggingService.logStart();
         //settle by round
         if (!betResultData.getShouldSettleByBet()) {
-
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
 
@@ -1058,11 +1055,10 @@ public class WalletService {
 
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
-            kafkaService.produceBetHistory(betHistory, gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             // kafkaService.produceWarehouseBetHistory
             //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername());
+                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 

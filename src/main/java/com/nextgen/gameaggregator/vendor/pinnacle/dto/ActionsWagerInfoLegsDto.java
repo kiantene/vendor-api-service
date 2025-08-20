@@ -38,7 +38,7 @@ public class ActionsWagerInfoLegsDto {
     private Long selectionType;
 
     @JsonProperty("InplayScore")
-    private Long inplayScore;
+    private String inplayScore;
 
     @JsonProperty("InPlay")
     private boolean inPlay;

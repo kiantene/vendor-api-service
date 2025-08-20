@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.constant;
 
 public class Endpoints {
+    public static final String CLASS_NAME = "pgsoft";
 
     public static final Integer TIMEOUT = 10000;
 

@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -345,7 +346,7 @@ public class HttpService {
                 requestLog.setErrorMessage(exception.getClass().getName());
                 requestLog.setExceptionMessage(exception.getMessage());
                 requestLog.setRootCause(rootCause);
-            } else if (exception instanceof AmbiguousTimeoutException || exception instanceof IncorrectResultSizeDataAccessException || exception instanceof IndexOutOfBoundsException) {
+            } else if (exception instanceof AmbiguousTimeoutException || exception instanceof IncorrectResultSizeDataAccessException || exception instanceof IndexOutOfBoundsException || exception instanceof ExhaustedRetryException) {
                 requestLog.setErrorMessage(getStackTrace(exception));
             } else {
                 requestLog.setErrorMessage(exception.toString());
@@ -383,22 +384,60 @@ public class HttpService {
             result = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
 
         } else {
-            StringBuilder requestBody = new StringBuilder();
-            try {
-                BufferedReader reader = request.getReader();
-                int value;
-                while ((value = reader.read()) != -1) {
-                    requestBody.append((char) value);
+            if (request.getAttribute("rawBody") != null) {
+                result = (String) request.getAttribute("rawBody");
+            } else {
+                StringBuilder requestBody = new StringBuilder();
+                try {
+                    BufferedReader reader = request.getReader();
+                    int value;
+                    while ((value = reader.read()) != -1) {
+                        requestBody.append((char) value);
+                    }
+                    result = requestBody.toString();
+                } catch (EOFException exception) {
+                    // log request body and details,
+                    // because getReader only can use one time
+                    loggingService.logRequestDetails(request, requestBody, this.traceId);
+                    throw new EOFException();
                 }
-                result = requestBody.toString();
-            } catch (EOFException exception) {
-                // log request body and details,
-                // because getReader only can use one time
-                loggingService.logRequestDetails(request, requestBody, this.traceId);
-                throw new EOFException();
             }
         }
 
         return result;
+    }
+
+    public HttpRequestLog startRefundConsumerLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("process refundConsumerLog Success");
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public HttpRequestLog startReconDataPatchingLog() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("Start Recon Data Patching");
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
     }
 }
