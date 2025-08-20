@@ -3,16 +3,16 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.*;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
-import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,12 +23,13 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 public class WalletBetResultServiceWrapper {
-    private final ApplicationContext applicationContext;
-    private final WalletBetResultValidator validator;
-    private final WalletService walletService;
-    private final GameSessionDataService gameSessionDataService;
+    private final BetResultContextEnricher enricher;
     private final BetResultDataMapper betResultDataMapper;
+    private final GameSessionDataService gameSessionDataService;
+    private final WalletBetResultValidator validator;
+    private final WalletBetResultBatchService batchService;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final WalletService walletService;
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get();
@@ -37,7 +38,7 @@ public class WalletBetResultServiceWrapper {
 
         try {
             BetResultContext context = state().getBetResultContext();
-            enrich(context);
+            enricher.enrich(context);
 
             validator.validateRequestContext(logContext.getVendorClassName(), context);
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
@@ -50,30 +51,11 @@ public class WalletBetResultServiceWrapper {
             return playerBalance;
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-    }
-
-    private void enrich(BetResultContext context) {
-        context.setResultTime(System.currentTimeMillis());
-        if (context.getVendorBetId() == null) {
-            context.setVendorBetId(context.getIdempotencyKey());
-        }
-
-        if (context.getBetAmount() == null) {
-            context.setBetAmount(BigDecimal.ZERO);
-        }
-
-        if (context.getIsFreeSpin() == null) {
-            context.setIsFreeSpin(0);
-        }
-
-        if (state().getVendorService() == null) {
-            state().setVendorService(InternalVendorService.getInstance(applicationContext));
-        }
+        return null;
     }
 
     private void doProcessBatch(BetResultContext context) {
@@ -84,7 +66,7 @@ public class WalletBetResultServiceWrapper {
 
             if (txnList == null || txnList.isEmpty()) return;
 
-//            batchService.processBatch(txnList, context);
+            batchService.processBatch(txnList, context);
         }
     }
 

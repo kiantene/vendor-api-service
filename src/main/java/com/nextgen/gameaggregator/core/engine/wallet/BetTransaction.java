@@ -27,6 +27,8 @@ public class BetTransaction {
     private BigDecimal winAmount;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
+    private BigDecimal jackpotAmount;
+    private Integer isFreeSpin;
     private Long vendorBetTime;
     private Long vendorSettleTime;
 }
