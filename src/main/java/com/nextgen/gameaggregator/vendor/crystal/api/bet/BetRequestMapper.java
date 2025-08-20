@@ -10,11 +10,10 @@ public class BetRequestMapper implements BetContextMapper<BetRequest> {
     public BetContext toInternal(BetRequest request) {
         return BetContext.builder()
                 .idempotencyKey(request.getTransactionId())
-                .vendorPlayerUsername(request.getPlayerId())
-                .gameCode(request.getGameCode())
                 .roundId(request.getRoundId())
+                .gameCode(request.getGameCode())
+                .vendorPlayerUsername(request.getPlayerId())
                 .vendorCurrency(request.getCurrencyCode())
-                .vendorBetId(request.getTransactionId())
                 .betAmount(request.getAmount())
                 .timestamp(System.currentTimeMillis())
                 .build();

@@ -1,6 +1,5 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.exception;
+package com.nextgen.gameaggregator.vendor.crystal.exception;
 
-import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
@@ -60,11 +59,6 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
     }
 
     @Override
-    public VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex) {
-        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
         return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -78,5 +72,4 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
                                 .build())
                         .build());
     }
-
 }

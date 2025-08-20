@@ -52,11 +52,11 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
     public GameLaunchRequest buildRequestBody(GameLaunchContext context) {
 
         VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
-        String branCode = accessor.getValue(Credentials.BRAND_CODE);
+        String brandCode = accessor.getValue(Credentials.BRAND_CODE);
 
         return GameLaunchRequest.builder()
                 .gameCode(context.getVendorGameCode())
-                .brandCode(branCode)
+                .brandCode(brandCode)
                 .currencyCode(context.getVendorCurrencyCode())
                 .playerId(context.getVendorPlayerUsername())
                 .build();
@@ -79,31 +79,43 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
         VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
         String secretKey = accessor.getValue(Credentials.SECRET_KEY);
         String operatorCode = accessor.getValue(Credentials.OPERATOR_CODE);
-        String signature;
-        try {
-            MultiValueMap<String, String> formData = this.formDataBuilder(context);
-            String compactJson = convertToCompactJson(formData);
-            signature = sign(compactJson, secretKey);
 
-        } catch (Exception e) {
-            throw new GameLaunchException(e.getMessage(), e);
-        }
         return Map.of(
-                "X-SIGNATURE", signature,
+                "X-SIGNATURE", sign(requestObject, secretKey),
                 "OPERATOR", operatorCode
         );
     }
 
-    private MultiValueMap<String, String> formDataBuilder(GameLaunchContext context) {
-        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
-        String branCode = accessor.getValue(Credentials.BRAND_CODE);
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("gameCode", context.getVendorGameCode());
-        formData.add("brandCode", branCode);
-        formData.add("currencyCode", context.getVendorCurrencyCode());
-        formData.add("playerId", context.getVendorPlayerUsername());
-        return formData;
-    }
+//    @Override
+//    public Map<String, String> getHeaders(GameLaunchContext context, GameLaunchRequest requestObject) {
+//        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
+//        String secretKey = accessor.getValue(Credentials.SECRET_KEY);
+//        String operatorCode = accessor.getValue(Credentials.OPERATOR_CODE);
+//        String signature;
+//        try {
+//            MultiValueMap<String, String> formData = this.formDataBuilder(context);
+//            String compactJson = convertToCompactJson(formData);
+//            signature = sign(compactJson, secretKey);
+//
+//        } catch (Exception e) {
+//            throw new GameLaunchException(e.getMessage(), e);
+//        }
+//        return Map.of(
+//                "X-SIGNATURE", signature,
+//                "OPERATOR", operatorCode
+//        );
+//    }
+
+//    private MultiValueMap<String, String> formDataBuilder(GameLaunchContext context) {
+//        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
+//        String branCode = accessor.getValue(Credentials.BRAND_CODE);
+//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+//        formData.add("gameCode", context.getVendorGameCode());
+//        formData.add("brandCode", branCode);
+//        formData.add("currencyCode", context.getVendorCurrencyCode());
+//        formData.add("playerId", context.getVendorPlayerUsername());
+//        return formData;
+//    }
 
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {

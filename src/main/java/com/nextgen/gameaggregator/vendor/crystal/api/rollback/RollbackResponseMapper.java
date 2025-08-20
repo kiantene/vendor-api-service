@@ -2,13 +2,13 @@ package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContext;
-import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackVendorResponseMapper;
 import org.springframework.stereotype.Component;
 
 import java.math.RoundingMode;
 
 @Component
-public class RollbackResponseMapper implements VendorResponseMapper<BetRollbackContext, RollbackResponse> {
+public class RollbackResponseMapper implements BetRollbackVendorResponseMapper<RollbackResponse> {
 
     @Override
     public RollbackResponse toVendor(BetRollbackContext context, PlayerBalanceData balanceData) {

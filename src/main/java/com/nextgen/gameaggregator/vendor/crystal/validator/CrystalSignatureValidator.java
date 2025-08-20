@@ -1,12 +1,10 @@
-package com.nextgen.gameaggregator.vendor.crystal.api.validator;
+package com.nextgen.gameaggregator.vendor.crystal.validator;
 
 import com.nextgen.core.exception.SignatureValidationException;
-import com.nextgen.gameaggregator.core.common.AbstractVendorSignatureValidator;
-import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
+import com.nextgen.gameaggregator.core.validator.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
@@ -19,12 +17,12 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class CrystalSignatureValidator extends AbstractVendorSignatureValidator implements VendorSignatureValidator {
+public class CrystalSignatureValidator extends AbstractVendorSignatureValidator {
     private static final String HEADER_AUTHORIZATION = "X-Signature";
 
     protected CrystalSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
                                         VendorLineService vendorLineService) {
-        super(vendorPlayerDataService, vendorLineService);
+        super(vendorPlayerDataService, vendorLineService, SigningStrategyType.HMAC_SHA256);
     }
 
     @Override
@@ -42,11 +40,7 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
 
         String appSecret = getCredentialValue(username, Credentials.SECRET_KEY);
         String compactJsonBody = rawBody.replaceAll("\\s+", "");
-        SignatureStrategy signatureStrategy = SigningStrategyType.HMAC_SHA256.getStrategy();
-        String computedSignature = signatureStrategy.sign(compactJsonBody, appSecret);
-        if (!computedSignature.equalsIgnoreCase(signatureHeader)) {
-            throw new SignatureValidationException("Invalid signature");
-        }
+        checkSignature(signatureHeader, compactJsonBody, appSecret);
     }
 
     private String extractAuthorizationHeader(HttpServletRequest request) throws SignatureValidationException {

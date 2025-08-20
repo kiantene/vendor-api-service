@@ -33,7 +33,7 @@ public class RollbackRequest {
 
     @NotBlank
     @Size(max = 255)
-    @JsonProperty("transactionId")
+    @JsonProperty("transactionOriginalId")
     private String transactionOriginalId;
 
     @NotNull
