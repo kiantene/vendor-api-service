@@ -98,7 +98,7 @@ public class BetDto implements BetResultData {
 
         // Override if type is PAYOUT and availableBet is present
         if (this.type.equals(TransferType.PAYOUT)) {
-            //compare if availableBet is not null then use null,if null will set to -1(can refer vendorService)
+            //if availableBet is not null then use null,if null will set to -1(can refer vendorService's calculate effective turnover)
             DetailDto detaildto = this.getDetailDto();
             result = (detaildto != null && detaildto.getAvailableBet() != null)
                     ? detaildto.getAvailableBet() : BigDecimal.valueOf(-1);
