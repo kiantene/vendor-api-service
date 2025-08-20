@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
@@ -28,6 +29,8 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
@@ -116,6 +119,7 @@ public class WalletBetAction {
             return requestService.responseOperatorSub();
         }
 
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
         try {
             logContextService.logStart(apiUrl + EndPoints.WALLET_BET, dto);
             apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
@@ -129,6 +133,10 @@ public class WalletBetAction {
                     .toEntity(String.class)
                     .retry(3)
                     .timeout(Duration.ofMillis(this.operatorTimeoutConfig(gameSession)))
+                    .onErrorResume(TimeoutException.class, e -> {
+                        isTimeout.set(true);
+                        return Mono.error(e);
+                    })
                     .block();
 
             long endTime = System.currentTimeMillis();
@@ -142,11 +150,13 @@ public class WalletBetAction {
                 httpRequestLog.setOperatorEnd(endTime);
             }
 
-            RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                    EndPoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                    this.getClass().getPackage().getName(), profilesActive);
-
-            //log.info("Response [" + apiUrl + EndPoints.WALLET_BET + "]: " + apiResponse);
+            if (isTimeout.get()) {
+                if (logContextService.isFrameworkV2()) {
+                    throw new OperatorNetworkException("Operator timeout", apiUrl, null);
+                } else {
+                    throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
+                }
+            }
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
@@ -179,8 +189,6 @@ public class WalletBetAction {
             if (isNegativeBalance) {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
-
-            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |

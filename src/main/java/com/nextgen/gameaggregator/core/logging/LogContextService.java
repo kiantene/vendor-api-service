@@ -14,6 +14,11 @@ public class LogContextService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaService kafkaService;
 
+    public boolean isFrameworkV2() {
+        LogContext logContext = LogContextHolder.get();
+        return logContext.getVendorClassName() != null;
+    }
+
     public void logStart(String url, Object body) {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;
@@ -45,15 +50,21 @@ public class LogContextService {
         if (httpRequestLog.getBetEnd() == null) {
             httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
-        logContext.setStart(httpRequestLog.getBetStart());
-        logContext.setEnd(httpRequestLog.getBetEnd());
+        if (logContext.getStart() == 0 && httpRequestLog.getBetStart() != null) {
+            logContext.setStart(httpRequestLog.getBetStart());
+        }
+        if (logContext.getEnd() == 0 && httpRequestLog.getBetEnd() != null) {
+            logContext.setEnd(httpRequestLog.getBetEnd());
+        }
         if (logContext.getApiStart() == 0 && httpRequestLog.getOperatorStart() != null) {
             logContext.setApiStart(httpRequestLog.getOperatorStart());
         }
         if (logContext.getApiEnd() == 0 && httpRequestLog.getOperatorEnd() != null) {
             logContext.setApiEnd(httpRequestLog.getOperatorEnd());
         }
-        logContext.setApiStatusCode(httpRequestLog.getOperatorHttpStatusCode());
+        if (logContext.getApiStatusCode() == null) {
+            logContext.setApiStatusCode(httpRequestLog.getOperatorHttpStatusCode());
+        }
         logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
     }
 
