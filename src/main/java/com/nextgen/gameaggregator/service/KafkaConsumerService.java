@@ -502,7 +502,7 @@ public class KafkaConsumerService {
         GeneralVo vo = new GeneralVo();
 
         try {
-            // Set Request Body to show original kafka data
+            // set request body to show original kafka data
             log.setRequestBody(message);
             // convert to Object
             EndRoundSettledBetForPatching endRoundSettledBetForPatching = parseMessage(message);
