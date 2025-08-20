@@ -15,6 +15,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -92,15 +93,15 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        // Default to bet amount
-        BigDecimal result = getBetAmount();
+        // Default to null
+        BigDecimal result = null;
 
         // Override if type is PAYOUT and availableBet is present
         if (this.type.equals(TransferType.PAYOUT)) {
+            //compare if availableBet is not null then use null,if null will set to -1(can refer vendorService)
             DetailDto detaildto = this.getDetailDto();
             result = (detaildto != null && detaildto.getAvailableBet() != null)
-                    ? detaildto.getAvailableBet()
-                    : null;
+                    ? detaildto.getAvailableBet() : BigDecimal.valueOf(-1);
         }
 
         return result;

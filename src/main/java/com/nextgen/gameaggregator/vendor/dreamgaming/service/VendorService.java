@@ -67,12 +67,11 @@ public class VendorService extends BaseVendorService {
 
     @Override
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-
         BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
 
-
-        //if in the end betData still have null effectiveTurnover, will be using betAmount as effectiveTurnover
-        if (effectiveTurnover == null) {
+        // Compare by numeric value only (ignores scale)
+        // if -1 will set it to unsettled bet amount because availableBet param have no value.
+        if (effectiveTurnover.compareTo(BigDecimal.valueOf(-1)) == 0) {
             effectiveTurnover = betInfo.getBetAmount();
         }
 
