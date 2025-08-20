@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.common;
+package com.nextgen.gameaggregator.core.validator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.SignatureValidationException;
@@ -7,17 +7,12 @@ import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
 import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
-import com.nextgen.gameaggregator.core.validator.VendorSignatureValidator;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 
-/**
- * @deprecated use {@link com.nextgen.gameaggregator.core.validator.AbstractVendorSignatureValidator} instead
- */
-@Deprecated(forRemoval = true)
 public abstract class AbstractVendorSignatureValidator implements VendorSignatureValidator {
     private final VendorPlayerDataService vendorPlayerDataService;
     private final VendorLineService vendorLineService;

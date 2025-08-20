@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 class RollbackDataMapper {
     public RollbackData toRollbackData(BetRollbackContext context) {
@@ -17,12 +19,12 @@ class RollbackDataMapper {
 
             @Override
             public Long getVendorSettledTime() {
-                return context.getTimestamp();
+                return Optional.ofNullable(context.getTimestamp()).orElse(System.currentTimeMillis());
             }
 
             @Override
             public String getRoundId() {
-                return context.getRoundId();
+                return Optional.ofNullable(context.getRoundId()).orElse(context.getVendorBetId());
             }
         };
     }

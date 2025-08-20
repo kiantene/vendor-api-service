@@ -29,6 +29,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
+            enrich(context);
             walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
             GameSession gameSession = gameSessionDataService.getGameSession(context);
             walletBetValidator.validateBusinessState(gameSession, context);
@@ -38,6 +39,15 @@ public class WalletBetServiceWrapper implements WalletBetService {
             return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
+    }
+
+    private void enrich(BetContext context) {
+        if (context.getVendorBetId() == null) {
+            context.setVendorBetId(context.getIdempotencyKey());
+        }
+        if (context.getTimestamp() == null) {
+            context.setTimestamp(System.currentTimeMillis());
         }
     }
 

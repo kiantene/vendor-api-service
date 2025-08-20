@@ -59,6 +59,17 @@ public class WalletBetResultServiceWrapper {
 
     private void enrich(BetResultContext context) {
         context.setResultTime(System.currentTimeMillis());
+        if (context.getVendorBetId() == null) {
+            context.setVendorBetId(context.getIdempotencyKey());
+        }
+
+        if (context.getBetAmount() == null) {
+            context.setBetAmount(BigDecimal.ZERO);
+        }
+
+        if (context.getIsFreeSpin() == null) {
+            context.setIsFreeSpin(0);
+        }
 
         if (state().getVendorService() == null) {
             state().setVendorService(InternalVendorService.getInstance(applicationContext));

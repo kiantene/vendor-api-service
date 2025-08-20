@@ -73,7 +73,7 @@ class BetResultDataMapper {
 
             @Override
             public Integer getIsFreespin() {
-                return Optional.ofNullable(context.getIsFreeSpin()).orElse(0);
+                return context.getIsFreeSpin();
             }
 
             @Override
