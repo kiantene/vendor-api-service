@@ -5,34 +5,35 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Component
 class BetResultDataMapper {
-    public BetResultData toBetResultData(BetContext betContext) {
+    public BetResultData toBetResultData(BetContext context) {
         return new BetResultData() {
             @Override
             public String getExternalTransactionId() {
-                return betContext.getIdempotencyKey();
+                return context.getIdempotencyKey();
             }
 
             @Override
             public String getVendorBetId() {
-                return betContext.getVendorBetId();
+                return Optional.ofNullable(context.getVendorBetId()).orElse(context.getIdempotencyKey());
             }
 
             @Override
             public String getRoundId() {
-                return betContext.getRoundId();
+                return context.getRoundId();
             }
 
             @Override
             public String getGameId() {
-                return betContext.getGameCode();
+                return context.getGameCode();
             }
 
             @Override
             public BigDecimal getBetAmount() {
-                return betContext.getBetAmount();
+                return context.getBetAmount();
             }
 
             @Override
@@ -47,12 +48,12 @@ class BetResultDataMapper {
 
             @Override
             public BigDecimal getEffectiveTurnover() {
-                return betContext.getBetAmount();
+                return context.getBetAmount();
             }
 
             @Override
             public Long getVendorBetTime() {
-                return betContext.getTimestamp();
+                return context.getTimestamp();
             }
 
             @Override
