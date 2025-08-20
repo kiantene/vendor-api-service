@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.context.VendorGameAware;
+import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import lombok.Builder;
@@ -20,7 +22,7 @@ import java.util.List;
  */
 @Data
 @Builder
-public class BetResultContext implements GameSessionData {
+public class BetResultContext implements GameSessionData, VendorPlayerAware, VendorGameAware {
     // --- Vendor mapping fields ---
     private String idempotencyKey;
     private String vendorBetId;
@@ -52,7 +54,16 @@ public class BetResultContext implements GameSessionData {
     private Integer agentId;
     private Long agentPlayerId;
     private String agentPlayerUsername;
+    private Integer currencyId;
     private String currencyCode;
+    private Integer productId;
+    private String productCode;
+    private Integer productGameId;
+    private Integer vendorGameId;
+    private String gameName;
+    private Integer gameCategoryId;
+    private Integer vendorLineId;
+    private BigDecimal fromVendorRate;
     private Long resultTime;
 
     private List<BetTransaction> betTransactions;

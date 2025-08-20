@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.signature;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
 import javax.crypto.Mac;
@@ -10,6 +11,15 @@ import java.nio.charset.StandardCharsets;
 public class HmacSha256SignatureStrategy implements SignatureStrategy {
     private static final String HMAC_ALGO = "HmacSHA256";
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final EncodingType encoding;
+
+    public HmacSha256SignatureStrategy() {
+        this(EncodingType.HEX); // Keep existing behavior as default
+    }
+
+    public HmacSha256SignatureStrategy(EncodingType encoding) {
+        this.encoding = encoding;
+    }
 
     @Override
     public String sign(String rawPayload, String secret) {
@@ -22,7 +32,7 @@ public class HmacSha256SignatureStrategy implements SignatureStrategy {
             sha256Hmac.init(secretKey);
 
             byte[] hash = sha256Hmac.doFinal(dataBytes);
-            return Hex.encodeHexString(hash);
+            return encodeHash(hash);
         } catch (Exception e) {
             throw new IllegalArgumentException("HMAC-SHA256 signing failed", e);
         }
@@ -36,5 +46,17 @@ public class HmacSha256SignatureStrategy implements SignatureStrategy {
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to serialize payload for HMAC signing", e);
         }
+    }
+
+    private String encodeHash(byte[] hash) {
+        return switch (encoding) {
+            case BASE64 -> Base64.encodeBase64String(hash);
+            case HEX -> Hex.encodeHexString(hash);
+        };
+    }
+
+    public enum EncodingType {
+        BASE64,
+        HEX
     }
 }
