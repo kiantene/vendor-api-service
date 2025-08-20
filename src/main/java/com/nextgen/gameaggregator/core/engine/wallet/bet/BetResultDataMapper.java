@@ -18,7 +18,7 @@ class BetResultDataMapper {
 
             @Override
             public String getVendorBetId() {
-                return Optional.ofNullable(context.getVendorBetId()).orElse(context.getIdempotencyKey());
+                return context.getVendorBetId();
             }
 
             @Override

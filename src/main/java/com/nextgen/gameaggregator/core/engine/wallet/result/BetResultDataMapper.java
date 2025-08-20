@@ -18,7 +18,7 @@ class BetResultDataMapper {
 
             @Override
             public String getVendorBetId() {
-                return Optional.ofNullable(context.getVendorBetId()).orElse(context.getIdempotencyKey());
+                return context.getVendorBetId();
             }
 
             @Override
@@ -33,7 +33,7 @@ class BetResultDataMapper {
 
             @Override
             public BigDecimal getBetAmount() {
-                return Optional.ofNullable(context.getBetAmount()).orElse(BigDecimal.ZERO);
+                return context.getBetAmount();
             }
 
             @Override
@@ -73,7 +73,7 @@ class BetResultDataMapper {
 
             @Override
             public Integer getIsFreespin() {
-                return Optional.ofNullable(context.getIsFreeSpin()).orElse(0);
+                return context.getIsFreeSpin();
             }
 
             @Override
