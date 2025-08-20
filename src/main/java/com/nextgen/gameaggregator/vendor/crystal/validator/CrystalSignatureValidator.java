@@ -22,7 +22,7 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
 
     protected CrystalSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
                                         VendorLineService vendorLineService) {
-        super(vendorPlayerDataService, vendorLineService, SigningStrategyType.HMAC_SHA256);
+        super(vendorPlayerDataService, vendorLineService, SigningStrategyType.HMAC_SHA256_HEX);
     }
 
     @Override
