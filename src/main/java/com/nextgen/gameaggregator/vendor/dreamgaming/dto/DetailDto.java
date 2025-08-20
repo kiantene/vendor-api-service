@@ -24,4 +24,7 @@ public class DetailDto {
     @Digits(integer = 20, fraction = 8)
     private BigDecimal availableBet;
 
+
+    @Size(max = 255)
+    private String tableId;
 }
