@@ -502,6 +502,8 @@ public class KafkaConsumerService {
         GeneralVo vo = new GeneralVo();
 
         try {
+            // set request body to show original kafka data
+            log.setRequestBody(message);
             // convert to Object
             EndRoundSettledBetForPatching endRoundSettledBetForPatching = parseMessage(message);
             // validate vendorPlayerId or vendorPlayerUsername
