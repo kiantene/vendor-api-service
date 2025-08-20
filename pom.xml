@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.141</version>
+    <version>1.1.142</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-08-06T09:49:56Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-08-13T10:28:30Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
@@ -38,7 +38,7 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
-        <ga-core.version>1.0.25</ga-core.version>
+        <ga-core.version>1.0.27</ga-core.version>
     </properties>
 
     <dependencies>

@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.sport.processor;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -128,10 +130,9 @@ public class SportUnsettleBetProcessor {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBet.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
-            kafkaService.produceBetHistory(betHistory, walletRequest.getVendorPlayerUsername(), fromVendorRate);
-
+            
             // kafkaService.produceWarehouseBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
-            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername);
+            kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
 
             // update data from couchbase settled bet
             sportSettledBet.setInternalTransactionId(internalTransactionId);

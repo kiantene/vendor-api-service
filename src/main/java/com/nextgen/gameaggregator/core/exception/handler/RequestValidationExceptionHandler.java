@@ -2,20 +2,19 @@ package com.nextgen.gameaggregator.core.exception.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.common.RequestAttributes;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapperRegistry;
-import com.nextgen.gameaggregator.core.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapperRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,7 +66,7 @@ public class RequestValidationExceptionHandler {
     private ResponseEntity<Map<String, Object>> handleDefaultValidation(InvalidRequestException ex) {
         Map<String, Object> response = new HashMap<>();
 
-        response.put("timestamp", LocalDateTime.now());
+        response.put("timestamp", Instant.now().toString());
         response.put("status", HttpStatus.BAD_REQUEST.value());
         response.put("error", "Validation Failed");
         response.put("message", "Request validation failed");

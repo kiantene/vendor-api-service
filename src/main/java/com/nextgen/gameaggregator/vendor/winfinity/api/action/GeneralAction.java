@@ -57,8 +57,8 @@ public class GeneralAction {
     private ClearMasterSessionService clearMasterSessionService;
 
     // Handle incoming API requests
-    @PostMapping(path = { "", "/{qa}" })
-    public ResponseVo handleApiCall(HttpServletRequest request, @PathVariable(required = false) String qa) {
+    @PostMapping(path = { "", "/{id}" })
+    public ResponseVo handleApiCall(HttpServletRequest request, @PathVariable(required = false) String id) {
         // Start the HTTP request logging
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -75,7 +75,7 @@ public class GeneralAction {
             String correct_endpoint = endpoint.substring(1);
 
             // Remove qa path before get vendor line id
-            if (qa != null) {
+            if (id != null) {
                 int index = correct_endpoint.indexOf("/qa");
                 if (index != -1) {
                     correct_endpoint = correct_endpoint.substring(0, index);
@@ -86,7 +86,7 @@ public class GeneralAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(EndPoints.PATH, correct_endpoint);
 
             // Decode request body
-            String decodedBody = vendorService.decodeRequestBody(vendorLineId, body, qa, httpRequestLog);
+            String decodedBody = vendorService.decodeRequestBody(vendorLineId, body, id, httpRequestLog);
 
             // Convert the request body into commonDto object
             CommonDto commonDto = HttpService.convertJsonToDto(decodedBody, CommonDto.class);

@@ -1,10 +1,13 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
+import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
+
 @Data
 @Builder
 public class BetResultContext implements GameSessionData {
@@ -51,7 +54,8 @@ public class BetResultContext implements GameSessionData {
      */
     private String agentPlayerUsername;
     private String currencyCode;
-    private String externalTransactionId;
     private String betId;
     private Long resultTime;
+
+    private List<BetTransaction> betTransactions;
 }

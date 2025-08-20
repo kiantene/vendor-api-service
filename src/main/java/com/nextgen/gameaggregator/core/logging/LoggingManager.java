@@ -63,7 +63,7 @@ public class LoggingManager {
                 if (hasException) {
                     log.error(logJson);
                 } else {
-                    log.info(logJson);
+                    log.debug(logJson);
                 }
             } catch (Exception e) {
                 log.error("Failed to log asynchronously: ", e);

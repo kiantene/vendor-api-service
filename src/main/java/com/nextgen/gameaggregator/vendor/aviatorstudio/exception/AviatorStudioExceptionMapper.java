@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.exception;
 
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
-import com.nextgen.gameaggregator.core.common.VendorExceptionMapper;
+import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
@@ -39,6 +41,11 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
+        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+    }
+
+    @Override
+    public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
         return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
     }
 

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.service;
 
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -45,8 +46,25 @@ public class GameSessionDataService {
         try {
             return getGameSession(gameSessionData);
         } catch (GameSessionExpiredException ex) {
-            // TODO: regenerate token
-            return new GameSession();
+            return regenerateGameSession(gameSessionData);
+        }
+    }
+
+    private GameSession regenerateGameSession(GameSessionData gameSessionData) {
+        String vendorPlayerUsername = gameSessionData.getVendorPlayerUsername();
+        try {
+            GameSession gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+            String gameCode = gameSessionData.getGameCode();
+            if (gameCode != null && !gameCode.isBlank()) {
+                gameSessionService.updateByVendorGameCode(gameSession, gameCode);
+            }
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(gameSessionData.getToken());
+            gameSession.setVendorToken(gameSessionData.getVendorSessionToken());
+
+            return gameSession;
+        } catch (Exception ex) {
+            throw new InternalServerException(ex.getMessage(), ex);
         }
     }
 

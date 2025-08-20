@@ -1,11 +1,12 @@
 package com.nextgen.gameaggregator.core.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.SignatureValidationException;
+import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestParserService;
-import com.nextgen.gameaggregator.core.common.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidator;
 import com.nextgen.gameaggregator.core.common.VendorSignatureValidatorRegistry;
-import com.nextgen.gameaggregator.core.exception.SignatureValidationException;
+import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,6 +64,12 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
     private boolean doValidateSignature(VendorSignatureValidator validator,
                                         ResettableRequestWrapper request,
                                         HttpServletResponse response) throws IOException {
+
+        // Check if this endpoint should be validated
+        if (!validator.shouldValidate(request, request.getRequestURI())) {
+            return true; // Skip validation, continue with request
+        }
+
         try {
             String rawBody = request.getCachedBody();
             Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);

@@ -344,8 +344,15 @@ public class KafkaService {
                 betHistory.getCurrencyId(), betHistory.getAgentId());
     }
 
-    public void produceBetHistoryV3(BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername) {
+    public void produceBetHistoryV3(BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
         try {
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+
+            if (betHistory.getGameSessionToken() == null) {
+                betHistory.setGameSessionToken("");
+            }
+            
             // TODO : Will re-enable after the new game list import is deployed
             // if (productId == null || productCode == null) {
             //     Vendor vendor = vendorService.getById(betHistory.getVendorId());

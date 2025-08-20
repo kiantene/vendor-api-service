@@ -2,14 +2,14 @@ package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.logging.*;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,49 +23,46 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletExceptionTranslator walletExceptionTranslator;
 
     @Override
-    public PlayerBalanceData process(BetContext context) {
+    public PlayerBalanceData process(@NotNull BetContext context) {
         LogContext logContext = LogContextHolder.get();
-        walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
-        GameSession gameSession = retrieveGameSession(context);
-        return processBetTransaction(context, gameSession, logContext);
-    }
-
-    private GameSession retrieveGameSession(BetContext context) {
-        GameSession gameSession = gameSessionDataService.getGameSession(context);
-
-        // TODO: Implement support for vendors that don't return session tokens
-
-        walletBetValidator.validateBusinessState(gameSession, context);
-        return gameSession;
-    }
-
-    private PlayerBalanceData processBetTransaction(
-            BetContext context,
-            GameSession gameSession,
-            LogContext logContext) {
-
+        logContext.setLogGroup("Bet");
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+
         try {
-            BetEvent betEvent = walletService.processBet(
-                    httpRequestLog.getId(),
-                    gameSession,
-                    betResultDataMapper.toBetResultData(context),
-                    logContext.getBody().toString(),
-                    httpRequestLog
-            );
-
-            return PlayerBalanceData.builder()
-                    .username(context.getVendorPlayerUsername())
-                    .currency(context.getVendorCurrency())
-                    .balance(betEvent.getLastBalance())
-                    .timestamp(httpRequestLog.getOperatorEnd())
-                    .build();
-
+            walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
+            GameSession gameSession = gameSessionDataService.getGameSession(context);
+            walletBetValidator.validateBusinessState(gameSession, context);
+            return processBetTransaction(context, gameSession, httpRequestLog);
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
             return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
+    }
+
+    private PlayerBalanceData processBetTransaction(
+            BetContext context,
+            GameSession gameSession,
+            HttpRequestLog httpRequestLog) throws
+                InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
+                BetResultIdempotentViolationException, InsufficientBalanceException,
+                TransactionStillProcessingException, InvalidOperatorResponseException,
+                CouchbaseDataIntegrityException {
+
+        BetEvent betEvent = walletService.processBet(
+                httpRequestLog.getId(),
+                gameSession,
+                betResultDataMapper.toBetResultData(context),
+                httpRequestLog.getRequestBody(),
+                httpRequestLog
+        );
+
+        return new PlayerBalanceData(
+                context.getVendorPlayerUsername(),
+                context.getVendorCurrency(),
+                betEvent.getLastBalance(),
+                httpRequestLog.getOperatorEnd()
+        );
     }
 }

@@ -1,0 +1,22 @@
+package com.nextgen.gameaggregator.vendor.crystal.api.bet;
+
+import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
+import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContextMapper;
+import org.springframework.stereotype.Component;
+
+@Component
+public class BetRequestMapper implements BetContextMapper<BetRequest> {
+    @Override
+    public BetContext toInternal(BetRequest request) {
+        return BetContext.builder()
+                .idempotencyKey(request.getTransactionId())
+                .vendorPlayerUsername(request.getPlayerId())
+                .gameCode(request.getGameCode())
+                .roundId(request.getRoundId())
+                .vendorCurrency(request.getCurrencyCode())
+                .vendorBetId(request.getTransactionId())
+                .betAmount(request.getAmount())
+                .timestamp(System.currentTimeMillis())
+                .build();
+    }
+}

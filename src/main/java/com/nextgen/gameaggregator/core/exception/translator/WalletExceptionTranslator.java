@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.core.exception.translator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
-import com.nextgen.gameaggregator.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
 import com.nextgen.gameaggregator.exception.*;
 import lombok.extern.slf4j.Slf4j;
@@ -121,7 +121,7 @@ public class WalletExceptionTranslator {
          * This could be related to wrong username sent by the vendor, or record is missing in database.
          */
         if (ex instanceof InvalidPlayerException) {
-            throw new com.nextgen.gameaggregator.core.exception.InvalidRequestException("Player cannot be found");
+            throw new com.nextgen.core.exception.InvalidRequestException("Player cannot be found");
         }
 
         if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
