@@ -22,6 +22,10 @@ public class WalletBetValidator {
         duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
     }
 
+    public void clearRequestIdempotent() {
+        duplicateRequestGuard.clear();
+    }
+
     public void validateBusinessState(GameSession session, BetContext betContext) throws
             GameSessionExpiredException, GameTerminatedException,
             PlayerDisabledException, BetNotAllowedException {

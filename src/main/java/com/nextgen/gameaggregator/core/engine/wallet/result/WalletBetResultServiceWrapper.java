@@ -50,6 +50,8 @@ public class WalletBetResultServiceWrapper {
 
             return playerBalance;
         } catch (Exception ex) {
+            // TODO: clear request idempotent only when operator response is successful
+            validator.clearRequestIdempotent();
             walletExceptionTranslator.translateAndThrow(ex);
         } finally {
             cleanup();

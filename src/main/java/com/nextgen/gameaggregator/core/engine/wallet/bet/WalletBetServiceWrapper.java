@@ -35,11 +35,13 @@ public class WalletBetServiceWrapper implements WalletBetService {
             walletBetValidator.validateBusinessState(gameSession, context);
             return processBetTransaction(context, gameSession, httpRequestLog);
         } catch (Exception ex) {
+            // TODO: clear request idempotent only when operator response is successful
+            walletBetValidator.clearRequestIdempotent();
             walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
+        return null;
     }
 
     private void enrich(BetContext context) {

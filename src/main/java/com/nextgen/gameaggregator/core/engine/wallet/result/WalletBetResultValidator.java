@@ -31,6 +31,10 @@ public class WalletBetResultValidator {
         duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
     }
 
+    public void clearRequestIdempotent() {
+        duplicateRequestGuard.clear();
+    }
+
     /**
      * If it requires bet processing (e.g. isBet=true, resultType=BET_WIN|BET_LOSE) then validate the following:
      * Valid game session
