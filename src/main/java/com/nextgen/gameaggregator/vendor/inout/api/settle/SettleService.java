@@ -47,6 +47,8 @@ public class SettleService {
         String secretKey;
         boolean isRequestExists = false;
         CommonDto<SettleDto> dto = new CommonDto<>();
+        BigDecimal balance = null;
+
         try {
             dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
             });
@@ -68,12 +70,18 @@ public class SettleService {
 
             vendorService.doVerification(dto.getData().getCurrency(), dto.getGameMode(), settleDto.getUserId(),gameSession, secretKey, body, xSign);
 
-            ResultType resultType = settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
+            ResultType resultType = settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
+
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             BigDecimal betResultAmount = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(String.valueOf(betResultAmount));
+
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setCode(ResponseCode.OK.code);
+            responseVo.setBalance(balance.toString());
 
         } catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);

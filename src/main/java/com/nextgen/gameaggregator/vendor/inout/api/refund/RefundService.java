@@ -84,8 +84,13 @@ public class RefundService {
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
 
-        } catch (Exception e) {
+        } catch (BetRefundIdempotentViolationException e) {
+            responseVo.setCode(ResponseCode.OK.code);
+            responseVo.setBalance(balance.toString());
+
+        }  catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
+
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {
