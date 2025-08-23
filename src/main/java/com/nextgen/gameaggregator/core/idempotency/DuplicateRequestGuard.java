@@ -17,4 +17,12 @@ public class DuplicateRequestGuard {
             throw new DuplicateRequestException(RequestIdempotencyService.key(vendor, action, key) + " already processed");
         }
     }
+
+    public void clear() {
+        service.clearCurrentRequest();
+    }
+
+    public void cleanup() {
+        RequestIdempotencyService.cleanupThreadLocal();
+    }
 }

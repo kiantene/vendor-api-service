@@ -73,6 +73,16 @@ public class LogContext {
         this.time = this.formatTimestamp(this.start);
     }
 
+    public LogContext setLogGroup(String logGroup) {
+        this.logGroup = logGroup;
+        return this;
+    }
+
+    public LogContext setType(String type) {
+        this.type = type;
+        return this;
+    }
+
     public void setEnd() {
         this.end = System.currentTimeMillis();
         this.timeTaken = this.end - this.start;

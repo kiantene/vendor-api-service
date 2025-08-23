@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RequestIdempotencyService {
-
+    private static final ThreadLocal<RequestIdempotentLog> currentRequestLog = new ThreadLocal<>();
     private final RequestIdempotentLogRepository repository;
 
     public RequestIdempotencyService(RequestIdempotentLogRepository repository) {
@@ -25,7 +25,20 @@ public class RequestIdempotencyService {
         requestIdempotentLog.setCreateTime(System.currentTimeMillis());
         repository.save(requestIdempotentLog);
 
+        currentRequestLog.set(requestIdempotentLog);
         return false;
+    }
+
+    public void clearCurrentRequest() {
+        RequestIdempotentLog log = currentRequestLog.get();
+        if (log != null) {
+            repository.deleteById(log.getId());
+            currentRequestLog.remove();
+        }
+    }
+
+    public static void cleanupThreadLocal() {
+        currentRequestLog.remove();
     }
 
     public static String key(String vendorClassName, String action, String idempotencyKey) {
