@@ -9,6 +9,6 @@ import java.util.Map;
 public interface VendorSignatureValidator {
     String getVendorClassName();
     boolean shouldValidate(HttpServletRequest request, String endpoint);
-    void validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException;
+    Map<String, String> validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException;
     VendorErrorResponse onInvalidSignature(HttpServletRequest request);
 }
