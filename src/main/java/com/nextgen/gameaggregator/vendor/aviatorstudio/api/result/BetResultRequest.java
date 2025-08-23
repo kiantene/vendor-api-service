@@ -41,4 +41,10 @@ public class BetResultRequest {
     private String sessionId;
 
     private String reason;
+
+    @NotBlank
+    private String token;
+
+    @NotBlank
+    private String username;
 }

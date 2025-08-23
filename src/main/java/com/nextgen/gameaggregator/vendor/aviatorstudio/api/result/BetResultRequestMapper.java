@@ -13,11 +13,12 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .vendorBetId(request.getPreviousTransactionId())
                 .roundId(request.getRoundId())
                 .gameCode(request.getGameId())
-//                .vendorPlayerUsername() // get from JWT
+                .vendorPlayerUsername(request.getUsername())
                 .vendorCurrency(request.getCurrency())
                 .winAmount(request.getAmount())
                 .vendorSessionToken(request.getSessionId())
                 .vendorSettleTime(System.currentTimeMillis())
+                .token(request.getToken())
                 .build();
     }
 }

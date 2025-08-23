@@ -4,13 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Vendors {
-    PRAGMATIC       (1, null, "pragmaticplay"),
-    PGSOFT          (2, null, "pgsoft"),
-    CQ9             (3, null, "cq9"),
-    JILI            (4, null, "jili"),
-    FACHAI          (5, null, "facai"),
-    SPADEGAMING     (7, null, "spadegaming"),
-    JDB             (8, null, "jdb")
+    PRAGMATIC       (1,   null, "pragmaticplay"),
+    PGSOFT          (2,   null, "pgsoft"),
+    CQ9             (3,   null, "cq9"),
+    JILI            (4,   null, "jili"),
+    FACHAI          (5,   null, "facai"),
+    SPADEGAMING     (7,   null, "spadegaming"),
+    JDB             (8,   null, "jdb"),
+    AVIATOR_STUDIO  (96,  2000, "aviatorstudio")
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds

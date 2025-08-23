@@ -1,23 +1,22 @@
 package com.nextgen.gameaggregator.game.launcher.aviatorstudio;
 
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
-import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
+import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
 import org.springframework.stereotype.Service;
 
-@Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
-public class ASGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
+@Service
+public class AviatorStudioGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
 
-    protected ASGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, EndPoints.CLASS_NAME);
+    protected AviatorStudioGameLauncher(VendorCredentialUtils credentialUtils) {
+        super(credentialUtils, Vendors.AVIATOR_STUDIO.getClassName());
     }
 
     @Override

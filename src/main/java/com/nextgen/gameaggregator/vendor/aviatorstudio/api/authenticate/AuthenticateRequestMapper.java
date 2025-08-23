@@ -9,8 +9,10 @@ public class AuthenticateRequestMapper implements AuthenticateContextMapper<Auth
     @Override
     public AuthenticateContext toInternal(AuthenticateRequest vendorRequest) {
         return AuthenticateContext.builder()
+                .vendorPlayerUsername(vendorRequest.getUsername())
                 .vendorCurrency(vendorRequest.getCurrency())
                 .vendorSessionToken(vendorRequest.getSessionId())
+                .token(vendorRequest.getToken())
                 .build();
     }
 }

@@ -35,4 +35,10 @@ public class BetRequest {
     @NotBlank
     @Size(max = 255)
     private String sessionId;
+
+    @NotBlank
+    private String token;
+
+    @NotBlank
+    private String username;
 }
