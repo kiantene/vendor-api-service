@@ -21,4 +21,8 @@ public class DuplicateRequestGuard {
     public void clear() {
         service.clearCurrentRequest();
     }
+
+    public void cleanup() {
+        RequestIdempotencyService.cleanupThreadLocal();
+    }
 }

@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
-import com.nextgen.gameaggregator.core.exception.*;
-import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
+import com.nextgen.gameaggregator.core.exception.BetNotAllowedException;
+import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
+import com.nextgen.gameaggregator.core.exception.GameTerminatedException;
+import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
 import com.nextgen.gameaggregator.core.validator.BetValidator;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -19,20 +21,11 @@ public class WalletBetResultValidator {
             ResultType.END
     );
 
-    private final DuplicateRequestGuard duplicateRequestGuard;
     private final BetValidator validator;
 
-    public void validateRequestContext(String vendorClassName, BetResultContext context) throws DuplicateRequestException {
-        final String ACTION = "betresult";
-        final String idempotencyKey = context.getIdempotencyKey();
+    public void validateRequestContext(BetResultContext context) {
 
         // TODO: validate context object
-
-        duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
-    }
-
-    public void clearRequestIdempotent() {
-        duplicateRequestGuard.clear();
     }
 
     /**
