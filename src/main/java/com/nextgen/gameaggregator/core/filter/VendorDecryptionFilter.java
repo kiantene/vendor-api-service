@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.core.filter;
 
-import com.nextgen.core.exception.SignatureValidationException;
+import com.nextgen.core.exception.DecryptionException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestParserService;
+import com.nextgen.gameaggregator.core.decrypter.VendorDecrypter;
+import com.nextgen.gameaggregator.core.decrypter.VendorDecrypterRegistry;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.util.ResponseUtil;
-import com.nextgen.gameaggregator.core.validator.VendorSignatureValidator;
-import com.nextgen.gameaggregator.core.validator.VendorSignatureValidatorRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,10 +24,9 @@ import java.util.Map;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class VendorSignatureFilter extends OncePerRequestFilter {
-    private final VendorSignatureValidatorRegistry registry;
+public class VendorDecryptionFilter extends OncePerRequestFilter {
+    private final VendorDecrypterRegistry registry;
     private final RequestParserService parserService;
-    private final LogContextService logContextService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -42,40 +40,31 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
             return;
         }
 
-        VendorSignatureValidator validator = registry.getValidator(vendorClassName);
+        VendorDecrypter decrypter = registry.get(vendorClassName);
 
-        if (validator == null) {
+        if (decrypter == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         ResettableRequestWrapper wrapped = (ResettableRequestWrapper) request;
-        if (doValidateSignature(validator, wrapped, response)) {
+        if (doDecryption(decrypter, wrapped, response)) {
             filterChain.doFilter(wrapped, response);
         }
     }
 
-    private boolean doValidateSignature(VendorSignatureValidator validator,
-                                        ResettableRequestWrapper request,
-                                        HttpServletResponse response) throws IOException {
-
-        // Check if this endpoint should be validated
-        if (!validator.shouldValidate(request, request.getRequestURI())) {
-            return true; // Skip validation, continue with request
-        }
+    private boolean doDecryption(VendorDecrypter decrypter,
+                                 ResettableRequestWrapper request,
+                                 HttpServletResponse response) throws IOException {
 
         try {
             String rawBody = request.getCachedBody();
             Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);
-            Map<String, String> additionalFields = validator.validate(request, parsedFields, rawBody);
-            if (!additionalFields.isEmpty()) {
-                request.enrichRequestFields(additionalFields);
-                additionalFields.forEach(logContextService::debug);
-            }
+            decrypter.doDecryption(request, parsedFields, rawBody);
             return true;
-        } catch (SignatureValidationException ex) {
+        } catch (DecryptionException ex) {
             LogContextHolder.get().setException(ex);
-            VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
+            VendorErrorResponse errorResponse = decrypter.onDecryptionFailure(request, ex);
             if (errorResponse == null || errorResponse.getBody() == null) {
                 errorResponse = createDefaultDecryptionErrorResponse();
             }
@@ -88,7 +77,7 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
     private VendorErrorResponse createDefaultDecryptionErrorResponse() {
         return new VendorErrorResponse(
                 HttpStatus.UNAUTHORIZED,
-                "Default signature validator - VendorSignatureValidator not implemented"
+                Map.of("error", "Decryption failed")
         );
     }
 }

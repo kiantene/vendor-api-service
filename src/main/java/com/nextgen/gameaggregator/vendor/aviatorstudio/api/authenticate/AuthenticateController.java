@@ -2,16 +2,19 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.api.authenticate;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.game.authenticate.AbstractAuthenticateController;
-import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateContext;
 import com.nextgen.gameaggregator.core.engine.game.authenticate.AuthenticateService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.response.SuccessResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class AuthenticateController extends AbstractAuthenticateController<AuthenticateRequest, AuthenticateResponse> {
+public class AuthenticateController extends AbstractAuthenticateController<AuthenticateRequest, SuccessResponse> {
     public AuthenticateController(AuthenticateRequestMapper requestMapper,
                                   AuthenticateResponseMapper responseMapper,
                                   AuthenticateService authenticateService) {
@@ -20,20 +23,10 @@ public class AuthenticateController extends AbstractAuthenticateController<Authe
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<AuthenticateResponse> authenticate(
-            @Valid @ModelAttribute AuthenticateRequest request,
-            @RequestAttribute("token") String token,
-            @RequestAttribute("username") String username) {
+    public ResponseEntity<SuccessResponse> authenticate(
+            @Valid @ModelAttribute AuthenticateRequest request) {
 
-        AuthenticateResponse response = processRequest(
-                request,
-                context -> enrichContext(context, token, username)
-        );
+        SuccessResponse response = processRequest(request);
         return ResponseEntity.ok(response);
-    }
-
-    private void enrichContext(AuthenticateContext context, String token, String username) {
-        context.setToken(token);
-        context.setVendorPlayerUsername(username);
     }
 }

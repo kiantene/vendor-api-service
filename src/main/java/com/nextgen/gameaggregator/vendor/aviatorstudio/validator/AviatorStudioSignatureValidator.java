@@ -5,8 +5,8 @@ import com.nextgen.gameaggregator.core.validator.AbstractVendorSignatureValidato
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
@@ -29,23 +29,26 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
 
     @Override
     public String getVendorClassName() {
-        return EndPoints.CLASS_NAME;
+        return Vendors.AVIATOR_STUDIO.getClassName();
     }
 
     @Override
-    public void validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+    public Map<String, String> validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
         String jwtAuth = extractAuthorizationHeader(request);
-
+        JwtAuthData authData;
         try {
-            JwtAuthData authData = extractJwtClaims(jwtAuth);
-            String jwtSecret = getCredentialValue(authData.username, Credentials.JWT_SECRET);
+            authData = extractJwtClaims(jwtAuth);
+            String jwtSecret = getCredentialValueByUsername(authData.username, Credentials.JWT_SECRET);
             JwtUtil.verifyAndDecode(jwtAuth, jwtSecret);
-            setRequestAttributes(request, authData);
         } catch (SignatureValidationException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new SignatureValidationException("JWT validation failed: " + ex.getMessage(), ex);
         }
+        return Map.of(
+                REQUEST_ATTR_TOKEN, authData.token,
+                REQUEST_ATTR_USERNAME, authData.username
+        );
     }
 
     @Override
@@ -69,10 +72,5 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
         } catch (Exception ex) {
             throw new SignatureValidationException("Failed to extract JWT claims: " + ex.getMessage(), ex);
         }
-    }
-
-    private void setRequestAttributes(HttpServletRequest request, JwtAuthData authData) {
-        request.setAttribute(REQUEST_ATTR_TOKEN, authData.token());
-        request.setAttribute(REQUEST_ATTR_USERNAME, authData.username());
     }
 }

@@ -39,6 +39,7 @@
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
         <ga-core.version>1.0.27</ga-core.version>
+        <nextgen-core.version>1.0.27</nextgen-core.version>
     </properties>
 
     <dependencies>
@@ -46,6 +47,17 @@
             <groupId>com.nextgen.ga-core</groupId>
             <artifactId>game-aggregator-core</artifactId>
             <version>${ga-core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.nextgen.nextgen-core</groupId>
+                    <artifactId>nextgen-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.nextgen.nextgen-core</groupId>
+            <artifactId>nextgen-core</artifactId>
+            <version>${nextgen-core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.nextgen.sas</groupId>
@@ -225,6 +237,11 @@
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>gitlab-maven-nextgen-core</id>
+            <name>GitLab Maven Registry</name>
+            <url>https://gitlab.newnextgen.site/api/v4/projects/629/packages/maven</url>
+        </repository>
         <repository>
             <id>gitlab-maven-ga-core</id>
             <name>GitLab Maven Registry</name>

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.core.common;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -41,7 +43,7 @@ public class RequestParserService {
 
     private Map<String, String> parseJsonFields(String rawBody) {
         try {
-            return objectMapper.readValue(rawBody, new TypeReference<>() {});
+            return flattenJsonToStringMap(rawBody);
         } catch (Exception e) {
             // log warning if needed
             return Map.of();
@@ -53,6 +55,38 @@ public class RequestParserService {
             return URLDecoder.decode(s, StandardCharsets.UTF_8);
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    private Map<String, String> flattenJsonToStringMap(String rawBody) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(rawBody);
+            Map<String, String> flatMap = new HashMap<>();
+            flattenNode("", rootNode, flatMap);
+            return flatMap;
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    private void flattenNode(String prefix, JsonNode node, Map<String, String> flatMap) {
+        if (node.isObject()) {
+            // Handle nested objects
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                String key = prefix.isEmpty() ? field.getKey() : prefix + "." + field.getKey();
+                flattenNode(key, field.getValue(), flatMap);
+            }
+        } else if (node.isArray()) {
+            // Handle arrays
+            for (int i = 0; i < node.size(); i++) {
+                String key = prefix + "[" + i + "]";
+                flattenNode(key, node.get(i), flatMap);
+            }
+        } else {
+            // Handle primitive values (string, number, boolean, null)
+            flatMap.put(prefix, node.asText());
         }
     }
 }

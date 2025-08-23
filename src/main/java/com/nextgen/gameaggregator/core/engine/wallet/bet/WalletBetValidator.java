@@ -10,16 +10,10 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class WalletBetValidator {
-    private final DuplicateRequestGuard duplicateRequestGuard;
     private final BetValidator validator;
 
-    public void validateRequestContext(String vendorClassName, BetContext context) throws DuplicateRequestException {
-        final String ACTION = "bet";
-        final String idempotencyKey = context.getIdempotencyKey();
-
+    public void validateRequestContext(BetContext context) {
         // TODO: validate context object
-
-        duplicateRequestGuard.ensureNotDuplicate(vendorClassName, ACTION, idempotencyKey);
     }
 
     public void validateBusinessState(GameSession session, BetContext betContext) throws

@@ -1,21 +1,27 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.*;
+import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class WalletBetServiceWrapper implements WalletBetService {
+    private static final String LOG_GROUP = "wallet";
+    private static final String ACTION = "bet";
+    private final DuplicateRequestGuard guard;
     private final GameSessionDataService gameSessionDataService;
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
@@ -23,23 +29,33 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletExceptionTranslator walletExceptionTranslator;
 
     @Override
-    public PlayerBalanceData process(@NotNull BetContext context) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.setLogGroup("Bet");
+    public PlayerBalanceData process(BetContext context) {
+        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
+            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+
             enrich(context);
-            walletBetValidator.validateRequestContext(logContext.getVendorClassName(), context);
+
+            walletBetValidator.validateRequestContext(context);
+
             GameSession gameSession = gameSessionDataService.getGameSession(context);
+
             walletBetValidator.validateBusinessState(gameSession, context);
+
             return processBetTransaction(context, gameSession, httpRequestLog);
+
+        } catch (DuplicateRequestException ex) {
+            return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
+            guard.clear();
             walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
         } finally {
+            guard.cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
+        return null;
     }
 
     private void enrich(BetContext context) {
@@ -49,6 +65,11 @@ public class WalletBetServiceWrapper implements WalletBetService {
         if (context.getTimestamp() == null) {
             context.setTimestamp(System.currentTimeMillis());
         }
+    }
+
+    private PlayerBalanceData handleDuplicateRequest(BetContext context, DuplicateRequestException ex) {
+        // TODO: check for operator status, if is successful then return success
+        return null;
     }
 
     private PlayerBalanceData processBetTransaction(

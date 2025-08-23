@@ -1,17 +1,24 @@
 package com.nextgen.gameaggregator.vendor.aviatorstudio.api.result;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
-import com.nextgen.gameaggregator.core.engine.wallet.result.*;
+import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
+import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
+import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.api.rollback.RollbackService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ReasonCode;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.response.SuccessResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class BetResultController extends AbstractBetResultController<BetResultRequest, BetResultResponse> {
+public class BetResultController extends AbstractBetResultController<BetResultRequest, SuccessResponse> {
     private final RollbackService rollbackService;
 
     public BetResultController(BetResultRequestMapper requestMapper,
@@ -24,14 +31,11 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
 
     @PostMapping(path = EndPoints.CASHIN)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<BetResultResponse> result(
-            @Valid @RequestBody BetResultRequest request,
-            @RequestAttribute("token") String token,
-            @RequestAttribute("username") String username) {
+    public ResponseEntity<SuccessResponse> result(@Valid @RequestBody BetResultRequest request) {
 
-        BetResultResponse response = isSettle(request)
-                ? doSettle(request, token, username)
-                : rollbackService.doRollback(request, token, username);
+        SuccessResponse response = isSettle(request)
+                ? doSettle(request)
+                : rollbackService.doRollback(request);
 
         return ResponseEntity.ok(response);
     }
@@ -46,12 +50,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         return ReasonCode.isSettleReason(request.getReason());
     }
 
-    private BetResultResponse doSettle(BetResultRequest request, String token, String username) {
-        return processRequest(request, context -> enrichContext(context, token, username));
-    }
-
-    private void enrichContext(BetResultContext context, String token, String username) {
-        context.setToken(token);
-        context.setVendorPlayerUsername(username);
+    private SuccessResponse doSettle(BetResultRequest request) {
+        return processRequest(request);
     }
 }

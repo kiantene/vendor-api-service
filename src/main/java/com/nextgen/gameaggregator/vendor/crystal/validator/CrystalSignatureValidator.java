@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.crystal.validator;
 
 import com.nextgen.core.exception.SignatureValidationException;
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.validator.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
@@ -31,16 +31,17 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
     }
 
     @Override
-    public void validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+    public Map<String, String> validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
         String signatureHeader = extractAuthorizationHeader(request);
         String username = formFields.get("playerId");
         if (username == null || username.isBlank()) {
             throw new SignatureValidationException("Missing username in form fields");
         }
 
-        String appSecret = getCredentialValue(username, Credentials.SECRET_KEY);
+        String appSecret = getCredentialValueByUsername(username, Credentials.SECRET_KEY);
         String compactJsonBody = rawBody.replaceAll("\\s+", "");
         checkSignature(signatureHeader, compactJsonBody, appSecret);
+        return Map.of();
     }
 
     private String extractAuthorizationHeader(HttpServletRequest request) throws SignatureValidationException {

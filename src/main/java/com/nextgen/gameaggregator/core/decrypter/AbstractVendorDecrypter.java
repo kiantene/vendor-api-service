@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.core.validator;
+package com.nextgen.gameaggregator.core.decrypter;
 
+import com.nextgen.core.exception.DecryptionException;
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.core.exception.SignatureValidationException;
-import com.nextgen.core.security.signature.SignatureStrategy;
-import com.nextgen.core.security.signature.SigningStrategyType;
+import com.nextgen.core.security.encryption.EncryptionStrategy;
+import com.nextgen.core.security.encryption.EncryptionStrategyType;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
@@ -14,30 +14,17 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 
-public abstract class AbstractVendorSignatureValidator implements VendorSignatureValidator {
+public abstract class AbstractVendorDecrypter implements VendorDecrypter {
     private final VendorPlayerDataService vendorPlayerDataService;
     private final VendorLineService vendorLineService;
-    private final SignatureStrategy signatureStrategy;
+    private final EncryptionStrategy encryptionStrategy;
 
-    protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                               VendorLineService vendorLineService) {
-        this(vendorPlayerDataService, vendorLineService, null);
-    }
-
-    protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                               VendorLineService vendorLineService,
-                                               SigningStrategyType strategyType) {
+    protected AbstractVendorDecrypter(VendorPlayerDataService vendorPlayerDataService,
+                                      VendorLineService vendorLineService,
+                                      EncryptionStrategyType strategyType) {
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.vendorLineService = vendorLineService;
-        this.signatureStrategy = (strategyType != null ? strategyType : SigningStrategyType.NO_OP).getStrategy();
-    }
-
-    /**
-     * @deprecated use getCredentialValueByUsername instead
-     */
-    @Deprecated
-    protected String getCredentialValue(String username, String credentialName) {
-        return getCredentialValueByUsername(username, credentialName);
+        this.encryptionStrategy = (strategyType != null ? strategyType : EncryptionStrategyType.NO_OP).getStrategy();
     }
 
     protected String getCredentialValueByUsername(String username, String credentialName) {
@@ -63,28 +50,17 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
     }
 
     @Override
-    public boolean shouldValidate(HttpServletRequest request, String endpoint) {
-        return true;
-    }
-
-    @Override
-    public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
+    public VendorErrorResponse onDecryptionFailure(HttpServletRequest request, DecryptionException e) {
         return new VendorErrorResponse(
-                Map.of("error", "Invalid signature")
+                Map.of("error", "Decryption failed")
         );
     }
 
-    protected String sign(String payload, String secret) {
-        return signatureStrategy.sign(payload, secret);
+    protected String decrypt(String plaintext, String secret) throws DecryptionException {
+        return encryptionStrategy.decrypt(plaintext, secret);
     }
 
-    protected String sign(Object payload, String secret) {
-        return signatureStrategy.sign(payload, secret);
-    }
-
-    protected final void checkSignature(String expectedSignature, String payload, String secret) {
-        if (!expectedSignature.equals(sign(payload, secret))) {
-            throw new SignatureValidationException("Signature does not match");
-        }
+    protected String decrypt(String plaintext, String secret, String iv) throws DecryptionException {
+        return encryptionStrategy.decrypt(plaintext, secret, iv);
     }
 }

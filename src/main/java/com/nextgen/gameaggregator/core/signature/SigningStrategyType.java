@@ -1,5 +1,9 @@
 package com.nextgen.gameaggregator.core.signature;
 
+/**
+ * @deprecated use {@link com.nextgen.core.security.signature.SigningStrategyType} instead
+ */
+@Deprecated(forRemoval = true)
 public enum SigningStrategyType {
     MD5 {
         @Override

@@ -1,12 +1,14 @@
 package com.nextgen.gameaggregator.core.filter;
 
+import com.nextgen.gameaggregator.vendor.Vendors;
+
 import java.util.List;
 
 public class SupportedVendors {
 
     private static List<String> VENDOR_PATHS = List.of(
-            com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints.CLASS_NAME,
-            com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints.CLASS_NAME
+            Vendors.CRYSTAL.getClassName(),
+            Vendors.AVIATOR_STUDIO.getClassName()
     );
 
     private SupportedVendors() {
