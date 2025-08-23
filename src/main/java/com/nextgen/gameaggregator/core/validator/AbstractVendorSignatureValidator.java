@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.core.validator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.SignatureValidationException;
+import com.nextgen.core.security.signature.SignatureStrategy;
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.VendorLineService;

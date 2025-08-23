@@ -181,8 +181,8 @@ public class LogContext {
             if (log.isDebugEnabled()) {
                 base.put("method", method);
                 base.put("stackTrace", stackTrace);
+                base.putAll(extraFields);
             }
-            base.putAll(extraFields);
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

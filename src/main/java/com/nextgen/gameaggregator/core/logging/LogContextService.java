@@ -19,6 +19,13 @@ public class LogContextService {
         return logContext.getVendorClassName() != null;
     }
 
+    public void debug(String key, Object value) {
+        LogContext logContext = LogContextHolder.get();
+        if (logContext == null) return;
+
+        logContext.put(key, value);
+    }
+
     public void logStart(String url, Object body) {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;
