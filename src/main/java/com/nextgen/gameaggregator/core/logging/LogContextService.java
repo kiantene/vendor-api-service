@@ -14,11 +14,6 @@ public class LogContextService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaService kafkaService;
 
-    public boolean isFrameworkV2() {
-        LogContext logContext = LogContextHolder.get();
-        return logContext.getVendorClassName() != null;
-    }
-
     public void debug(String key, Object value) {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;

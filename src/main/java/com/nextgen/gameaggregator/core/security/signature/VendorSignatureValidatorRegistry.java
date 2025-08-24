@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.validator;
+package com.nextgen.gameaggregator.core.security.signature;
 
 import org.springframework.stereotype.Component;
 
