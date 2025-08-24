@@ -8,6 +8,6 @@ import java.util.Map;
 
 public interface VendorDecrypter {
     String getVendorClassName();
-    Map<String, String> doDecryption(HttpServletRequest request, Map<String, String> formFields, String rawBody);
+    DecryptionResult doDecryption(HttpServletRequest request, Map<String, String> formFields, String rawBody);
     VendorErrorResponse onDecryptionFailure(HttpServletRequest request, DecryptionException e);
 }
