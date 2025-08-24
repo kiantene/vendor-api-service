@@ -4,13 +4,14 @@ import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
+import com.nextgen.gameaggregator.core.util.ResponseUtil;
+import com.nextgen.gameaggregator.vendor.Vendors;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -24,34 +25,27 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private final LoggingManager loggingManager;
 
     @Override
-    protected void doFilterInternal(@NotNull HttpServletRequest request,
-                                    @NotNull HttpServletResponse response,
-                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
         LogContext logContext = loggingManager.onRequestStart(request);
-        String vendorClassName = SupportedVendors.extractVendorClassName(request.getRequestURI());
+        Vendors vendor = Vendors.fromRequestURI(request.getRequestURI());
         ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
-        if (!vendorClassName.isBlank()) {
-            request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorClassName);
-            logContext.setVendorClassName(vendorClassName);
+        if (vendor != null) {
+            request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendor.getClassName());
+            logContext.setVendorClassName(vendor.getClassName());
         }
 
         try {
             cacheRawBody(request, wrappedRequest, logContext);
             filterChain.doFilter(wrappedRequest, wrappedResponse);
         } finally {
-            String responseBody = getResponseBody(wrappedResponse, response);
+            String responseBody = ResponseUtil.getResponseBody(wrappedResponse, response);
             loggingManager.onRequestCompleted(request, responseBody, null);
         }
-    }
-
-    private String getResponseBody(ContentCachingResponseWrapper wrappedResponse, HttpServletResponse response)
-            throws IOException {
-        byte[] content = wrappedResponse.getContentAsByteArray();
-        wrappedResponse.copyBodyToResponse();
-        return new String(content, response.getCharacterEncoding());
     }
 
     private void cacheRawBody(HttpServletRequest request,

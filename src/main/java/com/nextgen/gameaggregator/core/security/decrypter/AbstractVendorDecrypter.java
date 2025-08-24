@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.decrypter;
+package com.nextgen.gameaggregator.core.security.decrypter;
 
 import com.nextgen.core.exception.DecryptionException;
 import com.nextgen.core.exception.InternalConfigurationException;
