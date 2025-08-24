@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
+import com.nextgen.gameaggregator.vendor.Vendors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -151,7 +152,7 @@ public class WalletBetAction {
             }
 
             if (isTimeout.get()) {
-                if (logContextService.isFrameworkV2()) {
+                if (Vendors.isNewFramework(betInformation.getVendorId())) {
                     throw new OperatorNetworkException("Operator timeout", apiUrl, null);
                 } else {
                     throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.validator;
+package com.nextgen.gameaggregator.core.security.signature;
 
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
