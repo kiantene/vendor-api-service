@@ -68,7 +68,7 @@ public class VendorSignatureFilter extends OncePerRequestFilter {
             String rawBody = request.getCachedBody();
             Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);
             Map<String, String> additionalFields = validator.validate(request, parsedFields, rawBody);
-            if (!additionalFields.isEmpty()) {
+            if (additionalFields != null && !additionalFields.isEmpty()) {
                 request.enrichRequestFields(additionalFields);
                 additionalFields.forEach(logContextService::debug);
             }
