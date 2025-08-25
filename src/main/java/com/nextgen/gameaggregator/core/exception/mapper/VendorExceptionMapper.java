@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.core.exception.mapper;
 
-import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
+import com.nextgen.gameaggregator.core.vendor.VendorComponent;
 
-public interface VendorExceptionMapper {
-    String getVendorClassName();
+public interface VendorExceptionMapper extends VendorComponent {
 
     /**
      * These are business scenarios
