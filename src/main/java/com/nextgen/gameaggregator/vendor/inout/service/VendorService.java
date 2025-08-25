@@ -110,8 +110,6 @@ public class VendorService extends BaseVendorService {
         // 6. Verify X-SIGNATURE
         ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
 
-        validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
-
     }
 
     public CommonVo exceptionHandler(Exception e, CommonVo responseVo) {
