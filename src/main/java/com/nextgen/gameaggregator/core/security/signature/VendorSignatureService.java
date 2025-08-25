@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.core.security.signature;
 
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
-import com.nextgen.gameaggregator.core.common.RequestParserService;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
@@ -17,36 +16,47 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class VendorSignatureService {
-    private final RequestParserService parserService;
     private final LogContextService logContextService;
 
-    public boolean doValidation(VendorSignatureValidator validator,
-                                ResettableRequestWrapper request,
-                                HttpServletResponse response) throws IOException {
+    public ValidationResult doValidation(VendorSignatureValidator validator,
+                                                   ResettableRequestWrapper request,
+                                                   HttpServletResponse response,
+                                                   Map<String, String> parsedFields) throws IOException {
 
         // Check if this endpoint should be validated
         if (!validator.shouldValidate(request, request.getRequestURI())) {
-            return true; // Skip validation, continue with request
+            return ValidationResult.skipped(); // Skip validation, continue with request
         }
 
         try {
-            String rawBody = request.getCachedBody();
-            Map<String, String> parsedFields = parserService.parse(request.getContentType(), rawBody);
-            Map<String, String> additionalFields = validator.validate(request, parsedFields, rawBody);
-            if (additionalFields != null && !additionalFields.isEmpty()) {
+            ValidationResult result = validator.validate(request, parsedFields, request.getCachedBody());
+            Map<String,String> additionalFields = result.additionalFields();
+            if (!additionalFields.isEmpty()) {
                 request.enrichRequestFields(additionalFields);
                 additionalFields.forEach(logContextService::debug);
-            }
-            return true;
-        } catch (SignatureValidationException ex) {
-            LogContextHolder.get().setException(ex);
-            VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
-            if (errorResponse == null || errorResponse.getBody() == null) {
-                errorResponse = ResponseUtil.createDefaultErrorResponse("no response from validator");
+                additionalFields.forEach((k, v) -> {
+                    System.out.println(k + " : " + v);
+                });
             }
 
-            ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value());
-            return false;
+            return result;
+        } catch (SignatureValidationException ex) {
+            handleException(validator, request, response, ex);
+            return ValidationResult.failure();
         }
+    }
+
+    private void handleException(VendorSignatureValidator validator,
+                                 ResettableRequestWrapper request,
+                                 HttpServletResponse response,
+                                 SignatureValidationException ex) throws IOException {
+
+        LogContextHolder.get().setException(ex);
+        VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
+        if (errorResponse == null || errorResponse.getBody() == null) {
+            errorResponse = ResponseUtil.createDefaultErrorResponse("no response from validator");
+        }
+
+        ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value());
     }
 }

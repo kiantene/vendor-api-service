@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.validator;
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.security.signature.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.security.signature.ValidationResult;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.Vendors;
@@ -33,7 +34,7 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
     }
 
     @Override
-    public Map<String, String> validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+    public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
         String jwtAuth = extractAuthorizationHeader(request);
         JwtAuthData authData;
         try {
@@ -45,10 +46,10 @@ public class AviatorStudioSignatureValidator extends AbstractVendorSignatureVali
         } catch (Exception ex) {
             throw new SignatureValidationException("JWT validation failed: " + ex.getMessage(), ex);
         }
-        return Map.of(
+        return ValidationResult.success(Map.of(
                 REQUEST_ATTR_TOKEN, authData.token,
                 REQUEST_ATTR_USERNAME, authData.username
-        );
+        ));
     }
 
     @Override
