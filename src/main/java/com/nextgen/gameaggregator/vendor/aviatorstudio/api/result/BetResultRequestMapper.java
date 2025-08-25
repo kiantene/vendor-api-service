@@ -12,7 +12,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .idempotencyKey(request.getTransactionId())
                 .vendorBetId(request.getPreviousTransactionId())
                 .roundId(request.getRoundId())
-                .gameCode(request.getGameId())
+                .vendorGameCode(request.getGameId())
                 .vendorPlayerUsername(request.getUsername())
                 .vendorCurrency(request.getCurrency())
                 .winAmount(request.getAmount())
