@@ -57,10 +57,10 @@ public abstract class BaseEnricher<T> {
     }
 
     private void enrichVendorGame(T target) {
-        if (target instanceof VendorGameAware context && context.getGameCode() != null) {
+        if (target instanceof VendorGameAware context && context.getVendorGameCode() != null) {
             try {
                 VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(
-                        context.getGameCode(),
+                        context.getVendorGameCode(),
                         context.getVendorId()
                 );
                 context.setVendorGameId(vendorGame.getId());

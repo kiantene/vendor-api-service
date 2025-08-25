@@ -54,9 +54,9 @@ public class GameSessionDataService {
         String vendorPlayerUsername = gameSessionData.getVendorPlayerUsername();
         try {
             GameSession gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
-            String gameCode = gameSessionData.getGameCode();
-            if (gameCode != null && !gameCode.isBlank()) {
-                gameSessionService.updateByVendorGameCode(gameSession, gameCode);
+            String vendorGameCode = gameSessionData.getVendorGameCode();
+            if (vendorGameCode != null && !vendorGameCode.isBlank()) {
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
             }
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(gameSessionData.getToken());

@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 @Component
 class BetResultDataMapper {
@@ -28,7 +27,7 @@ class BetResultDataMapper {
 
             @Override
             public String getGameId() {
-                return context.getGameCode();
+                return context.getVendorGameCode();
             }
 
             @Override

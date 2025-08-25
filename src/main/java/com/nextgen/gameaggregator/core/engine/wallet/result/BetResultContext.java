@@ -27,7 +27,7 @@ public class BetResultContext implements GameSessionData, VendorPlayerAware, Ven
     private String idempotencyKey;
     private String vendorBetId;
     private String roundId;
-    private String gameCode;
+    private String vendorGameCode;
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private BigDecimal betAmount;
@@ -61,6 +61,7 @@ public class BetResultContext implements GameSessionData, VendorPlayerAware, Ven
     private Integer productGameId;
     private Integer vendorGameId;
     private String gameName;
+    private String gameCode;
     private Integer gameCategoryId;
     private Integer vendorLineId;
     private BigDecimal fromVendorRate;

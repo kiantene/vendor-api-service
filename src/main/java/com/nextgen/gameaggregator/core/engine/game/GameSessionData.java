@@ -4,7 +4,7 @@ public interface GameSessionData {
     String getToken();
     String getVendorSessionToken();
     String getVendorPlayerUsername();
-    default String getGameCode() {
+    default String getVendorGameCode() {
         return "";
     }
 }

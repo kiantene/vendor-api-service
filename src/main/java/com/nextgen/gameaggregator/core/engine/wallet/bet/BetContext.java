@@ -30,7 +30,7 @@ public class BetContext implements GameSessionData {
      * This helps group related transactions within a single game round.
      */
     private String roundId;
-    private String gameCode;
+    private String vendorGameCode;
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private BigDecimal betAmount;
