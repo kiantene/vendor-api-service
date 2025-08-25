@@ -85,7 +85,7 @@ public class RefundService {
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
 
-        } catch (BetRefundIdempotentViolationException | BetNotFoundException | BetResultIdempotentViolationException e ) {
+        } catch (BetRefundIdempotentViolationException | BetResultIdempotentViolationException e ) {
             balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
