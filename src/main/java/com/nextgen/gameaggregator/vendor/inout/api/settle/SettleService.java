@@ -40,7 +40,7 @@ public class SettleService {
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    public CommonVo settle(HttpRequestLog httpRequestLog, String xSign){
+    public CommonVo settle(HttpRequestLog httpRequestLog, String xSign) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
@@ -48,6 +48,7 @@ public class SettleService {
         boolean isRequestExists = false;
         CommonDto<SettleDto> dto = new CommonDto<>();
         BigDecimal balance = null;
+        GameSession gameSession = null;
 
         try {
             dto = HttpService.convertJsonToDto(body, new TypeReference<>() {
@@ -62,7 +63,7 @@ public class SettleService {
                 throw new TransactionStillProcessingException();
             }
 
-            GameSession gameSession = vendorService.checkGameSession(traceId, settleDto.getUserId(), dto.getGameMode(), dto.getToken());
+             gameSession = vendorService.checkGameSession(traceId, settleDto.getUserId(), dto.getGameMode(), dto.getToken());
 
             secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
@@ -72,17 +73,16 @@ public class SettleService {
 
             ResultType resultType = settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
 
-            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
             BigDecimal betResultAmount = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(String.valueOf(betResultAmount));
 
         } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
-            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
