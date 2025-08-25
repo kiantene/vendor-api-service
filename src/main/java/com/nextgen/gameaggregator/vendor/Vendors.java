@@ -19,7 +19,7 @@ public enum Vendors {
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds
-    private static final String CALLBACK_PREFIX = "api/v1/";
+    private static final String CALLBACK_PREFIX = "/api/v1/";
     private final int id;
     private final Integer timeoutMillis;
     private final String className;
