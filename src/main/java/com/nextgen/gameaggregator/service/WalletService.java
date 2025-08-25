@@ -364,7 +364,7 @@ public class WalletService {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
 
-            if (gameSession.getVendorPlayerUsername().equals("qt3o8sjub")) {
+            if (gameSession.getVendorPlayerUsername().equals("1e8yrfpf6a9i")) {
                 AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
                         gameSession.getAgentId(),
                         gameSession.getVendorId(),
@@ -377,10 +377,6 @@ public class WalletService {
                 settledBet.setCapJackpotAmount(agentPayout.getCapJackpotAmount());
                 settledBet.setCapEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
 
-                walletBetResultData.setWinAmount(agentPayout.getCapWinAmount());
-                walletBetResultData.setWinLoss(agentPayout.getCapWinLoss());
-                walletBetResultData.setJackpotAmount(agentPayout.getCapJackpotAmount());
-                walletBetResultData.setEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
             }
 
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {
@@ -389,8 +385,8 @@ public class WalletService {
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
             }
 
-            log.info("settledBet" + settledBet);
-            log.info("walletBetResultData" + walletBetResultData);
+            System.out.println("settledBet winAmount = " + settledBet.getWinAmount());
+            System.out.println("walletBetResultData winAmount = " + walletBetResultData.getWinAmount());
 
             loggingService.logStart();
             cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());

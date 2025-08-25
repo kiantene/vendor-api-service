@@ -339,6 +339,11 @@ public class WalletBetResultAction {
         BigDecimal winLossAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : this.stripZeroToString(betInformation.getWinLoss());
         BigDecimal jackpotAmount = (ObjectUtils.isEmpty(betInformation.getJackpotAmount())) ? null : this.stripZeroToString(betInformation.getJackpotAmount());
 
+        winAmount = (betInformation.getCapWinAmount() != null) ? betInformation.getCapWinAmount() : winAmount;
+        winLossAmount = (betInformation.getCapWinLoss() != null) ? betInformation.getCapWinLoss() : winLossAmount;
+        jackpotAmount = (betInformation.getCapJackpotAmount() != null) ? betInformation.getCapJackpotAmount() : jackpotAmount;
+        effectiveTurnover = (betInformation.getCapEffectiveTurnover() != null) ? betInformation.getEffectiveTurnover() : effectiveTurnover;
+
         WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
         walletBetResultDto.setTraceId(traceId);
         walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());

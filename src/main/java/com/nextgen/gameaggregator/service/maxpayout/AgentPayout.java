@@ -24,11 +24,11 @@ public class AgentPayout {
     }
 
     private void calculateWinAmount (BigDecimal payoutCap, BigDecimal winAmount) {
-        this.capWinAmount = (winAmount.compareTo(payoutCap) < 0) ? payoutCap : winAmount;
+        this.capWinAmount = (winAmount.compareTo(payoutCap) > 0) ? payoutCap : winAmount;
     }
 
     private void calculateJackpotAmount (BigDecimal payoutCap, BigDecimal capJackpotAmount) {
-        this.capJackpotAmount = (capJackpotAmount.compareTo(payoutCap) < 0) ? payoutCap : capJackpotAmount;
+        this.capJackpotAmount = (capJackpotAmount.compareTo(payoutCap) > 0) ? payoutCap : capJackpotAmount;
     }
 
     private void calculateWinLoss (BigDecimal betAmount) {
