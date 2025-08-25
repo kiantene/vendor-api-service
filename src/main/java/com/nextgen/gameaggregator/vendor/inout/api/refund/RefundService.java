@@ -89,6 +89,7 @@ public class RefundService {
             balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
+            httpService.logError(httpRequestLog, e);
 
         }  catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);

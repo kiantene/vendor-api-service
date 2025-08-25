@@ -82,6 +82,7 @@ public class SettleService {
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e){
             this.handleException(e, responseVo, httpRequestLog);
