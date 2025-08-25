@@ -11,7 +11,7 @@ public class BetRequestMapper implements BetContextMapper<BetRequest> {
         return BetContext.builder()
                 .idempotencyKey(request.getTransactionId())
                 .roundId(request.getRoundId())
-                .gameCode(request.getGameId())
+                .vendorGameCode(request.getGameId())
                 .vendorPlayerUsername(request.getUsername())
                 .vendorCurrency(request.getCurrency())
                 .betAmount(request.getAmount())
