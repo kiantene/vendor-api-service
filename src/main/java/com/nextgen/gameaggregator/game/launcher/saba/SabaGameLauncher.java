@@ -5,12 +5,12 @@ import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
+import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 import com.nextgen.gameaggregator.vendor.saba.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
@@ -62,14 +62,21 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
         String gameUrl = response.getData();
+        Integer agentId = context.getAgentId();
+        String lobbyUrl = context.getLobbyUrl();
+        String language = context.getVendorLanguageCode();
+
+        boolean isHomeUrlDisabled = isAgentIdInDisabledList(agentId, context.getVendorCredentials());
+        String homeUrl = isHomeUrlDisabled ? "" : "&homeUrl=" + lobbyUrl;
 
         String fullUrl = gameUrl +
                 resolveSkinParam(context) +
-                "&lang=" + context.getVendorLanguageCode() +
-                "&homeUrl=" + context.getLobbyUrl();
+                "&lang=" + language +
+                homeUrl;
 
         context.setGameUrl(fullUrl);
     }
+
 
     private String resolveSkinParam(GameLaunchContext context) {
         VendorCredentialAccessor accessor = new VendorCredentialAccessor(context.getVendorCredentials());
@@ -91,5 +98,24 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
         }
 
         return skinPrefix + defaultSkin;
+    }
+
+    private boolean isAgentIdInDisabledList(Integer agentId, Map<String, VendorLineCredential> credentials) {
+        String rawValue = Optional.ofNullable(credentials.get("disable_agentId_set_homeurl_list"))
+                .map(VendorLineCredential::getValue)
+                .orElse("");
+
+        return Arrays.stream(rawValue.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> {
+                    try {
+                        return Integer.parseInt(s);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .anyMatch(id -> id.equals(agentId));
     }
 }
