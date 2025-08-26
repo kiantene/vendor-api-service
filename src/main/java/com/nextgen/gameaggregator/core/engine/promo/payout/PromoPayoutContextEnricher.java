@@ -1,48 +1,65 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.entity.*;
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.entity.Agent;
+import com.nextgen.gameaggregator.core.entity.Currency;
+import com.nextgen.gameaggregator.core.entity.Vendor;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
+import com.nextgen.gameaggregator.core.service.data.CampaignDataService;
+import com.nextgen.gameaggregator.entity.promo.Campaign;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
     private final CurrencyDataService currencyDataService;
     private final VendorDataService vendorDataService;
-    private final VendorGameDataService vendorGameDataService;
-    private final GameCategoryDataService gameCategoryDataService;
     private final AgentDataService agentDataService;
+    private final CampaignDataService campaignDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
                                       CurrencyDataService currencyDataService,
                                       VendorDataService vendorDataService,
                                       VendorGameDataService vendorGameDataService,
-                                      GameCategoryDataService gameCategoryDataService,
-                                      AgentDataService agentDataService) {
-        super(agentPlayerDataService, vendorPlayerDataService);
+                                      AgentDataService agentDataService,
+                                      CampaignDataService campaignDataService) {
+
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
         this.currencyDataService = currencyDataService;
         this.vendorDataService = vendorDataService;
-        this.vendorGameDataService = vendorGameDataService;
-        this.gameCategoryDataService = gameCategoryDataService;
         this.agentDataService = agentDataService;
+        this.campaignDataService = campaignDataService;
+    }
+
+    @Override
+    public void prepareContext(PromoPayoutContext context) {
+        if (context.getHttpRequestLog() == null) {
+            context.setHttpRequestLog(LogContextService.toHttpRequestLog(LogContextHolder.get()));
+        }
     }
 
     public void doEnrich(PromoPayoutContext context) {
         this.populateAgent(context);
         this.populateCurrency(context);
         this.populateVendor(context);
-        this.populateVendorGame(context);
-        this.populateGameCategory(context);
+        this.populateCampaign(context);
+        LogContext logContext = LogContextHolder.get();
+        logContext.setVendorId(context.getVendorId());
+        logContext.setAgentId(context.getAgentId());
+        logContext.setUsername(context.getAgentPlayerUsername());
     }
 
     private void populateCurrency(PromoPayoutContext context) {
         try {
             Currency currency = currencyDataService.get(context.getCurrencyId());
-            context.setCurrencyId(currency.getId());
-            context.setCurrency(currency.getCode());
+            context.setCurrencyCode(currency.getCode());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }
@@ -67,22 +84,14 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         }
     }
 
-    private void populateVendorGame(PromoPayoutContext context) {
-        try {
-            VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(context.getVendorGameCode(), context.getVendorId());
-            context.setVendorGameId(vendorGame.getId());
-            context.setGameCode(vendorGame.getCode());
-            context.setGameName(vendorGame.getName());
-            context.setGameCategoryId(vendorGame.getGameCategoryId());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
+    private void populateCampaign(PromoPayoutContext context) {
+        if (Objects.isNull(context.getVendorCampaignCode())) {
+            return;
         }
-    }
 
-    private void populateGameCategory(PromoPayoutContext context) {
         try {
-            GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
-            context.setGameCategoryCode(gameCategory.getCode());
+            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendorId(), context.getCurrencyCode());
+            context.setCampaignUuid(campaign.getUuid());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
         }

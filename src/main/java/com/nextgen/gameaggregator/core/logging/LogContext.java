@@ -5,7 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMethod;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -14,22 +18,23 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
+@Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LogContext {
-
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
     private String type;
+    private String method;
     private String url;
     private String traceId;
     private String logGroup;
 
     // Raw request body received from the client (e.g., operator system)
-    private String body;
+    private Object body;
 
     // Raw response body returned to the client
-    private String response;
+    private Object response;
     private long start;
     private long end;
     private long timeTaken;
@@ -50,9 +55,11 @@ public class LogContext {
     private long apiStart;
     private long apiEnd;
     private long apiTimeTaken;
+    private Integer apiStatusCode;
     private String exception;
     private String rootCause;
     private String errorMessage;
+    private String stackTrace;
     private int status;
     private String vendorClassName;
     private Integer vendorId;
@@ -66,14 +73,32 @@ public class LogContext {
         this.time = this.formatTimestamp(this.start);
     }
 
+    public LogContext setLogGroup(String logGroup) {
+        this.logGroup = logGroup;
+        return this;
+    }
+
+    public LogContext setType(String type) {
+        this.type = type;
+        return this;
+    }
+
     public void setEnd() {
         this.end = System.currentTimeMillis();
         this.timeTaken = this.end - this.start;
     }
 
+    public void setApiEnd(Long apiEnd) {
+        this.apiEnd = apiEnd;
+        if (this.apiStart > 0) {
+            this.apiTimeTaken = this.apiEnd - this.apiStart;
+        }
+    }
+
     public void setException(Exception ex) {
         setException(ex.getClass().getSimpleName());
         setErrorMessage(ex.getMessage());
+        setStackTrace(getStackTrace(ex));
 
         if (ex instanceof RuntimeException && ex.getCause() != null) {
             Throwable cause = ex.getCause();
@@ -93,6 +118,24 @@ public class LogContext {
 
     public void put(String key, Object value) {
         extraFields.put(key, value);
+    }
+    public void delete(String key) {
+        extraFields.remove(key);
+    }
+
+    public static void putField(String key, Object value) {
+        LogContext context = LogContextHolder.get();
+        if (context != null) {
+            context.put(key, value);
+        }
+    }
+
+    public Object get(String key) {
+        return extraFields.get(key);
+    }
+
+    public boolean exists(String key) {
+        return extraFields.containsKey(key);
     }
 
     private String formatTimestamp(Long timestamp) {
@@ -128,13 +171,18 @@ public class LogContext {
             base.put("apiStart", apiStart);
             base.put("apiEnd", apiEnd);
             base.put("apiTimeTaken", apiTimeTaken);
+            base.put("apiStatusCode", apiStatusCode);
             base.put("status", status);
 
             // Exception
             base.put("exception", exception);
             base.put("rootCause", rootCause);
             base.put("errorMessage", errorMessage);
-            base.putAll(extraFields);
+            if (log.isDebugEnabled()) {
+                base.put("method", method);
+                base.put("stackTrace", stackTrace);
+                base.putAll(extraFields);
+            }
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -144,5 +192,65 @@ public class LogContext {
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
         }
+    }
+
+    private String getStackTrace(Exception exception) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        return sw.toString();
+    }
+
+    /**
+     * Create a defensive copy of this LogContext.
+     * - Preserves traceId/start/time (overwrites constructor defaults).
+     * - Deep-copies extraFields (new LinkedHashMap).
+     * - Copies references for body/response/apiBody/apiResponse (shallow).
+     */
+    public LogContext copy() {
+        LogContext clone = new LogContext();
+
+        clone.traceId = this.traceId;
+        clone.start = this.start;
+        clone.time = this.time;
+        clone.type = this.type;
+        clone.url = this.url;
+        clone.logGroup = this.logGroup;
+        clone.method = this.method;
+
+        // Payloads
+        clone.body = this.body;
+        clone.response = this.response;
+
+        // Timing
+        clone.end = this.end;
+        clone.timeTaken = this.timeTaken;
+
+        // Outbound API details
+        clone.apiUrl = this.apiUrl;
+        clone.apiBody = this.apiBody;
+        clone.apiResponse = this.apiResponse;
+        clone.apiStart = this.apiStart;
+        clone.apiEnd = this.apiEnd;
+        clone.apiTimeTaken = this.apiTimeTaken;
+        clone.apiStatusCode = this.apiStatusCode;
+
+        // Exception fields
+        clone.exception = this.exception;
+        clone.rootCause = this.rootCause;
+        clone.errorMessage = this.errorMessage;
+        clone.stackTrace = this.stackTrace;
+
+        // Status & identifiers
+        clone.status = this.status;
+        clone.vendorClassName = this.vendorClassName;
+        clone.vendorId = this.vendorId;
+        clone.agentId = this.agentId;
+        clone.username = this.username;
+
+        // Extra fields (deep copy of the map)
+        clone.extraFields.putAll(this.extraFields);
+
+        return clone;
     }
 }

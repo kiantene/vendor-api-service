@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
 public class PromoPayoutMapper {
     public PromoPayoutRequest toPromoPayoutRequest(PromoPayoutContext context) {
@@ -13,7 +15,8 @@ public class PromoPayoutMapper {
                 .traceId(context.getTraceId())
                 .username(context.getAgentPlayerUsername())
                 .transactionId(context.getTransactionId())
-                .currency(context.getCurrency())
+                .campaignId(Objects.requireNonNullElse(context.getCampaignUuid(), null))
+                .currency(context.getCurrencyCode())
                 .amount(context.getPayoutAmount())
                 .type(context.getPromoType().code)
                 .timestamp(context.getVendorTransactionTime())

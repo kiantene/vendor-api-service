@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.PromoType;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class PromoPayoutContext implements VendorPlayerAware {
     private String vendorClassName;
     private String campaignUuid;
     private PromoType promoType;
+    private String vendorCampaignCode;
 
     // GA
     private Integer agentId;
@@ -33,13 +35,7 @@ public class PromoPayoutContext implements VendorPlayerAware {
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private Integer currencyId;
-    private String currency;
-    private String vendorGameCode;
-    private Integer vendorGameId;
-    private String gameCode;
-    private String gameName;
-    private Integer gameCategoryId;
-    private String gameCategoryCode;
+    private String currencyCode;
 
     // Vendor Class
     private String transactionId;
@@ -47,4 +43,6 @@ public class PromoPayoutContext implements VendorPlayerAware {
     private BigDecimal payoutAmount;
     private Long vendorTransactionTime;
 
+    // For backward compatibility
+    private HttpRequestLog httpRequestLog;
 }

@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.PromoRequestMapper;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.PromoResponseMapper;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.regex.Matcher;
@@ -47,15 +48,16 @@ public class PGSoftPromoPayoutService {
     }
 
     @VendorExceptionHandler(className = Endpoints.CLASS_NAME)
-    public ResponseVo<CashTransferInOutVo> doPromoPayout(CashTransferInOutDto dto, HttpRequestLog httpRequestLog) {
+    public ResponseEntity<ResponseVo<CashTransferInOutVo>> doPromoPayout(CashTransferInOutDto dto, HttpRequestLog httpRequestLog) {
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
 
         PromoPayoutContext promoPayoutContext = promoRequestMapper.toInternal(dto);
         httpRequestLog.setId(promoPayoutContext.getTraceId()); // promo payout will start sending traceId without hyphens
+        promoPayoutContext.setHttpRequestLog(httpRequestLog);
         PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
         CashTransferInOutVo responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
         parentResponseVo.setData(responseVo);
 
-        return parentResponseVo;
+        return ResponseEntity.ok(parentResponseVo);
     }
 }
