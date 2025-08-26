@@ -1,52 +1,65 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.core.exception.Http4xxException;
+import com.nextgen.core.exception.Http5xxException;
+import com.nextgen.core.webclient.WebClientErrorHandlers;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
-import com.nextgen.gameaggregator.core.exception.*;
+import com.nextgen.gameaggregator.core.exception.OperatorApiException;
+import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.util.JsonUtils;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import org.springframework.http.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.*;
-import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Map;
 
+@Slf4j
+@Component
 public class OperatorApiCallerV2 {
-
-    private final WebClient.Builder builder;
-    private String path;
+    private final WebClient webClient;
 
     public OperatorApiCallerV2() {
-        HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000)
-                .responseTimeout(Duration.ofSeconds(3))
-                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3)));
-
-        this.builder = WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient));
+        this.webClient = createWebClient();
     }
 
-    public OperatorApiCallerV2(String path) {
-        this();
-        this.path = path;
+    private WebClient createWebClient() {
+        HttpClient httpClient = createHttpClient();
+        return WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
     }
 
-    public <T> ClientBalanceResponse post(ClientRequestAuth<T> requestAuth) {
-        return post(
-                requestAuth.getBaseUrl(),
-                requestAuth.getPath(),
-                requestAuth.getHeaders(),
-                requestAuth.getRequestObject()
-        );
+    private HttpClient createHttpClient() {
+        return HttpClient.create(createConnectionProvider())
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
+                .responseTimeout(Duration.ofSeconds(5))             // 5s total read timeout
+                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(5))); // 5s read timeout (low-level)
     }
 
-    public ClientBalanceResponse post(String baseUrl, Map<String, String> headers, Object body) {
-        return post(baseUrl, this.path, headers, body);
+    private ConnectionProvider createConnectionProvider() {
+        return ConnectionProvider.builder("operator-web-client-pool")
+                .maxConnections(1000)                           // Increase total number of simultaneous open connections (default is 500)
+                .pendingAcquireMaxCount(1000)                   // Increase the number of queued requests waiting for a connection (default is 500)
+                .pendingAcquireTimeout(Duration.ofSeconds(10))  // Reduce wait time for a connection before failing (default is 45s)
+                .maxIdleTime(Duration.ofSeconds(30))            // Close idle connections after 30s (default is 0s — no idle timeout)
+                .maxLifeTime(Duration.ofMinutes(5))             // Close and recycle connections after 5 minutes to avoid staleness (default is 0s — live forever)
+                .evictInBackground(Duration.ofSeconds(60))      // Enable periodic background eviction of idle/stale connections (default is 0s — no eviction cycle)
+                .metrics(true)
+                .build();
     }
 
     public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object body) {
@@ -55,25 +68,18 @@ public class OperatorApiCallerV2 {
         populateLogStart(logContext, url, body);
 
         long startNano = System.nanoTime();
+        Integer statusCode = null;
 
         try {
             WebClient.RequestHeadersSpec<?> request = createRequest(url, headers, body);
 
-            ResponseEntity<String> response = request
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, this::handle4xx)
-                    .onStatus(HttpStatusCode::is5xxServerError, this::handle5xx)
-                    .toEntity(String.class)
-                    .block();
+            ResponseEntity<String> response = executeWithRetry(request, url);
 
-            recordEnd(logContext, startNano);
+            recordEnd(logContext, startNano, statusCode);
+
             validateResponse(response, url);
 
-            return JsonUtils.parseSafely(
-                    response.getBody(),
-                    ClientBalanceResponse.class,
-                    ex -> new OperatorApiException(ex.getMessage(), url, response.getStatusCode().value(), response.getBody(), ex)
-            );
+            return parseResponse(response, url);
 
         } catch (WebClientRequestException ex) {
             /*
@@ -85,22 +91,46 @@ public class OperatorApiCallerV2 {
              */
             throw new OperatorNetworkException(ex.getMessage(), url, ex);
 
-        } catch (Http4xxException | Http5xxException ex) {
-            /*
-            Client connection succeed, but returned 4xx or 5xx status code
-             */
-            throw new OperatorApiException(ex.getMessage(), ex);
+        } catch (Http4xxException ex) {
+            statusCode = ex.getStatusCode();
+            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex);
+        } catch (Http5xxException ex) {
+            statusCode = ex.getStatusCode();
+            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex);
 
         } catch (Exception ex) {
             throw new OperatorApiException("Unexpected client error", ex);
 
         } finally {
-            recordEnd(logContext, startNano);
+            recordEnd(logContext, startNano, statusCode);
         }
     }
 
+    private ResponseEntity<String> executeWithRetry(WebClient.RequestHeadersSpec<?> request, String path) {
+        return request
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
+                .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
+                .toEntity(String.class)
+                .retryWhen(createRetrySpec(path))
+                .block();
+    }
+
+    private Retry createRetrySpec(String path) {
+        return Retry.backoff(3, Duration.ofSeconds(1))
+                .jitter(0.5)
+                .filter(this::isRetryable)
+                .doBeforeRetry(retrySignal ->
+                        log.warn("[{}] Retrying attempt {} due to: {}",
+                                path,
+                                retrySignal.totalRetries() + 1,
+                                retrySignal.failure())
+                )
+                .onRetryExhaustedThrow((spec, signal) -> signal.failure());
+    }
+
     private WebClient.RequestHeadersSpec<?> createRequest(String url, Map<String, String> headers, Object body) {
-        return builder.build()
+        return webClient
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -111,16 +141,28 @@ public class OperatorApiCallerV2 {
                 .body(BodyInserters.fromValue(body));
     }
 
+    private ClientBalanceResponse parseResponse(ResponseEntity<String> response, String url) {
+        LogContext logContext = LogContextHolder.get();
+        logContext.setApiResponse(response.getBody());
+        return JsonUtils.parseSafely(
+                response.getBody(),
+                ClientBalanceResponse.class,
+                ex -> new OperatorApiException(ex.getMessage(), url,
+                        response.getStatusCode().value(), response.getBody(), ex)
+        );
+    }
+
     private void populateLogStart(LogContext ctx, String url, Object body) {
         ctx.setApiUrl(url);
         ctx.setApiBody(body);
         ctx.setApiStart(System.currentTimeMillis());
     }
 
-    private void recordEnd(LogContext ctx, long startNano) {
+    private void recordEnd(LogContext ctx, long startNano, Integer statusCode) {
         long elapsedMs = (System.nanoTime() - startNano) / 1_000_000;
         ctx.setApiEnd(System.currentTimeMillis());
         ctx.setApiTimeTaken(elapsedMs);
+        ctx.setApiStatusCode(statusCode);
     }
 
     private String buildFullUrl(String baseUrl, String path) {
@@ -138,13 +180,9 @@ public class OperatorApiCallerV2 {
         }
     }
 
-    private Mono<? extends Throwable> handle4xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http4xxException(response.statusCode().value(), body));
-    }
-
-    private Mono<? extends Throwable> handle5xx(ClientResponse response) {
-        return response.bodyToMono(String.class)
-                .map(body -> new Http5xxException(response.statusCode().value(), body));
+    private boolean isRetryable(Throwable throwable) {
+        return throwable instanceof java.io.IOException
+                || throwable instanceof io.netty.channel.unix.Errors.NativeIoException
+                || (throwable.getCause() instanceof java.io.IOException);
     }
 }

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.rollback;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -41,13 +42,15 @@ public class WalletRollbackAction {
     private final CurrencyConversionService currencyConversionService;
     private final BetResultRetryLogService betResultRetryLogService;
     private final HttpService httpService;
+    private final LogContextService logContextService;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
     public WalletRollbackAction(RequestService requestService, AuthenticationService authenticationService,
                                 AgentApiCredentialService agentApiCredentialService,
                                 VendorService vendorService, CurrencyConversionService currencyConversionService,
-                                BetResultRetryLogService betResultRetryLogService, HttpService httpService) {
+                                BetResultRetryLogService betResultRetryLogService, HttpService httpService,
+                                LogContextService logContextService) {
         this.requestService = requestService;
         this.authenticationService = authenticationService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -55,6 +58,7 @@ public class WalletRollbackAction {
         this.currencyConversionService = currencyConversionService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.httpService = httpService;
+        this.logContextService = logContextService;
     }
 
     public WalletBalanceVo
@@ -97,8 +101,10 @@ public class WalletRollbackAction {
             return requestService.responseOperatorSub();
         }
 
+        ResponseEntity<String> apiResponse = null;
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
+            logContextService.logStart(apiUrl + EndPoints.WALLET_ROLLBACK, dto);
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -116,6 +122,7 @@ public class WalletRollbackAction {
                     .block();
 
             long endTime = System.currentTimeMillis();
+            logContextService.logEnd(apiResponse);
             httpRequestLog.setOperatorEnd(endTime);
 
             if (httpRequestLog != null) {
@@ -176,6 +183,7 @@ public class WalletRollbackAction {
             operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
+            logContextService.logEnd(apiResponse);
             if (isError) {
                 responseVo = this.processForceSuccess(gameSession, traceId);
                 if (httpRequestLog != null) {
