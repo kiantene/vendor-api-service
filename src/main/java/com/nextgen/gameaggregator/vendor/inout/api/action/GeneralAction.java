@@ -66,7 +66,7 @@ public class GeneralAction {
             vo = this.actionHandling(httpRequestLog, request, dto);
 
         } catch (Exception e) {
-            vo.setError(ResponseCode.INVALID_TOKEN);
+            vo.setError(ResponseCode.UNKNOWN_ERROR);
 
         } finally {
             httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
@@ -100,7 +100,7 @@ public class GeneralAction {
                 break;
 
             default:
-                vo.setError(ResponseCode.INVALID_TOKEN);
+                vo.setError(ResponseCode.UNKNOWN_ERROR);
                 break;
 
         }

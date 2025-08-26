@@ -80,7 +80,6 @@ public class SettleService {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
 
