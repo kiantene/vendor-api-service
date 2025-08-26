@@ -14,4 +14,13 @@ public class PlayerBalanceData {
     private String currency;
     private BigDecimal balance;
     private Long timestamp;
+
+    public static PlayerBalanceData getDefault(String traceId, String username, String currency) {
+        return new PlayerBalanceData(
+                username,
+                currency,
+                BigDecimal.ZERO,
+                System.currentTimeMillis()
+        );
+    }
 }

@@ -7,5 +7,10 @@ import lombok.Data;
 public class BetResultWrapperContext {
     private BetResultContext betResultContext;
     private BaseVendorService vendorService;
-    private BetResultConfig config = new BetResultConfig();
+    private BetResultConfig config;
+
+    public BetResultWrapperContext(BetResultContext context) {
+        this.betResultContext = context;
+        this.config = new BetResultConfig();
+    }
 }
