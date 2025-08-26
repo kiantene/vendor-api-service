@@ -17,11 +17,11 @@ public abstract class AbstractBetController<Q, R> extends AbstractProcessorContr
     @Override
     protected PlayerBalanceData executeService(BetContext context) {
         return walletService.initialise(context)
-                .configure(this::configure)
+                .configure(config -> configure(config, context))
                 .process();
     }
 
-    protected void configure(BetConfig config) {
+    protected void configure(BetConfig config, BetContext context) {
         // override for config
     }
 }
