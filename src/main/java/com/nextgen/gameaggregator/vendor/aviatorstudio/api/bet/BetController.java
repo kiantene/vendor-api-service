@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aviatorstudio.api.bet;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.AbstractBetController;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.BetConfig;
+import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.response.SuccessResponse;
@@ -31,7 +32,7 @@ public class BetController extends AbstractBetController<BetRequest, SuccessResp
     }
 
     @Override
-    public void configure(BetConfig config) {
+    public void configure(BetConfig config, BetContext context) {
         config.returnSuccessOnDuplicate(true);
     }
 }
