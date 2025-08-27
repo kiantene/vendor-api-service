@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aglive.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.Status;
@@ -169,6 +170,19 @@ public class VendorService extends BaseVendorService {
             log.error("Failed to get balance for traceId: {}", traceId, e);
             return BigDecimal.ZERO;
         }
+    }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //if effectiveTurnover null/0 , return 0.
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = BigDecimal.ZERO;
+        }
+
+        return effectiveTurnover;
     }
 }
 

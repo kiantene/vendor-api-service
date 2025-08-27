@@ -64,7 +64,19 @@ public class CommonSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        BigDecimal winAmount = this.getWinAmount();
+        BigDecimal betAmount = this.settleDto.getValidBetAmount();
+
+        if (winAmount.compareTo(betAmount) == 0) {
+            return BigDecimal.ZERO;
+
+        } else if (winAmount.compareTo(BigDecimal.ZERO) == 0 || winAmount.compareTo(betAmount) > 0) {
+            return betAmount;
+
+        } else {
+            return winAmount;
+
+        }
     }
 
     @Override
