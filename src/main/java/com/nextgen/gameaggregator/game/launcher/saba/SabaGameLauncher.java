@@ -101,21 +101,28 @@ public class SabaGameLauncher extends AbstractGameLaunchHandler<GameLaunchReques
     }
 
     private boolean isAgentIdInDisabledList(Integer agentId, Map<String, VendorLineCredential> credentials) {
-        String rawValue = Optional.ofNullable(credentials.get("disable_agentId_set_homeurl_list"))
-                .map(VendorLineCredential::getValue)
-                .orElse("");
+        try {
+            String rawValue = Optional.ofNullable(credentials.get("agentId_disable_homepage_list"))
+                    .map(VendorLineCredential::getValue)
+                    .orElse("");
 
-        return Arrays.stream(rawValue.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> {
-                    try {
-                        return Integer.parseInt(s);
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .anyMatch(id -> id.equals(agentId));
+            return Arrays.stream(rawValue.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> {
+                        try {
+                            return Integer.parseInt(s);
+                        } catch (NumberFormatException e) {
+                            return null; // safely ignore bad values
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .anyMatch(id -> id.equals(agentId));
+
+        } catch (Exception e) {
+            // If any unexpected exception occurs, return false
+            return false;
+        }
     }
+
 }
