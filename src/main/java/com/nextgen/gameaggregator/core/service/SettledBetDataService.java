@@ -28,9 +28,8 @@ public class SettledBetDataService {
     }
 
     private List<BetHistory> findSettledBets(String betId, Long timestamp) {
-//        return warehouseBetHistoryService
-//                .findByExternalTransactionIdAndVendorSettleTime(betId, timestamp);
-        return List.of();
+        return warehouseBetHistoryService
+                .findByExternalTransactionIdAndVendorSettleTime(betId, timestamp);
     }
 
     private List<SettledBet> buildSettledBetDocuments(List<BetHistory> betHistoryList) {
@@ -51,11 +50,11 @@ public class SettledBetDataService {
     }
 
     private void storeSettledBetDocuments(List<SettledBet> settledBetList) {
-//        try {
-//            settledBetService.saveAll(settledBetList);
-//        } catch (Exception ex) {
-//            // TODO: store failure in couchbase rollback_dlq
-//            throw ex;
-//        }
+        try {
+            settledBetService.saveAll(settledBetList);
+        } catch (Exception ex) {
+            // TODO: store failure in couchbase rollback_dlq
+            throw ex;
+        }
     }
 }
