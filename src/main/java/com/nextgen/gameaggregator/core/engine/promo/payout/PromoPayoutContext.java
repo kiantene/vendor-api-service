@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 @Builder
 @Data
-public class PromoPayoutContext implements VendorPlayerAware, VendorGameAware {
+public class PromoPayoutContext implements VendorPlayerAware {
     // Request
     private String traceId;
     private String idempotencyKey;
