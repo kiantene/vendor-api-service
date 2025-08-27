@@ -16,6 +16,8 @@ import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.function.Consumer;
+
 @Service
 @RequiredArgsConstructor
 public class WalletBetServiceWrapper implements WalletBetService {
@@ -27,6 +29,11 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletService walletService;
     private final BetResultDataMapper betResultDataMapper;
     private final WalletExceptionTranslator walletExceptionTranslator;
+
+    @Override
+    public PlayerBalanceData process() {
+        return process(state().getBetContext());
+    }
 
     @Override
     public PlayerBalanceData process(BetContext context) {
@@ -69,7 +76,11 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
     private PlayerBalanceData handleDuplicateRequest(BetContext context, DuplicateRequestException ex) {
         // TODO: check for operator status, if is successful then return success
-        return null;
+
+        if (state().getConfig().isReturnSuccessOnDuplicate()) {
+            return PlayerBalanceData.getDefault(context.getTraceId(), context.getVendorPlayerUsername(), context.getVendorCurrency());
+        }
+        throw ex;
     }
 
     private PlayerBalanceData processBetTransaction(
@@ -95,5 +106,22 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 betEvent.getLastBalance(),
                 httpRequestLog.getOperatorEnd()
         );
+    }
+
+    @Override
+    public WalletBetService initialise(BetContext context) {
+        BetWrapperContext state = new BetWrapperContext(context);
+        BetContextHolder.set(state);
+        return this;
+    }
+
+    private BetWrapperContext state() {
+        return BetContextHolder.getRequired();
+    }
+
+    @Override
+    public WalletBetService configure(Consumer<BetConfig> configurer) {
+        configurer.accept(state().getConfig());
+        return this;
     }
 }
