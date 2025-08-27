@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -33,15 +34,20 @@ public class CancelBetAction {
 
     private final VendorService vendorService;
 
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
 
     @Autowired
-    public CancelBetAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService
-            , VendorService vendorService) {
+    public CancelBetAction(HttpService httpService,
+                           GameSessionService gameSessionService,
+                           WalletService walletService,
+                           VendorService vendorService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
@@ -51,14 +57,22 @@ public class CancelBetAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
-
+        boolean isRequestExists = false;
+        CancelBetDto dto = new CancelBetDto();
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelBetDto dto = HttpService.convertJsonToDto(body, CancelBetDto.class);
+            dto = HttpService.convertJsonToDto(body, CancelBetDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
@@ -114,6 +128,10 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.CANCEL_BET_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
 

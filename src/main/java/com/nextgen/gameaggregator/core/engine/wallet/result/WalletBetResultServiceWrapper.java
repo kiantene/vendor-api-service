@@ -119,8 +119,7 @@ public class WalletBetResultServiceWrapper {
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
-        BetResultWrapperContext state = new BetResultWrapperContext();
-        state.setBetResultContext(context);
+        BetResultWrapperContext state = new BetResultWrapperContext(context);
         BetResultContextHolder.set(state);
         return this;
     }
