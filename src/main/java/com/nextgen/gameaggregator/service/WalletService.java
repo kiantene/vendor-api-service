@@ -5,6 +5,8 @@ import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.constant.WalletServiceConstant;
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -471,8 +473,24 @@ public class WalletService {
             httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
 
+        doEndRoundProcess(traceId, betResultData, settledBet, vendorService, gameSession);
+
+        return balanceVo;
+    }
+
+    private void doEndRoundProcess(String traceId, BetResultData betResultData, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
+        // overwrite by new integration framework: WalletBetResultServiceWrapper
+        if (BetResultContextHolder.isInitialized()) {
+            SettleType settleType = BetResultContextHolder.getConfig().getSettleType();
+            if (settleType.equals(SettleType.BET)) return; // if settle by bet, don't run below
+        }
+
         loggingService.logStart();
-        //settle by round
+        /**
+         * The logic below indicates settle by round (default behaviour from old integration framework using BaseVendorService)
+         * In the new integration framework, default behaviour is settled by bet and BaseVendorService is no longer in used,
+         * replaced by BetResultConfig which sets the settleType (refer to above logic)
+         */
         if (!betResultData.getShouldSettleByBet()) {
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
@@ -489,8 +507,6 @@ public class WalletService {
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
-
-        return balanceVo;
     }
 
     private void processDefaultDataForSettledBet(BetInformation betInformation, SettledBet settledBet) {

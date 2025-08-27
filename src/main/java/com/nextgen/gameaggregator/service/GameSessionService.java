@@ -180,6 +180,7 @@ public class GameSessionService {
     }
 
     // deprecated, use getLastGameSessionByVendorPlayerUsername instead
+    @Deprecated
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
 
@@ -294,7 +295,7 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
     })
     public GameSession regenerateVendorToken(GameSession gameSession, String newToken) {
-
+        // TODO: to refactor to use mutateIn
         gameSession.setVendorToken(newToken);
         rawGameSessionRepository.save(gameSession);
 

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.core.util;
 
-import com.nextgen.gameaggregator.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
 
 import java.util.Map;

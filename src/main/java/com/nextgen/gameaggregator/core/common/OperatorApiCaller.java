@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.webclient.WebClientErrorHandlers;
-import com.nextgen.gameaggregator.core.exception.Http4xxException;
-import com.nextgen.gameaggregator.core.exception.Http5xxException;
+import com.nextgen.core.exception.Http4xxException;
+import com.nextgen.core.exception.Http5xxException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -112,11 +112,17 @@ public class OperatorApiCaller {
 
             throw new OperatorApiException("Invalid response format", ex);
 
-        } catch (Http4xxException | Http5xxException ex) {
-            /*
-            Client connection succeed, but returned 4xx or 5xx status code
+        } catch (Http4xxException ex) {
+            /**
+             * Client connection succeed, but returned 4xx status code
              */
-            throw new OperatorApiException(ex.getMessage(), ex);
+            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), requestBody.toString());
+
+        } catch (Http5xxException ex) {
+            /**
+             * Client connection succeed, but returned 5xx status code
+             */
+            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), requestBody.toString());
 
         } catch (Exception e) {
 

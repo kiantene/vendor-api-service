@@ -183,21 +183,6 @@ public class RequestService {
         return balanceVo;
     }
 
-    public ClientBalanceResponse getClientBalanceResponse(String traceId, String currency, String username) {
-        PlayerBalanceData playerBalanceData = new PlayerBalanceData();
-        playerBalanceData.setBalance(BigDecimal.ONE);
-        playerBalanceData.setTimestamp(System.currentTimeMillis());
-        playerBalanceData.setCurrency(currency);
-        playerBalanceData.setUsername(username);
-
-        ClientBalanceResponse response = new ClientBalanceResponse();
-        response.setStatus(ResponseCodes.Status.SC_OK.toString());
-        response.setTraceId(traceId);
-        response.setMessage(ResponseCodes.Status.SC_OK.description + " : Skip Stub");
-        response.setData(playerBalanceData);
-        return response;
-    }
-
     public Boolean shouldSkipStubCall(String username) {
         return useStub && username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
     }
