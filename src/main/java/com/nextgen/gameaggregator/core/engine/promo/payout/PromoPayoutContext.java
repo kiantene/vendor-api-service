@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.PromoType;
