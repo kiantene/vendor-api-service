@@ -33,15 +33,6 @@ public class PromoPayoutHistory {
     @JsonProperty("vendor_player_username")
     private String vendorPlayerUsername;
 
-    @JsonProperty("vendor_game_id")
-    private Integer vendorGameId;
-
-    @JsonProperty("game_name")
-    private String gameName;
-
-    @JsonProperty("game_code")
-    private String gameCode;
-
     @JsonProperty("vendor_id")
     private Integer vendorId;
 
@@ -50,12 +41,6 @@ public class PromoPayoutHistory {
 
     @JsonProperty("vendor_line_id")
     private Integer vendorLineId;
-
-    @JsonProperty("game_category_id")
-    private Integer gameCategoryId;
-
-    @JsonProperty("game_category_code")
-    private String gameCategoryCode;
 
     @JsonProperty("agent_id")
     private Integer agentId;

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.common.OperatorApiCaller;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -33,7 +34,7 @@ public class WalletBalanceAction {
     private final CurrencyConversionService currencyConversionService;
     private final ConnectionProvider operatorApiConnectionProvider;
     private final MeterRegistry meterRegistry;
-
+    private final LogContextService logContextService;
 
     public WalletBalanceAction(RequestService requestService,
                                AgentApiCredentialService agentApiCredentialService,
@@ -41,7 +42,8 @@ public class WalletBalanceAction {
                                VendorService vendorService,
                                CurrencyConversionService currencyConversionService,
                                ConnectionProvider operatorApiConnectionProvider,
-                               MeterRegistry meterRegistry) {
+                               MeterRegistry meterRegistry,
+                               LogContextService logContextService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -50,8 +52,8 @@ public class WalletBalanceAction {
         this.currencyConversionService = currencyConversionService;
         this.operatorApiConnectionProvider = operatorApiConnectionProvider;
         this.meterRegistry = meterRegistry;
+        this.logContextService = logContextService;
     }
-
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
@@ -83,19 +85,20 @@ public class WalletBalanceAction {
             return requestService.responseOperatorSub();
         }
 
-        ResponseEntity<String> apiResponse;
+        ResponseEntity<String> apiResponse = null;
 
         try {
             OperatorApiCaller operatorApiCaller = new OperatorApiCaller(operatorApiConnectionProvider, this.meterRegistry);
-            
-            apiResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, Map.of(
-                    EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey(),
-                    EndPoints.HEADER_SIGNATURE, signature
-            ), dto, Map.of(
+            Map<String, String> headers = getHeaders(agentApiCredential.getApiKey(), signature);
+            Map<String, String> extras = Map.of(
                     OperatorApiCaller.AGENT_ID, String.valueOf(agentId),
                     OperatorApiCaller.ACTION, "balance"
-            ));
+            );
+
+            logContextService.logStart(apiUrl + EndPoints.WALLET_BALANCE, dto);
+            apiResponse = operatorApiCaller.post(apiUrl, EndPoints.WALLET_BALANCE, headers, dto, extras);
             this.setEndTime(httpRequestLog);
+            logContextService.logEnd(apiResponse);
 
         } catch (OperatorApiException operatorApiException) {
             this.setEndTime(httpRequestLog);
@@ -112,34 +115,9 @@ public class WalletBalanceAction {
             }
 
             throw exception;
-
+        } finally {
+            logContextService.logEnd(apiResponse);
         }
-
-//        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
-//                .post()
-//                .uri(EndPoints.WALLET_BALANCE)
-//                .header(EndPoints.HEADER_SIGNATURE, signature)
-//                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .accept(MediaType.APPLICATION_JSON)
-//                .body(BodyInserters.fromValue(dto))
-//                .retrieve()
-//                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-//                .toEntity(String.class)
-//                .retry(3)
-//                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-//                .retry(3)
-//                .block();
-//
-//        long endTime = System.currentTimeMillis();
-//        if (httpRequestLog != null) {
-//            if (apiResponse != null) {
-//                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-//
-//            }
-//            httpRequestLog.setOperatorEnd(endTime);
-//        }
-//
 
         try {
 
@@ -168,8 +146,6 @@ public class WalletBalanceAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            //RequestService.successResponseLog(requestLogVo);
-
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
@@ -187,6 +163,13 @@ public class WalletBalanceAction {
         }
 
         return responseVo;
+    }
+
+    private Map<String, String> getHeaders(String apiKey, String signature) {
+        return Map.of(
+                EndPoints.HEADER_API_KEY, apiKey,
+                EndPoints.HEADER_SIGNATURE, signature
+        );
     }
 
     private WalletBalanceDto newWalletBalanceDto(String traceId, GameSession

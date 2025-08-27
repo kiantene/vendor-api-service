@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.PromoType;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 @Builder
 @Data
-public class PromoPayoutContext implements VendorPlayerAware, VendorGameAware {
+public class PromoPayoutContext implements VendorPlayerAware {
     // Request
     private String traceId;
     private String idempotencyKey;
@@ -20,6 +20,7 @@ public class PromoPayoutContext implements VendorPlayerAware, VendorGameAware {
     private String vendorClassName;
     private String campaignUuid;
     private PromoType promoType;
+    private String vendorCampaignCode;
 
     // GA
     private Integer agentId;
@@ -34,13 +35,7 @@ public class PromoPayoutContext implements VendorPlayerAware, VendorGameAware {
     private String vendorPlayerUsername;
     private String vendorCurrency;
     private Integer currencyId;
-    private String currency;
-    private String vendorGameCode;
-    private Integer vendorGameId;
-    private String gameCode;
-    private String gameName;
-    private Integer gameCategoryId;
-    private String gameCategoryCode;
+    private String currencyCode;
 
     // Vendor Class
     private String transactionId;
@@ -48,4 +43,6 @@ public class PromoPayoutContext implements VendorPlayerAware, VendorGameAware {
     private BigDecimal payoutAmount;
     private Long vendorTransactionTime;
 
+    // For backward compatibility
+    private HttpRequestLog httpRequestLog;
 }

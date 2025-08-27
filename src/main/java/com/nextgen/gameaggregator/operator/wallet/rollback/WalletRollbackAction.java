@@ -232,4 +232,98 @@ public class WalletRollbackAction {
 
         return responseVo;
     }
+
+    public WalletBalanceVo callProcessRollback(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog, Integer timeoutTiming, BigDecimal toVendorConversionRate)
+            throws InvalidAgentApiCredentialException, InvalidFormatException {
+
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        Long startTime = System.currentTimeMillis();
+        Long endTime = 0L;
+
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
+
+        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, vendorBetId, roundId, gameSession, rollbackTimestamp, internalTransactionId);
+        ValidationUtils.doValidation(dto, InvalidFormatException::new);
+
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
+
+        httpRequestLog.setAgentId(agentId);
+        httpRequestLog.setOperatorStart(startTime);
+
+        String jsonApiResponse = new Gson().toJson(dto);
+        httpRequestLog.setOperatorData(jsonApiResponse);
+        httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_ROLLBACK);
+
+        // if match useStub and username prefix will skip call to stub
+        if (requestService.shouldSkipStubCall(dto.getUsername())) {
+            return requestService.responseOperatorSub();
+        }
+
+        try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(timeoutTiming))
+                    .block();
+
+            endTime = System.currentTimeMillis();
+            httpRequestLog.setOperatorEnd(endTime);
+
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+            }
+
+            if (isTimeout.get()) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
+            }
+
+            //2. validate operator response
+            responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            httpRequestLog.setOperatorResponse(apiResponse.getBody());
+            httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            } else {
+                Optional.ofNullable(responseVo.getData()).ifPresent(data -> httpRequestLog.setOperatorTimestamp(data.getTimestamp()));
+            }
+
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+            RequestService.validateResponse(responseVo);
+
+            //3. validate username and currency
+            requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
+
+            // 4. validate operator response fail status
+            requestService.operatorStatusException(responseVo.getStatus());
+
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+
+            //RequestService.successResponseLog(requestLogVo);
+
+        } catch (Exception exception) {
+            responseVo = this.processForceSuccess(gameSession, traceId);
+            betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(),
+                    agentId, dto.getBetId(), dto.getRoundId(), dto.getTransactionId(), EndPoints.WALLET_ROLLBACK);
+
+        } finally {
+            endTime = (endTime.equals(0L) ? System.currentTimeMillis() : endTime);
+            httpRequestLog.setOperatorEnd(endTime);
+        }
+
+        return responseVo;
+    }
 }
