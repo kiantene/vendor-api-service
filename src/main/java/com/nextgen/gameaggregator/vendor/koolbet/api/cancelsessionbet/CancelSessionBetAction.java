@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.cancelsessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -32,16 +33,20 @@ public class CancelSessionBetAction {
     private final WalletService walletService;
 
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
 
     @Autowired
-    public CancelSessionBetAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService
-            , VendorService vendorService) {
+    public CancelSessionBetAction(HttpService httpService,
+                                  GameSessionService gameSessionService,
+                                  WalletService walletService,
+                                  VendorService vendorService,
+                                  RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
-
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CANCEL_SESSION_BET)
@@ -51,14 +56,22 @@ public class CancelSessionBetAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
-
+        CancelSessionBetDto dto = new CancelSessionBetDto();
+        boolean isRequestExists = false;
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelSessionBetDto dto = HttpService.convertJsonToDto(body, CancelSessionBetDto.class);
+            dto = HttpService.convertJsonToDto(body, CancelSessionBetDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            if (requestIdempotentLogService.checkExists(dto, dto.getUserId()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             try { //this check only verify if it's null, not status = 0
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
@@ -115,6 +128,10 @@ public class CancelSessionBetAction {
             responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUserId());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
 
