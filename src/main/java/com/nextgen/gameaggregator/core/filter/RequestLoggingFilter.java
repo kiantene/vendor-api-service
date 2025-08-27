@@ -36,6 +36,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         if (vendor != null) {
             request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendor.getClassName());
+            logContext.setVendorId(vendor.getId());
             logContext.setVendorClassName(vendor.getClassName());
         }
 

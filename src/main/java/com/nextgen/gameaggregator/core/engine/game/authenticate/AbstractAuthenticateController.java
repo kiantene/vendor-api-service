@@ -14,7 +14,7 @@ public abstract class AbstractAuthenticateController<Q, R> extends AbstractProce
     }
 
     @Override
-    protected PlayerBalanceData executeService(AuthenticateContext context) {
+    protected PlayerBalanceData executeService(AuthenticateContext context, Q request) {
         return authenticateService.process(context);
     }
 }
