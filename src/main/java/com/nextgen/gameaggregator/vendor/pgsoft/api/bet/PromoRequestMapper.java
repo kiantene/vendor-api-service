@@ -17,8 +17,8 @@ public class PromoRequestMapper implements VendorRequestMapper<PromoPayoutContex
                 .idempotencyKey(vendorRequest.getTransactionId())
                 .vendorPlayerUsername(vendorRequest.getPlayerName())
                 .vendorCurrency(vendorRequest.getCurrencyCode())
-                .vendorGameCode(vendorRequest.getGameId())
                 // promo payout history
+                .vendorCampaignCode(vendorRequest.getFreeGameId().toString())
                 .vendorTransactionId(vendorRequest.getTransactionId())
                 .payoutAmount(vendorRequest.getReal_transfer_amount())
                 .vendorTransactionTime(vendorRequest.getCreateTime())
