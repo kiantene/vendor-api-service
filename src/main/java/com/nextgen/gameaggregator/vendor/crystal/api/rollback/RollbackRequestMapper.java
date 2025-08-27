@@ -11,7 +11,6 @@ public class RollbackRequestMapper implements BetRollbackContextMapper<RollbackR
     @Override
     public BetRollbackContext toInternal(RollbackRequest vendorRequest) {
         return BetRollbackContext.builder()
-                .rollbackType(RollbackType.BY_ROUND)
                 .idempotencyKey(vendorRequest.getTransactionId())
                 .vendorBetId(vendorRequest.getTransactionOriginalId())
                 .roundId(vendorRequest.getRoundId())

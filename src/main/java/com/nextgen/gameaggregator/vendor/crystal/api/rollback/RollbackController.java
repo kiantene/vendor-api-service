@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.AbstractBetRollbackController;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackConfig;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.RollbackType;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServiceWrapper;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
@@ -24,5 +26,10 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<RollbackResponse> rollback(@Valid @RequestBody RollbackRequest request) {
         return ResponseEntity.ok(processRequest(request));
+    }
+
+    @Override
+    public void configure(BetRollbackConfig config, RollbackRequest request) {
+        config.setRollbackType(RollbackType.BY_ROUND);
     }
 }
