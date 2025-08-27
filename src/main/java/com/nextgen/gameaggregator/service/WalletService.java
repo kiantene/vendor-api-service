@@ -366,29 +366,28 @@ public class WalletService {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
 
-            if (gameSession.getVendorPlayerUsername().equals("1e8yrfpf6a9i")) {
-                AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
-                        gameSession.getAgentId(),
-                        gameSession.getVendorId(),
-                        gameSession.getCurrencyId(),
-                        settledBet
-                );
+            AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
+                    gameSession.getAgentId(),
+                    gameSession.getVendorId(),
+                    gameSession.getCurrencyId(),
+                    settledBet
+            );
 
-                settledBet.setCapWinAmount(agentPayout.getCapWinAmount());
-                settledBet.setCapWinLoss(agentPayout.getCapWinLoss());
-                settledBet.setCapJackpotAmount(agentPayout.getCapJackpotAmount());
-                settledBet.setCapEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
+            settledBet.setUncapWinAmount(settledBet.getWinAmount());
+            settledBet.setUncapWinLoss(settledBet.getWinLoss());
+            settledBet.setUncapJackpotAmount(settledBet.getJackpotAmount());
+            settledBet.setUncapEffectiveTurnover(settledBet.getEffectiveTurnover());
 
-            }
+            settledBet.setWinAmount(agentPayout.getCapWinAmount());
+            settledBet.setWinLoss(agentPayout.getCapWinLoss());
+            settledBet.setJackpotAmount(agentPayout.getCapJackpotAmount());
+            settledBet.setEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
 
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {
                 balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate);
             } else {
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
             }
-
-            System.out.println("settledBet winAmount = " + settledBet.getWinAmount());
-            System.out.println("walletBetResultData winAmount = " + walletBetResultData.getWinAmount());
 
             loggingService.logStart();
             cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
