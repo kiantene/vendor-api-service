@@ -14,8 +14,10 @@ public class DGGameUrlVo implements GameUrlVo {
     @NotBlank(message = "url can not be blank")
     private List<String> list;  // Change from String to List<String>
 
+    private String tableId; // use for map game url
+
     @Override
     public String getGameUrl() {
-        return list != null && !list.isEmpty() ? list.get(0) : null;
+        return list != null && !list.isEmpty() ? list.get(0) + "&tableId=" + tableId : null;
     }
 }

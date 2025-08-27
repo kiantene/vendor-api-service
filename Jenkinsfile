@@ -223,7 +223,7 @@ String getVersionTagbyPom(String branchName) {
     String baseVersion
     String mavenVersion = readMavenPom().version.trim()
     String normalizedBranch = branchName
-    def matcher = mavenVersion =~ /(\d+\.\d+\.\d+(?:-(?:hotfix|adhoc))?)/
+    def matcher = mavenVersion =~ /(\d+\.\d+\.\d+(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
 
     if (matcher.find()) {
         baseVersion = matcher.group(1)
@@ -239,7 +239,7 @@ String getVersionTagbyPom(String branchName) {
 String getVersionTagbyBranch(String branchName) {
     String baseVersion
 
-    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+(-hotfix|-adhoc)?)/
+    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
 
     if (matcher.find()) {
         baseVersion = matcher.group(1)

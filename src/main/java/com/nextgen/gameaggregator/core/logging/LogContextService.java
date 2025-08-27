@@ -88,13 +88,29 @@ public class LogContextService {
         // WalletBalanceAction, WalletBetAction, WalletBetResultAction, WalletRollbackAction
         if (logContext.exists(HttpRequestLog.class.getSimpleName())) {
             HttpRequestLog httpRequestLog = (HttpRequestLog) logContext.get(HttpRequestLog.class.getSimpleName());
+            if (httpRequestLog.getRequestType() == null) {
+                httpRequestLog.setRequestType(logContext.getLogGroup());
+            }
             httpRequestLog.setResponseBody(responseBody);
             httpRequestLog.setEndTime(System.currentTimeMillis());
+            httpRequestLog.setOperatorUsername(logContext.getUsername());
+            httpRequestLog.setVendorId(logContext.getVendorId());
+            httpRequestLog.setAgentId(logContext.getAgentId());
+
+            if (httpRequestLog.getOperatorEndPoints() == null) {
+                httpRequestLog.setOperatorEndPoints(logContext.getApiUrl());
+            }
             if (httpRequestLog.getOperatorStart() == null && logContext.getApiStart() > 0) {
                 httpRequestLog.setOperatorStart(logContext.getApiStart());
             }
             if (httpRequestLog.getOperatorEnd() == null && logContext.getApiEnd() > 0) {
                 httpRequestLog.setOperatorEnd(logContext.getApiEnd());
+            }
+            if (httpRequestLog.getBetStart() == null && logContext.getStart() > 0) {
+                httpRequestLog.setBetStart(logContext.getStart());
+            }
+            if (httpRequestLog.getBetEnd() == null && logContext.getEnd() > 0) {
+                httpRequestLog.setBetEnd(logContext.getEnd());
             }
 
             if (httpRequestLog.getOperatorData() == null) {
@@ -117,6 +133,8 @@ public class LogContextService {
                 httpRequestLog.setErrorMessage(exception);
                 httpRequestLog.setExceptionMessage(logContext.getErrorMessage());
                 httpRequestLog.setRootCause(logContext.getRootCause());
+            } else {
+                httpRequestLog.setStatus(2);
             }
 
             kafkaService.produceApiRequestLog(new ApiRequestLog(httpRequestLog));

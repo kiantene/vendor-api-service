@@ -93,6 +93,7 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         this.validateResponse(apiResponse2, isTimeout, httpRequestLog, DGGameUrlVo.class, gameSession);
 
         DGGameUrlVo responseVo = new Gson().fromJson(apiResponse2.getBody(), DGGameUrlVo.class);
+        responseVo.setTableId(gameSession.getVendorGameCode());
 
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
@@ -136,5 +137,4 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         headers.add("time", timestamp);
         return headers;
     }
-
 }
