@@ -146,9 +146,10 @@ public class WalletRollbackServiceWrapper {
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException,
             InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
 
+        BetRollbackConfig config = state().getConfig();
         BigDecimal balance = walletService.processRollback(
                 httpRequestLog.getId(),
-                rollbackDataMapper.toRollbackData(context),
+                rollbackDataMapper.toRollbackData(context, config),
                 gameSession,
                 context.getVendorService(),
                 httpRequestLog
