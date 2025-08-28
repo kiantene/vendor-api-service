@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class WalletBetAction {
 
+    private static final Integer TIMEOUT_BUFFER = 200; // buffer duration for internal processing, set to 200ms
     private final RequestService requestService;
     private final AgentApiCredentialService agentApiCredentialService;
     private final AuthenticationService authenticationService;
@@ -120,6 +121,7 @@ public class WalletBetAction {
             return requestService.responseOperatorSub();
         }
 
+        Integer vendorTimeoutInMillis = getVendorTimeoutInMillis(gameSession);
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         try {
             logContextService.logStart(apiUrl + EndPoints.WALLET_BET, dto);
@@ -133,7 +135,7 @@ public class WalletBetAction {
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
                     .retry(3)
-                    .timeout(Duration.ofMillis(this.operatorTimeoutConfig(gameSession)))
+                    .timeout(Duration.ofMillis(vendorTimeoutInMillis))
                     .onErrorResume(TimeoutException.class, e -> {
                         isTimeout.set(true);
                         return Mono.error(e);
@@ -260,4 +262,13 @@ public class WalletBetAction {
         return EndPoints.TIMEOUT;
     }
 
+    private Integer getVendorTimeoutInMillis(GameSession gameSession) {
+        Integer timeout = this.operatorTimeoutConfig(gameSession);
+        Integer vendorId = gameSession.getVendorId();
+        if (vendorId != null && Vendors.isNewFramework(vendorId)) {
+            Vendors vendor = Vendors.fromId(vendorId);
+            timeout = vendor.getTimeoutMillis() - TIMEOUT_BUFFER;
+        }
+        return timeout;
+    }
 }
