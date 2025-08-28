@@ -35,19 +35,19 @@ public class BetAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final WalletAdjustmentService walletAdjustmentService;
-    private final SettledBetService settledBetService;
 
     public BetAction(WalletService walletService,
                      HttpService httpService,
                      ValidationService validationService,
-                     VendorService vendorService, VendorLineService vendorLineService, WalletAdjustmentService walletAdjustmentService, SettledBetService settledBetService) {
+                     VendorService vendorService,
+                     VendorLineService vendorLineService,
+                     WalletAdjustmentService walletAdjustmentService) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.walletAdjustmentService = walletAdjustmentService;
-        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = EndPoints.TRANSFER)
