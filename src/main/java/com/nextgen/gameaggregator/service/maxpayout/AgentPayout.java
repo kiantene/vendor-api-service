@@ -14,6 +14,14 @@ public class AgentPayout {
     private BigDecimal capWinLoss = BigDecimal.ZERO;
     private BigDecimal capJackpotAmount = BigDecimal.ZERO;
 
+    protected AgentPayout(BetInformation betInformation) {
+        this.capWinAmount = betInformation.getWinAmount();
+        this.capWinLoss = betInformation.getWinLoss();
+        this.capJackpotAmount = betInformation.getJackpotAmount();
+        this.capEffectiveTurnover = betInformation.getEffectiveTurnover();
+
+    }
+
     protected AgentPayout(BigDecimal payoutCap, BetInformation betInformation) {
 
         this.calculateWinAmount(payoutCap, betInformation.getWinAmount());

@@ -22,7 +22,7 @@ public class AgentMaxPayoutService {
                                       Integer currencyId,
                                       BetInformation betInformation) {
 
-        AgentPayout agentPayout = new AgentPayout();
+        AgentPayout agentPayout = new AgentPayout(betInformation);
 
         try {
             Agent agent = agentService.get(agentId);
