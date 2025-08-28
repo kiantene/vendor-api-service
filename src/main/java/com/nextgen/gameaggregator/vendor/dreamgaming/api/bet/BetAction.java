@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.dreamgaming.api.bet;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -100,9 +99,10 @@ public class BetAction {
                     // Validate request parameters from vendor (Non-database related)
                     this.doValidation(appendDto);
 
-                    // Get settle bet to calculate adjustment amount
-                    SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(appendDto.getParentBetId(), appendDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                    appendDto.setAdjustmentAmount(appendDto.getMember().getAmount().subtract(settledBet.getWinAmount()));
+                    // Get settle bet list to calculate adjustment amount
+                    //SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(appendDto.getParentBetId(), appendDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+                    BigDecimal totalWinAmount = vendorService.calculateTotalWinAmount(gameSession.getVendorPlayerId(), appendDto.getRoundId());
+                    appendDto.setAdjustmentAmount(appendDto.getMember().getAmount().subtract(totalWinAmount));
                     balance = walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
 
                     vo.getMember().setAmount(appendDto.getMember().getAmount());
