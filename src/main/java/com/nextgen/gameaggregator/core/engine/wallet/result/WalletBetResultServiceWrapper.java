@@ -42,6 +42,8 @@ public class WalletBetResultServiceWrapper {
         BetResultContext context = state().getBetResultContext();
 
         try {
+            context.setVendorId(logContext.getVendorId());
+
             guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
 
             enricher.enrich(context);
@@ -49,6 +51,8 @@ public class WalletBetResultServiceWrapper {
             validator.validateRequestContext(context);
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
+
+            enricher.enrichByGameSession(context, gameSession);
 
             ResultType resultType = getResultType(context);
 

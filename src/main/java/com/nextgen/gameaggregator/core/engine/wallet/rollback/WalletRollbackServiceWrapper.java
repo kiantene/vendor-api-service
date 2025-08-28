@@ -92,7 +92,11 @@ public class WalletRollbackServiceWrapper {
     private void enrich(BetRollbackContext context, LogContext logContext) {
 
         if (context.getGameSession() == null) {
-            context.setGameSession(gameSessionDataService.getOrCreate(context));
+            GameSession gameSession = gameSessionDataService.getOrCreate(context);
+            context.setGameSession(gameSession);
+            if (context.getVendorPlayerUsername() == null) {
+                context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+            }
         }
 
         if (context.getVendorService() == null) {
@@ -142,9 +146,10 @@ public class WalletRollbackServiceWrapper {
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException,
             InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
 
+        BetRollbackConfig config = state().getConfig();
         BigDecimal balance = walletService.processRollback(
                 httpRequestLog.getId(),
-                rollbackDataMapper.toRollbackData(context),
+                rollbackDataMapper.toRollbackData(context, config),
                 gameSession,
                 context.getVendorService(),
                 httpRequestLog

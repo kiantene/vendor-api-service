@@ -41,6 +41,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
+            context.setVendorId(logContext.getVendorId());
+
             guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
 
             enrich(context);
@@ -48,6 +50,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
             walletBetValidator.validateRequestContext(context);
 
             GameSession gameSession = gameSessionDataService.getGameSession(context);
+
+            enrichByGameSession(context, gameSession);
 
             walletBetValidator.validateBusinessState(gameSession, context);
 
@@ -71,6 +75,13 @@ public class WalletBetServiceWrapper implements WalletBetService {
         }
         if (context.getTimestamp() == null) {
             context.setTimestamp(System.currentTimeMillis());
+        }
+    }
+
+    private void enrichByGameSession(BetContext context, GameSession gameSession) {
+        // null check is done in gameSessionDataService.getGameSession, so we won't do null check here
+        if (context.getVendorPlayerUsername() == null) {
+            context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         }
     }
 

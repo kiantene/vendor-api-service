@@ -26,6 +26,7 @@ public class BetRollbackContext implements GameSessionData {
     private String idempotencyKey;
     private String vendorBetId;
     private String roundId;
+    private String vendorGameCode;
     private String vendorPlayerUsername;
     private String token;
     private String vendorSessionToken;
