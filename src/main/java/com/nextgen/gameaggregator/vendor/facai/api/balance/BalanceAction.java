@@ -44,7 +44,7 @@ public class BalanceAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-
+        GameSession gameSession;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -69,8 +69,9 @@ public class BalanceAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(balanceDto);
 
-            //get rawGameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
+            //get rawGameSession by player username without game id
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(balanceDto.getMemberAccount());
+            if (gameSession == null) throw new AuthenticationException();
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
