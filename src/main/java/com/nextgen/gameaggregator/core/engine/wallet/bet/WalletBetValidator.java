@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class WalletBetValidator {
+class WalletBetValidator {
     private final BetValidator validator;
 
     public void validateRequestContext(BetContext context) {
