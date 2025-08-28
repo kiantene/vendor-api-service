@@ -60,7 +60,7 @@ public class TransferAction {
 
         String traceId = httpRequestLog.getId();
 
-        TransferDto transferDto = null;
+        TransferDto transferDto = new TransferDto();
         BigDecimal balance;
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
@@ -134,6 +134,13 @@ public class TransferAction {
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setResponseCode(ResponseCodes.SUCCESS);
+            transferDataVo.setBalance(e.getBalance().toBigInteger());
+            transferDataVo.setTradeType(transferDto.getTradeType());
+            transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
 
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);

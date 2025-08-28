@@ -28,7 +28,10 @@ public abstract class AbstractBetResultController<Q, R> {
 
         PlayerBalanceData balanceData = walletBetResultService
                 .initialise(context)
-                .configure(this::configure)
+                .configure(config -> {
+                    configure(config); // for backward compatibility
+                    configure(config, context);
+                })
                 .process();
 
         R response = mapToVendor(context, balanceData);
@@ -58,7 +61,12 @@ public abstract class AbstractBetResultController<Q, R> {
         return responseMapper.toVendor(context, balanceData);
     }
 
+    @Deprecated
     protected void configure(BetResultConfig config) {
+        // override for config
+    }
+
+    protected void configure(BetResultConfig config, BetResultContext context) {
         // override for config
     }
 }
