@@ -92,7 +92,11 @@ public class WalletRollbackServiceWrapper {
     private void enrich(BetRollbackContext context, LogContext logContext) {
 
         if (context.getGameSession() == null) {
-            context.setGameSession(gameSessionDataService.getOrCreate(context));
+            GameSession gameSession = gameSessionDataService.getOrCreate(context);
+            context.setGameSession(gameSession);
+            if (context.getVendorPlayerUsername() == null) {
+                context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+            }
         }
 
         if (context.getVendorService() == null) {
