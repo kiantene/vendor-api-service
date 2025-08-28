@@ -9,10 +9,10 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class AgentPayout {
-    private BigDecimal capWinAmount = BigDecimal.ZERO;
-    private BigDecimal capEffectiveTurnover = BigDecimal.ZERO;
-    private BigDecimal capWinLoss = BigDecimal.ZERO;
-    private BigDecimal capJackpotAmount = BigDecimal.ZERO;
+    private BigDecimal capWinAmount;
+    private BigDecimal capEffectiveTurnover;
+    private BigDecimal capWinLoss;
+    private BigDecimal capJackpotAmount;
 
     protected AgentPayout(BetInformation betInformation) {
         this.capWinAmount = betInformation.getWinAmount();
