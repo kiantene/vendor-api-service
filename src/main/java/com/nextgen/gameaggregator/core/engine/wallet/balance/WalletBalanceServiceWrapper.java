@@ -31,18 +31,32 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
+            GameSession gameSession = gameSessionDataService.getGameSession(context);
+
+            enrichByGameSession(context, gameSession);
+
             // TODO: add validator
             return getBalance(
                     context.getVendorPlayerUsername(),
                     context.getVendorCurrency(),
-                    gameSessionDataService.getGameSession(context),
+                    gameSession,
                     httpRequestLog
             );
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
+        }
+        return null;
+    }
+
+    private void enrichByGameSession(BalanceContext context, GameSession gameSession) {
+        // null check is done in gameSessionDataService.getGameSession, so we won't do null check here
+        if (context.getVendorPlayerUsername() == null) {
+            context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        }
+        if (context.getVendorCurrency() == null) {
+            context.setVendorCurrency(gameSession.getVendorCurrencyCode());
         }
     }
 

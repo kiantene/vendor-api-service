@@ -36,7 +36,7 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
             enrichByGameSession(context, gameSession);
 
             if (config.shouldRefreshToken()) {
-                // TODO: refresh token
+                gameSessionDataService.updateVendorToken(gameSession, config.getReplaceTokenWith());
             }
             // TODO: do we need to validate gameSession status? eg. session terminated
 
@@ -48,10 +48,10 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
             );
         } catch (Exception ex) {
             walletExceptionTranslator.translateAndThrow(ex);
-            return null; // Never reached, but satisfies compiler
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
+        return null;
     }
 
     private void enrichByGameSession(AuthenticateContext context, GameSession gameSession) {
