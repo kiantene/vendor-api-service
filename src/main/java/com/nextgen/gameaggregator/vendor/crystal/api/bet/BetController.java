@@ -22,7 +22,8 @@ public class BetController extends AbstractBetController<BetRequest, BetResponse
 
     @PostMapping(path = EndPoints.BET)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
-    public ResponseEntity<BetResponse> bet(@Valid @RequestBody BetRequest request) {
+    public ResponseEntity<BetResponse> bet(@Valid @RequestBody BetRequest request) throws InterruptedException {
+        Thread.sleep(5000);
         return ResponseEntity.ok(processRequest(request));
     }
 }
