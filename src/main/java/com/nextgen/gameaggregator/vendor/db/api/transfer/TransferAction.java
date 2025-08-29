@@ -135,13 +135,6 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
 
-        } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            vo.setResponseCode(ResponseCodes.SUCCESS);
-            transferDataVo.setBalance(e.getBalance().toBigInteger());
-            transferDataVo.setTradeType(transferDto.getTradeType());
-            transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
-
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.BET_NOT_FOUND);
