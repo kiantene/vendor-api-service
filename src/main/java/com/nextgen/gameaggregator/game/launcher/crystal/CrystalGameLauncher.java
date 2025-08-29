@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.game.launcher.crystal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
-import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
@@ -14,8 +11,6 @@ import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Map;
 
@@ -24,16 +19,6 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
 
     public CrystalGameLauncher(VendorCredentialUtils credentialUtils) {
         super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class, SigningStrategyType.HMAC_SHA256);
-    }
-
-    private String convertToCompactJson(MultiValueMap<String, String> formData) {
-        Map<String, String> dataMap = formData.toSingleValueMap();
-        try {
-            return new ObjectMapper().writeValueAsString(dataMap)
-                    .replaceAll("\\s+", "");
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
-        }
     }
 
     @Override
@@ -85,37 +70,6 @@ public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchReq
                 "OPERATOR", operatorCode
         );
     }
-
-//    @Override
-//    public Map<String, String> getHeaders(GameLaunchContext context, GameLaunchRequest requestObject) {
-//        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
-//        String secretKey = accessor.getValue(Credentials.SECRET_KEY);
-//        String operatorCode = accessor.getValue(Credentials.OPERATOR_CODE);
-//        String signature;
-//        try {
-//            MultiValueMap<String, String> formData = this.formDataBuilder(context);
-//            String compactJson = convertToCompactJson(formData);
-//            signature = sign(compactJson, secretKey);
-//
-//        } catch (Exception e) {
-//            throw new GameLaunchException(e.getMessage(), e);
-//        }
-//        return Map.of(
-//                "X-SIGNATURE", signature,
-//                "OPERATOR", operatorCode
-//        );
-//    }
-
-//    private MultiValueMap<String, String> formDataBuilder(GameLaunchContext context) {
-//        VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
-//        String branCode = accessor.getValue(Credentials.BRAND_CODE);
-//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-//        formData.add("gameCode", context.getVendorGameCode());
-//        formData.add("brandCode", branCode);
-//        formData.add("currencyCode", context.getVendorCurrencyCode());
-//        formData.add("playerId", context.getVendorPlayerUsername());
-//        return formData;
-//    }
 
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
