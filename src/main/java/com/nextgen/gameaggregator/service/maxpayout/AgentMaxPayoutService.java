@@ -4,7 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.exception.AgentNotFoundException;
 import com.nextgen.gameaggregator.service.AgentService;
-import com.nextgen.gameaggregator.service.VendorPayoutSettingsService;
+import com.nextgen.gameaggregator.service.VendorPayoutSettingsDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 public class AgentMaxPayoutService {
 
     private final AgentService agentService;
-    private final VendorPayoutSettingsService vendorPayoutSettingsService;
+    private final VendorPayoutSettingsDataService vendorPayoutSettingsDataService;
 
     public BetInformation applyPayoutCap(Integer agentId,
                                          Integer vendorId,
@@ -53,7 +53,7 @@ public class AgentMaxPayoutService {
     }
 
     public BigDecimal getPayoutCapAmount(Agent agent, Integer vendorId, Integer gameCategoryId, Integer currencyId) {
-        return vendorPayoutSettingsService.getMaxPayoutAmount(agent.getMasterAgentId(), agent.getId(), vendorId, gameCategoryId, currencyId);
+        return vendorPayoutSettingsDataService.getMaxPayoutAmount(agent.getMasterAgentId(), agent.getId(), vendorId, gameCategoryId, currencyId);
 
     }
 
