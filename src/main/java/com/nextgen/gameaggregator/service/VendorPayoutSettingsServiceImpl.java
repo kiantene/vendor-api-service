@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.VendorPayoutSettings;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPayoutSettingsRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,34 +19,27 @@ public class VendorPayoutSettingsServiceImpl implements VendorPayoutSettingsServ
     }
 
     @Override
+    @Cacheable(value = "VendorPayoutSettings", key = "{#masterAgentId, #agentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
     public BigDecimal getMaxPayoutAmount(Integer masterAgentId,
                                          Integer agentId,
                                          Integer vendorId,
                                          Integer gameCategoryId,
                                          Integer currencyId) {
 
-        BigDecimal maxPayoutAmount = null;
+        List<VendorPayoutSettings> vendorPayoutSettingsList =
+                vendorPayoutSettingsRepository.findByMasterAgentIdAndVendorIdAndGameCategoryIdAndCurrencyId(
+                        masterAgentId, vendorId, gameCategoryId, currencyId
+                );
 
-        //First step is to check by agent level.
-        List<VendorPayoutSettings> vendorPayoutSettingsList = vendorPayoutSettingsRepository.findByMasterAgentIdAndAgentIdAndVendorIdAndGameCategoryIdAndCurrencyId(masterAgentId, agentId, vendorId, gameCategoryId, currencyId);
-
-        maxPayoutAmount = vendorPayoutSettingsList.stream()
+        return vendorPayoutSettingsList.stream()
                 .filter(v -> v.getStatus() != null && v.getStatus() == 1)
-                .max(Comparator.comparing(VendorPayoutSettings::getVersion))
+                .filter(v -> v.getAgentId() != null && (v.getAgentId().equals(agentId) || v.getAgentId() == 0))
+                .max(Comparator
+                        .comparingInt((VendorPayoutSettings v) -> v.getAgentId().equals(agentId) ? 1 : 0) // agent priority
+                        .thenComparingInt(VendorPayoutSettings::getVersion) // highest version next
+                )
                 .map(VendorPayoutSettings::getMaxPayout)
                 .orElse(null);
 
-        if (maxPayoutAmount == null) {
-            //If maxPayoutAmount is not found by agent level, then check from masterAgent level.
-            vendorPayoutSettingsList = vendorPayoutSettingsRepository.findByMasterAgentIdAndAgentIdAndVendorIdAndGameCategoryIdAndCurrencyId(masterAgentId, 0, vendorId, gameCategoryId, currencyId);
-
-            maxPayoutAmount = vendorPayoutSettingsList.stream()
-                    .filter(v -> v.getStatus() != null && v.getStatus() == 1)
-                    .max(Comparator.comparing(VendorPayoutSettings::getVersion))
-                    .map(VendorPayoutSettings::getMaxPayout)
-                    .orElse(null);
-        }
-
-        return maxPayoutAmount;
     }
 }

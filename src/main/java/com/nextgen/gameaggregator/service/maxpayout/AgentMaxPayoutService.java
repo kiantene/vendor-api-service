@@ -17,25 +17,37 @@ public class AgentMaxPayoutService {
     private final AgentService agentService;
     private final VendorPayoutSettingsService vendorPayoutSettingsService;
 
-    public AgentPayout applyPayoutCap(Integer agentId,
-                                      Integer vendorId,
-                                      Integer currencyId,
-                                      BetInformation betInformation) {
-
-        AgentPayout agentPayout = new AgentPayout(betInformation);
+    public BetInformation applyPayoutCap(Integer agentId,
+                                         Integer vendorId,
+                                         Integer currencyId,
+                                         BetInformation betInformation) {
 
         try {
             Agent agent = agentService.get(agentId);
             BigDecimal payoutCap = this.getPayoutCapAmount(agent, vendorId, betInformation.getGameCategoryId(), currencyId);
 
             if (isZero(betInformation.getWinAmount()) || payoutCap == null) {
-                return agentPayout;
+                return betInformation;
             }
 
-            return new AgentPayout(payoutCap, betInformation);
+            AgentPayout agentPayout = new AgentPayout(payoutCap, betInformation);
+
+            if (!agentPayout.getCapWinAmount().equals(betInformation.getWinAmount())){
+                betInformation.setUncapWinAmount(betInformation.getWinAmount());
+                betInformation.setUncapWinLoss(betInformation.getWinLoss());
+                betInformation.setUncapJackpotAmount(betInformation.getJackpotAmount());
+                betInformation.setUncapEffectiveTurnover(betInformation.getEffectiveTurnover());
+
+                betInformation.setWinAmount(agentPayout.getCapWinAmount());
+                betInformation.setWinLoss(agentPayout.getCapWinLoss());
+                betInformation.setJackpotAmount(agentPayout.getCapJackpotAmount());
+                betInformation.setEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
+            }
+
+            return betInformation;
 
         } catch (AgentNotFoundException e) {
-            return agentPayout;
+            return betInformation;
         }
 
     }

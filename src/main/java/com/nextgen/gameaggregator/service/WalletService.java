@@ -20,7 +20,6 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.maxpayout.AgentMaxPayoutService;
-import com.nextgen.gameaggregator.service.maxpayout.AgentPayout;
 import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -357,22 +356,12 @@ public class WalletService {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
 
-            AgentPayout agentPayout = agentMaxPayoutService.applyPayoutCap(
+            walletBetResultData = agentMaxPayoutService.applyPayoutCap(
                     gameSession.getAgentId(),
                     gameSession.getVendorId(),
                     gameSession.getCurrencyId(),
-                    settledBet
+                    walletBetResultData
             );
-
-            settledBet.setUncapWinAmount(settledBet.getWinAmount());
-            settledBet.setUncapWinLoss(settledBet.getWinLoss());
-            settledBet.setUncapJackpotAmount(settledBet.getJackpotAmount());
-            settledBet.setUncapEffectiveTurnover(settledBet.getEffectiveTurnover());
-
-            settledBet.setWinAmount(agentPayout.getCapWinAmount());
-            settledBet.setWinLoss(agentPayout.getCapWinLoss());
-            settledBet.setJackpotAmount(agentPayout.getCapJackpotAmount());
-            settledBet.setEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
 
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, walletBetResultData.getWinAmount(), settledBet.getOperatorStatus())) {
                 balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate);
@@ -663,6 +652,14 @@ public class WalletService {
                 try {
                     // record operator processing time
                     walletBetResultData.setBalance(unsettledBet.getBalance());
+
+                    walletBetResultData = agentMaxPayoutService.applyPayoutCap(
+                            gameSession.getAgentId(),
+                            gameSession.getVendorId(),
+                            gameSession.getCurrencyId(),
+                            walletBetResultData
+                    );
+
                     balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
                     BigDecimal balance = balanceVo.getData().getBalance();
 
