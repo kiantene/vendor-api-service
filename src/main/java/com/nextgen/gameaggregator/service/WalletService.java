@@ -393,6 +393,9 @@ public class WalletService {
                 //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
                         gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+
+                kafkaService.produceBetHistoryUncap(settledBet, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);

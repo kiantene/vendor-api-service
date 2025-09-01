@@ -40,6 +40,7 @@ public class WalletBetResultBatchService {
                             context.getVendorPlayerUsername(),
                             context.getFromVendorRate()
                     );
+                    //TODO ADD kafkaService.produceBetHistoryUncap
                 } catch (Exception e) {
                     log.error("Failed to send BetHistory to Kafka: {}", betHistory.getId(), e);
                     // Continue with other records

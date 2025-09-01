@@ -162,7 +162,8 @@ public class EndRoundProcessor {
                     agentPlayerUsername,
                     vendorPlayerUsername,
                     gameSession,
-                    vendorCurrency
+                    vendorCurrency,
+                    settledBet
             );
         } else {
             processPreprocessingBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, vendorCurrency);
@@ -173,7 +174,8 @@ public class EndRoundProcessor {
                                          String agentPlayerUsername,
                                          String vendorPlayerUsername,
                                          GameSession gameSession,
-                                         VendorCurrency vendorCurrency) {
+                                         VendorCurrency vendorCurrency,
+                                         SettledBet settledBet) {
         kafkaService.produceBetHistoryV3(
                 betHistory,
                 gameSession.getProductCode(),
@@ -183,6 +185,9 @@ public class EndRoundProcessor {
                 vendorPlayerUsername,
                 vendorCurrency.getFromVendorRate()
         );
+
+        kafkaService.produceBetHistoryUncap(settledBet, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                agentPlayerUsername, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
     }
 
     private void processPreprocessingBetHistory(BetHistory betHistory, 
