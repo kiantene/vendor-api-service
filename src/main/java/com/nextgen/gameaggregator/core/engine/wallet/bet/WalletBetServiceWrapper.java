@@ -8,11 +8,14 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +28,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private static final String ACTION = "bet";
     private final DuplicateRequestGuard guard;
     private final GameSessionDataService gameSessionDataService;
+    private final GameTransactionService gameTransactionService;
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
     private final BetResultDataMapper betResultDataMapper;
@@ -43,9 +47,10 @@ public class WalletBetServiceWrapper implements WalletBetService {
         try {
             context.setVendorId(logContext.getVendorId());
 
-            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+//            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(context.getVendorId(), context.getIdempotencyKey());
 
-            enrich(context);
+            enrich(context, txn);
 
             walletBetValidator.validateRequestContext(context);
 
@@ -60,6 +65,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
+            // TODO: need to mark error or timeout?
             guard.clear();
             walletExceptionTranslator.translateAndThrow(ex);
         } finally {
@@ -69,13 +75,21 @@ public class WalletBetServiceWrapper implements WalletBetService {
         return null;
     }
 
-    private void enrich(BetContext context) {
+    private void enrich(BetContext context, GameTransaction txn) {
         if (context.getVendorBetId() == null) {
             context.setVendorBetId(context.getIdempotencyKey());
         }
         if (context.getTimestamp() == null) {
             context.setTimestamp(System.currentTimeMillis());
         }
+        txn.setRoundId(context.getRoundId());
+        txn.setGameCode(context.getVendorGameCode());
+        txn.setCurrency(context.getVendorCurrency());
+        txn.setBetAmount(context.getBetAmount());
+        txn.setBetTime(context.getTimestamp());
+        txn.setStatus(TxnStatus.SENT);
+
+        context.setGameTransaction(txn);
     }
 
     private void enrichByGameSession(BetContext context, GameSession gameSession) {
@@ -86,10 +100,15 @@ public class WalletBetServiceWrapper implements WalletBetService {
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetContext context, DuplicateRequestException ex) {
-        // TODO: check for operator status, if is successful then return success
-
-        if (state().getConfig().isReturnSuccessOnDuplicate()) {
-            return PlayerBalanceData.getDefault(context.getTraceId(), context.getVendorPlayerUsername(), context.getVendorCurrency());
+        GameTransaction txn = ex.getTransaction();
+        if (state().getConfig().isReturnSuccessOnDuplicate() && txn.isSuccess()) {
+//            return PlayerBalanceData.getDefault(context.getTraceId(), context.getVendorPlayerUsername(), context.getVendorCurrency());
+            return new PlayerBalanceData(
+                    txn.getUsername(),
+                    txn.getCurrency(),
+                    txn.getBalance(),
+                    System.currentTimeMillis()
+            );
         }
         throw ex;
     }
@@ -103,6 +122,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 TransactionStillProcessingException, InvalidOperatorResponseException,
                 CouchbaseDataIntegrityException {
 
+        gameTransactionService.markSent(context.getGameTransaction());
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
                 gameSession,
@@ -110,6 +130,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 httpRequestLog.getRequestBody(),
                 httpRequestLog
         );
+        gameTransactionService.markSuccess(context.getGameTransaction(), betEvent.getLastBalance());
 
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),

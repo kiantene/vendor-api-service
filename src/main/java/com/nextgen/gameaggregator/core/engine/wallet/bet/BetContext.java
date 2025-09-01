@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
+import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import lombok.Builder;
 import lombok.Data;
 
@@ -51,4 +52,6 @@ public class BetContext implements GameSessionData {
     private Long agentPlayerId;
     private String agentPlayerUsername;
     private String currencyCode; // GA internal currency code, auto-populated for Operator API
+
+    private GameTransaction gameTransaction;
 }
