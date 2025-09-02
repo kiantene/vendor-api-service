@@ -23,8 +23,8 @@ public class DuplicateRequestGuard {
         }
     }
 
-    public GameTransaction ensureNotDuplicate(Integer vendorId, String key) {
-        GameTransaction probe = GameTransaction.of(vendorId, key);
+    public GameTransaction ensureNotDuplicate(String action, Integer vendorId, String key) {
+        GameTransaction probe = GameTransaction.of(action, vendorId, key);
         var doc = txnService.get(probe);
         if (doc.isPresent()) {
             GameTransaction txn = doc.get();
@@ -37,7 +37,7 @@ public class DuplicateRequestGuard {
     public void clear() {
         GameTransaction txn = currentRequest.get();
         if (txn != null) {
-            txnService.delete(txn);
+            txnService.deleteById(txn.getId());
             currentRequest.remove();
         }
         service.clearCurrentRequest();

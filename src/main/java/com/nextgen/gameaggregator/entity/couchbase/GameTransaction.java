@@ -19,6 +19,9 @@ public class GameTransaction {
     private static final DateTimeFormatter UTC_TIMESTAMP_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
 
+    @JsonProperty("type")
+    private String type;
+
     @JsonProperty("transactionId")
     private String transactionId;
 
@@ -75,12 +78,13 @@ public class GameTransaction {
         this.createdAt = UTC_TIMESTAMP_FMT.format(Instant.now());
     }
 
-    public static GameTransaction of(Integer vendorId, String transactionId) {
-        return new GameTransaction(vendorId, transactionId);
+    public static GameTransaction of(String type, Integer vendorId, String transactionId) {
+        return new GameTransaction(type, vendorId, transactionId);
     }
 
-    public GameTransaction(Integer vendorId, String transactionId) {
+    public GameTransaction(String type, Integer vendorId, String transactionId) {
         super();
+        this.type = type;
         this.vendorId = vendorId;
         this.transactionId = transactionId;
     }

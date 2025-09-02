@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Repository
 public class GameTransactionRepository {
-    private static Duration TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration TIMEOUT = Duration.ofSeconds(2);
 
     private final Collection collection;
 

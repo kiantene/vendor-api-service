@@ -36,6 +36,24 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     }
 
     @Override
+    public void update(GameTransaction doc) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("username", doc.getUsername());
+        updates.put("roundId", doc.getRoundId());
+        updates.put("gameCode", doc.getGameCode());
+        updates.put("currency", doc.getCurrency());
+        updates.put("betAmount", doc.getBetAmount().toPlainString());
+        updates.put("betTime", doc.getBetTime());
+        updates.put("status", doc.getStatus().name());
+
+        if (TxnStatus.SENT == doc.getStatus()) {
+            updates.put("sentAt", getNow());
+        }
+
+        repo.update(doc.getId(), updates, null);
+    }
+
+    @Override
     public void updateStatus(GameTransaction doc, BigDecimal balance, TxnStatus status) {
         Duration ttl = null;
         Map<String, Object> updates = new HashMap<>();

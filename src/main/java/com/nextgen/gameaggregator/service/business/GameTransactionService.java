@@ -37,15 +37,12 @@ public class GameTransactionService {
     }
 
     public void markSent(GameTransaction txn) {
-        data.updateStatus(txn, null, TxnStatus.SENT);
+        txn.setStatus(TxnStatus.SENT);
+        data.update(txn);
     }
 
     private String getNow() {
         return LocalTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
-    }
-
-    public void delete(GameTransaction txn) {
-        data.deleteById(txn.getId());
     }
 
     public void deleteById(String id) {
