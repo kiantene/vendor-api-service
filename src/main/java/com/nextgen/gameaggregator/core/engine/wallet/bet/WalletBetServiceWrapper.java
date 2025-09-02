@@ -97,6 +97,9 @@ public class WalletBetServiceWrapper implements WalletBetService {
         if (context.getVendorPlayerUsername() == null) {
             context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         }
+        if (context.getVendorCurrency() == null) {
+            context.setVendorCurrency(gameSession.getVendorCurrencyCode());
+        }
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetContext context, DuplicateRequestException ex) {
