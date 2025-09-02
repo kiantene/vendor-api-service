@@ -36,7 +36,7 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
             enrichByGameSession(context, gameSession);
 
             if (config.shouldRefreshToken()) {
-                gameSessionDataService.updateVendorToken(gameSession, config.getReplaceTokenWith());
+                doRefreshToken(context, gameSession, config.getReplaceTokenWith());
             }
             // TODO: do we need to validate gameSession status? eg. session terminated
 
@@ -79,5 +79,10 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
     public AuthenticateService configure(Consumer<AuthConfig> configurer) {
         configurer.accept(state().getConfig());
         return this;
+    }
+
+    private void doRefreshToken(AuthenticateContext context, GameSession gameSession, String newToken) {
+        gameSessionDataService.updateVendorToken(gameSession, newToken);
+        context.setVendorSessionToken(newToken);
     }
 }
