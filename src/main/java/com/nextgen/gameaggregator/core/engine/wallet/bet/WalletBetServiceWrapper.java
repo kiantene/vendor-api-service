@@ -105,6 +105,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 httpRequestLog.getRequestBody(),
                 httpRequestLog
         );
+        txn.setGaBetId(betEvent.getBetInformation().getBetId());
         gameTransactionService.markSuccess(txn, betEvent.getLastBalance());
 
         return new PlayerBalanceData(

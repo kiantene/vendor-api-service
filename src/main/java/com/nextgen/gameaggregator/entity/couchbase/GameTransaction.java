@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import lombok.Data;
 
@@ -49,8 +50,14 @@ public class GameTransaction {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal balance;
 
+    @JsonProperty("gaBetId")
+    private String gaBetId;
+
     @JsonProperty("status")
     private TxnStatus status;
+
+    @JsonProperty("state")
+    private GameRoundState state;
 
     @JsonProperty("betTime")
     private Long betTime;
@@ -69,6 +76,7 @@ public class GameTransaction {
 
     public GameTransaction() {
         this.status = TxnStatus.NEW;
+        this.state = GameRoundState.UNSETTLED;
     }
 
     public static GameTransaction of(String type, Integer vendorId, String transactionId) {

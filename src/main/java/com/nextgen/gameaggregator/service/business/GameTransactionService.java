@@ -38,15 +38,17 @@ public class GameTransactionService {
         return txn;
     }
 
-    public void markSuccess(GameTransaction txn, BigDecimal balance) {
-        txn.setDoneAt(getNow());
-        data.updateStatus(txn, balance, TxnStatus.SUCCESS);
-    }
-
     public void markSent(GameTransaction txn) {
         txn.setSentAt(getNow());
         txn.setStatus(TxnStatus.SENT);
         data.update(txn);
+
+        // construct round info and save txn as success unless failed then update
+    }
+
+    public void markSuccess(GameTransaction txn, BigDecimal balance) {
+        txn.setDoneAt(getNow());
+        data.updateStatus(txn, balance, TxnStatus.SUCCESS);
     }
 
     private String getNow() {

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service.data.couchbase;
 
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.repository.couchbase.GameTransactionRepository;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
@@ -40,6 +41,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updates.put("gameCode", doc.getGameCode());
         updates.put("currency", doc.getCurrency());
         updates.put("status", doc.getStatus().name());
+        updates.put("state", doc.getState().name());
 
         updateIfNotNull(updates, "betAmount", doc.getBetAmount());
         updateIfNotNull(updates, "betTime", doc.getBetTime());
@@ -58,6 +60,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         Duration ttl = null;
         Map<String, Object> updates = new HashMap<>();
 
+        updates.put("gaBetId", doc.getGaBetId());
         updates.put("status", status.name());
 
         if (balance != null) {
@@ -68,6 +71,9 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
             updates.put("sentAt", doc.getSentAt());
         } else if (TxnStatus.SUCCESS == status) {
             updates.put("doneAt", doc.getDoneAt());
+        }
+
+        if (GameRoundState.SETTLED == doc.getState()) {
             ttl = Duration.ofHours(6);
         }
 
