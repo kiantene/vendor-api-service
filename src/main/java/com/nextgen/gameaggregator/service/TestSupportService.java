@@ -4,36 +4,73 @@ import com.nextgen.gameaggregator.util.EnvUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 @Service
 public class TestSupportService {
 
-    @Value("${testing.stub-prefix:load}")
-    private String usernamePrefix;
+    private final String skipVendorUserPrefix;
+    private final String skipOperatorUserPrefix;
+    private final Boolean isTestEnvironment;
+    private final String springEnv;
+    private final String envPrefixVendorList;
 
-    @Value("${is-test-env:false}")
-    private Boolean isTestEnvironment;
-
-    @Value("${spring.profiles.active}")
-    private String springEnv;
-
-    @Value("${testing.prefix-vendor-list:}")
-    private String envPrefixVendorList;
-
-    public Boolean shouldSkipVendorCall(String username) {
-        if (isTestEnvironment()) {
-            return username.toLowerCase().startsWith(usernamePrefix.toLowerCase()) || springEnv.contains("preprod");
-        }
-        return false;
+    public TestSupportService(
+            @Value("${testing.skip-vendor-prefix:load}") String skipVendorUserPrefix,
+            @Value("${testing.skip-operator-prefix:load}") String skipOperatorUserPrefix,
+            @Value("${is-test-env:false}") Boolean isTestEnvironment,
+            @Value("${spring.profiles.active}") String springEnv,
+            @Value("${testing.prefix-vendor-list:}") String envPrefixVendorList
+    ) {
+        this.skipVendorUserPrefix = skipVendorUserPrefix;
+        this.skipOperatorUserPrefix = skipOperatorUserPrefix;
+        this.isTestEnvironment = isTestEnvironment;
+        this.springEnv = springEnv;
+        this.envPrefixVendorList = envPrefixVendorList;
     }
 
-    //For later refactor
-    public Boolean shouldSkipOperatorCall(String username) {
+    public Boolean shouldSkipVendorCall(String username) {
+        Boolean skipCall = false;
         if (isTestEnvironment()) {
-            return username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
+            if (springEnv.contains("preprod")) {
+                return true;
+            }
+
+            List<String> userPrefixList = getPrefixListFromString(skipVendorUserPrefix);
+
+            for (String userPrefix : userPrefixList) {
+                if (userPrefix.isBlank()) {
+                    continue;
+                }
+                if (username.toLowerCase().startsWith(userPrefix.toLowerCase())) {
+                    skipCall = true;
+                    break;
+                }
+            }
         }
-        return false;
+        return skipCall;
+    }
+
+    public Boolean shouldSkipOperatorCall(String username) {
+        Boolean skipCall = false;
+        if (isTestEnvironment()) {
+
+            List<String> userPrefixList = getPrefixListFromString(skipOperatorUserPrefix);
+
+            for (String userPrefix : userPrefixList) {
+                if (userPrefix.isBlank()) {
+                    continue;
+                }
+                if (username.toLowerCase().startsWith(userPrefix.toLowerCase())) {
+                    skipCall = true;
+                    break;
+                }
+            }
+        }
+
+        return skipCall;
     }
 
     public String appendEnvPrefixToVendorUsername(String username, Integer vendorId) {
@@ -53,6 +90,12 @@ public class TestSupportService {
             case "dev", "qa" -> "q";
             default -> "";
         };
+    }
+
+    public List<String> getPrefixListFromString(String prefixListString) {
+        List<String> prefixList = Arrays.asList(prefixListString.split(","));
+
+        return prefixList;
     }
 
     public Boolean isTestEnvironment() {

@@ -51,6 +51,7 @@ public class CancelBetAction {
 
         // using for check the operatorStatus of transaction through the couchbase
         SettledBet settledBet = null;
+        GameSession gameSession;
 
         try {
             //Retrieve request body in original string format
@@ -76,12 +77,16 @@ public class CancelBetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(cancelbetDto);
 
-            //Gather require data
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelbetDto.getMemberAccount(), Integer.toString(cancelbetDto.getGameID()));
+            //get rawGameSession by player username without game id
+
+
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelbetDto.getMemberAccount());
+            if (gameSession == null) throw new AuthenticationException();
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(cancelbetDto.getGameID().toString(), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
-            
+
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
@@ -144,8 +149,7 @@ public class CancelBetAction {
                 JsonProcessingException |
                 CredentialNotFoundException |
                 DisabledGameException |
-                InvalidAgentApiCredentialException |
-                AuthenticationException otherException) {
+                InvalidAgentApiCredentialException otherException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
             httpService.logError(httpRequestLog, otherException);
 

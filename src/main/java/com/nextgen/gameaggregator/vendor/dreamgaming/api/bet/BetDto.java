@@ -15,7 +15,6 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Getter
 @Setter
@@ -52,12 +51,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
     public String getVendorBetId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
