@@ -1,6 +1,7 @@
-package com.nextgen.gameaggregator.config;
+package com.nextgen.gameaggregator.config.couchbase;
 
 import com.couchbase.client.core.retry.FailFastRetryStrategy;
+import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.Scope;
@@ -26,6 +27,9 @@ public class CouchbaseCacheConfig {
     @Value("${spring.couchbase.password}")
     private String password;
 
+    @Value("${spring.couchbase.bucketName}")
+    private String bucketName;
+
     @Bean
     public ClusterEnvironment cacheClusterEnvironment() {
         return ClusterEnvironment.builder()
@@ -37,9 +41,14 @@ public class CouchbaseCacheConfig {
                 .build();
     }
 
-    @Bean("cacheCluster")
-    public Cluster cacheCluster() {
+    @Bean("gaCluster")
+    public Cluster gaCluster() {
         return Cluster.connect(connectionString, userName, password);
+    }
+
+    @Bean("gaBucket")
+    public Bucket gaBucket(@Qualifier("gaCluster") Cluster cluster) {
+        return cluster.bucket(bucketName);
     }
 
     // TODO : to be remove if this config move to ga-core
@@ -47,5 +56,15 @@ public class CouchbaseCacheConfig {
     @CacheCollectionFor(entity = Campaign.class)
     public Collection campaignCache(@Qualifier("cacheScope") Scope scope) {
         return scope.collection("campaigns");
+    }
+
+    @Bean("gameScope")
+    public Scope gameScope(@Qualifier("gaBucket") Bucket bucket) {
+        return bucket.scope("game");
+    }
+
+    @Bean
+    public Collection gameTransactionsCollection(@Qualifier("gameScope") Scope scope) {
+        return scope.collection("game_transactions");
     }
 }

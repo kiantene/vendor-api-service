@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
+import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.math.BigDecimal;
  */
 @Data
 @Builder
-public class BetContext implements GameSessionData {
+public class BetContext implements GameSessionData, VendorPlayerAware {
     /**
      * Provided by the vendor to ensure the same bet request is not processed multiple times.
      */
@@ -51,4 +52,6 @@ public class BetContext implements GameSessionData {
     private Long agentPlayerId;
     private String agentPlayerUsername;
     private String currencyCode; // GA internal currency code, auto-populated for Operator API
+    private Integer currencyId;
+    private Integer vendorLineId;
 }
