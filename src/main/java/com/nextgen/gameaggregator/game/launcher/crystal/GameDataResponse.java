@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GameDataReponse {
+public class GameDataResponse {
     @JsonProperty("url")
     private String url;
 }

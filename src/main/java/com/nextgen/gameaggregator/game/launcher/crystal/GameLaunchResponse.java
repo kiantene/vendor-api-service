@@ -11,5 +11,5 @@ import lombok.Data;
 public class GameLaunchResponse {
     @NotNull(message = "Data can not be blank")
     @JsonProperty("data")
-    private GameDataReponse data;
+    private GameDataResponse data;
 }
