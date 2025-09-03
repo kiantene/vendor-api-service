@@ -51,13 +51,9 @@ public class AppendDto implements AdjustmentData {
     @JsonIgnore
     private BigDecimal adjustmentAmount;
 
-    public String getParentBetId() {
-        return StringUtils.stripStart(this.detailDto.getParentBetId(), "0");
-    }
-
     @Override
     public String getVendorBetId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
@@ -67,7 +63,7 @@ public class AppendDto implements AdjustmentData {
 
     @Override
     public String getExternalTransactionId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
