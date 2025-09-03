@@ -9,11 +9,13 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,7 @@ public class WalletBetResultServiceWrapper {
     private final BetResultContextEnricher enricher;
     private final BetResultDataMapper betResultDataMapper;
     private final GameSessionDataService gameSessionDataService;
+    private final GameTransactionService gameTransactionService;
     private final WalletBetResultValidator validator;
     private final WalletBetResultBatchService batchService;
     private final WalletExceptionTranslator walletExceptionTranslator;
@@ -44,7 +47,8 @@ public class WalletBetResultServiceWrapper {
         try {
             context.setVendorId(logContext.getVendorId());
 
-            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+//            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(ACTION, context.getVendorId(), context.getIdempotencyKey());
 
             enricher.enrich(context);
 
@@ -58,7 +62,7 @@ public class WalletBetResultServiceWrapper {
 
             validator.validateBusinessState(gameSession, context, resultType);
 
-            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, txn, resultType, httpRequestLog);
 
             doProcessBatch(context);
 
@@ -80,7 +84,7 @@ public class WalletBetResultServiceWrapper {
 
     private PlayerBalanceData handleDuplicateRequest(BetResultContext context, DuplicateRequestException ex) {
         // TODO: check for operator status, if is successful then return success
-        return null;
+        throw ex;
     }
 
     private void doProcessBatch(BetResultContext context) {
@@ -98,6 +102,7 @@ public class WalletBetResultServiceWrapper {
     private PlayerBalanceData processBetResultTransaction(
             BetResultContext context,
             GameSession gameSession,
+            GameTransaction txn,
             ResultType resultType,
             HttpRequestLog httpRequestLog) throws
                 InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
@@ -105,6 +110,8 @@ public class WalletBetResultServiceWrapper {
                 InsufficientBalanceException, TransactionStillProcessingException,
                 BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
+        enricher.enrichGameTransaction(txn, context);
+        gameTransactionService.markSent(txn);
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -113,6 +120,7 @@ public class WalletBetResultServiceWrapper {
                 state().getVendorService(),
                 httpRequestLog
         );
+        gameTransactionService.markSuccess(txn, balance);
 
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),

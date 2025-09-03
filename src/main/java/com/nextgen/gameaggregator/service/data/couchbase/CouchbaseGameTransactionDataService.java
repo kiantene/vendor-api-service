@@ -39,9 +39,12 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updates.put("roundId", doc.getRoundId());
         updates.put("gameCode", doc.getGameCode());
         updates.put("currency", doc.getCurrency());
-        updates.put("betAmount", doc.getBetAmount().toPlainString());
-        updates.put("betTime", doc.getBetTime());
         updates.put("status", doc.getStatus().name());
+
+        updateIfNotNull(updates, "betAmount", doc.getBetAmount());
+        updateIfNotNull(updates, "betTime", doc.getBetTime());
+        updateIfNotNull(updates, "winAmount", doc.getWinAmount());
+        updateIfNotNull(updates, "settleTime", doc.getSettleTime());
 
         if (TxnStatus.SENT == doc.getStatus()) {
             updates.put("sentAt", doc.getSentAt());
@@ -74,5 +77,15 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     @Override
     public void deleteById(String id) {
         repo.delete(id);
+    }
+
+    private void updateIfNotNull(Map<String, Object> map, String field, Object value) {
+        if (value != null) {
+            if (value instanceof BigDecimal decimal) {
+                map.put(field, decimal.toPlainString());
+            } else {
+                map.put(field, value);
+            }
+        }
     }
 }
