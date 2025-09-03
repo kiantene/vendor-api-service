@@ -87,6 +87,7 @@ public class GameTransaction {
         return vendorId + "::" + transactionId;
     }
 
+    @JsonIgnore
     public boolean isSuccess() {
         return status == TxnStatus.SUCCESS;
     }
