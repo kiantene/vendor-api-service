@@ -54,9 +54,9 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
-            walletBetValidator.validateBusinessState(gameSession, context);
-
             enricher.enrichByGameSession(context, gameSession);
+
+            walletBetValidator.validateBusinessState(gameSession, context);
 
             return processBetTransaction(context, gameSession, txn, httpRequestLog);
 
