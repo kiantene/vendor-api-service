@@ -28,13 +28,14 @@ public class GameTransactionService {
         return Optional.of(doc);
     }
 
-    public void save(GameTransaction txn) {
+    public GameTransaction save(GameTransaction txn) {
         if (TxnStatus.NEW == txn.getStatus()) {
             txn.setCreatedAt(getNow());
         } else if (TxnStatus.SENT == txn.getStatus()) {
             txn.setSentAt(getNow());
         }
         data.insert(txn);
+        return txn;
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {

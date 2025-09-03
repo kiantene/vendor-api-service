@@ -30,7 +30,7 @@ public class DuplicateRequestGuard {
             GameTransaction txn = doc.get();
             throw new DuplicateRequestException(txn.getId() + " is already processed", txn);
         }
-        txnService.save(probe);
+        currentRequest.set(txnService.save(probe));
         return probe;
     }
 

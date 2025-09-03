@@ -76,7 +76,7 @@ public class GameTransaction {
     }
 
     public GameTransaction(String type, Integer vendorId, String transactionId) {
-        super();
+        this();
         this.type = type;
         this.vendorId = vendorId;
         this.transactionId = transactionId;
