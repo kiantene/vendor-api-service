@@ -25,7 +25,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.telegram.telegrambots.meta.api.objects.games.Game;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
