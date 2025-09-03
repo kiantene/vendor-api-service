@@ -40,7 +40,7 @@ public class BetContextEnricher extends BaseEnricher<BetContext> {
         }
     }
 
-    public void enrichGameTransaction(BetContext context, GameTransaction txn) {
+    public void enrichGameTransaction(GameTransaction txn, BetContext context) {
         txn.setUsername(context.getVendorPlayerUsername());
         txn.setRoundId(context.getRoundId());
         txn.setGameCode(context.getVendorGameCode());

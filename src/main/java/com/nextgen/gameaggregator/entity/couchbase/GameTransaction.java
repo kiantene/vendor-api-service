@@ -10,15 +10,9 @@ import com.nextgen.gameaggregator.enums.TxnStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 @Data
 public class GameTransaction {
-    private static final DateTimeFormatter UTC_TIMESTAMP_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-            .withZone(ZoneOffset.UTC);
-
     @JsonProperty("type")
     private String type;
 
@@ -75,7 +69,6 @@ public class GameTransaction {
 
     public GameTransaction() {
         this.status = TxnStatus.NEW;
-        this.createdAt = UTC_TIMESTAMP_FMT.format(Instant.now());
     }
 
     public static GameTransaction of(String type, Integer vendorId, String transactionId) {

@@ -9,9 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +44,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updates.put("status", doc.getStatus().name());
 
         if (TxnStatus.SENT == doc.getStatus()) {
-            updates.put("sentAt", getNow());
+            updates.put("sentAt", doc.getSentAt());
         }
 
         repo.update(doc.getId(), updates, null);
@@ -65,11 +62,9 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         }
 
         if (TxnStatus.SENT == status) {
-            updates.put("sentAt", getNow());
-        }
-
-        if (TxnStatus.SUCCESS == status) {
-            updates.put("doneAt", getNow());
+            updates.put("sentAt", doc.getSentAt());
+        } else if (TxnStatus.SUCCESS == status) {
+            updates.put("doneAt", doc.getDoneAt());
             ttl = Duration.ofHours(6);
         }
 
@@ -79,9 +74,5 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     @Override
     public void deleteById(String id) {
         repo.delete(id);
-    }
-
-    private String getNow() {
-        return LocalTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
     }
 }

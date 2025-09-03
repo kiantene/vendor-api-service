@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -15,6 +15,9 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class GameTransactionService {
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("HH:mm:ss.SSS")
+            .withZone(ZoneOffset.UTC);
     private final GameTransactionDataService data;
 
     public Optional<GameTransaction> get(GameTransaction txn) {
@@ -26,23 +29,27 @@ public class GameTransactionService {
     }
 
     public void save(GameTransaction txn) {
-        if (TxnStatus.SENT == txn.getStatus()) {
+        if (TxnStatus.NEW == txn.getStatus()) {
+            txn.setCreatedAt(getNow());
+        } else if (TxnStatus.SENT == txn.getStatus()) {
             txn.setSentAt(getNow());
         }
         data.insert(txn);
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {
+        txn.setDoneAt(getNow());
         data.updateStatus(txn, balance, TxnStatus.SUCCESS);
     }
 
     public void markSent(GameTransaction txn) {
+        txn.setSentAt(getNow());
         txn.setStatus(TxnStatus.SENT);
         data.update(txn);
     }
 
     private String getNow() {
-        return LocalTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS"));
+        return TIME_FORMATTER.format(Instant.now());
     }
 
     public void deleteById(String id) {

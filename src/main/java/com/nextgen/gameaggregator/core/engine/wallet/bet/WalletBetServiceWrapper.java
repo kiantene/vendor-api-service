@@ -96,7 +96,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 TransactionStillProcessingException, InvalidOperatorResponseException,
                 CouchbaseDataIntegrityException {
 
-        enricher.enrichGameTransaction(context, txn);
+        enricher.enrichGameTransaction(txn, context);
         gameTransactionService.markSent(txn);
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
