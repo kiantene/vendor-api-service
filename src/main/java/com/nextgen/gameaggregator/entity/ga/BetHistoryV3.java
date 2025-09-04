@@ -1,16 +1,16 @@
 package com.nextgen.gameaggregator.entity.ga;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
+
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
-import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
+
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
 public class BetHistoryV3 {
     @JsonProperty("id")
     private String id;
