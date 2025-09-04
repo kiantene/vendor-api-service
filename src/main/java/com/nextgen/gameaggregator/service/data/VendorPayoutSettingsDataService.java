@@ -6,15 +6,14 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.List;
 
 @Service
 public class VendorPayoutSettingsDataService {
 
-    private final VendorPayoutSettingsCacheService vendorPayoutSettingsCacheService;
+    private final VendorPayoutSettingsCacheService cache;
 
-    public VendorPayoutSettingsDataService(VendorPayoutSettingsCacheService vendorPayoutSettingsCacheService) {
-        this.vendorPayoutSettingsCacheService = vendorPayoutSettingsCacheService;
+    public VendorPayoutSettingsDataService(VendorPayoutSettingsCacheService cache) {
+        this.cache = cache;
     }
 
     @Cacheable(value = "VendorPayoutSettings", key = "{#masterAgentId, #agentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
@@ -24,10 +23,9 @@ public class VendorPayoutSettingsDataService {
                                          Integer gameCategoryId,
                                          Integer currencyId) {
 
-        List<VendorPayoutSettings> vendorPayoutSettingsList =
-                vendorPayoutSettingsCacheService.getByMasterAgentId(masterAgentId, vendorId, gameCategoryId, currencyId);
+        var settingList = cache.getByMasterAgentId(masterAgentId, vendorId, gameCategoryId, currencyId);
 
-        return vendorPayoutSettingsList.stream()
+        return settingList.stream()
                 .filter(v -> v.getStatus() != null && v.getStatus() == 1)
                 .filter(v -> v.getAgentId() != null && (v.getAgentId().equals(agentId) || v.getAgentId() == 0))
                 .max(Comparator
@@ -36,6 +34,5 @@ public class VendorPayoutSettingsDataService {
                 )
                 .map(VendorPayoutSettings::getMaxPayout)
                 .orElse(null);
-
     }
 }

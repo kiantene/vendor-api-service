@@ -10,10 +10,10 @@ import java.util.List;
 @Service
 public class VendorPayoutSettingsCacheService {
 
-    private final VendorPayoutSettingsRepository vendorPayoutSettingsRepository;
+    private final VendorPayoutSettingsRepository repository;
 
-    public VendorPayoutSettingsCacheService(VendorPayoutSettingsRepository vendorPayoutSettingsRepository) {
-        this.vendorPayoutSettingsRepository = vendorPayoutSettingsRepository;
+    public VendorPayoutSettingsCacheService(VendorPayoutSettingsRepository repository) {
+        this.repository = repository;
     }
 
     @Cacheable(value = "VendorPayoutSettings", key = "{#masterAgentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
@@ -22,7 +22,7 @@ public class VendorPayoutSettingsCacheService {
                                                          Integer gameCategoryId,
                                                          Integer currencyId) {
 
-        return vendorPayoutSettingsRepository.findByMasterAgentIdAndVendorIdAndGameCategoryIdAndCurrencyId(
+        return repository.findByMasterAgentIdAndVendorIdAndGameCategoryIdAndCurrencyId(
                 masterAgentId, vendorId, gameCategoryId, currencyId
         );
     }

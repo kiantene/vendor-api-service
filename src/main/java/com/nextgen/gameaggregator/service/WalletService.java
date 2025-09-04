@@ -52,8 +52,6 @@ public class WalletService {
     private final VendorService vendorCurrencyConversionService;
     private final BetIdempotentLogService betIdempotentLogService;
     private final AgentMaxPayoutService agentMaxPayoutService;
-    @Value("${endround-process.retry-interval-in-seconds:5}")
-    private long retryIntervalInSecondsValue;
     private final GameRoundService gameRoundService;
     @Value("${endround-process.retry-max-attempts:5}")
     private int retryMaxAttempts;

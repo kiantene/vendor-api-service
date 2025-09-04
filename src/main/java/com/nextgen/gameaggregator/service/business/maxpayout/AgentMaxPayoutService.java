@@ -9,55 +9,88 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AgentMaxPayoutService {
 
     private final AgentService agentService;
-    private final VendorPayoutSettingsDataService vendorPayoutSettingsDataService;
+    private final VendorPayoutSettingsDataService payoutSettingsDataService;
 
     public BetInformation applyPayoutCap(Integer agentId,
                                          Integer vendorId,
                                          Integer currencyId,
                                          BetInformation betInformation) {
 
-        try {
-            Agent agent = agentService.get(agentId);
-            BigDecimal payoutCap = this.getPayoutCapAmount(agent, vendorId, betInformation.getGameCategoryId(), currencyId);
+        Optional<BigDecimal> payoutCap = this.getPayoutCapAmount(agentId, vendorId, betInformation.getGameCategoryId(), currencyId, betInformation.getWinAmount());
 
-            if (isZero(betInformation.getWinAmount()) || payoutCap == null) {
-                return betInformation;
-            }
+        return payoutCap
+                .filter(cap -> shouldApplyCap(betInformation.getWinAmount(), cap))
+                .map(cap -> applyCalculation(betInformation, cap))
+                .orElse(betInformation);
+    }
 
-            AgentPayout agentPayout = new AgentPayout(payoutCap, betInformation);
+    private Optional<BigDecimal> getPayoutCapAmount(Integer agentId,
+                                                    Integer vendorId,
+                                                    Integer gameCategoryId,
+                                                    Integer currencyId,
+                                                    BigDecimal winAmount) {
+        Optional<BigDecimal> empty = Optional.empty();
 
-            if (!agentPayout.getCapWinAmount().equals(betInformation.getWinAmount())){
-                betInformation.setUncapWinAmount(betInformation.getWinAmount());
-                betInformation.setUncapWinLoss(betInformation.getWinLoss());
-                betInformation.setUncapJackpotAmount(betInformation.getJackpotAmount());
-                betInformation.setUncapEffectiveTurnover(betInformation.getEffectiveTurnover());
+        if (winAmount == null || winAmount.signum() == 0) return empty;
 
-                betInformation.setWinAmount(agentPayout.getCapWinAmount());
-                betInformation.setWinLoss(agentPayout.getCapWinLoss());
-                betInformation.setJackpotAmount(agentPayout.getCapJackpotAmount());
-                betInformation.setEffectiveTurnover(agentPayout.getCapEffectiveTurnover());
-            }
+        Optional<Agent> agent = getAgent(agentId);
+        if (agent.isEmpty()) return empty;
 
-            return betInformation;
+        BigDecimal capAmount = payoutSettingsDataService.getMaxPayoutAmount(
+                agent.get().getMasterAgentId(),
+                agent.get().getId(),
+                vendorId,
+                gameCategoryId,
+                currencyId
+        );
 
-        } catch (AgentNotFoundException e) {
-            return betInformation;
+        if (capAmount == null || capAmount.signum() <= 0) return empty;
+
+        return Optional.of(capAmount);
+    }
+
+    private boolean shouldApplyCap(BigDecimal cap, BigDecimal winAmount) {
+        if (cap == null || winAmount == null) {
+            return false;
         }
-
+        // only apply if win is strictly greater than cap
+        return winAmount.compareTo(cap) > 0;
     }
 
-    public BigDecimal getPayoutCapAmount(Agent agent, Integer vendorId, Integer gameCategoryId, Integer currencyId) {
-        return vendorPayoutSettingsDataService.getMaxPayoutAmount(agent.getMasterAgentId(), agent.getId(), vendorId, gameCategoryId, currencyId);
+    private BetInformation applyCalculation(BetInformation betInfo, BigDecimal cappedWin) {
+        final BigDecimal bet        = normalize(betInfo.getBetAmount());
+        final BigDecimal jackpot    = normalize(betInfo.getJackpotAmount());
 
+        final BigDecimal cappedJackpot = jackpot.min(cappedWin).max(BigDecimal.ZERO);
+        final BigDecimal cappedWinLoss = cappedWin.subtract(bet);
+
+        betInfo.setUncapWinAmount(betInfo.getWinAmount());
+        betInfo.setUncapWinLoss(betInfo.getWinLoss());
+        betInfo.setUncapJackpotAmount(betInfo.getJackpotAmount());
+
+        betInfo.setWinAmount(cappedWin);
+        betInfo.setWinLoss(cappedWinLoss);
+        betInfo.setJackpotAmount(cappedJackpot);
+
+        return betInfo;
     }
 
-    private boolean isZero(BigDecimal amount) {
-        return amount.compareTo(BigDecimal.ZERO) == 0;
+    private static BigDecimal normalize(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
+    private Optional<Agent> getAgent(Integer agentId) {
+        try {
+            return Optional.of(agentService.get(agentId));
+        } catch (AgentNotFoundException ex) {
+            return Optional.empty();
+        }
     }
 }
