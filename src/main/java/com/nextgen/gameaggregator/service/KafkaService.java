@@ -396,57 +396,45 @@ public class KafkaService {
 
     public void produceBetHistoryUncap(SettledBet settledBet, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
 
-        if (settledBet.getUncapWinAmount() != null) {
-            try {
-                BetHistory betHistory = new BetHistory(settledBet);
-                //will do currency conversion before send to kafka
-                currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+        if (settledBet.getUncapWinAmount() == null) return;
 
-                if (betHistory.getGameSessionToken() == null) {
-                    betHistory.setGameSessionToken("");
-                }
+        try {
+            BetHistory betHistory = new BetHistory(settledBet);
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
-                // TODO : Will re-enable after the new game list import is deployed
-                // if (productId == null || productCode == null) {
-                //     Vendor vendor = vendorService.getById(betHistory.getVendorId());
-                //     productId = vendor.getProduct().getId();
-                //     productCode = vendor.getProduct().getCode();
-                // }
-
-                // if (productGameId == null) {
-                //     VendorGameCode vendorGameCode = vendorGameCodeService.getByTop1VendorGameId(betHistory.getVendorGameId());
-                //     productGameId = vendorGameCode.getProductGameId();
-                // }
-
-                if (agentPlayerUsername == null) {
-                    AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
-                    agentPlayerUsername = agentPlayer.getUsername();
-                }
-
-                if (vendorPlayerUsername == null) {
-                    VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
-                    vendorPlayerUsername = vendorPlayer.getUsername();
-                }
-
-                WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
-                BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, productCode, productId, productGameId, agentPlayerUsername,
-                        vendorPlayerUsername, warehouseFutureEntity);
-
-                BetHistoryUncap betHistoryUncap = new BetHistoryUncap(betHistoryV3, settledBet);
-
-                ObjectMapper objectMapper = new ObjectMapper();
-                String json = objectMapper.writeValueAsString(betHistoryUncap);
-
-                CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_UNCAP, json);
-
-                future.exceptionally(throwable -> {
-                    log.error("Error sending BetHistoryUncap to Kafka: ", throwable);
-                    return null;
-                });
-
-            } catch (Exception e) {
-                log.error("BetHistoryUncap: " + e.getMessage() + " -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            if (betHistory.getGameSessionToken() == null) {
+                betHistory.setGameSessionToken("");
             }
+
+            if (agentPlayerUsername == null) {
+                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
+                agentPlayerUsername = agentPlayer.getUsername();
+            }
+
+            if (vendorPlayerUsername == null) {
+                VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+                vendorPlayerUsername = vendorPlayer.getUsername();
+            }
+
+            WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
+            BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, productCode, productId, productGameId, agentPlayerUsername,
+                    vendorPlayerUsername, warehouseFutureEntity);
+
+            BetHistoryUncap betHistoryUncap = new BetHistoryUncap(betHistoryV3, settledBet);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(betHistoryUncap);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_UNCAP, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending BetHistoryUncap to Kafka: ", throwable);
+                return null;
+            });
+
+        } catch (Exception e) {
+            log.error("BetHistoryUncap: " + e.getMessage() + " -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
         }
     }
 

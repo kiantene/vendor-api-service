@@ -19,7 +19,7 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.service.maxpayout.AgentMaxPayoutService;
+import com.nextgen.gameaggregator.service.business.maxpayout.AgentMaxPayoutService;
 import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

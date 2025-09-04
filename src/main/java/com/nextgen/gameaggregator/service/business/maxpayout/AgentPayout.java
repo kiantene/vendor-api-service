@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.service.maxpayout;
+package com.nextgen.gameaggregator.service.business.maxpayout;
 
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import lombok.Data;

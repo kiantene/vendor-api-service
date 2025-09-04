@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.service;
+package com.nextgen.gameaggregator.service.data;
 
 import com.nextgen.gameaggregator.entity.ga.VendorPayoutSettings;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorPayoutSettingsRepository;

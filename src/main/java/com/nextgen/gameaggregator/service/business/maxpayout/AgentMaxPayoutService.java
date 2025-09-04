@@ -1,10 +1,10 @@
-package com.nextgen.gameaggregator.service.maxpayout;
+package com.nextgen.gameaggregator.service.business.maxpayout;
 
 import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.exception.AgentNotFoundException;
 import com.nextgen.gameaggregator.service.AgentService;
-import com.nextgen.gameaggregator.service.VendorPayoutSettingsDataService;
+import com.nextgen.gameaggregator.service.data.VendorPayoutSettingsDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
