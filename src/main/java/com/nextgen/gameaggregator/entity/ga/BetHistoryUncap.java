@@ -2,14 +2,12 @@ package com.nextgen.gameaggregator.entity.ga;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
 @Data
-@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class BetHistoryUncap extends BetHistoryV3 {
 
     @JsonProperty("uncap_win_amount")

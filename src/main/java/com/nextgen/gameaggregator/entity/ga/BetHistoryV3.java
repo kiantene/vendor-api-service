@@ -126,6 +126,9 @@ public class BetHistoryV3 {
     @JsonProperty("game_category_code")
     private String gameCategoryCode;
 
+    public BetHistoryV3() {
+    }
+
     public BetHistoryV3 (BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, 
         String vendorPlayerUsername, WarehouseFutureEntity warehouseFutureEntity) {
 
