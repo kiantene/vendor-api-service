@@ -34,9 +34,9 @@ public class KafkaService {
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
     private final S3BetService s3BetService;
-    private final VendorService vendorService;
-    private final VendorGameCodeService vendorGameCodeService;
-    private final AgentService agentService;
+//    private final VendorService vendorService;
+//    private final VendorGameCodeService vendorGameCodeService;
+//    private final AgentService agentService;
     private final ObjectMapper objectMapper;
 
     @Value("${logging.log-to-kafka:true}")
@@ -50,11 +50,11 @@ public class KafkaService {
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
-                        CachingService cachingService,
+//                        CachingService cachingService,
                         S3BetService s3BetService,
-                        VendorService vendorService,
-                        VendorGameCodeService vendorGameCodeService,
-                        AgentService agentService,
+//                        VendorService vendorService,
+//                        VendorGameCodeService vendorGameCodeService,
+//                        AgentService agentService,
                         ObjectMapper objectMapper
     ) {
 
@@ -65,9 +65,9 @@ public class KafkaService {
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.s3BetService = s3BetService;
-        this.vendorService = vendorService;
-        this.vendorGameCodeService = vendorGameCodeService;
-        this.agentService = agentService;
+//        this.vendorService = vendorService;
+//        this.vendorGameCodeService = vendorGameCodeService;
+//        this.agentService = agentService;
         this.objectMapper = objectMapper;
     }
 
@@ -309,19 +309,6 @@ public class KafkaService {
         }
     }
 
-    public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
-        if (this.logToKafka) {
-            try {
-                jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_WALLET_REQUEST_LOG, transferWalletRequestLog.getUsername(), transferWalletRequestLog);
-            } catch (Exception e) {
-                log.error(transferWalletRequestLog.getTraceId() + " : " + e.getMessage());
-                log.info(new Gson().toJson(transferWalletRequestLog));
-            }
-        } else {
-            log.info(new Gson().toJson(transferWalletRequestLog));
-        }
-    }
-
     public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
         try {
             BetTransactionLog betTransactionLog;
@@ -342,6 +329,21 @@ public class KafkaService {
     private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
         return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(betHistory.getVendorGameId(), betHistory.getVendorId(), betHistory.getGameCategoryId(),
                 betHistory.getCurrencyId(), betHistory.getAgentId());
+    }
+
+    public void produceBetHistoryV3(BetHistoryV3 betHistoryV3) {
+        try {
+            String json = objectMapper.writeValueAsString(betHistoryV3);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V3, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + " : " + betHistoryV3.toString());
+        }
     }
 
     public void produceBetHistoryV3(BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -394,36 +396,8 @@ public class KafkaService {
         }
     }
 
-    public void produceBetHistoryUncap(SettledBet settledBet, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
-
-        if (settledBet.getUncapWinAmount() == null) return;
-
+    public void produceBetHistoryUncap(BetHistoryUncap betHistoryUncap) {
         try {
-            BetHistory betHistory = new BetHistory(settledBet);
-            //will do currency conversion before send to kafka
-            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
-
-            if (betHistory.getGameSessionToken() == null) {
-                betHistory.setGameSessionToken("");
-            }
-
-            if (agentPlayerUsername == null) {
-                AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
-                agentPlayerUsername = agentPlayer.getUsername();
-            }
-
-            if (vendorPlayerUsername == null) {
-                VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
-                vendorPlayerUsername = vendorPlayer.getUsername();
-            }
-
-            WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
-            BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, productCode, productId, productGameId, agentPlayerUsername,
-                    vendorPlayerUsername, warehouseFutureEntity);
-
-            BetHistoryUncap betHistoryUncap = new BetHistoryUncap(betHistoryV3, settledBet);
-
-            ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(betHistoryUncap);
 
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_UNCAP, json);
@@ -434,7 +408,7 @@ public class KafkaService {
             });
 
         } catch (Exception e) {
-            log.error("BetHistoryUncap: " + e.getMessage() + " -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            log.error("BetHistoryUncap: " + e.getMessage() + " -> vendorBetId = " + betHistoryUncap.getVendorBetId() + "& roundId = " + betHistoryUncap.getRoundId());
         }
     }
 

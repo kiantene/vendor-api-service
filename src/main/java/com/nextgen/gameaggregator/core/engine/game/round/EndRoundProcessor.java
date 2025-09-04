@@ -186,8 +186,8 @@ public class EndRoundProcessor {
                 vendorCurrency.getFromVendorRate()
         );
 
-        kafkaService.produceBetHistoryUncap(settledBet, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                agentPlayerUsername, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
+//        kafkaService.produceBetHistoryUncap(settledBet, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+//                agentPlayerUsername, vendorPlayerUsername, vendorCurrency.getFromVendorRate());
     }
 
     private void processPreprocessingBetHistory(BetHistory betHistory, 
