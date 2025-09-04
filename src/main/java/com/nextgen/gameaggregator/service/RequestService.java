@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBetForPatching;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -17,6 +19,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +28,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -35,14 +37,14 @@ import java.util.function.Consumer;
 @Slf4j
 public class RequestService {
 
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
-
-    @Value("${testing.stub-prefix:stub}")
-    private String usernamePrefix;
+    private final TestSupportService testSupportService;
 
     @Value("${is-test-env:false}")
     private Boolean isTestEnvironment;
+
+    public RequestService(TestSupportService testSupportService) {
+        this.testSupportService = testSupportService;
+    }
 
     public static <T> void validateResponse(T requestObject) throws InvalidResponseException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
@@ -183,7 +185,7 @@ public class RequestService {
     }
 
     public Boolean shouldSkipStubCall(String username) {
-        return useStub && username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
+        return testSupportService.shouldSkipOperatorCall(username);
     }
 
     public void validateResponseMatchRequest(WalletBalanceVo walletBalanceVo, String userName, String currency, String traceId) throws ResponseNotMatchRequestException {

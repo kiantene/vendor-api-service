@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("raw")
-@Collection("bet_not_found_log")
+@Collection("bet_not_found_logs")
 public interface RawBetNotFoundLogRepository extends CouchbaseRepository<BetNotFoundLog, String> {
     BetNotFoundLog findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
     

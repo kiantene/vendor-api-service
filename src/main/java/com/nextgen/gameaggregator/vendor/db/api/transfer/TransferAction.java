@@ -60,11 +60,12 @@ public class TransferAction {
 
         String traceId = httpRequestLog.getId();
 
-        TransferDto transferDto;
+        TransferDto transferDto = new TransferDto();
         BigDecimal balance;
         TransferDataVo transferDataVo = new TransferDataVo();
         ResponseVo vo = new ResponseVo();
         CommonDto commonDto;
+        GameSession gameSession;
 
         // default value
         transferDataVo.setTradeType(0);
@@ -90,8 +91,20 @@ public class TransferAction {
             this.doValidation(transferDto);
 
             // using vendor player username to find gameSession details
-            GameSession gameSession = gameSessionService.
-                    getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(transferDto.getGameId(), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                //add regenerate token on settle only
+                if (transferDto.getTradeType() == 2) {
+                    gameSession = gameSessionService.generateNewSessionToken(transferDto.getMemberId());
+                    gameSessionService.updateByVendorGameCode(gameSession, transferDto.getGameId());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
+                    gameSession.setToken(traceId);
+                    gameSession.setVendorToken(traceId);
+                } else throw new AuthenticationException();
+            }
+
             //Verification
             this.doVerification(transferDto, gameSession, commonDto);
 
@@ -135,6 +148,16 @@ public class TransferAction {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
 
+        } catch (GameTerminatedException exception) {
+            httpService.logError(httpRequestLog, exception);
+            if (transferDto != null && transferDto.getTradeType() == TradeType.BET) {
+                //GA-10441 this return insufficient error is preventing vendor resend same request
+                //only apply on bet
+                vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
+            }
+
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INTERNAL_SERVER_ERROR);
@@ -154,11 +177,11 @@ public class TransferAction {
 
     private void doVerification(TransferDto dto, GameSession gameSession, CommonDto commonDto) throws
             InvalidPlayerException, DisabledVendorLineException, CurrencyNotSupportedException, CredentialNotFoundException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException {
+            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, GameTerminatedException {
 
         if (dto.getTradeType() == TradeType.BET) {
             //validate vendor username, agent vendor line, player status, and game status
-            validationService.validateEligibleBet(gameSession, dto.getMemberId());
+            validationService.isBetAllowed(gameSession, dto.getMemberId());
         }
 
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

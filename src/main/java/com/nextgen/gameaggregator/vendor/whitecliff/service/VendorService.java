@@ -2,12 +2,9 @@ package com.nextgen.gameaggregator.vendor.whitecliff.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.service.SettledBetService;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.vendor.whitecliff.api.bet.DebitDto;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl.PrdDto;
 import com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl.UserDto;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +14,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
 
 
 @Service
@@ -48,11 +44,13 @@ public class VendorService extends BaseVendorService {
         PrdDto prdDto = new PrdDto();
         prdDto.setId(Integer.valueOf(productId));
 
-        if (gameSession.getGameCategoryId() == 5){
-            prdDto.setTable_id(gameSession.getVendorGameCode());
-        }
+        // default lobby code
+        String lobbyCode = "0";
 
-        else {
+        // if is live game and not lobby game then map to table id
+        if (gameSession.getGameCategoryId() == 5 && !gameSession.getVendorGameCode().equals(lobbyCode)) {
+            prdDto.setTable_id(gameSession.getVendorGameCode());
+        } else {
             prdDto.setType(Integer.valueOf(gameSession.getVendorGameCode()));
         }
 
@@ -60,7 +58,7 @@ public class VendorService extends BaseVendorService {
         return prdDto;
     }
 
-    public static String convertMapToJson(MultiValueMap<String, String> dataMap){
+    public static String convertMapToJson(MultiValueMap<String, String> dataMap) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.writeValueAsString(dataMap.toSingleValueMap());

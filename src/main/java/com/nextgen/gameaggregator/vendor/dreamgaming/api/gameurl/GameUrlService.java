@@ -50,7 +50,7 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
 
         formData.add("username", gameSession.getVendorPlayerUsername());
         formData.add("password", VendorService.md5Generator(gameSession.getVendorPlayerUsername()));
-        formData.add("currencyName", gameSession.getCurrencyCode());
+        formData.add("currencyName", gameSession.getVendorCurrencyCode());
         formData.add("winLimit", credentials.get(Credentials.WIN_LIMIT));
 
         return formData;
@@ -93,6 +93,7 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         this.validateResponse(apiResponse2, isTimeout, httpRequestLog, DGGameUrlVo.class, gameSession);
 
         DGGameUrlVo responseVo = new Gson().fromJson(apiResponse2.getBody(), DGGameUrlVo.class);
+        responseVo.setTableId(gameSession.getVendorGameCode());
 
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
@@ -136,5 +137,4 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         headers.add("time", timestamp);
         return headers;
     }
-
 }

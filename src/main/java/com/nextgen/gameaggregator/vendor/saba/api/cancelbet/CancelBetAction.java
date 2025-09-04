@@ -95,6 +95,8 @@ public class CancelBetAction {
 
                     } catch (Exception exception) {
                         // throw to dlq
+                        // TODO : after unsettle bet with retry still bet not found, need to add log error
+                        // httpService.logError(httpRequestLog, exception);
                         log.error(exception.getMessage());
                     } finally {
                         walletRequestService.end(newWalletRequest, httpRequestLog, vo);

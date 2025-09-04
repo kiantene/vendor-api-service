@@ -7,17 +7,19 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,21 +30,15 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-@Slf4j
+@RequiredArgsConstructor
 public class BetAction {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
+    private final GameSessionService gameSessionService;
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
@@ -66,7 +62,9 @@ public class BetAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            String secret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY);
+            String jsonParam = EncryptionUtils.aesDecrypt(Encryption.CIPHER_MODE_AND_PADDING, commonDto.getParams(), secret);
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into betDto
             BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
@@ -74,8 +72,13 @@ public class BetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
 
-            //get rawGameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
+            //calculate vendor threshold. if the time is over 4 sec, direct send error to vendor.
+            this.checkVendorTimeout(betDto);
+
+            //get rawGameSession by player username without game id
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getMemberAccount());
+            if (gameSession == null) throw new AuthenticationException();
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameId(), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
@@ -123,8 +126,15 @@ public class BetAction {
             httpService.logError(httpRequestLog, cancelException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+            if (invalidOperatorResponseException.getOperatorStatus()
+                    .equals(Status.SC_INSUFFICIENT_FUNDS.code)) {
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            } else {
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
@@ -155,6 +165,9 @@ public class BetAction {
             }
             httpService.logError(httpRequestLog, invalidRequestException);
 
+        } catch (BetFailedException betFailedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, betFailedException);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
@@ -203,6 +216,12 @@ public class BetAction {
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, betDto.getMemberAccount());
+    }
+
+    private void checkVendorTimeout(BetDto betDto) throws BetFailedException {
+        if (betDto.getTs() != null && System.currentTimeMillis() - betDto.getTs() >= 4000) {
+            throw new BetFailedException("Round Id: " + betDto.getRoundId() + "(Received request is too late. The vendor threshold timeout is 4 seconds.)");
+        }
     }
 
     private ResultType getResultType(BetDto betDto) {

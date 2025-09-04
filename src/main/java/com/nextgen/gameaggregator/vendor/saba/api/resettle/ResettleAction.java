@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBatchProcessIdempotentLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
 import com.nextgen.gameaggregator.sport.service.SportWalletServiceImpl;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -49,6 +51,7 @@ public class ResettleAction {
                 throw new BetResultIdempotentViolationException();
 
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
+                this.doValidation(txn);
                 txn.setOperationId(dtos.getMessage().getOperationId());
                 sportWalletService.resettle(traceId, txn, httpRequestLog);
             }
@@ -72,5 +75,10 @@ public class ResettleAction {
         }
 
         return vo;
+    }
+
+    private void doValidation(ResettleTransactionDto resettleTransactionDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(resettleTransactionDto);
     }
 }

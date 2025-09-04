@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
 @Getter
 @Setter
 public class VendorService extends BaseVendorService {
@@ -88,5 +86,10 @@ public class VendorService extends BaseVendorService {
     public boolean shouldDoRollbackByRound(GameSession gameSession) {
         // Handle for GPK BGAMING game, will be alwaus rollback by round
         return gameSession.getGameCode().startsWith("GPKBG");
+    }
+
+    @Override
+    public Integer operatorTimeoutTiming() {
+        return 2200;
     }
 }

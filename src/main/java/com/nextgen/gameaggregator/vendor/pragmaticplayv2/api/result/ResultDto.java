@@ -64,7 +64,7 @@ public class ResultDto implements BetResultData {
 
     // Additional information about the current game round.
     @NotBlank
-    @Size(max = 4000)
+    @Size(max = 12000)
     private String roundDetails;
 
     // Token of the player from Authenticate response.

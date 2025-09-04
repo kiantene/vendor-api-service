@@ -48,6 +48,7 @@ public abstract class BetInformation {
     private Integer processingStatus;
     private BigDecimal balance;
     private Integer betType;
+    private Integer isEndRound;
 
     protected BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();

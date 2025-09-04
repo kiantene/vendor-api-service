@@ -2,10 +2,12 @@ package com.nextgen.gameaggregator.vendor.ifg.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ifg.constant.ResponseCodes;
@@ -13,32 +15,41 @@ import com.nextgen.gameaggregator.vendor.ifg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ifg.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.ErrorVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-@Slf4j
 public class TransactionService {
 
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
-    public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId){
+    public TransactionService(GameSessionService gameSessionService,
+                              VendorLineService vendorLineService,
+                              WalletService walletService,
+                              HttpService httpService,
+                              AgentPlayerService agentPlayerService,
+                              VendorGameService vendorGameService,
+                              VendorService vendorService,
+                              RequestIdempotentLogService requestIdempotentLogService) {
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
+    }
+
+    public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
         TransactionServiceDto transactionServiceDto = new TransactionServiceDto();
         TransactionServiceVo vo = new TransactionServiceVo();
         BalanceVo balanceVo = new BalanceVo();
@@ -46,25 +57,40 @@ public class TransactionService {
         ErrorVo errorVo = new ErrorVo();
         XmlMapper xmlMapper = new XmlMapper();
         GameSession gameSession = new GameSession();
-        BigDecimal balance = null;
-
-        try{
+        BigDecimal balance;
+        boolean isRequestExists = false;
+        ResultType resultType;
+        try {
             transactionServiceDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), TransactionServiceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(transactionServiceDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(transactionServiceDto, transactionServiceDto.getRoundbet().getWlid()) == null) {
+                requestIdempotentLogService.create(transactionServiceDto, transactionServiceDto.getRoundbet().getWlid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(transactionServiceDto.getRoundbet().getGuid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);
-
-            // Process Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionServiceDto, httpRequestLog.getRequestBody(), httpRequestLog);
-
+            
+            if ("1".equals(transactionServiceDto.getRoundbet().getFinished())) {
+                resultType = vendorService.calculateResultType(transactionServiceDto.getBetAmount(), transactionServiceDto.getWinAmount(),
+                        transactionServiceDto.getJackpotAmount(), true);
+                balance = walletService.processBetResult(traceId, gameSession, transactionServiceDto, resultType, vendorService, httpRequestLog);
+            } else {
+                // Process Bet
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionServiceDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                balance = BigDecimal.valueOf(betEvent.getLastBalance().intValue());
+            }
             // set balanceVo
-            balanceVo.setValue(String.valueOf(betEvent.getLastBalance().intValue()));
+            balanceVo.setValue(String.valueOf(balance));
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -110,16 +136,16 @@ public class TransactionService {
             vo.setRoundbet(roundBetVo);
 
             httpService.logError(httpRequestLog, e);
-        } catch(InvalidRequestException |
-                JsonProcessingException |
-                VendorCurrencyNotSupportException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                DisabledAgentPlayerException |
-                DisabledGameException |
-                InvalidOperatorResponseException |
-                CouchbaseDataIntegrityException e) {
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 VendorCurrencyNotSupportException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 CouchbaseDataIntegrityException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -147,7 +173,7 @@ public class TransactionService {
             vo.setRoundbet(roundBetVo);
 
             httpService.logError(httpRequestLog, e);
-        }  catch (Exception e) {
+        } catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -161,7 +187,11 @@ public class TransactionService {
             vo.setRoundbet(roundBetVo);
 
             httpService.logError(httpRequestLog, e);
-        } finally{
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(transactionServiceDto, transactionServiceDto.getRoundbet().getWlid());
+            }
             // set vo
             vo.setSession(transactionServiceDto.getSession());
             vo.setTime(transactionServiceDto.getTime());

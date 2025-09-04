@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.betnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -11,7 +12,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
@@ -37,14 +38,20 @@ public class BetNSettleAction {
 
     private final ValidationService validationService;
 
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
     @Autowired
-    public BetNSettleAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService,
-                            VendorService vendorService, ValidationService validationService) {
+    public BetNSettleAction(HttpService httpService, GameSessionService gameSessionService,
+                            WalletService walletService,
+                            VendorService vendorService,
+                            ValidationService validationService,
+                            RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.validationService = validationService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -54,19 +61,30 @@ public class BetNSettleAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
-
+        boolean isRequestExists = false;
+        BetNSettleDto betNSettleDto = new BetNSettleDto();
+        String vendorPlayerUsername = null;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into commonDto
-            BetNSettleDto betNSettleDto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
+            betNSettleDto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(betNSettleDto);
 
             //get rawGameSession by token id
             gameSession = gameSessionService.verifyToken(betNSettleDto.getToken());
+            vendorPlayerUsername = gameSession.getVendorPlayerUsername();
+
+            if (requestIdempotentLogService.checkExists(betNSettleDto, vendorPlayerUsername) == null) {
+                requestIdempotentLogService.create(betNSettleDto, vendorPlayerUsername);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betNSettleDto.getGame()), gameSession);
 
             //Verify remaining parameters (Verify against database values)
@@ -117,6 +135,10 @@ public class BetNSettleAction {
             responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betNSettleDto, vendorPlayerUsername);
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;

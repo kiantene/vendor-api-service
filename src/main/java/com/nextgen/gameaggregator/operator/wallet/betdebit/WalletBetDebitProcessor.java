@@ -3,11 +3,9 @@ package com.nextgen.gameaggregator.operator.wallet.betdebit;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
-import com.nextgen.gameaggregator.exception.BetNotAllowedException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InternalServerException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
+import com.nextgen.gameaggregator.service.CurrencyConversionService;
 import com.nextgen.gameaggregator.service.WalletTransactionService;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +24,11 @@ public class WalletBetDebitProcessor {
         this.walletTransactionService = walletTransactionService;
     }
 
-    public WalletRequest process(WalletRequest walletRequest) throws InternalServerException, BetNotAllowedException, InsufficientBalanceException, InvalidOperatorResponseException {
+    public WalletRequest process(WalletRequest walletRequest) throws InternalServerException, BetNotAllowedException, InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         walletRequestService.initialise(walletRequest);
+
+        walletTransactionService.idempotentCheck(walletRequest, OperatorWalletService.DEBIT);
 
         WalletTransaction walletTransaction = walletTransactionService.prepareEntity(walletRequest, OperatorWalletService.DEBIT);
 
@@ -47,13 +47,9 @@ public class WalletBetDebitProcessor {
     public WalletBetDebitDto prepareOperatorRequestData(WalletRequest walletRequest) {
         WalletBetDebitDto dto = new WalletBetDebitDto();
         BigDecimal amount = walletRequest.getTransferAmount();
+        BigDecimal vendorRate = walletRequest.getFromVendorRate();
 
-        boolean isAmountPositive = amount != null && amount.compareTo(BigDecimal.ZERO) > 0;
-
-        if (isAmountPositive) {
-            dto.setAmount(amount.multiply(walletRequest.getFromVendorRate()));
-        }
-
+        dto.setAmount(CurrencyConversionService.convertFromVendorRate(amount, vendorRate, true));
         dto.setTraceId(walletRequest.getTraceId());
         dto.setTransactionId(walletRequest.getTransactionId());
         dto.setUsername(walletRequest.getOperatorUsername());

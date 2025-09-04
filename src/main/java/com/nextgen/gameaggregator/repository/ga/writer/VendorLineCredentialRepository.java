@@ -18,4 +18,6 @@ public interface VendorLineCredentialRepository extends JpaRepository<VendorLine
     List<Integer> findVendorLineIdByNameAndValueAndStatus(@Param("name") String name, @Param("value") String value, @Param("status") Integer status);
 
     List<VendorLineCredential> findByVendorLineIdAndStatus(Integer vendorLineId, Integer status);
+
+    List<VendorLineCredential> findAllByVendorLineIdAndNameAndStatus(Integer vendorLineId, String name, Integer status);
 }

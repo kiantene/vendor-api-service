@@ -51,12 +51,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
     public String getVendorBetId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
@@ -92,7 +92,18 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        // Default to null
+        BigDecimal result = null;
+
+        // Override if type is PAYOUT and availableBet is present
+        if (this.type.equals(TransferType.PAYOUT)) {
+            //if availableBet is not null then use null,if null will set to -1(can refer vendorService's calculate effective turnover)
+            DetailDto detaildto = this.getDetailDto();
+            result = (detaildto != null && detaildto.getAvailableBet() != null)
+                    ? detaildto.getAvailableBet() : BigDecimal.valueOf(-1);
+        }
+
+        return result;
     }
 
     @Override

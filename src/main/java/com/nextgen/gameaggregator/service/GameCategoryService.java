@@ -48,4 +48,9 @@ public class GameCategoryService {
 
         return gameCategory;
     }
+
+    @Cacheable(value = "GameCategories", key = "#gameCategoryId", cacheManager = "cacheManager", unless = "#result == null")
+    public GameCategory getByGameCategoryId(Integer gameCategoryId) {
+        return gameCategoryRepository.findById(gameCategoryId).orElse(null);
+    }
 }

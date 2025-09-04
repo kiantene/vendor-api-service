@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -32,17 +33,20 @@ public class CreditAction {
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final GameSessionService gameSessionService;
 
     @Autowired
     public CreditAction(HttpService httpService, WalletService walletService,
                         AutowireCapableBeanFactory autowireCapableBeanFactory,
                         VendorService vendorService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
+                        RequestIdempotentLogService requestIdempotentLogService,
+                        GameSessionService gameSessionService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.vendorService = vendorService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping(path = EndPoints.CREDIT)
@@ -52,6 +56,7 @@ public class CreditAction {
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
         CreditDto creditDto = new CreditDto();
+        GameSession gameSession;
         boolean isRequestExists = false;
 
         try {
@@ -61,6 +66,7 @@ public class CreditAction {
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
+            String vendorGameCode = creditDto.getGame().getDetails().getTable().getId();
 
             if (requestIdempotentLogService.checkExists(creditDto, creditDto.getUserId()) == null) {
                 requestIdempotentLogService.create(creditDto, creditDto.getUserId());
@@ -73,9 +79,16 @@ public class CreditAction {
             autowireCapableBeanFactory.autowireBean(vendorService);
 
             // 2. Verify session token
-            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(creditDto.getGame().getDetails().getTable().getId()), gameSession);
-
+            try {
+                gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(creditDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             this.doVerification(creditDto, gameSession);
 
             // 3.
@@ -112,6 +125,7 @@ public class CreditAction {
             responseVo.setResponseCode(ResponseCode.BET_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
             idempotentSetBalance(httpRequestLog, responseVo);
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {

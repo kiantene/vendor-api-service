@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.koolbet.api.sessionbetnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -12,7 +13,8 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
+import com.nextgen.gameaggregator.vendor.koolbet.api.cancelsessionbet.CancelSessionBetDto;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
@@ -39,16 +41,19 @@ public class SessionBetNSettleAction {
 
 
     private final ValidationService validationService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public SessionBetNSettleAction(HttpService httpService, GameSessionService gameSessionService,
                                    WalletService walletService, VendorService vendorService,
-                                   ValidationService validationService) {
+                                   ValidationService validationService,
+                                   RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.validationService = validationService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.SESSION_BET)
@@ -58,19 +63,29 @@ public class SessionBetNSettleAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = new GameSession();
         CommonVo responseVo = new CommonVo();
-
+        SessionBetNSettleDto sessionBetNSettleDto = new SessionBetNSettleDto();
+        boolean isRequestExists = false;
+        String vendorPlayerUsername = null;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into commonDto
-            SessionBetNSettleDto sessionBetNSettleDto = HttpService.convertJsonToDto(body, SessionBetNSettleDto.class);
+            sessionBetNSettleDto = HttpService.convertJsonToDto(body, SessionBetNSettleDto.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(sessionBetNSettleDto);
 
             //get rawGameSession by token id
             gameSession = gameSessionService.verifyToken(sessionBetNSettleDto.getToken());
+            vendorPlayerUsername = gameSession.getVendorPlayerUsername();
+            if (requestIdempotentLogService.checkExists(sessionBetNSettleDto, vendorPlayerUsername) == null) {
+                requestIdempotentLogService.create(sessionBetNSettleDto, vendorPlayerUsername);
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetNSettleDto.getGame()), gameSession);
 
             //Verify remaining parameters (Verify against database values)
@@ -132,6 +147,10 @@ public class SessionBetNSettleAction {
             responseVo.setResponseCode(ResponseCode.SESSION_BET_OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(sessionBetNSettleDto, vendorPlayerUsername);
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;

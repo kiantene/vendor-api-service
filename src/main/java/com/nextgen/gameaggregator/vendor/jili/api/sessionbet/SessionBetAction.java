@@ -63,6 +63,9 @@ public class SessionBetAction {
 
             this.doVerification(sessionBetDto, gameSession);
 
+            // bet endpoint operator time out set 3.5sec
+            vendorService.setOperatorTiming(3500);
+
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body, httpRequestLog);

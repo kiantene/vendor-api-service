@@ -2,12 +2,18 @@ package com.nextgen.gameaggregator.vendor.dreamgaming.api.rollback;
 
 import com.couchbase.client.core.error.InvalidArgumentException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletAdjustmentService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.AppendDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.BetDto;
@@ -35,17 +41,17 @@ public class RollbackAction {
     private final WalletService walletService;
     private final VendorLineService vendorLineService;
     private final WalletAdjustmentService walletAdjustmentService;
-    private final SettledBetService settledBetService;
 
-    public RollbackAction(VendorService vendorService, HttpService httpService,
+    public RollbackAction(VendorService vendorService,
+                          HttpService httpService,
                           VendorLineService vendorLineService,
-                          WalletService walletService, WalletAdjustmentService walletAdjustmentService, SettledBetService settledBetService) {
+                          WalletService walletService,
+                          WalletAdjustmentService walletAdjustmentService) {
         this.vendorService = vendorService;
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.walletAdjustmentService = walletAdjustmentService;
-        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = EndPoints.CHECKNCOMPLETE)
@@ -55,10 +61,11 @@ public class RollbackAction {
         String traceId = httpRequestLog.getId();
         ResponseVo responseVo = new ResponseVo();
         RollbackDto rollbackDto = null;
-        BetDto betDto;
-        BigDecimal balance;
+        BetDto betDto = null;
+        BigDecimal balance = null;
         BigDecimal appendBalance;
         GameSession gameSession;
+        AppendDto appendDto = null;
 
         try {
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
@@ -77,11 +84,10 @@ public class RollbackAction {
             switch (rollbackDto.getType()) {
                 case TransferType.BET:
                     // Retrieve the latest wallet balance from Operator
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
+                    WalletRequest walletRequest = walletService.processRollback(rollbackDto, gameSession, vendorService, httpRequestLog);
 
-                    responseVo.getMember().setBalance(balance);
                     responseVo.getMember().setAmount(rollbackDto.getMember().getAmount());
+                    balance = walletRequest.getBalanceAfter();
                     break;
 
                 case TransferType.PAYOUT:
@@ -91,21 +97,20 @@ public class RollbackAction {
                     this.doValidation(betDto);
                     //Settle
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
-                    balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-                    walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
                     responseVo.getMember().setAmount(betDto.getWinAmount());
-                    responseVo.getMember().setBalance(balance);
                     break;
 
                 case TransferType.APPEND:
                     //APPEND
-                    AppendDto appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
+                    appendDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), AppendDto.class);
                     appendDto.setDetailDto(HttpService.convertJsonToDto(VendorService.removeLeadingZero(appendDto.getDetail()), DetailDto.class));
 
                     this.doValidation(appendDto);
                     // Get settle bet to calculate adjustment amount
-                    SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(appendDto.getParentBetId(), appendDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                    appendDto.setAdjustmentAmount(appendDto.getMember().getAmount().subtract(settledBet.getWinAmount()));
+                    //SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(appendDto.getParentBetId(), appendDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+                    BigDecimal totalWinAmount = vendorService.calculateTotalWinAmount(gameSession.getVendorPlayerId(), appendDto.getRoundId());
+                    appendDto.setAdjustmentAmount(appendDto.getMember().getAmount().subtract(totalWinAmount));
 
                     appendBalance = walletAdjustmentService.processAdjustment(traceId, gameSession, appendDto, httpRequestLog);
 
@@ -117,6 +122,7 @@ public class RollbackAction {
                     throw new InvalidRequestException();
             }
             // Set response
+            vendorService.setVoBalance(httpRequestLog, balance, rollbackDto, betDto, responseVo, appendDto);
             responseVo.setCodeMsg(ResponseCode.SUCCESS.code);
             responseVo.getMember().setUsername(rollbackDto.getMember().getUsername());
 
@@ -147,13 +153,6 @@ public class RollbackAction {
         }
 
         return responseVo;
-    }
-
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
-        HttpRequestLog httpRequestLogdup = new HttpRequestLog(httpRequestLog);
-
-        // Call the service with the duplicate log
-        return walletService.getBalance(traceId, gameSession, httpRequestLogdup);
     }
 
     private void doValidation(RollbackDto dto) throws InvalidRequestException {

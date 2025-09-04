@@ -7,10 +7,8 @@ import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -142,7 +140,7 @@ public class SettledBetService {
 
     public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException,
-            AmbiguousTimeoutException, UnambiguousTimeoutException, BetNotFoundException {
+            AmbiguousTimeoutException, UnambiguousTimeoutException {
 
         Integer vendorId = gameSession.getVendorId();
         Integer vendorGameId = gameSession.getVendorGameId();
@@ -152,7 +150,6 @@ public class SettledBetService {
         SettledBet settledBet = null;
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-        Integer skipProcessGenerateBetStatus = 0;
 
         try {
             settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
@@ -167,22 +164,12 @@ public class SettledBetService {
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
                     throw new BetResultIdempotentViolationException(settledBet);
 
-                } else if (settledBet.getVendorId().equals(5) && settledBet.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                    //GA-10243: customized handling just for fachai with if the operator of the bet is  SC_INSUFFICIENT_FUNDS, then we will
-                    skipProcessGenerateBetStatus = 1;
-                    throw new BetNotFoundException();
-
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
                     settledBet.setOperatorStatus(operatorStatusProcessing);
                     this.save(settledBet, settledBet.getRawData());
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
-
-            if (skipProcessGenerateBetStatus == 1) {
-                //GA-10243: by default if betNotFound we will continue process the bet, with this we will return betNotFound to class file instead
-                throw new BetNotFoundException();
-            }
 
             RawBetIdempotentLog betIdempotentLog = null;
 
@@ -235,6 +222,11 @@ public class SettledBetService {
     public List<SettledBet> getByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId) {
         List<SettledBet> settledBetList = rawSettledBetRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
 
+        return settledBetList;
+    }
+
+    public List<SettledBet> saveAll(List<SettledBet> settledBetList) {
+        rawSettledBetRepository.saveAll(settledBetList);
         return settledBetList;
     }
 }
