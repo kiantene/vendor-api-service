@@ -1,14 +1,11 @@
 package com.nextgen.gameaggregator.vendor.db.service;
 
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.db.api.transfer.TransferDto;
 import com.nextgen.gameaggregator.vendor.db.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.db.dto.CommonDto;
 import lombok.extern.slf4j.Slf4j;
@@ -229,18 +226,7 @@ public class VendorService extends BaseVendorService {
             throw new Exception("Error decrypting: " + e.getMessage());
         }
     }
-
-    public boolean searchUnsettledBetForSettle(TransferDto dto, GameSession gameSession) {
-        try {
-            unsettledBetService.getUnsettledBetByRoundId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-
-        } catch (BetNotFoundException e) {
-            return false;
-        }
-
-        return true;
-    }
-
+    
     @Override
     public boolean shouldRejectCancelRequest() {
         return false;

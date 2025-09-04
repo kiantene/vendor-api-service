@@ -48,7 +48,7 @@ public class TransferDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        return this.tradeId;
     }
 
     @Override
@@ -80,7 +80,6 @@ public class TransferDto implements BetResultData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         return null;
-
     }
 
     @Override
@@ -96,7 +95,6 @@ public class TransferDto implements BetResultData {
     @Override
     public String getGameId() {
         return this.gameId.toString();
-
     }
 
     @Override
@@ -116,12 +114,9 @@ public class TransferDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-
         if (this.tradeType == TradeType.BET) {
             return BetStatus.UNSETTLED;
         }
         return BetStatus.SETTLED;
-
     }
-
 }
