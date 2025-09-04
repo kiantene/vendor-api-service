@@ -1,9 +1,14 @@
 package com.nextgen.gameaggregator.service.data.producer;
 
+import com.nextgen.gameaggregator.core.entity.AgentPlayer;
+import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
-import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.service.business.maxpayout.PayoutCapResult;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.service.CurrencyConversionService;
+import com.nextgen.gameaggregator.service.KafkaService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,53 +19,40 @@ import java.math.BigDecimal;
 public class BetHistoryProducer {
     private final CurrencyConversionService currencyConversionService;
     private final KafkaService kafkaService;
-    private final AgentPlayerService agentPlayerService;
+    private final AgentPlayerDataService agentPlayerDataService;
     private final VendorPlayerService vendorPlayerService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
 
-    public void publish(BetHistory betHistory,
+    public void publish(SettledBet settledBet,
                         String productCode,
                         Integer productId,
                         Integer productGameId,
                         String agentPlayerUsername,
                         String vendorPlayerUsername,
                         BigDecimal fromVendorConversionRate,
-                        PayoutCapResult payoutCapResult) {
+                        boolean requirePreprocessing) {
 
-        currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, fromVendorConversionRate);
+        BetHistory betHistory = new BetHistory(settledBet);
 
-        if (betHistory.getGameSessionToken() == null) {
-            betHistory.setGameSessionToken("");
+        if (!requirePreprocessing) {
+            produceBetHistory(
+                    betHistory,
+                    settledBet,
+                    productCode,
+                    productId,
+                    productGameId,
+                    agentPlayerUsername,
+                    vendorPlayerUsername,
+                    fromVendorConversionRate
+            );
+        } else {
+            kafkaService.producePreprocessingBetHistory(
+                    betHistory,
+                    agentPlayerUsername,
+                    vendorPlayerUsername,
+                    fromVendorConversionRate
+            );
         }
-
-        if (agentPlayerUsername == null) {
-            AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
-            agentPlayerUsername = agentPlayer.getUsername();
-        }
-
-        if (vendorPlayerUsername == null) {
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
-            vendorPlayerUsername = vendorPlayer.getUsername();
-        }
-
-        BetHistoryV3 betHistoryV3 = prepareBetHistoryV3(
-                betHistory,
-                productCode,
-                productId,
-                productGameId,
-                agentPlayerUsername,
-                vendorPlayerUsername
-        );
-
-        kafkaService.produceBetHistoryV3(betHistoryV3);
-
-        BetHistoryUncap betHistoryUncap = BetHistoryUncap.copyOf(betHistoryV3);
-        betHistoryUncap.setUncapWinAmount(payoutCapResult.uncapWinAmount());
-        betHistoryUncap.setUncapJackpotAmount(payoutCapResult.uncapJackpotAmount());
-        betHistoryUncap.setUncapWinLoss(payoutCapResult.uncapWinLoss());
-        betHistoryUncap.setUncapEffectiveTurnover(payoutCapResult.uncapEffectiveTurnover());
-
-        kafkaService.produceBetHistoryUncap(betHistoryUncap);
     }
 
     public BetHistoryV3 prepareBetHistoryV3(BetHistory betHistory,
@@ -68,8 +60,7 @@ public class BetHistoryProducer {
                                             Integer productId,
                                             Integer productGameId,
                                             String agentPlayerUsername,
-                                            String vendorPlayerUsername
-                                            ) {
+                                            String vendorPlayerUsername) {
 
         WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
 
@@ -87,5 +78,61 @@ public class BetHistoryProducer {
     private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
         return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(betHistory.getVendorGameId(), betHistory.getVendorId(), betHistory.getGameCategoryId(),
                 betHistory.getCurrencyId(), betHistory.getAgentId());
+    }
+
+    private String getVendorPlayerUsername(String username, Long vendorPlayerId) {
+        if (username != null) return username;
+
+        try {
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            return vendorPlayer.getUsername();
+        } catch (InvalidPlayerException ex) {
+            return "";
+        }
+    }
+
+    private void produceBetHistory(BetHistory betHistory,
+                                   SettledBet settledBet,
+                                   String productCode,
+                                   Integer productId,
+                                   Integer productGameId,
+                                   String agentPlayerUsername,
+                                   String vendorPlayerUsername,
+                                   BigDecimal fromVendorConversionRate
+    ) {
+
+        currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, fromVendorConversionRate);
+
+        if (betHistory.getGameSessionToken() == null) {
+            betHistory.setGameSessionToken("");
+        }
+
+        if (agentPlayerUsername == null) {
+            AgentPlayer agentPlayer = agentPlayerDataService.get(betHistory.getAgentPlayerId());
+            agentPlayerUsername = agentPlayer.getUsername();
+        }
+
+        vendorPlayerUsername = getVendorPlayerUsername(vendorPlayerUsername, betHistory.getVendorPlayerId());
+
+        BetHistoryV3 betHistoryV3 = prepareBetHistoryV3(
+                betHistory,
+                productCode,
+                productId,
+                productGameId,
+                agentPlayerUsername,
+                vendorPlayerUsername
+        );
+
+        kafkaService.produceBetHistoryV3(betHistoryV3);
+
+        if (settledBet.getUncapWinAmount() != null) {
+            BetHistoryUncap betHistoryUncap = BetHistoryUncap.copyOf(betHistoryV3);
+            betHistoryUncap.setUncapWinAmount(settledBet.getUncapWinAmount());
+            betHistoryUncap.setUncapJackpotAmount(settledBet.getUncapJackpotAmount());
+            betHistoryUncap.setUncapWinLoss(settledBet.getUncapWinLoss());
+            betHistoryUncap.setUncapEffectiveTurnover(settledBet.getUncapEffectiveTurnover());
+
+            kafkaService.produceBetHistoryUncap(betHistoryUncap);
+        }
     }
 }

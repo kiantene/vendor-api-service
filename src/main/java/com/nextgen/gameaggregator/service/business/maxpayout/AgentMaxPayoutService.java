@@ -18,46 +18,32 @@ public class AgentMaxPayoutService {
     private final AgentService agentService;
     private final VendorPayoutSettingsDataService payoutSettingsDataService;
 
-    public PayoutCapResult applyPayoutCap(Integer agentId,
-                                         Integer vendorId,
-                                         Integer currencyId,
-                                         BetInformation betInformation) {
+    public BetInformation applyPayoutCap(BetInformation betInfo) {
 
-        Optional<BigDecimal> payoutCap = this.getPayoutCapAmount(agentId, vendorId, betInformation.getGameCategoryId(), currencyId, betInformation.getWinAmount());
+        Optional<BigDecimal> payoutCap = this.getPayoutCapAmount(betInfo);
 
         return payoutCap
-                .filter(cap -> shouldApplyCap(betInformation.getWinAmount(), cap))
-                .map(cap -> {
-                    BigDecimal uncapWin      = betInformation.getWinAmount();
-                    BigDecimal uncapWinloss  = betInformation.getWinLoss();
-                    BigDecimal uncapJackpot  = betInformation.getJackpotAmount();
-                    BigDecimal uncapTurnover = betInformation.getEffectiveTurnover();
-
-                    BetInformation capped = applyCalculation(betInformation, cap);
-
-                    return new PayoutCapResult(capped, uncapWin, uncapWinloss, uncapJackpot, uncapTurnover);
-                })
-                .orElse(new PayoutCapResult(betInformation, null, null, null, null));
+                .filter(cap -> shouldApplyCap(betInfo.getWinAmount(), cap))
+                .map(cap -> applyCalculation(betInfo, cap))
+                .orElse(betInfo);
     }
 
-    private Optional<BigDecimal> getPayoutCapAmount(Integer agentId,
-                                                    Integer vendorId,
-                                                    Integer gameCategoryId,
-                                                    Integer currencyId,
-                                                    BigDecimal winAmount) {
+    private Optional<BigDecimal> getPayoutCapAmount(BetInformation betInfo) {
         Optional<BigDecimal> empty = Optional.empty();
+
+        BigDecimal winAmount = betInfo.getWinAmount();
 
         if (winAmount == null || winAmount.signum() == 0) return empty;
 
-        Optional<Agent> agent = getAgent(agentId);
+        Optional<Agent> agent = getAgent(betInfo.getAgentId());
         if (agent.isEmpty()) return empty;
 
         BigDecimal capAmount = payoutSettingsDataService.getMaxPayoutAmount(
                 agent.get().getMasterAgentId(),
                 agent.get().getId(),
-                vendorId,
-                gameCategoryId,
-                currencyId
+                betInfo.getVendorId(),
+                betInfo.getGameCategoryId(),
+                betInfo.getCurrencyId()
         );
 
         if (capAmount == null || capAmount.signum() <= 0) return empty;
@@ -79,6 +65,11 @@ public class AgentMaxPayoutService {
 
         final BigDecimal cappedJackpot = jackpot.min(cappedWin).max(BigDecimal.ZERO);
         final BigDecimal cappedWinLoss = cappedWin.subtract(bet);
+
+        betInfo.setUncapWinAmount(betInfo.getWinAmount());
+        betInfo.setUncapJackpotAmount(betInfo.getJackpotAmount());
+        betInfo.setUncapWinLoss(betInfo.getWinLoss());
+        betInfo.setUncapEffectiveTurnover(betInfo.getEffectiveTurnover());
 
         betInfo.setWinAmount(cappedWin);
         betInfo.setWinLoss(cappedWinLoss);
