@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
@@ -15,7 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class AsyncConfig {
 
     @Bean(name = "endRoundExecutor")
-    public ThreadPoolTaskExecutor endRoundExecutor(MeterRegistry registry) {
+    public Executor endRoundExecutor(MeterRegistry registry) {
         ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
         ex.setCorePoolSize(32);          // number of threads always kept alive
         ex.setMaxPoolSize(128);          // upper cap
@@ -27,13 +28,20 @@ public class AsyncConfig {
         ex.setAwaitTerminationSeconds(30); // Maximum time to wait during shutdown for tasks to finish.
         ex.initialize();
 
+        new ExecutorServiceMetrics(
+                ex.getThreadPoolExecutor(),
+                "endround.executor",
+                Tags.of("executor", "endRound")
+        ).bindTo(registry);
+
         // Micrometer metrics for this executor
-        ExecutorServiceMetrics.monitor(
+        Executor monitored = ExecutorServiceMetrics.monitor(
                 registry,
                 ex.getThreadPoolExecutor(),
                 "endround.executor",
                 Tags.of("executor", "endRound")
         );
-        return ex;
+
+        return monitored;
     }
 }
