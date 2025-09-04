@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service.business;
 
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,11 @@ public class GameTransactionService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
             .ofPattern("HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
-    private final GameTransactionDataService data;
+    private final GameTransactionDataService txnDataService;
+    private final GameRoundDataService roundDataService;
 
     public Optional<GameTransaction> get(GameTransaction txn) {
-        var doc = data.findById(txn.getId());
+        var doc = txnDataService.findById(txn.getId());
 
         if (doc == null) return Optional.empty();
 
@@ -34,21 +36,21 @@ public class GameTransactionService {
         } else if (TxnStatus.SENT == txn.getStatus()) {
             txn.setSentAt(getNow());
         }
-        data.insert(txn);
+        txnDataService.insert(txn);
         return txn;
     }
 
     public void markSent(GameTransaction txn) {
         txn.setSentAt(getNow());
         txn.setStatus(TxnStatus.SENT);
-        data.update(txn);
+        txnDataService.update(txn);
 
         // construct round info and save txn as success unless failed then update
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {
         txn.setDoneAt(getNow());
-        data.updateStatus(txn, balance, TxnStatus.SUCCESS);
+        txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
     }
 
     private String getNow() {
@@ -56,6 +58,6 @@ public class GameTransactionService {
     }
 
     public void deleteById(String id) {
-        data.deleteById(id);
+        txnDataService.deleteById(id);
     }
 }
