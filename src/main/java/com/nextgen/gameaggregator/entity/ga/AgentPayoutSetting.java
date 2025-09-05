@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "vendor_payout_settings")
 @Data
-public class VendorPayoutSettings {
+public class AgentPayoutSetting {
     @Id
     private String id;
     private Integer masterAgentId;

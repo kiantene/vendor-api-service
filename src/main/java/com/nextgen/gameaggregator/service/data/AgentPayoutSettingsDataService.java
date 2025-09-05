@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.service.data;
 
-import com.nextgen.gameaggregator.entity.ga.VendorPayoutSettings;
+import com.nextgen.gameaggregator.entity.ga.AgentPayoutSetting;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -29,10 +29,10 @@ public class AgentPayoutSettingsDataService {
                 .filter(v -> v.getStatus() != null && v.getStatus() == 1)
                 .filter(v -> v.getAgentId() != null && (v.getAgentId().equals(agentId) || v.getAgentId() == 0))
                 .max(Comparator
-                        .comparingInt((VendorPayoutSettings v) -> v.getAgentId().equals(agentId) ? 1 : 0) // agent priority
-                        .thenComparingInt(VendorPayoutSettings::getVersion) // highest version next
+                        .comparingInt((AgentPayoutSetting v) -> v.getAgentId().equals(agentId) ? 1 : 0) // agent priority
+                        .thenComparingInt(AgentPayoutSetting::getVersion) // highest version next
                 )
-                .map(VendorPayoutSettings::getMaxPayout)
+                .map(AgentPayoutSetting::getMaxPayout)
                 .orElse(null);
     }
 }
