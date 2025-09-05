@@ -30,16 +30,11 @@ import java.util.Map;
 
 public class BetDetailService implements BetDetailUrl {
 
-
-    private RequestService requestService;
+    @Autowired
+    RequestService requestService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
-
-    @Autowired
-    public BetDetailService(RequestService requestService) {
-        this.requestService = requestService;
-    }
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
@@ -47,7 +42,7 @@ public class BetDetailService implements BetDetailUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String prdId = credentials.get(Credentials.PRODUCT_ID);
-        String txnId = iBetDetailUrlInfo.getExternalRoundId();
+        String txnId = iBetDetailUrlInfo.getExternalTransactionId();
         //setup form data
         formData.add("lang", vendorLanguageCode.getLanguageCode());
         formData.add("prd_id", prdId);
@@ -75,7 +70,7 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.API_URL);
         String agCode = credentials.get(Credentials.AG_CODE);
         String agToken = credentials.get(Credentials.AG_TOKEN);
-        String gamePath = apiUrl  + EndPoints.LAUNCH_GAME;
+        String gamePath = apiUrl + EndPoints.LAUNCH_GAME;
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 

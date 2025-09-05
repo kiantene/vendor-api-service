@@ -46,7 +46,7 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return StringUtils.stripStart(this.ticketId, "0");
+        return StringUtils.stripStart(this.data, "-");
     }
 
     @Override
