@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class AgentPayoutSettingsCacheService {
+public class AgentPayoutSettingCacheService {
 
     private final AgentPayoutSettingRepository repository;
 
-    public AgentPayoutSettingsCacheService(AgentPayoutSettingRepository repository) {
+    public AgentPayoutSettingCacheService(AgentPayoutSettingRepository repository) {
         this.repository = repository;
     }
 

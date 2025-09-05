@@ -8,11 +8,11 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 
 @Service
-public class AgentPayoutSettingsDataService {
+public class AgentPayoutSettingDataService {
 
-    private final AgentPayoutSettingsCacheService cache;
+    private final AgentPayoutSettingCacheService cache;
 
-    public AgentPayoutSettingsDataService(AgentPayoutSettingsCacheService cache) {
+    public AgentPayoutSettingDataService(AgentPayoutSettingCacheService cache) {
         this.cache = cache;
     }
 
