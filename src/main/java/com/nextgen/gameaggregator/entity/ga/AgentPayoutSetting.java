@@ -8,7 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "vendor_payout_settings")
+@Table(name = "agent_payout_settings")
 @Data
 public class AgentPayoutSetting {
     @Id
