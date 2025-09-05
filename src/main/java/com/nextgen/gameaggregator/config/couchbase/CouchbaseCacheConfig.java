@@ -67,4 +67,9 @@ public class CouchbaseCacheConfig {
     public Collection gameTransactionsCollection(@Qualifier("gameScope") Scope scope) {
         return scope.collection("game_transactions");
     }
+
+    @Bean
+    public Collection gameRoundsCollection(@Qualifier("gameScope") Scope scope) {
+        return scope.collection("game_rounds");
+    }
 }
