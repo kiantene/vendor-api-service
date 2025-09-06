@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
@@ -156,16 +157,17 @@ public class EndRoundProcessor {
                                    String vendorPlayerUsername,
                                    VendorCurrency vendorCurrency) throws GameNotSupportedException {
 
-        betHistoryProducer.publish(
-                settledBet,
+        BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
                 gameSession.getProductCode(),
                 gameSession.getProductId(),
                 gameSession.getProductGameId(),
                 agentPlayerUsername,
                 vendorPlayerUsername,
                 vendorCurrency.getFromVendorRate(),
-                isPreProcessingRequired(settledBet.getVendorGameId())
+                isPreProcessingRequired(settledBet.getVendorGameId()),
+                null
         );
+        betHistoryProducer.publish(settledBet, publishContext);
     }
 
     private void notifyEndRoundProcess(EndRoundResult result,

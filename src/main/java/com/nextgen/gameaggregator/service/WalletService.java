@@ -4,6 +4,8 @@ import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.engine.game.round.GameRoundService;
+import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
@@ -21,6 +23,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.business.maxpayout.AgentMaxPayoutService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.util.EnvUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -362,16 +365,26 @@ public class WalletService {
             // send settled bet to kafka
             loggingService.logStart();
             boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
-            betHistoryProducer.publish(
-                    settledBet,
+            var mode = BetResultConfig.ProcessingMode.SINGLE;
+            List<BetTransaction> txnList = null;
+
+            if (BetResultContextHolder.isInitialized()) {
+                mode = BetResultContextHolder.getConfig().getProcessingMode();
+                txnList = BetResultContextHolder.getBetResultContext().getBetTransactions();
+            }
+
+            BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
                     gameSession.getProductCode(),
                     gameSession.getProductId(),
                     gameSession.getProductGameId(),
                     gameSession.getAgentPlayerUsername(),
                     gameSession.getVendorPlayerUsername(),
                     fromVendorConversionRate,
-                    requirePreprocessing
+                    requirePreprocessing,
+                    txnList
             );
+
+            betHistoryProducer.publish(settledBet, publishContext, mode);
             loggingService.logProcessTime("doSettledBetResult ｜ betHistoryProducer.publish", traceId);
 
             // will insert bet info record to this topic for MG

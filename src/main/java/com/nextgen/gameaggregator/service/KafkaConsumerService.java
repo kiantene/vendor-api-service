@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
@@ -225,16 +226,17 @@ public class KafkaConsumerService {
 
             //prepare insert new betHistory data
             boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
-            betHistoryProducer.publish(
-                    settledBet,
+            BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
                     gameSession.getProductCode(),
                     gameSession.getProductId(),
                     gameSession.getProductGameId(),
                     agentPlayer.getUsername(),
                     vendorPlayer.getUsername(),
                     vendorCurrency.getFromVendorRate(),
-                    requirePreprocessing
+                    requirePreprocessing,
+                    null
             );
+            betHistoryProducer.publish(settledBet, publishContext);
 
             //prepare delete unsettledBet
             UnsettledBet unsettledBet = new UnsettledBet(settledBet);
