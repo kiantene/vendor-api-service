@@ -37,7 +37,7 @@ public class BetHistoryProducer {
                         BetHistoryPublishContext context,
                         BetResultConfig.ProcessingMode processingMode) {
 
-        BetHistory betHistory = new BetHistory(settledBet);
+        BetHistory betHistory = buildBetHistory(settledBet, context);
         PlayerUsernames usernames = getUsernamesIfNull(
                 context,
                 betHistory.getAgentPlayerId(),
@@ -68,33 +68,6 @@ public class BetHistoryProducer {
         }
     }
 
-    public BetHistoryV3 prepareBetHistoryV3(BetHistory betHistory,
-                                            BetHistoryPublishContext context,
-                                            PlayerUsernames usernames) {
-
-        WarehouseFutureEntity warehouseFutureEntity = this.getFutureEntityForBetHistory(betHistory);
-
-        return new BetHistoryV3(
-                betHistory,
-                context.productCode(),
-                context.productId(),
-                context.productGameId(),
-                usernames.agentPlayer(),
-                usernames.vendorPlayer(),
-                warehouseFutureEntity
-        );
-    }
-
-    private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
-        return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
-                betHistory.getVendorGameId(),
-                betHistory.getVendorId(),
-                betHistory.getGameCategoryId(),
-                betHistory.getCurrencyId(),
-                betHistory.getAgentId()
-        );
-    }
-
     private PlayerUsernames getUsernamesIfNull(BetHistoryPublishContext context,
                                                Long agentPlayerId,
                                                Long vendorPlayerId) {
@@ -118,10 +91,19 @@ public class BetHistoryProducer {
         return new PlayerUsernames(agentPlayerUsername, vendorPlayerUsername);
     }
 
-    private BetHistoryV3 produceBetHistory(BetHistory betHistory,
-                                           BetHistoryPublishContext context,
-                                           PlayerUsernames usernames) {
+    private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
+        return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
+                betHistory.getVendorGameId(),
+                betHistory.getVendorId(),
+                betHistory.getGameCategoryId(),
+                betHistory.getCurrencyId(),
+                betHistory.getAgentId()
+        );
+    }
 
+    private BetHistory buildBetHistory(SettledBet settledBet, BetHistoryPublishContext context) {
+
+        BetHistory betHistory = new BetHistory(settledBet);
         currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(
                 betHistory,
                 context.fromVendorRate()
@@ -131,7 +113,29 @@ public class BetHistoryProducer {
             betHistory.setGameSessionToken("");
         }
 
-        BetHistoryV3 betHistoryV3 = prepareBetHistoryV3(betHistory, context, usernames);
+        return betHistory;
+    }
+
+    public BetHistoryV3 buildBetHistoryV3(BetHistory betHistory,
+                                          BetHistoryPublishContext context,
+                                          PlayerUsernames usernames) {
+
+        return new BetHistoryV3(
+                betHistory,
+                context.productCode(),
+                context.productId(),
+                context.productGameId(),
+                usernames.agentPlayer(),
+                usernames.vendorPlayer(),
+                this.getFutureEntityForBetHistory(betHistory)
+        );
+    }
+
+    private BetHistoryV3 produceBetHistory(BetHistory betHistory,
+                                           BetHistoryPublishContext context,
+                                           PlayerUsernames usernames) {
+
+        BetHistoryV3 betHistoryV3 = buildBetHistoryV3(betHistory, context, usernames);
 
         kafkaService.produceBetHistoryV3(betHistoryV3);
 
@@ -157,16 +161,14 @@ public class BetHistoryProducer {
 
         if (betTransactions == null || betTransactions.isEmpty()) return;
 
-        betHistoryMapper
-                .toBetHistoryList(betTransactions, settledBet)
-                .forEach(betHistory -> kafkaService.produceBetHistoryV3(
-                        betHistory,
-                        context.productCode(),
-                        context.productId(),
-                        context.productGameId(),
-                        usernames.agentPlayer(),
-                        usernames.vendorPlayer(),
-                        context.fromVendorRate()
-                ));
+        betTransactions
+                .forEach(betTxn -> {
+                    BetHistory betHistory = betHistoryMapper.mapValues(
+                            buildBetHistory(settledBet, context),
+                            betTxn
+                    );
+                    betHistory.setVendorBetTime(settledBet.getVendorBetTime());
+                    produceBetHistory(betHistory, context, usernames);
+                });
     }
 }

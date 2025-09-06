@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Deprecated(since = "max.payout", forRemoval = true)
 public class WalletBetResultBatchService {
 
     private final BetTxnToBetHistoryMapper betTxnMapper;
