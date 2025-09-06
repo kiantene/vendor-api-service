@@ -20,12 +20,13 @@ public class RoundTxn {
     @JsonProperty("doneAt")
     private String doneAt;
 
-    public RoundTxn(String id) {
-        this.id = id;
-    }
+    public static RoundTxn of(GameTransaction txn) {
+        RoundTxn roundTxn = new RoundTxn();
+        roundTxn.setId(txn.getId());
+        roundTxn.setStatus(txn.getStatus());
+        roundTxn.setSentAt(txn.getSentAt());
+        roundTxn.setDoneAt(txn.getDoneAt());
 
-    public RoundTxn(String id, TxnStatus status) {
-        this.id = id;
-        this.status = status;
+        return roundTxn;
     }
 }

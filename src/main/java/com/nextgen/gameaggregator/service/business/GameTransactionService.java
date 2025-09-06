@@ -1,9 +1,10 @@
 package com.nextgen.gameaggregator.service.business;
 
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
-import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
+import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ public class GameTransactionService {
             .ofPattern("HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
     private final GameTransactionDataService txnDataService;
-    private final GameRoundDataService roundDataService;
+    private final GameRoundService gameRoundService;
 
     public Optional<GameTransaction> get(GameTransaction txn) {
         var doc = txnDataService.findById(txn.getId());
@@ -41,16 +42,30 @@ public class GameTransactionService {
     }
 
     public void markSent(GameTransaction txn) {
-        txn.setSentAt(getNow());
+        if (TxnStatus.SENT == txn.getStatus()) return;
+
         txn.setStatus(TxnStatus.SENT);
+        txn.setSentAt(getNow());
         txnDataService.update(txn);
 
-        // construct round info and save txn as success unless failed then update
+        gameRoundService.save(txn);
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {
+        txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
+
+        TxnDelta delta = TxnDelta.finalizeSuccess(
+                txn.getRoundDocId(),
+                txn.getIdx(),
+                txn.getBetAmount(),
+                txn.getWinAmount(),
+                txn.getDoneAt(),
+                GameRoundState.SETTLED == txn.getState()
+        );
+
+        gameRoundService.applyTxnDelta(delta);
     }
 
     private String getNow() {

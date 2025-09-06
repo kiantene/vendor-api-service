@@ -7,35 +7,25 @@ import com.couchbase.client.java.kv.MutateInOptions;
 import com.couchbase.client.java.kv.MutateInSpec;
 import com.couchbase.client.java.kv.MutationResult;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
-import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
-import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Duration;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public class GameRoundRepository {
-
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private final Collection collection;
 
     public GameRoundRepository(@Qualifier("gameRoundsCollection") Collection collection) {
         this.collection = collection;
-    }
-
-    public String buildId(Integer vendorId, String roundId) {
-        return vendorId + "::" + roundId;
     }
 
     public Optional<KvDoc<GameRound>> findById(String id) {
@@ -57,36 +47,81 @@ public class GameRoundRepository {
         return new KvDoc<>(id, res.cas(), content);
     }
 
-    public void appendTxn(String docId, RoundTxn roundTxn, BigDecimal newBetAmount, BigDecimal newWinAmount, long cas) {
+    public void appendTxn(String docId, RoundTxn roundTxn, long cas) {
         collection.mutateIn(docId,
                 List.of(
                         MutateInSpec.arrayAppend("transactions", List.of(roundTxn)),
-                        MutateInSpec.increment("txnCount", 1),
-                        MutateInSpec.replace("betAmount", newBetAmount),
-                        MutateInSpec.replace("winAmount", newWinAmount)
+                        MutateInSpec.increment("txnCount", 1)
                 ),
                 MutateInOptions.mutateInOptions().cas(cas)
         );
     }
 
-    public void updateTxnStatus(String docId, int idx, TxnStatus status, boolean settle, Duration ttlIfSettled) {
-        String base = "transactions[" + idx + "]";
-        List<MutateInSpec> specs = new ArrayList<>();
-        specs.add(MutateInSpec.replace(base + ".status", status.name()));
+    public void applyTxnDelta(TxnDelta d, Duration ttl) {
+        final String base = "transactions[" + d.idx() + "]";
+        var specs = new ArrayList<MutateInSpec>();
 
-        if (TxnStatus.SUCCESS == status) {
-            specs.add(MutateInSpec.upsert(base + ".doneAt", LocalTime.now(ZoneOffset.UTC).format(TIME_FMT)));
+        d.status().ifPresent(s -> specs.add(MutateInSpec.replace(base + ".status", s.name())));
+        if (d.timeField().isPresent() && d.timeValueUtc().isPresent()) {
+            String path = switch (d.timeField().get()) {
+                case SENT_AT -> base + ".sentAt";
+                case DONE_AT -> base + ".doneAt";
+            };
+            specs.add(MutateInSpec.upsert(path, d.timeValueUtc().get()));
         }
-        if (settle) {
+
+        if (d.isSettled()) {
             specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
         }
 
-        MutateInOptions opts = settle
-                ? MutateInOptions.mutateInOptions().expiry(ttlIfSettled)
-                : MutateInOptions.mutateInOptions();
+        // For aggregates: read current totals once to compute new values (CAS protects write)
+        if (d.betDelta().isPresent() || d.winDelta().isPresent() || d.isSettled()) {
+            var gr = collection.get(d.docId());
+            var round = gr.contentAs(GameRound.class);
 
-        collection.mutateIn(docId, specs, opts);
+            BigDecimal bet = Optional.ofNullable(round.getBetAmount()).orElse(BigDecimal.ZERO);
+            BigDecimal win = Optional.ofNullable(round.getWinAmount()).orElse(BigDecimal.ZERO);
+
+            if (d.betDelta().isPresent()) bet = bet.add(d.betDelta().get());
+            if (d.winDelta().isPresent()) win = win.add(d.winDelta().get());
+
+            specs.add(MutateInSpec.replace("betAmount", bet.toPlainString()));
+            specs.add(MutateInSpec.replace("winAmount", win.toPlainString()));
+
+            var opts = d.isSettled()
+                    ? MutateInOptions.mutateInOptions().cas(gr.cas()).expiry(ttl)
+                    : MutateInOptions.mutateInOptions().cas(gr.cas());
+
+            collection.mutateIn(d.docId(), specs, opts);
+        } else {
+            collection.mutateIn(d.docId(), specs);
+        }
     }
+
+//    public void updateTxnStatus(String docId,
+//                                int idx,
+//                                StatusRecord statusRecord,
+//                                boolean isSettled,
+//                                Duration ttlIfSettled) {
+//
+//        String base = "transactions[" + idx + "].";
+//        List<MutateInSpec> specs = new ArrayList<>();
+//        specs.add(MutateInSpec.replace(base + "status", statusRecord.status().name()));
+//        specs.add(MutateInSpec.upsert(
+//                base + statusRecord.timeKey(),
+//                statusRecord.timeValue()
+//        ));
+//
+//        if (isSettled) {
+//            specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
+//        }
+//
+//        MutateInOptions opts = isSettled
+//                ? MutateInOptions.mutateInOptions().expiry(ttlIfSettled)
+//                : MutateInOptions.mutateInOptions();
+//
+//        collection.mutateIn(docId, specs, opts);
+//    }
 
     public void updateRoundState(String docId, GameRoundState state) {
         collection.mutateIn(docId, List.of(MutateInSpec.upsert("state", state.name())));

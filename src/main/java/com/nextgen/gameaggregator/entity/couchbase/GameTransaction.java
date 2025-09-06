@@ -14,6 +14,10 @@ import java.math.BigDecimal;
 
 @Data
 public class GameTransaction {
+
+    @JsonProperty("idx")
+    private Integer idx;
+
     @JsonProperty("type")
     private String type;
 
@@ -93,6 +97,11 @@ public class GameTransaction {
     @JsonIgnore
     public String getId() {
         return vendorId + "::" + transactionId;
+    }
+
+    @JsonIgnore
+    public String getRoundDocId() {
+        return vendorId + "::" + roundId;
     }
 
     @JsonIgnore

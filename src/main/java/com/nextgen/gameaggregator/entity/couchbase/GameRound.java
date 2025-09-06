@@ -16,9 +16,6 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameRound {
-    @JsonIgnore
-    private String id;
-
     @JsonProperty("vendorId")
     private Integer vendorId;
 
@@ -53,8 +50,40 @@ public class GameRound {
     @JsonProperty("state")
     private GameRoundState state;
 
+    public GameRound() {
+        this.txnCount = 1;
+        this.state = GameRoundState.UNSETTLED;
+        this.betAmount = BigDecimal.ZERO;
+        this.winAmount = BigDecimal.ZERO;
+    }
+
+    public GameRound(Integer vendorId, String roundId) {
+        this();
+        this.vendorId = vendorId;
+        this.roundId = roundId;
+    }
+
+    public static GameRound of(Integer vendorId, String roundId) {
+        return new GameRound(vendorId, roundId);
+    }
+
     @JsonIgnore
     public String getId() {
         return vendorId + "::" + roundId;
+    }
+
+    public void setBetAmount(BigDecimal betAmount) {
+        this.betAmount = (betAmount == null) ? BigDecimal.ZERO : betAmount;
+    }
+
+    public void setWinAmount(BigDecimal winAmount) {
+        this.winAmount = (winAmount == null) ? BigDecimal.ZERO : winAmount;
+    }
+
+    public void setTransactions(List<RoundTxn> transactions) {
+        if (transactions == null) return;
+
+        this.transactions = transactions;
+        this.txnCount = transactions.size();
     }
 }
