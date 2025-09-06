@@ -16,7 +16,7 @@ public class AgentPayoutSettingDataService {
         this.cache = cache;
     }
 
-    @Cacheable(value = "VendorPayoutSettings", key = "{#masterAgentId, #agentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
+    @Cacheable(value = "AgentPayoutSettings", key = "{#masterAgentId, #agentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
     public BigDecimal getMaxPayoutAmount(Integer masterAgentId,
                                          Integer agentId,
                                          Integer vendorId,

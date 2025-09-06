@@ -256,7 +256,7 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiVersion", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("VendorPayoutSettings", RedisCacheConfiguration.defaultCacheConfig()
+        cacheNamesConfigurationMap.put("AgentPayoutSettings", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         //endregion
 

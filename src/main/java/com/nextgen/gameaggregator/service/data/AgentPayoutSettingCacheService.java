@@ -16,7 +16,7 @@ public class AgentPayoutSettingCacheService {
         this.repository = repository;
     }
 
-    @Cacheable(value = "VendorPayoutSettings", key = "{#masterAgentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
+    @Cacheable(value = "AgentPayoutSettings", key = "{#masterAgentId, #vendorId, #gameCategoryId, #currencyId}", cacheManager = "cacheManager")
     public List<AgentPayoutSetting> getByMasterAgentId(Integer masterAgentId,
                                                        Integer vendorId,
                                                        Integer gameCategoryId,
