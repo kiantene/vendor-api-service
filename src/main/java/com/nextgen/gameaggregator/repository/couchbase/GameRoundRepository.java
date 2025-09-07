@@ -61,6 +61,7 @@ public class GameRoundRepository {
         final String base = "transactions[" + d.idx() + "]";
         var specs = new ArrayList<MutateInSpec>();
 
+        specs.add(MutateInSpec.upsert(base + ".gaBetId", d.gaBetId()));
         d.status().ifPresent(s -> specs.add(MutateInSpec.replace(base + ".status", s.name())));
         if (d.timeField().isPresent() && d.timeValueUtc().isPresent()) {
             String path = switch (d.timeField().get()) {

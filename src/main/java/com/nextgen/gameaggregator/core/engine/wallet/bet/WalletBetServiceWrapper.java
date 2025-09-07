@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -50,11 +51,11 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
             GameTransaction txn = guard.ensureNotDuplicate(TxnType.BET, context.getVendorId(), context.getIdempotencyKey());
 
-            enricher.enrich(context);
-
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
             enricher.enrichByGameSession(context, gameSession);
+
+            enricher.enrich(context);
 
             walletBetValidator.validateBusinessState(gameSession, context);
 
@@ -67,10 +68,32 @@ public class WalletBetServiceWrapper implements WalletBetService {
             guard.clear();
             walletExceptionTranslator.translateAndThrow(ex);
         } finally {
-            guard.cleanup();
+            cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
         return null;
+    }
+
+    @Override
+    public WalletBetService initialise(BetContext context) {
+        BetWrapperContext state = new BetWrapperContext(context);
+        BetContextHolder.set(state);
+        return this;
+    }
+
+    @Override
+    public WalletBetService configure(Consumer<BetConfig> configurer) {
+        configurer.accept(state().getConfig());
+        return this;
+    }
+
+    private BetWrapperContext state() {
+        return BetContextHolder.getRequired();
+    }
+
+    private void cleanup() {
+        guard.cleanup();
+        BetContextHolder.clear();
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetContext context, DuplicateRequestException ex) {
@@ -97,7 +120,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 CouchbaseDataIntegrityException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn);
+        gameTransactionService.markSent(txn, buildAgentMeta(context));
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
                 gameSession,
@@ -116,20 +139,13 @@ public class WalletBetServiceWrapper implements WalletBetService {
         );
     }
 
-    @Override
-    public WalletBetService initialise(BetContext context) {
-        BetWrapperContext state = new BetWrapperContext(context);
-        BetContextHolder.set(state);
-        return this;
-    }
+    private AgentMeta buildAgentMeta(BetContext context) {
+        AgentMeta agentMeta = new AgentMeta();
+        agentMeta.setAgentId(context.getAgentId());
+        agentMeta.setUsername(context.getAgentPlayerUsername());
+        agentMeta.setCurrency(context.getCurrencyCode());
+        agentMeta.setGameCode(context.getGameCode());
 
-    private BetWrapperContext state() {
-        return BetContextHolder.getRequired();
-    }
-
-    @Override
-    public WalletBetService configure(Consumer<BetConfig> configurer) {
-        configurer.accept(state().getConfig());
-        return this;
+        return agentMeta;
     }
 }

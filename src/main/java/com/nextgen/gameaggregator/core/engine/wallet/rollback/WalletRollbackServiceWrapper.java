@@ -55,7 +55,7 @@ public class WalletRollbackServiceWrapper {
             guard.clear();
             walletExceptionTranslator.translateAndThrow(ex);
         } finally {
-            guard.cleanup();
+            cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
         }
         return null;
@@ -88,6 +88,26 @@ public class WalletRollbackServiceWrapper {
 
     public void processAsync(BetRollbackContext context) {
         processAsync(context, DEFAULT_DELAY_MILLISECONDS);
+    }
+
+    public WalletRollbackServiceWrapper initialise(BetRollbackContext context) {
+        BetRollbackWrapperContext state = new BetRollbackWrapperContext(context);
+        BetRollbackContextHolder.set(state);
+        return this;
+    }
+
+    public WalletRollbackServiceWrapper configure(Consumer<BetRollbackConfig> configurer) {
+        configurer.accept(state().getConfig());
+        return this;
+    }
+
+    private BetRollbackWrapperContext state() {
+        return BetRollbackContextHolder.getRequired();
+    }
+
+    private void cleanup() {
+        guard.cleanup();
+        BetRollbackContextHolder.clear();
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, DuplicateRequestException ex) {
@@ -131,21 +151,6 @@ public class WalletRollbackServiceWrapper {
         }
 
         return processRollbackByBet(context);
-    }
-
-    public WalletRollbackServiceWrapper initialise(BetRollbackContext context) {
-        BetRollbackWrapperContext state = new BetRollbackWrapperContext(context);
-        BetRollbackContextHolder.set(state);
-        return this;
-    }
-
-    private BetRollbackWrapperContext state() {
-        return BetRollbackContextHolder.getRequired();
-    }
-
-    public WalletRollbackServiceWrapper configure(Consumer<BetRollbackConfig> configurer) {
-        configurer.accept(state().getConfig());
-        return this;
     }
 
     private PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction txn) {

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.business;
 
+import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
@@ -41,14 +42,14 @@ public class GameTransactionService {
         return txn;
     }
 
-    public void markSent(GameTransaction txn) {
+    public void markSent(GameTransaction txn, AgentMeta agentMeta) {
         if (TxnStatus.SENT == txn.getStatus()) return;
 
         txn.setStatus(TxnStatus.SENT);
         txn.setSentAt(getNow());
         txnDataService.update(txn);
 
-        gameRoundService.save(txn);
+        gameRoundService.save(txn, agentMeta);
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {
@@ -59,6 +60,7 @@ public class GameTransactionService {
         TxnDelta delta = TxnDelta.finalizeSuccess(
                 txn.getRoundDocId(),
                 txn.getIdx(),
+                txn.getGaBetId(),
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getDoneAt(),

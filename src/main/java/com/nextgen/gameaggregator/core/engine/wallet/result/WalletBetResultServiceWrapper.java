@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -111,7 +112,7 @@ public class WalletBetResultServiceWrapper {
                 BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn);
+        gameTransactionService.markSent(txn, buildAgentMeta(context));
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -172,5 +173,15 @@ public class WalletBetResultServiceWrapper {
     private void cleanup() {
         guard.cleanup();
         BetResultContextHolder.clear();
+    }
+
+    private AgentMeta buildAgentMeta(BetResultContext context) {
+        AgentMeta agentMeta = new AgentMeta();
+        agentMeta.setAgentId(context.getAgentId());
+        agentMeta.setUsername(context.getAgentPlayerUsername());
+        agentMeta.setCurrency(context.getCurrencyCode());
+        agentMeta.setGameCode(context.getGameCode());
+
+        return agentMeta;
     }
 }

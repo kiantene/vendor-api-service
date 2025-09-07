@@ -54,6 +54,9 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         if (context.getVendorCurrency() == null) {
             context.setVendorCurrency(gameSession.getVendorCurrencyCode());
         }
+        if (context.getCurrencyCode() == null) {
+            context.setCurrencyCode(gameSession.getCurrencyCode());
+        }
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetResultContext context) {
