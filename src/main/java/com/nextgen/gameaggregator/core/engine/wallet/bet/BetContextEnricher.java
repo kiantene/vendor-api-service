@@ -38,6 +38,9 @@ public class BetContextEnricher extends BaseEnricher<BetContext> {
         if (context.getVendorGameCode() == null) {
             context.setVendorGameCode(gameSession.getVendorGameCode());
         }
+        if (context.getCurrencyCode() == null) {
+            context.setCurrencyCode(gameSession.getCurrencyCode());
+        }
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetContext context) {

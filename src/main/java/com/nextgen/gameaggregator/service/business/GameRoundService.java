@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.service.business;
 
-import com.nextgen.gameaggregator.entity.couchbase.GameRound;
-import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
-import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
-import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
+import com.nextgen.gameaggregator.entity.couchbase.*;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
@@ -34,12 +31,16 @@ public class GameRoundService {
         return data.findById(id);
     }
 
-    public GameRound save(GameTransaction txn) {
+    public GameRound save(GameTransaction txn, AgentMeta agentMeta) {
         String docId = txn.getRoundDocId();
         KvDoc<GameRound> kvDoc = getDoc(docId);
 
         // New round document
-        if (kvDoc == null) return createNewRound(txn);
+        if (kvDoc == null) {
+            GameRound newRound = buildRound(txn, agentMeta);
+            data.insert(newRound);
+            return newRound;
+        }
 
         return addNewTxnToRound(kvDoc, txn);
     }
@@ -52,20 +53,15 @@ public class GameRoundService {
         data.setRoundState(docId, state);
     }
 
-    private GameRound buildRound(GameTransaction txn) {
+    private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {
         GameRound round = GameRound.of(txn.getVendorId(), txn.getRoundId());
         round.setUsername(txn.getUsername());
         round.setGameCode(txn.getGameCode());
         round.setCurrency(txn.getCurrency());
+        round.setAgentMeta(agentMeta);
         round.setTransactions(List.of(RoundTxn.of(txn)));
-
-        return round;
-    }
-
-    private GameRound createNewRound(GameTransaction txn) {
-        GameRound round = buildRound(txn);
-        data.insert(round);
         txn.setIdx(0);
+
         return round;
     }
 

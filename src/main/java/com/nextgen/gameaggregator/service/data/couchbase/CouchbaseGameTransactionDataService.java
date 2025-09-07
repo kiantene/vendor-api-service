@@ -56,11 +56,11 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     }
 
     @Override
-    public void updateStatus(GameTransaction doc, BigDecimal balance, TxnStatus status) {
+    public void updateStatus(GameTransaction txn, BigDecimal balance, TxnStatus status) {
         Duration ttl = null;
         Map<String, Object> updates = new HashMap<>();
 
-        updates.put("gaBetId", doc.getGaBetId());
+        updates.put("gaBetId", txn.getGaBetId());
         updates.put("status", status.name());
 
         if (balance != null) {
@@ -68,16 +68,17 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         }
 
         if (TxnStatus.SENT == status) {
-            updates.put("sentAt", doc.getSentAt());
+            updates.put("sentAt", txn.getSentAt());
         } else if (TxnStatus.SUCCESS == status) {
-            updates.put("doneAt", doc.getDoneAt());
+            updates.put("doneAt", txn.getDoneAt());
         }
 
-        if (GameRoundState.SETTLED == doc.getState()) {
+        if (GameRoundState.SETTLED == txn.getState()) {
+            // TODO: revisit TTL value
             ttl = Duration.ofHours(6);
         }
 
-        repo.update(doc.getId(), updates, ttl);
+        repo.update(txn.getId(), updates, ttl);
     }
 
     @Override
