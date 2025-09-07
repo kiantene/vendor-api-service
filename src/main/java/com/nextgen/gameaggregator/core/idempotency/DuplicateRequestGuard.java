@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.idempotency;
 
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +24,8 @@ public class DuplicateRequestGuard {
         }
     }
 
-    public GameTransaction ensureNotDuplicate(String action, Integer vendorId, String key) {
-        GameTransaction probe = GameTransaction.of(action, vendorId, key);
+    public GameTransaction ensureNotDuplicate(TxnType type, Integer vendorId, String key) {
+        GameTransaction probe = GameTransaction.of(type, vendorId, key);
         var doc = txnService.get(probe);
         if (doc.isPresent()) {
             GameTransaction txn = doc.get();

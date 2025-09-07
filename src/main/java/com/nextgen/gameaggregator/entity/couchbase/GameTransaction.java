@@ -6,15 +6,21 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
 public class GameTransaction {
+
+    @JsonProperty("idx")
+    private Integer idx;
+
     @JsonProperty("type")
-    private String type;
+    private TxnType type;
 
     @JsonProperty("transactionId")
     private String transactionId;
@@ -49,8 +55,14 @@ public class GameTransaction {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal balance;
 
+    @JsonProperty("gaBetId")
+    private String gaBetId;
+
     @JsonProperty("status")
     private TxnStatus status;
+
+    @JsonProperty("state")
+    private GameRoundState state;
 
     @JsonProperty("betTime")
     private Long betTime;
@@ -69,13 +81,14 @@ public class GameTransaction {
 
     public GameTransaction() {
         this.status = TxnStatus.NEW;
+        this.state = GameRoundState.UNSETTLED;
     }
 
-    public static GameTransaction of(String type, Integer vendorId, String transactionId) {
+    public static GameTransaction of(TxnType type, Integer vendorId, String transactionId) {
         return new GameTransaction(type, vendorId, transactionId);
     }
 
-    public GameTransaction(String type, Integer vendorId, String transactionId) {
+    public GameTransaction(TxnType type, Integer vendorId, String transactionId) {
         this();
         this.type = type;
         this.vendorId = vendorId;
@@ -85,6 +98,11 @@ public class GameTransaction {
     @JsonIgnore
     public String getId() {
         return vendorId + "::" + transactionId;
+    }
+
+    @JsonIgnore
+    public String getRoundDocId() {
+        return vendorId + "::" + roundId;
     }
 
     @JsonIgnore
