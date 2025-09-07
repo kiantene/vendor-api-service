@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.VendorGameDataService;
@@ -17,7 +16,7 @@ import java.math.BigDecimal;
 class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
     private final ApplicationContext applicationContext;
 
-    protected BetResultContextEnricher(AgentPlayerDataService agentPlayerDataService,
+    public BetResultContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                        VendorPlayerDataService vendorPlayerDataService,
                                        VendorGameDataService vendorGameDataService,
                                        ApplicationContext applicationContext) {
@@ -57,6 +56,8 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         if (context.getCurrencyCode() == null) {
             context.setCurrencyCode(gameSession.getCurrencyCode());
         }
+
+        enrich(context);
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetResultContext context) {

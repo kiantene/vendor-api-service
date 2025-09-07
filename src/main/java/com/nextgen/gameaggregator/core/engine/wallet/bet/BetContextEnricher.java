@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import org.springframework.stereotype.Service;
 
 @Service
-public class BetContextEnricher extends BaseEnricher<BetContext> {
+class BetContextEnricher extends BaseEnricher<BetContext> {
 
     public BetContextEnricher(AgentPlayerDataService agentPlayerDataService,
                               VendorPlayerDataService vendorPlayerDataService,
@@ -41,6 +41,8 @@ public class BetContextEnricher extends BaseEnricher<BetContext> {
         if (context.getCurrencyCode() == null) {
             context.setCurrencyCode(gameSession.getCurrencyCode());
         }
+
+        enrich(context);
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetContext context) {

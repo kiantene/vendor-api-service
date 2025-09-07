@@ -51,10 +51,6 @@ public class WalletBetResultServiceWrapper {
 
             GameTransaction txn = guard.ensureNotDuplicate(TxnType.RESULT, context.getVendorId(), context.getIdempotencyKey());
 
-            enricher.enrich(context);
-
-            validator.validateRequestContext(context);
-
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
             enricher.enrichByGameSession(context, gameSession);
@@ -112,7 +108,7 @@ public class WalletBetResultServiceWrapper {
                 BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn, buildAgentMeta(context));
+        gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -175,12 +171,13 @@ public class WalletBetResultServiceWrapper {
         BetResultContextHolder.clear();
     }
 
-    private AgentMeta buildAgentMeta(BetResultContext context) {
+    private AgentMeta buildAgentMeta(BetResultContext context, GameSession gameSession) {
         AgentMeta agentMeta = new AgentMeta();
         agentMeta.setAgentId(context.getAgentId());
         agentMeta.setUsername(context.getAgentPlayerUsername());
         agentMeta.setCurrency(context.getCurrencyCode());
         agentMeta.setGameCode(context.getGameCode());
+        agentMeta.setSession(gameSession.getToken());
 
         return agentMeta;
     }
