@@ -32,9 +32,11 @@ public class BetRollbackContext implements GameSessionData {
     private String vendorSessionToken;
     private Long timestamp;
 
+    // --- internal values ---
     private BaseVendorService vendorService;
     private GameSession gameSession;
     private HttpRequestLog httpRequestLog;
+    private Integer vendorId;
 
     /**
      * Indicates whether settled bet data must be fetched from the warehouse

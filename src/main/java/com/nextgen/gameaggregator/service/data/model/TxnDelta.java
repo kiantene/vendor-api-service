@@ -12,7 +12,7 @@ public record TxnDelta(
         Optional<BigDecimal> winDelta,// +win on SUCCESS, empty otherwise
         Optional<TxnStatus> status,   // SENT / SUCCESS / FAILED (when changing status)
         Optional<TimeField> timeField,// which time to write
-        Optional<String> timeValueUtc,// "HH:mm:ss.SSS" in UTC (your chosen format)
+        Optional<String> timeValueUtc,// "HH:mm:ss.SSS" in UTC
         boolean isSettled             // if true, set state=SETTLED and apply TTL
 ) {
 
