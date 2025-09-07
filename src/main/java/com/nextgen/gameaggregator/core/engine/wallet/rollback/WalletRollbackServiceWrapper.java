@@ -7,13 +7,16 @@ import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +33,8 @@ public class WalletRollbackServiceWrapper {
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
     private final DuplicateRequestGuard guard;
     private final BetRollbackContextEnricher enricher;
+    private final GameSessionDataService gameSessionDataService;
+    private final GameRoundService gameRoundService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final BetRollbackProcessor processor;
@@ -46,7 +51,11 @@ public class WalletRollbackServiceWrapper {
 
             GameTransaction txn = guard.ensureNotDuplicate(TxnType.ROLLBACK, context.getVendorId(), context.getIdempotencyKey());
 
-            enricher.enrich(context, logContext);
+            GameRound round = getGameRoundInfo(context);
+
+            GameSession gameSession = gameSessionDataService.getOrCreate(context);
+
+            enricher.enrichByGameSession(context, round, gameSession, logContext);
 
             return processRollbackTransaction(context, txn);
         } catch (DuplicateRequestException ex) {
@@ -68,7 +77,7 @@ public class WalletRollbackServiceWrapper {
         boolean hasException = false;
 
         try {
-            enricher.enrich(context, logContext);
+            enricher.enrichAsync(context, logContext);
             final BetRollbackContext asyncCtx = context;
             final LogContext asyncLogCtx = logContext.copy(); // creates a copy for CompletableFuture to avoid data race
 
@@ -181,5 +190,21 @@ public class WalletRollbackServiceWrapper {
                 balance,
                 httpRequestLog.getOperatorEnd()
         );
+    }
+
+    private GameRound getGameRoundInfo(BetRollbackContext context) {
+        if (state().getConfig().getRollbackType() == RollbackType.BY_ROUND) {
+            GameRound search = GameRound.of(context.getVendorId(), context.getRoundId());
+            var roundOpt = gameRoundService.get(search.getId());
+
+            if (roundOpt.isEmpty()) {
+                // TODO: to handle not found
+                return null;
+            }
+            return roundOpt.get();
+        }
+
+        // TODO: use txn to search round
+        return null;
     }
 }

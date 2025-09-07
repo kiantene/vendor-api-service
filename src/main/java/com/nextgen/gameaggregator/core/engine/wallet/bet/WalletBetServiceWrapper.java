@@ -55,8 +55,6 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
             enricher.enrichByGameSession(context, gameSession);
 
-            enricher.enrich(context);
-
             walletBetValidator.validateBusinessState(gameSession, context);
 
             return processBetTransaction(context, gameSession, txn, httpRequestLog);
@@ -120,7 +118,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 CouchbaseDataIntegrityException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn, buildAgentMeta(context));
+        gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
                 gameSession,
@@ -139,12 +137,13 @@ public class WalletBetServiceWrapper implements WalletBetService {
         );
     }
 
-    private AgentMeta buildAgentMeta(BetContext context) {
+    private AgentMeta buildAgentMeta(BetContext context, GameSession gameSession) {
         AgentMeta agentMeta = new AgentMeta();
         agentMeta.setAgentId(context.getAgentId());
         agentMeta.setUsername(context.getAgentPlayerUsername());
         agentMeta.setCurrency(context.getCurrencyCode());
         agentMeta.setGameCode(context.getGameCode());
+        agentMeta.setSession(gameSession.getToken());
 
         return agentMeta;
     }

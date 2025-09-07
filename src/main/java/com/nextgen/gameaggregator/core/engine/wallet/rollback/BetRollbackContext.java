@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.gameaggregator.core.context.VendorGameAware;
+import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -16,7 +18,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class BetRollbackContext implements GameSessionData {
+public class BetRollbackContext implements GameSessionData, VendorPlayerAware, VendorGameAware {
     /**
      * @deprecated use configure in controller to set rollbackType
      */
@@ -28,6 +30,7 @@ public class BetRollbackContext implements GameSessionData {
     private String roundId;
     private String vendorGameCode;
     private String vendorPlayerUsername;
+    private String vendorCurrencyCode;
     private String token;
     private String vendorSessionToken;
     private Long timestamp;
@@ -36,11 +39,29 @@ public class BetRollbackContext implements GameSessionData {
     private BaseVendorService vendorService;
     private GameSession gameSession;
     private HttpRequestLog httpRequestLog;
-    private Integer vendorId;
 
     /**
      * Indicates whether settled bet data must be fetched from the warehouse
      * before performing the rollback operation.
      */
     private boolean retrieveSettledBet;
+
+    /**
+     * populated by {@link com.nextgen.gameaggregator.core.context.BaseEnricher} via VendorPlayerAware
+     */
+    private Integer vendorId;
+    private Integer agentId;
+    private Long agentPlayerId;
+    private String agentPlayerUsername;
+    private Long vendorPlayerId;
+    private Integer currencyId;
+    private Integer vendorLineId;
+
+    /**
+     * populated by {@link com.nextgen.gameaggregator.core.context.BaseEnricher} via VendorGameAware
+     */
+    private Integer vendorGameId;
+    private String gameCode;
+    private String gameName;
+    private Integer gameCategoryId;
 }

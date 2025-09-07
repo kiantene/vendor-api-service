@@ -16,4 +16,7 @@ public class AgentMeta {
 
     @JsonProperty("currency")
     private String currency;
+
+    @JsonProperty("session")
+    private String session;
 }
