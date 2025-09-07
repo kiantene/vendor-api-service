@@ -41,6 +41,9 @@ public class GameRound {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal winAmount;
 
+    @JsonProperty("agentMeta")
+    private AgentMeta agentMeta;
+
     @JsonProperty("txnCount")
     private Integer txnCount;
 
@@ -49,6 +52,21 @@ public class GameRound {
 
     @JsonProperty("state")
     private GameRoundState state;
+
+    @Data
+    public static class AgentMeta {
+        @JsonProperty("agentId")
+        private Integer agentId;
+
+        @JsonProperty("username")
+        private String username;
+
+        @JsonProperty("gameCode")
+        private String gameCode;
+
+        @JsonProperty("currency")
+        private String currency;
+    }
 
     public GameRound() {
         this.txnCount = 1;

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -19,7 +20,7 @@ public class GameTransaction {
     private Integer idx;
 
     @JsonProperty("type")
-    private String type;
+    private TxnType type;
 
     @JsonProperty("transactionId")
     private String transactionId;
@@ -83,11 +84,11 @@ public class GameTransaction {
         this.state = GameRoundState.UNSETTLED;
     }
 
-    public static GameTransaction of(String type, Integer vendorId, String transactionId) {
+    public static GameTransaction of(TxnType type, Integer vendorId, String transactionId) {
         return new GameTransaction(type, vendorId, transactionId);
     }
 
-    public GameTransaction(String type, Integer vendorId, String transactionId) {
+    public GameTransaction(TxnType type, Integer vendorId, String transactionId) {
         this();
         this.type = type;
         this.vendorId = vendorId;

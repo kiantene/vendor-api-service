@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -47,8 +48,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         try {
             context.setVendorId(logContext.getVendorId());
 
-//            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
-            GameTransaction txn = guard.ensureNotDuplicate(ACTION, context.getVendorId(), context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(TxnType.BET, context.getVendorId(), context.getIdempotencyKey());
 
             enricher.enrich(context);
 

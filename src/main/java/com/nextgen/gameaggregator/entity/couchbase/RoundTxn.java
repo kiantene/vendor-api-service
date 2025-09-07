@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.entity.couchbase;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,12 @@ import lombok.NoArgsConstructor;
 public class RoundTxn {
     @JsonProperty("id")
     private String id;
+
+    @JsonProperty("type")
+    private TxnType type;
+
+    @JsonProperty("gaBetId")
+    private String gaBetId;
 
     @JsonProperty("status")
     private TxnStatus status;
@@ -23,6 +30,7 @@ public class RoundTxn {
     public static RoundTxn of(GameTransaction txn) {
         RoundTxn roundTxn = new RoundTxn();
         roundTxn.setId(txn.getId());
+        roundTxn.setType(txn.getType());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());

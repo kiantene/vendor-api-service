@@ -7,16 +7,14 @@ import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
-import com.nextgen.gameaggregator.core.service.GameSessionDataService;
-import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,13 +27,13 @@ import java.util.function.Consumer;
 public class WalletRollbackServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "rollback";
-    private final DuplicateRequestGuard guard;
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
-    private final ApplicationContext applicationContext;
-    private final WalletService walletService;
-    private final GameSessionDataService gameSessionDataService;
+    private final DuplicateRequestGuard guard;
+    private final BetRollbackContextEnricher enricher;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
+    private final BetRollbackProcessor processor;
+    private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final LogContextService logContextService;
 
@@ -46,9 +44,9 @@ public class WalletRollbackServiceWrapper {
         try {
             context.setVendorId(logContext.getVendorId());
 
-            GameTransaction txn = guard.ensureNotDuplicate(ACTION, context.getVendorId(), context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(TxnType.ROLLBACK, context.getVendorId(), context.getIdempotencyKey());
 
-            enrich(context, logContext);
+            enricher.enrich(context, logContext);
 
             return processRollbackTransaction(context, txn);
         } catch (DuplicateRequestException ex) {
@@ -70,7 +68,7 @@ public class WalletRollbackServiceWrapper {
         boolean hasException = false;
 
         try {
-            enrich(context, logContext);
+            enricher.enrich(context, logContext);
             final BetRollbackContext asyncCtx = context;
             final LogContext asyncLogCtx = logContext.copy(); // creates a copy for CompletableFuture to avoid data race
 
@@ -90,29 +88,6 @@ public class WalletRollbackServiceWrapper {
 
     public void processAsync(BetRollbackContext context) {
         processAsync(context, DEFAULT_DELAY_MILLISECONDS);
-    }
-
-    private void enrich(BetRollbackContext context, LogContext logContext) {
-
-        if (context.getGameSession() == null) {
-            GameSession gameSession = gameSessionDataService.getOrCreate(context);
-            context.setGameSession(gameSession);
-            if (context.getVendorPlayerUsername() == null) {
-                context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-            }
-        }
-
-        if (context.getVendorService() == null) {
-            context.setVendorService(InternalVendorService.getInstance(applicationContext));
-        }
-
-        if (context.getHttpRequestLog() == null) {
-            context.setHttpRequestLog(LogContextService.toHttpRequestLog(logContext));
-        }
-
-        if (context.getTimestamp() == null) {
-            context.setTimestamp(System.currentTimeMillis());
-        }
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, DuplicateRequestException ex) {
@@ -151,6 +126,7 @@ public class WalletRollbackServiceWrapper {
         BetRollbackConfig config = state().getConfig();
 
         if (RollbackType.BY_ROUND == config.getRollbackType()) {
+            enricher.enrichGameTransaction(txn, context);
             return processRollbackByRound(context, txn);
         }
 
@@ -173,8 +149,7 @@ public class WalletRollbackServiceWrapper {
     }
 
     private PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction txn) {
-        String currency = "";
-        return PlayerBalanceData.getDefault(context.getTraceId(), context.getVendorPlayerUsername(), currency);
+        return processor.process(context, txn);
     }
 
     private PlayerBalanceData processRollbackByBet(BetRollbackContext context) throws
