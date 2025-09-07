@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service.business.maxpayout;
 
-import com.nextgen.gameaggregator.entity.ga.Agent;
+import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.gameaggregator.core.entity.Agent;
+import com.nextgen.gameaggregator.core.service.AgentDataService;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
-import com.nextgen.gameaggregator.exception.AgentNotFoundException;
-import com.nextgen.gameaggregator.service.AgentService;
 import com.nextgen.gameaggregator.service.data.AgentPayoutSettingDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AgentMaxPayoutService {
 
-    private final AgentService agentService;
+    private final AgentDataService agentService;
     private final AgentPayoutSettingDataService payoutSettingsDataService;
 
     public BetInformation applyPayoutCap(BetInformation betInfo) {
@@ -85,7 +85,7 @@ public class AgentMaxPayoutService {
     private Optional<Agent> getAgent(Integer agentId) {
         try {
             return Optional.of(agentService.get(agentId));
-        } catch (AgentNotFoundException ex) {
+        } catch (EntityNotFoundException ex) {
             return Optional.empty();
         }
     }
