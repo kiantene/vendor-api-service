@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.service.data.AgentPayoutSettingDataService;
+import com.nextgen.gameaggregator.service.data.VendorFeatureDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +18,15 @@ public class AgentMaxPayoutService {
 
     private final AgentDataService agentService;
     private final AgentPayoutSettingDataService payoutSettingsDataService;
+    private final VendorFeatureDataService vendorFeatureDataService;
 
     public BetInformation applyPayoutCap(BetInformation betInfo) {
 
-        Optional<BigDecimal> payoutCap = this.getPayoutCapAmount(betInfo);
+        if (!vendorFeatureDataService.checkIsVendorEnableForMaxPayout(betInfo.getVendorId())) {
+            return betInfo;
+        }
 
-        return payoutCap
+        return getPayoutCapAmount(betInfo)
                 .filter(cap -> shouldApplyCap(betInfo.getWinAmount(), cap))
                 .map(cap -> applyCalculation(betInfo, cap))
                 .orElse(betInfo);
@@ -51,7 +55,7 @@ public class AgentMaxPayoutService {
         return Optional.of(capAmount);
     }
 
-    private boolean shouldApplyCap(BigDecimal cap, BigDecimal winAmount) {
+    private boolean shouldApplyCap(BigDecimal winAmount, BigDecimal cap) {
         if (cap == null || winAmount == null) {
             return false;
         }
