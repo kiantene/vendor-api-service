@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.PATH)
 public class RollbackController extends AbstractBetRollbackController<RollbackRequest, RollbackResponse> {
     public RollbackController(RollbackRequestMapper requestMapper,
-                              RollbackResponseMapper responseMapper,
-                              WalletRollbackServiceWrapper walletService) {
+            RollbackResponseMapper responseMapper,
+            WalletRollbackServiceWrapper walletService) {
         super(requestMapper, responseMapper, walletService);
     }
 
@@ -32,4 +32,8 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     public void configure(BetRollbackConfig config, RollbackRequest request) {
         config.setRollbackType(RollbackType.BY_ROUND);
     }
+
+//    private void enrichResponse(RollbackResponse response, RollbackRequest request) {
+//        response.setDatarequest.getTransactionId());
+//    }
 }

@@ -83,7 +83,8 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
     }
 
     protected final void checkSignature(String expectedSignature, String payload, String secret) {
-        if (!expectedSignature.equals(sign(payload, secret))) {
+       String x=sign(payload, secret);
+        if (!expectedSignature.equals(x)) {
             throw new SignatureValidationException("Signature does not match");
         }
     }
