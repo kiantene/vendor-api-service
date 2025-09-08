@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service(EndPoints.CLASSS_NAME + GameLaunchHandler.NAME)
 public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
@@ -97,10 +98,11 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
         headers.put("Authorization", "Bearer " + token);
         headers.put("Content-Type", "application/json");
 
-        if (context.getVendorFormData() != null) {
-            //set Headers to vendorFormData for logging what we sent to vendor
-            context.setVendorFormData("Headers: " + token + "\n" + context.getVendorFormData());
-        }
+        context.setVendorFormData("Headers:\n" +
+                headers.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("\n")) +
+                "\n\n" +
+                (context.getVendorFormData() == null ? "" : context.getVendorFormData()));
+
         //clear thread
         BearerTokenHolder.clear();
         return headers;
