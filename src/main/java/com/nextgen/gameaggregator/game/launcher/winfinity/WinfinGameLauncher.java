@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.game.launcher.winfinity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
@@ -63,7 +64,15 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
         if (!"LOBBY".equalsIgnoreCase(context.getVendorGameCode())) {
             gameLaunchRequest.tableId(context.getVendorGameCode());
         }
-        return gameLaunchRequest.build();
+
+        GameLaunchRequest request = gameLaunchRequest.build();
+        try {
+            //set request body to vendorFormData for logging what we sent to vendor
+            context.setVendorFormData("Request Body: " + new ObjectMapper().writeValueAsString(request));
+        } catch (Exception e) {
+            //do nothing
+        }
+        return request;
     }
 
     @Override
@@ -86,8 +95,14 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + token);
-        BearerTokenHolder.clear();
         headers.put("Content-Type", "application/json");
+
+        if (context.getVendorFormData() != null) {
+            //set Headers to vendorFormData for logging what we sent to vendor
+            context.setVendorFormData("Headers: " + token + "\n" + context.getVendorFormData());
+        }
+        //clear thread
+        BearerTokenHolder.clear();
         return headers;
     }
 }
