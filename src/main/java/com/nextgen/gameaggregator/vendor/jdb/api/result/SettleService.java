@@ -51,7 +51,7 @@ public class SettleService {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid(), settleDto.getGType() + "_" + settleDto.getMType());
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance

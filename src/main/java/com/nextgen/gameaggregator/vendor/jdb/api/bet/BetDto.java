@@ -29,7 +29,7 @@ public class BetDto implements BetResultData {
     @Size(min = 1, max = 30)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
-    
+
     @NotBlank
     @Size(max = 3)
     private String currency;
@@ -41,6 +41,11 @@ public class BetDto implements BetResultData {
     @NotNull
     @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private Long gameRoundSeqNo;
+
+    @NotBlank
+    @JsonProperty("gType")
+    @Pattern(regexp = "^[0-9]+$")
+    private String gType;
 
     @NotBlank
     @JsonProperty("mType")
@@ -59,9 +64,9 @@ public class BetDto implements BetResultData {
         // trim the provider's category for decide round id value
         String trimCategory = this.mType.toString().toString().substring(0, 2);
 
-        if(trimCategory.equals(Formats.SPRIBE)){
+        if (trimCategory.equals(Formats.SPRIBE)) {
             return this.transferId.toString();
-        }else{
+        } else {
             return this.gameRoundSeqNo.toString();
         }
     }

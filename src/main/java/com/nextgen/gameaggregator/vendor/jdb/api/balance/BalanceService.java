@@ -23,21 +23,27 @@ public class BalanceService {
 
     private final GameService gameService;
     private final WalletService walletService;
-    private final ValidationService validationService;
     private final TerminateService terminateService;
     private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
 
     public BalanceService(GameServiceImpl gameService,
                           WalletService walletService,
-                          ValidationService validationService,
                           TerminateService terminateService,
-                          HttpService httpService) {
+                          HttpService httpService,
+                          VendorLineService vendorLineService,
+                          AgentPlayerService agentPlayerService,
+                          VendorGameService vendorGameService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
-        this.validationService = validationService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
         this.terminateService = terminateService;
         this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
     }
 
     public CommonVo balance(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog, HttpServletRequest request, VendorLine vendorLine) {
@@ -61,7 +67,7 @@ public class BalanceService {
             }
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(gameSession);
 
             // 4. Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, actionDto.getHttpRequestLog());
@@ -110,9 +116,15 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
+    private void doVerification(GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
             DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getUid());
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }

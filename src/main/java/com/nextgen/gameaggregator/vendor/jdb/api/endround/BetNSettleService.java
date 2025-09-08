@@ -51,7 +51,7 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameService.getGameSessionByUsername(betNSettleDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(betNSettleDto.getUid(), betNSettleDto.getGType() + "_" + betNSettleDto.getMType());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);
@@ -103,8 +103,8 @@ public class BetNSettleService {
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
 
-        } catch (JsonProcessingException | GameNotSupportedException |
-                 CurrencyNotSupportedException | VendorPlatformNotSupportedException invalidValidRequestException) {
+        } catch (JsonProcessingException |
+                 CurrencyNotSupportedException invalidValidRequestException) {
             httpService.logError(httpRequestLog, invalidValidRequestException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
@@ -130,15 +130,12 @@ public class BetNSettleService {
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
-            DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-            VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException, AuthenticationException {
+            DisabledVendorLineException, DisabledGameException, CurrencyNotSupportedException,
+            InvalidPlayerException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
 
-        // Verify vendor gameCode, currency and platform
-        String[] parts = gameSession.getVendorGameCode().split("_");
-        int mType = Integer.parseInt(parts[1]);
-        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        // Verify currency and platform
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
