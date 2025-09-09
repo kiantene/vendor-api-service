@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.service.VendorGameDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
@@ -69,5 +70,6 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         txn.setWinAmount(context.getWinAmount());
         txn.setBetTime(context.getVendorBetTime());
         txn.setSettleTime(context.getVendorSettleTime());
+        txn.setState(GameRoundState.SETTLED);
     }
 }

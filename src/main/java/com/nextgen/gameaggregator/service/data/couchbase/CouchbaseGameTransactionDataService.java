@@ -60,6 +60,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         Duration ttl = null;
         Map<String, Object> updates = new HashMap<>();
 
+        updates.put("idx", txn.getIdx());
         updates.put("gaBetId", txn.getGaBetId());
         updates.put("status", status.name());
 
@@ -74,8 +75,8 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         }
 
         if (GameRoundState.SETTLED == txn.getState()) {
-            // TODO: revisit TTL value
-            ttl = Duration.ofHours(6);
+            updates.put("state", txn.getState().name());
+            ttl = Duration.ofHours(12);
         }
 
         repo.update(txn.getId(), updates, ttl);

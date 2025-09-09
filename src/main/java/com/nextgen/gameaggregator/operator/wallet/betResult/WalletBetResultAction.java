@@ -117,6 +117,7 @@ public class WalletBetResultAction {
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorStart(System.currentTimeMillis());
+            httpRequestLog.setGaBetId(dto.getBetId());
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);

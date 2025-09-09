@@ -117,6 +117,7 @@ public class WalletBetResultServiceWrapper {
                 state().getVendorService(),
                 httpRequestLog
         );
+        txn.setGaBetId(httpRequestLog.getGaBetId());
         gameTransactionService.markSuccess(txn, balance);
 
         return new PlayerBalanceData(
