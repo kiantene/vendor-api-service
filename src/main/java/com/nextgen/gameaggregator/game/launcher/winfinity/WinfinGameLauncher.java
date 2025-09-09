@@ -56,7 +56,7 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
 
         GameLaunchRequest.GameLaunchRequestBuilder gameLaunchRequest = GameLaunchRequest.builder()
                 .user(buildUserData(clientId, context))
-                .country("DE")
+                .country(Credentials.COUNTRY)
                 .currency(context.getVendorCurrencyCode())
                 .device(context.getVendorPlatformCode())
                 .ipAddress(context.getIpAddress());
@@ -100,7 +100,7 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
                 .partnerSiteId(clientId)
                 .userId(context.getVendorPlayerUsername())
                 .language(context.getVendorLanguageCode())
-                .timeZoneOffset("00:00:00")
+                .timeZoneOffset(Credentials.TIME_ZONE_OFFSET)
                 .build();
     }
 
