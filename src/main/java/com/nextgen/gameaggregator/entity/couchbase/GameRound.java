@@ -53,6 +53,9 @@ public class GameRound {
     @JsonProperty("state")
     private GameRoundState state;
 
+    @JsonProperty("createdAt")
+    private String createdAt;
+
     public GameRound() {
         this.txnCount = 1;
         this.state = GameRoundState.UNSETTLED;

@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Service
 public class GameRoundService {
-    private static final Duration ROUND_TTL = Duration.ofHours(6);
+    private static final Duration ROUND_TTL = Duration.ofHours(12);
     private final GameRoundDataService data;
 
     public GameRoundService(GameRoundDataService data) {
@@ -60,6 +60,7 @@ public class GameRoundService {
         round.setCurrency(txn.getCurrency());
         round.setAgentMeta(agentMeta);
         round.setTransactions(List.of(RoundTxn.of(txn)));
+        round.setCreatedAt(txn.getCreatedAt());
         txn.setIdx(0);
 
         return round;

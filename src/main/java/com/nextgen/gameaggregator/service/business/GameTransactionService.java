@@ -21,6 +21,11 @@ public class GameTransactionService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
             .ofPattern("HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+            .withZone(ZoneOffset.UTC);
+
     private final GameTransactionDataService txnDataService;
     private final GameRoundService gameRoundService;
 
@@ -34,7 +39,7 @@ public class GameTransactionService {
 
     public GameTransaction save(GameTransaction txn) {
         if (TxnStatus.NEW == txn.getStatus()) {
-            txn.setCreatedAt(getNow());
+            txn.setCreatedAt(DATE_TIME_FORMATTER.format(Instant.now()));
         } else if (TxnStatus.SENT == txn.getStatus()) {
             txn.setSentAt(getNow());
         }
