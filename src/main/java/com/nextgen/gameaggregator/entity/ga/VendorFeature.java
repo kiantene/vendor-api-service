@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class VendorFeature {
     @Id
-    private Integer id;
+    private String id;
     private Integer featureId;
     private Integer vendorId;
     private Integer status;

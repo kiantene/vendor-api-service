@@ -4,6 +4,7 @@ import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.service.data.AgentPayoutSettingDataService;
 import com.nextgen.gameaggregator.service.data.VendorFeatureDataService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class AgentMaxPayoutService {
 
     public BetInformation applyPayoutCap(BetInformation betInfo) {
 
-        if (!vendorFeatureDataService.checkIsVendorEnableForMaxPayout(betInfo.getVendorId())) {
+        if (!vendorFeatureDataService.isVendorEnabled(betInfo.getVendorId(), Features.AGENT_MAX_PAYOUT.id)) {
             return betInfo;
         }
 
