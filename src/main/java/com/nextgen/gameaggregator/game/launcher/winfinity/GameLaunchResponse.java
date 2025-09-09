@@ -9,10 +9,10 @@ import javax.validation.constraints.NotBlank;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class GameLaunchResponse {
-    private GameUrlDataVo data;
+    private VendorGameUrl data;
 
     @Data
-    public static class GameUrlDataVo {
+    public static class VendorGameUrl {
         @NotBlank
         private String frameUrl;
         private String masterSessionId;

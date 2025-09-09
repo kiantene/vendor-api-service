@@ -1,45 +1,51 @@
 package com.nextgen.gameaggregator.game.launcher.winfinity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
+import com.nextgen.gameaggregator.game.launcher.winfinity.bearer.BearerTokenHolder;
+import com.nextgen.gameaggregator.game.launcher.winfinity.bearer.BearerTokenService;
 import com.nextgen.gameaggregator.game.launcher.winfinity.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.winfinity.constant.Credentials;
+import com.nextgen.gameaggregator.game.launcher.winfinity.constant.Credentials;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-@Service(EndPoints.CLASSS_NAME + GameLaunchHandler.NAME)
+@Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
+    private static final String HEADER_AUTH = "Authorization";
+    private static final String HEADER_BEARER = "Bearer ";
 
-    private String token = "";
-    private final GetBearerTokenService getBearerTokenService;
+    private final BearerTokenService bearerTokenService;
+    private final LogContextService logContextService;
 
-    public WinfinGameLauncher(VendorCredentialUtils credentialUtils, GetBearerTokenService getBearerTokenService) {
-        super(credentialUtils, EndPoints.CLASSS_NAME, GameLaunchResponse.class);
-        this.getBearerTokenService = getBearerTokenService;
+    public WinfinGameLauncher(VendorCredentialUtils credentialUtils,
+                              BearerTokenService bearerTokenService,
+                              LogContextService logContextService) {
+
+        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class);
+        this.bearerTokenService = bearerTokenService;
+        this.logContextService = logContextService;
     }
 
     @Override
     public String getPath(GameLaunchContext context) {
-        return "";
+        return EndPoints.GAME_URL;
     }
 
     @Override
     public String getBaseUrl(GameLaunchContext context) {
         VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
-        return credentialAccessor.getValue(Credentials.API_URL) + EndPoints.GAME;
+        return credentialAccessor.getValue(Credentials.API_URL);
     }
 
     @Override
     public AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> prepareLaunchRequest(GameLaunchContext context) {
-        getBearerTokenService.process(context);
-        token = BearerTokenHolder.getBody();
+        bearerTokenService.process(context);
         return super.prepareLaunchRequest(context);
     }
 
@@ -48,32 +54,18 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
         VendorCredentialAccessor credentialAccessor = credentials(context.getVendorCredentials());
         String clientId = credentialAccessor.getValue(Credentials.CLIENT_ID);
 
-        GameLaunchRequest.User user = GameLaunchRequest.User.builder()
-                .partnerSiteId(clientId)
-                .userId(context.getVendorPlayerUsername())
-                .language(context.getVendorLanguageCode())
-                .timeZoneOffset("00:00:00")
-                .build();
         GameLaunchRequest.GameLaunchRequestBuilder gameLaunchRequest = GameLaunchRequest.builder()
-                .user(user)
+                .user(buildUserData(clientId, context))
                 .country("DE")
                 .currency(context.getVendorCurrencyCode())
                 .device(context.getVendorPlatformCode())
                 .ipAddress(context.getIpAddress());
 
         //if vendor game code is lobby, skip set table id
-        if (!"LOBBY".equalsIgnoreCase(context.getVendorGameCode())) {
+        if (!isLobby(context.getVendorGameCode())) {
             gameLaunchRequest.tableId(context.getVendorGameCode());
         }
-
-        GameLaunchRequest request = gameLaunchRequest.build();
-        try {
-            //set request body to vendorFormData for logging what we sent to vendor
-            context.setVendorFormData("Request Body: " + new ObjectMapper().writeValueAsString(request));
-        } catch (Exception e) {
-            //do nothing
-        }
-        return request;
+        return gameLaunchRequest.build();
     }
 
     @Override
@@ -84,6 +76,7 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
     @Override
     public void onSuccess(GameLaunchContext context, GameLaunchResponse response) {
         context.setGameUrl(response.getData().getFrameUrl());
+        context.setVendorToken(response.getData().getMasterSessionId());
     }
 
     @Override
@@ -93,18 +86,25 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
 
     @Override
     public Map<String, String> getHeaders(GameLaunchContext context, GameLaunchRequest gameLaunchRequest) {
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + token);
-        headers.put("Content-Type", "application/json");
-
-        context.setVendorFormData("Headers:\n" +
-                headers.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("\n")) +
-                "\n\n" +
-                (context.getVendorFormData() == null ? "" : context.getVendorFormData()));
-
+        String bearerToken = BearerTokenHolder.getToken();
+        logContextService.debug("bearer", bearerToken);
         //clear thread
         BearerTokenHolder.clear();
-        return headers;
+        return Map.of(
+                HEADER_AUTH, HEADER_BEARER + bearerToken
+        );
+    }
+
+    private GameLaunchRequest.User buildUserData(String clientId, GameLaunchContext context) {
+        return GameLaunchRequest.User.builder()
+                .partnerSiteId(clientId)
+                .userId(context.getVendorPlayerUsername())
+                .language(context.getVendorLanguageCode())
+                .timeZoneOffset("00:00:00")
+                .build();
+    }
+
+    private boolean isLobby(String vendorGameCode) {
+        return "LOBBY".equalsIgnoreCase(vendorGameCode);
     }
 }

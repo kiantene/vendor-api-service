@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.service.S3Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class GameLaunchService {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final S3Service s3Service;
     private final VendorApiExecutor apiExecutor;
 
@@ -99,7 +102,16 @@ public class GameLaunchService {
                 .execute(apiExecutor, context)
                 .onSuccess(response -> launchHandler.onSuccess(context, response))
                 .onError(result -> logContext.setException(result.getError()))
-                .onComplete(result -> logContext.setApiResponse(result.getRawResponse()));
+                .onComplete(result -> {
+                    try {
+                        String requestBody = OBJECT_MAPPER.writeValueAsString(result.getRequestObject());
+                        context.setVendorFormData(requestBody);
+                    } catch (Exception ex) {
+                        log.error(ex.getMessage());
+                    }
+
+                    logContext.setApiResponse(result.getRawResponse());
+                });
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
@@ -128,7 +140,7 @@ public class GameLaunchService {
         try {
             logContext.setApiBody(request);
             logContext.setApiResponse(gameUrl);
-            context.setVendorFormData(new ObjectMapper().writeValueAsString(request));
+            context.setVendorFormData(OBJECT_MAPPER.writeValueAsString(request));
         } catch (Exception exception) {
             logContext.setException(exception.getClass().getName());
             logContext.setErrorMessage(exception.getMessage());
