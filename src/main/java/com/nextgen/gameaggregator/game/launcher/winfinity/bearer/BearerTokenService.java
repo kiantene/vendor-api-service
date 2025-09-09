@@ -1,22 +1,21 @@
-package com.nextgen.gameaggregator.game.launcher.winfinity;
+package com.nextgen.gameaggregator.game.launcher.winfinity.bearer;
 
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.game.launcher.winfinity.GetBearerTokenHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class GetBearerTokenService {
+public class BearerTokenService {
     private final VendorApiExecutor apiExecutor;
-    private final GetBearerTokenHandler getBearerTokenHandler;
+    private final BearerTokenHandler bearerTokenHandler;
 
     public void process(GameLaunchContext context) {
-        getBearerTokenHandler.execute(apiExecutor, context)
-                .onSuccess(response -> getBearerTokenHandler.onSuccess(context, response))
+        bearerTokenHandler.execute(apiExecutor, context)
+                .onSuccess(response -> bearerTokenHandler.onSuccess(context, response))
                 .onError(result -> {
                     Throwable ex = result.getError();
                     LogContext logContext = LogContextHolder.get();

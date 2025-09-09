@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.game.launcher.winfinity;
+package com.nextgen.gameaggregator.game.launcher.winfinity.bearer;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GetBearerTokenResponse {
+public class BearerTokenResponse {
     @JsonProperty("access_token")
     private String accessToken;
 }

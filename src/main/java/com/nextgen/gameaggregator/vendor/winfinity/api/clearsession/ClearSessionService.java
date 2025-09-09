@@ -40,7 +40,7 @@ public class ClearSessionService {
             this.doValidation(dto);
 
             // Get GameSession with token
-            gameSession = gameSessionService.verifyToken(dto.getMsid()); //throw authenticationException
+            gameSession = gameSessionService.verifyVendorToken(dto.getMsid()); //throw authenticationException
             if (gameSession.getStatus() != 0) {
                 balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
                 vo.setDataVo(traceId, balance);

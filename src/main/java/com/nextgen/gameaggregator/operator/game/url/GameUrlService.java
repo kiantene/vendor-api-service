@@ -47,6 +47,7 @@ public class GameUrlService {
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
     private final GameLauncherRegistry gameLauncherRegistry;
     private final GameLaunchService gameLaunchService;
+    private final GameSessionService gameSessionService;
 
     //remove request service
     @Autowired
@@ -67,7 +68,8 @@ public class GameUrlService {
                           VendorGameDeactivatedService vendorGameDeactivatedService,
                           TestSupportService testSupportService,
                           GameLauncherRegistry gameLauncherRegistry,
-                          GameLaunchService gameLaunchService) {
+                          GameLaunchService gameLaunchService,
+                          GameSessionService gameSessionService) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -87,7 +89,7 @@ public class GameUrlService {
         this.testSupportService = testSupportService;
         this.gameLauncherRegistry = gameLauncherRegistry;
         this.gameLaunchService = gameLaunchService;
-
+        this.gameSessionService = gameSessionService;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -135,6 +137,11 @@ public class GameUrlService {
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
                 gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
                 httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
+
+                boolean shouldReplaceWithVendorToken = !gameLaunchContext.getVendorToken().equals(gameSession.getToken());
+                if (shouldReplaceWithVendorToken) {
+                    gameSessionService.regenerateVendorToken(gameSession, gameLaunchContext.getVendorToken());
+                }
 
             } else {
                 String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
