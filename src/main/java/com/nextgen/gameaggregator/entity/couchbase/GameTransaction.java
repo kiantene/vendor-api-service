@@ -12,12 +12,21 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 @Data
 public class GameTransaction {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+            .withZone(ZoneOffset.UTC);
 
-    @JsonProperty("vendorClassName")
-    private String vendorClassName;
+    @JsonProperty("createdAt")
+    private String createdAt;
+
+    @JsonProperty("className")
+    private String className;
 
     @JsonProperty("idx")
     private Integer idx;
@@ -73,9 +82,6 @@ public class GameTransaction {
     @JsonProperty("settleTime")
     private Long settleTime;
 
-    @JsonProperty("createdAt")
-    private String createdAt;
-
     @JsonProperty("sentAt")
     private String sentAt;
 
@@ -87,25 +93,28 @@ public class GameTransaction {
         this.state = GameRoundState.UNSETTLED;
     }
 
-    public static GameTransaction of(TxnType type, String vendorClassName, String transactionId) {
-        return new GameTransaction(type, vendorClassName, transactionId);
+    public static GameTransaction of(TxnType type, String vendorClassName, String transactionId, long createdTimestamp) {
+        GameTransaction txn = new GameTransaction(type, vendorClassName, transactionId);
+        txn.setCreatedAt(DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(createdTimestamp)));
+
+        return txn;
     }
 
-    public GameTransaction(TxnType type, String vendorClassName, String transactionId) {
+    public GameTransaction(TxnType type, String className, String transactionId) {
         this();
         this.type = type;
-        this.vendorClassName = vendorClassName;
+        this.className = className;
         this.transactionId = transactionId;
     }
 
     @JsonIgnore
     public String getId() {
-        return vendorClassName + "::" + transactionId;
+        return className + "::" + transactionId;
     }
 
     @JsonIgnore
     public String getRoundDocId() {
-        return vendorClassName + "::" + roundId;
+        return className + "::" + roundId;
     }
 
     @JsonIgnore

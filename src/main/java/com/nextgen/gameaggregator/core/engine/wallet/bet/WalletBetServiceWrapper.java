@@ -47,7 +47,12 @@ public class WalletBetServiceWrapper implements WalletBetService {
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(TxnType.BET, logContext.getVendorClassName(), context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(
+                    TxnType.BET,
+                    logContext.getVendorClassName(),
+                    context.getIdempotencyKey(),
+                    logContext.getStart()
+            );
 
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 

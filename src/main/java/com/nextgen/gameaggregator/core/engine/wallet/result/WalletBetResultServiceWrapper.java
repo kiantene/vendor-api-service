@@ -47,7 +47,12 @@ public class WalletBetResultServiceWrapper {
         BetResultContext context = state().getBetResultContext();
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(TxnType.RESULT, logContext.getVendorClassName(), context.getIdempotencyKey());
+            GameTransaction txn = guard.ensureNotDuplicate(
+                    TxnType.RESULT,
+                    logContext.getVendorClassName(),
+                    context.getIdempotencyKey(),
+                    logContext.getStart()
+            );
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 

@@ -24,8 +24,8 @@ public class DuplicateRequestGuard {
         }
     }
 
-    public GameTransaction ensureNotDuplicate(TxnType type, String vendorClassName, String key) {
-        GameTransaction probe = GameTransaction.of(type, vendorClassName, key);
+    public GameTransaction ensureNotDuplicate(TxnType type, String vendorClassName, String key, long timestamp) {
+        GameTransaction probe = GameTransaction.of(type, vendorClassName, key, timestamp);
         var doc = txnService.get(probe);
         if (doc.isPresent()) {
             GameTransaction txn = doc.get();
