@@ -285,7 +285,7 @@ public class GameEndRoundAction {
 
     private void logEnd(LogContext logContext) {
         if (logContext != null && logContext.getApiEnd() == 0) {
-            logContext.setEnd(System.currentTimeMillis());
+            logContext.setApiEnd(System.currentTimeMillis());
         }
     }
 }

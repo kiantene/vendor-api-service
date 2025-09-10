@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
-import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.util.StackTraceUtils;
@@ -21,12 +20,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class KafkaService {
-
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
     private final CurrencyConversionService currencyConversionService;
@@ -34,14 +32,9 @@ public class KafkaService {
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
     private final S3BetService s3BetService;
-    private final VendorService vendorService;
-    private final VendorGameCodeService vendorGameCodeService;
-    private final AgentService agentService;
-    private final ObjectMapper objectMapper;
 
     @Value("${logging.log-to-kafka:true}")
     private boolean logToKafka;
-
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
@@ -50,12 +43,7 @@ public class KafkaService {
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
-                        CachingService cachingService,
-                        S3BetService s3BetService,
-                        VendorService vendorService,
-                        VendorGameCodeService vendorGameCodeService,
-                        AgentService agentService,
-                        ObjectMapper objectMapper
+                        S3BetService s3BetService
     ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
@@ -65,10 +53,6 @@ public class KafkaService {
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.s3BetService = s3BetService;
-        this.vendorService = vendorService;
-        this.vendorGameCodeService = vendorGameCodeService;
-        this.agentService = agentService;
-        this.objectMapper = objectMapper;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -212,33 +196,6 @@ public class KafkaService {
         }
     }
 
-
-    public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
-        try {
-            //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
-            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
-            future.orTimeout(5, TimeUnit.SECONDS).exceptionally(throwable -> {
-                // Return a default value if needed
-                if (throwable instanceof java.util.concurrent.TimeoutException) {
-                    // Handle timeout scenario
-                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) Timeout: No response after 5 seconds");
-                } else {
-                    // Handle failure
-                    log.error("FunctionName: produceEndRoundSettleBet (Throwable) | {} | {} | {}",
-                            "TraceId: " + endRoundSettledBet.getId(),
-                            "RoundId: " + endRoundSettledBet.getRoundId(),
-                            "Error: " + throwable.toString());
-                }
-                return null; // Return a default value
-            });
-        } catch (Exception e) {
-            log.error("FunctionName: produceEndRoundSettleBet (Exception) | {} | {} | {}",
-                    "TraceId: " + endRoundSettledBet.getId(),
-                    "RoundId: " + endRoundSettledBet.getRoundId(),
-                    "Error: " + e);
-        }
-    }
-
     public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
         try {
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
@@ -249,7 +206,7 @@ public class KafkaService {
 
     public void producePromoPayoutHistory(PromoPayoutHistory promoPayoutHistory) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, promoPayoutHistory.getVendorPlayerUsername(), this.objectMapper.writeValueAsString(promoPayoutHistory));
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PROMO_PAYOUT_HISTORY, promoPayoutHistory.getVendorPlayerUsername(), OBJECT_MAPPER.writeValueAsString(promoPayoutHistory));
         } catch (Exception e) {
             log.error(e.getMessage());
         }
@@ -309,19 +266,6 @@ public class KafkaService {
         }
     }
 
-    public void produceTransferWalletRequestLog(TransferWalletRequestLog transferWalletRequestLog) {
-        if (this.logToKafka) {
-            try {
-                jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_WALLET_REQUEST_LOG, transferWalletRequestLog.getUsername(), transferWalletRequestLog);
-            } catch (Exception e) {
-                log.error(transferWalletRequestLog.getTraceId() + " : " + e.getMessage());
-                log.info(new Gson().toJson(transferWalletRequestLog));
-            }
-        } else {
-            log.info(new Gson().toJson(transferWalletRequestLog));
-        }
-    }
-
     public void produceBetTransactionLog(BetInformation betInformation, BetResultData betResultData, String vendorPlayerUsername) {
         try {
             BetTransactionLog betTransactionLog;
@@ -342,6 +286,21 @@ public class KafkaService {
     private WarehouseFutureEntity getFutureEntityForBetHistory(BetHistory betHistory) {
         return warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(betHistory.getVendorGameId(), betHistory.getVendorId(), betHistory.getGameCategoryId(),
                 betHistory.getCurrencyId(), betHistory.getAgentId());
+    }
+
+    public void produceBetHistoryV3(BetHistoryV3 betHistoryV3) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(betHistoryV3);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V3, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + " : " + betHistoryV3.toString());
+        }
     }
 
     public void produceBetHistoryV3(BetHistory betHistory, String productCode, Integer productId, Integer productGameId, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -391,6 +350,22 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error("BetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+        }
+    }
+
+    public void produceBetHistoryUncap(BetHistoryUncap betHistoryUncap) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(betHistoryUncap);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_UNCAP, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending BetHistoryUncap to Kafka: ", throwable);
+                return null;
+            });
+
+        } catch (Exception e) {
+            log.error("BetHistoryUncap: " + e.getMessage() + " -> vendorBetId = " + betHistoryUncap.getVendorBetId() + "& roundId = " + betHistoryUncap.getRoundId());
         }
     }
 

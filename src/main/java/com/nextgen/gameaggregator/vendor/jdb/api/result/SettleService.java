@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -27,30 +28,44 @@ public class SettleService {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final HttpService httpService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
 
     public SettleService(GameServiceImpl gameService,
                          WalletService walletService,
                          VendorService vendorService,
-                         HttpService httpService) {
+                         HttpService httpService,
+                         RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.httpService = httpService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo settle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
+        boolean isRequestExists = false;
+        SettleDto settleDto = new SettleDto();
 
         try {
             // Convert original request body into dto
-            SettleDto settleDto = HttpService.convertJsonToDto(actionDto.getParams(), SettleDto.class);
+            settleDto = HttpService.convertJsonToDto(actionDto.getParams(), SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
 
-            // 2. Verify session token
+            // 2. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(settleDto, settleDto.getUid()) == null) {
+                requestIdempotentLogService.create(settleDto, settleDto.getUid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 3. Verify session token
             GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid());
 
             // 4. Send bet request to Operator
@@ -99,6 +114,11 @@ public class SettleService {
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(settleDto, settleDto.getUid());
+            }
         }
 
         return vo;

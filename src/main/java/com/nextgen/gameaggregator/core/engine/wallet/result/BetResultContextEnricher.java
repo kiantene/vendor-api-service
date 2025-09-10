@@ -5,13 +5,14 @@ import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.VendorGameDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
-public class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
+class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
     private final ApplicationContext applicationContext;
 
     protected BetResultContextEnricher(AgentPlayerDataService agentPlayerDataService,
@@ -41,6 +42,12 @@ public class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         BetResultWrapperContext wrapperContext = BetResultContextHolder.getRequired();
         if (wrapperContext.getVendorService() == null) {
             wrapperContext.setVendorService(InternalVendorService.getInstance(applicationContext));
+        }
+    }
+
+    public void enrichByGameSession(BetResultContext context, GameSession gameSession) {
+        if (context.getVendorPlayerUsername() == null) {
+            context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         }
     }
 }

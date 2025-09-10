@@ -5,12 +5,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
+import com.nextgen.gameaggregator.util.DateTimeConverter;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -160,12 +163,12 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return ts;
+        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.STANDARD, ZoneId.of("GMT-4"));
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return ts;
+        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.STANDARD, ZoneId.of("GMT-4"));
     }
 
     @Override

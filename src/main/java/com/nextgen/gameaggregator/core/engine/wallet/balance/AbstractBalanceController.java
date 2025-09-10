@@ -14,7 +14,7 @@ public abstract class AbstractBalanceController<Q, R> extends AbstractProcessorC
     }
 
     @Override
-    protected PlayerBalanceData executeService(BalanceContext context) {
+    protected PlayerBalanceData executeService(BalanceContext context, Q request) {
         return walletService.process(context);
     }
 }

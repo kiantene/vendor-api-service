@@ -2,13 +2,16 @@ package com.nextgen.gameaggregator.core.engine.wallet.balance;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
-import com.nextgen.gameaggregator.core.logging.*;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.WalletService;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +20,14 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 public class WalletBalanceServiceWrapper implements WalletBalanceService {
+    private static final String LOG_GROUP = "wallet";
+    private static final String ACTION = "balance";
     private final GameSessionDataService gameSessionDataService;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
 
-    public PlayerBalanceData process(@NotNull BalanceContext context) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.setLogGroup("Balance");
+    public PlayerBalanceData process(BalanceContext context) {
+        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
 
         try {
