@@ -16,11 +16,11 @@ public class VendorFeatureCacheService {
         this.repository = repository;
     }
 
-    @Cacheable(value = "VendorFeatures", key = "{#vendorId, #featureId, #status}", cacheManager = "cacheManager")
-    public Optional<VendorFeature> getByVendorIdAndFeatureIdAndStatus(Integer vendorId,
-                                                                      Integer featureId,
+    @Cacheable(value = "VendorFeatures", key = "{#featureId, #vendorId, #status}", cacheManager = "cacheManager")
+    public Optional<VendorFeature> getByFeatureIdAndVendorIdAndStatus(Integer featureId,
+                                                                      Integer vendorId,
                                                                       Integer status) {
 
-        return repository.findByVendorIdAndFeatureIdAndStatus(vendorId, featureId, status);
+        return repository.findByFeatureIdAndVendorIdAndStatus(featureId, vendorId, status);
     }
 }

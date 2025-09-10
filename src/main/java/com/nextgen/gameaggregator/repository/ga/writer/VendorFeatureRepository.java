@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface VendorFeatureRepository extends JpaRepository<VendorFeature, Integer> {
-    Optional<VendorFeature> findByVendorIdAndFeatureIdAndStatus(Integer vendorId, Integer featureId, Integer status);
+    Optional<VendorFeature> findByFeatureIdAndVendorIdAndStatus(Integer featureId, Integer vendorId, Integer status);
 
 }

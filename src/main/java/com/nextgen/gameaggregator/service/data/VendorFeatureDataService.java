@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.data;
 
+import com.nextgen.gameaggregator.enums.Features;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,8 +13,8 @@ public class VendorFeatureDataService {
         this.cache = cache;
     }
 
-    public boolean isVendorEnabled(Integer vendorId, Integer featureId) {
-        return cache.getByVendorIdAndFeatureIdAndStatus(vendorId, featureId, STATUS_ENABLED).isPresent();
+    public boolean isVendorEnabled(Features feature, Integer vendorId) {
+        return cache.getByFeatureIdAndVendorIdAndStatus(vendorId, feature.id, STATUS_ENABLED).isPresent();
 
     }
 }

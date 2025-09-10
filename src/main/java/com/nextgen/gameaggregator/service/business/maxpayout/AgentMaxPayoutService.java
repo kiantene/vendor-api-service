@@ -23,7 +23,7 @@ public class AgentMaxPayoutService {
 
     public BetInformation applyPayoutCap(BetInformation betInfo) {
 
-        if (!vendorFeatureDataService.isVendorEnabled(betInfo.getVendorId(), Features.AGENT_MAX_PAYOUT.id)) {
+        if (!vendorFeatureDataService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, betInfo.getVendorId())) {
             return betInfo;
         }
 

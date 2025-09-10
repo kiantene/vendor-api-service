@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHold
 import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -22,6 +23,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.business.maxpayout.AgentMaxPayoutService;
+import com.nextgen.gameaggregator.service.data.VendorFeatureDataService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.util.EnvUtils;
@@ -59,6 +61,7 @@ public class WalletService {
     private final AgentMaxPayoutService agentMaxPayoutService;
     private final BetHistoryProducer betHistoryProducer;
     private final GameRoundService gameRoundService;
+    private final VendorFeatureDataService vendorFeatureService;
     @Value("${endround-process.retry-max-attempts:5}")
     private int retryMaxAttempts;
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
@@ -363,28 +366,28 @@ public class WalletService {
             settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
 
             // send settled bet to kafka
-            loggingService.logStart();
-            boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
-            var mode = BetResultConfig.ProcessingMode.SINGLE;
-            List<BetTransaction> txnList = null;
+            if (vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
+                /**
+                 * Feature toggle to use refactored logic
+                 */
+                doPublishBetHistory(settledBet, vendorService, gameSession, fromVendorConversionRate);
+            } else {
+                /**
+                 * @deprecated below logic to be removed, use doPublishBetHistory as the refactored version
+                 */
+                BetHistory betHistory = new BetHistory(settledBet);
 
-            if (BetResultContextHolder.isInitialized()) {
-                mode = BetResultContextHolder.getConfig().getProcessingMode();
-                txnList = BetResultContextHolder.getBetResultContext().getBetTransactions();
+                loggingService.logStart();
+                if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                    // kafkaService.produceWarehouseBetHistory
+                    //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                            gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                } else {
+                    // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                    kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                }
             }
-
-            BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
-                    gameSession.getProductCode(),
-                    gameSession.getProductId(),
-                    gameSession.getProductGameId(),
-                    gameSession.getAgentPlayerUsername(),
-                    gameSession.getVendorPlayerUsername(),
-                    fromVendorConversionRate,
-                    requirePreprocessing,
-                    txnList
-            );
-
-            betHistoryProducer.publish(settledBet, publishContext, mode);
             loggingService.logProcessTime("doSettledBetResult ｜ betHistoryProducer.publish", traceId);
 
             // will insert bet info record to this topic for MG
@@ -442,6 +445,30 @@ public class WalletService {
         doEndRoundProcess(traceId, betResultData, settledBet, vendorService, gameSession);
 
         return balanceVo;
+    }
+
+    private void doPublishBetHistory(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, BigDecimal fromVendorConversionRate) {
+        boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
+        var mode = BetResultConfig.ProcessingMode.SINGLE;
+        List<BetTransaction> txnList = null;
+
+        if (BetResultContextHolder.isInitialized()) {
+            mode = BetResultContextHolder.getConfig().getProcessingMode();
+            txnList = BetResultContextHolder.getBetResultContext().getBetTransactions();
+        }
+
+        BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
+                gameSession.getProductCode(),
+                gameSession.getProductId(),
+                gameSession.getProductGameId(),
+                gameSession.getAgentPlayerUsername(),
+                gameSession.getVendorPlayerUsername(),
+                fromVendorConversionRate,
+                requirePreprocessing,
+                txnList
+        );
+
+        betHistoryProducer.publish(settledBet, publishContext, mode);
     }
 
     private void doEndRoundProcess(String traceId, BetResultData betResultData, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
