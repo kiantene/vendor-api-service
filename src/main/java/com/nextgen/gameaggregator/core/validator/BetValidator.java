@@ -29,7 +29,7 @@ public class BetValidator {
         try {
             validationService.isBetAllowed(session, vendorPlayerUsername);
         } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         }
     }
 

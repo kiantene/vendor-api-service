@@ -69,12 +69,11 @@ public class WalletBetResultServiceWrapper {
             // TODO: handle BetNotFoundException (race condition)
 
             guard.clear();
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return null;
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetResultContext context, DuplicateRequestException ex) {

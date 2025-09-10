@@ -62,12 +62,11 @@ public class WalletBetServiceWrapper implements WalletBetService {
         } catch (Exception ex) {
             // TODO: need to mark error or timeout?
             guard.clear();
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return null;
     }
 
     @Override

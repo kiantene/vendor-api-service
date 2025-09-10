@@ -43,11 +43,10 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
                     httpRequestLog
             );
         } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return null;
     }
 
     private void enrichByGameSession(BalanceContext context, GameSession gameSession) {

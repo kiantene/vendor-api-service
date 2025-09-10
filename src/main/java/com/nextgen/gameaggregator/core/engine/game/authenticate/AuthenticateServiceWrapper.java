@@ -47,11 +47,10 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
                     httpRequestLog
             );
         } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return null;
     }
 
     private void enrichByGameSession(AuthenticateContext context, GameSession gameSession) {
