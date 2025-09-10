@@ -60,12 +60,11 @@ public class WalletRollbackServiceWrapper {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
             guard.clear();
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
         }
-        return null;
     }
 
     public void processAsync(BetRollbackContext context, long delayMilliseconds) {
@@ -85,7 +84,7 @@ public class WalletRollbackServiceWrapper {
             );
         } catch (Exception ex) {
             hasException = true;
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             if (hasException) {
                 LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
@@ -136,7 +135,7 @@ public class WalletRollbackServiceWrapper {
                 processRollbackTransaction(context, null);
             }
         } catch (Exception ex) {
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
             logContextService.logApiRequest(logContext, "");

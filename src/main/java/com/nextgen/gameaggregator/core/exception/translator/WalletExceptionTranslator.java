@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.exception.translator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
@@ -74,13 +73,15 @@ public class WalletExceptionTranslator {
             DisabledGameException.class
     );
 
-    public void translateAndThrow(Exception ex) {
+    public RuntimeException translate(Exception ex) {
+        RuntimeException translatedException = new RuntimeException(ex.getMessage(), ex);
+
         /**
          * The current AuthenticationException is deprecated.
          * To catch and throw as GameSessionExpiredException.
          */
         if (ex instanceof AuthenticationException) {
-            throw new GameSessionExpiredException(ex.getMessage());
+            translatedException = new GameSessionExpiredException(ex.getMessage());
         }
 
         /**
@@ -88,7 +89,7 @@ public class WalletExceptionTranslator {
          * To catch and re-throw from the core library GameTerminatedException.
          */
         if (ex instanceof GameTerminatedException) {
-            throw new com.nextgen.gameaggregator.core.exception.GameTerminatedException(ex.getMessage());
+            translatedException = new com.nextgen.gameaggregator.core.exception.GameTerminatedException(ex.getMessage());
         }
 
         /**
@@ -96,11 +97,11 @@ public class WalletExceptionTranslator {
          * To catch and re-throw from the core library InsufficientBalanceException.
          */
         if (ex instanceof InsufficientBalanceException) {
-            throw new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
+            translatedException = new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
         }
 
         if (ex instanceof DisabledAgentPlayerException) {
-            throw new PlayerDisabledException(ex.getMessage());
+            translatedException = new PlayerDisabledException(ex.getMessage());
         }
 
         /**
@@ -113,7 +114,7 @@ public class WalletExceptionTranslator {
          * Same behavior for DisabledGameException
          */
         if (isBetNotAllowedException(ex)) {
-            throw new com.nextgen.gameaggregator.core.exception.BetNotAllowedException(ex.getMessage(), ex);
+            translatedException = new com.nextgen.gameaggregator.core.exception.BetNotAllowedException(ex.getMessage(), ex);
         }
 
         /**
@@ -121,11 +122,11 @@ public class WalletExceptionTranslator {
          * This could be related to wrong username sent by the vendor, or record is missing in database.
          */
         if (ex instanceof InvalidPlayerException) {
-            throw new com.nextgen.core.exception.InvalidRequestException("Player cannot be found");
+            translatedException = new com.nextgen.core.exception.InvalidRequestException("Player cannot be found");
         }
 
         if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
-            throw new DuplicateBetException(idempotentEx.getBetId());
+            translatedException = new DuplicateBetException(idempotentEx.getBetId());
         }
 
         /**
@@ -147,7 +148,7 @@ public class WalletExceptionTranslator {
          * after receiving a response (regardless success or fail) from Operator.
          */
         if (ex instanceof TransactionStillProcessingException) {
-            throw new DuplicateBetException(ex.getMessage());
+            translatedException = new DuplicateBetException(ex.getMessage());
         }
 
         /**
@@ -155,14 +156,13 @@ public class WalletExceptionTranslator {
          * VendorCurrencyNotSupportException
          */
         if (isInternalConfigurationException(ex)) {
-            throw new InternalConfigurationException(ex.getMessage(), ex);
+            translatedException = new InternalConfigurationException(ex.getMessage(), ex);
         }
 
         /**
          * BetNotFoundException will fall under InternalServerException
          */
-        // Handle unexpected exceptions
-        log.error("Unexpected exception during wallet operation", ex);
+        return translatedException;
     }
 
     private boolean isInternalConfigurationException(Exception ex) {
