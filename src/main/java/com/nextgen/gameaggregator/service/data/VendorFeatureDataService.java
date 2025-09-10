@@ -14,7 +14,8 @@ public class VendorFeatureDataService {
     }
 
     public boolean isVendorEnabled(Features feature, Integer vendorId) {
-        return cache.getByFeatureIdAndVendorIdAndStatus(vendorId, feature.id, STATUS_ENABLED).isPresent();
+        if (vendorId == null) return false;
 
+        return cache.getByFeatureIdAndVendorIdAndStatus(vendorId, feature.id, STATUS_ENABLED).isPresent();
     }
 }
