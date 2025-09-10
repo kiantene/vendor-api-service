@@ -15,11 +15,11 @@ import java.util.Map;
 @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class InfinGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestPayload> {
     private static final String GAME_TYPE_DEMO_FALSE = "false";
-    private Integer version = 1;
     private final Map<Integer, String> vendorPlatformCodes = Map.of(
             1, "mob",
             2, "desktop"
     );
+    private Integer version = 1;
 
     public InfinGameLauncher(VendorCredentialUtils credentialUtils) {
 
@@ -52,9 +52,7 @@ public class InfinGameLauncher extends QueryStringUrlGameLauncher<LaunchRequestP
             return GameLaunchRequestV2.builder()
                     .project(partner)
                     .game(vendorGameCode)
-                    .platform(platform)
-                    .lang(lang)
-                    .demo(GAME_TYPE_DEMO_FALSE)
+                    .language(lang)
                     .auth(token)
                     .build();
         }
