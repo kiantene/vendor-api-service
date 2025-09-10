@@ -16,8 +16,12 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameRound {
-    @JsonProperty("vendorClassName")
-    private String vendorClassName;
+
+    @JsonProperty("createdAt")
+    private String createdAt;
+
+    @JsonProperty("className")
+    private String className;
 
     @JsonProperty("vendorId")
     private Integer vendorId;
@@ -59,9 +63,6 @@ public class GameRound {
     @JsonProperty("isEnded")
     private Boolean isEnded;
 
-    @JsonProperty("createdAt")
-    private String createdAt;
-
     public GameRound() {
         this.txnCount = 1;
         this.state = GameRoundState.UNSETTLED;
@@ -70,19 +71,20 @@ public class GameRound {
         this.isEnded = false;
     }
 
-    public GameRound(String vendorClassName, String roundId) {
+    public GameRound(String className, String roundId, String createdAt) {
         this();
-        this.vendorClassName = vendorClassName;
+        this.className = className;
         this.roundId = roundId;
+        this.createdAt = createdAt;
     }
 
-    public static GameRound of(String vendorClassName, String roundId) {
-        return new GameRound(vendorClassName, roundId);
+    public static GameRound of(String className, String roundId, String createdAt) {
+        return new GameRound(className, roundId, createdAt);
     }
 
     @JsonIgnore
     public String getId() {
-        return vendorClassName + "::" + roundId;
+        return className + "::" + roundId;
     }
 
     public void setBetAmount(BigDecimal betAmount) {
