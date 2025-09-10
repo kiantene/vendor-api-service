@@ -51,37 +51,29 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         this.populateVendor(context);
         this.populateCampaign(context);
         LogContext logContext = LogContextHolder.get();
-        logContext.setVendorId(context.getVendorId());
-        logContext.setAgentId(context.getAgentId());
-        logContext.setUsername(context.getAgentPlayerUsername());
+        logContext.setVendorId(context.getVendor().id());
+        logContext.setAgentId(context.getAgent().id());
+        logContext.setUsername(context.getAgent().playerUsername());
+
+        if (context.getTraceId() == null) {
+            context.setTraceId(logContext.getTraceId());
+        }
     }
 
     private void populateCurrency(PromoPayoutContext context) {
-        try {
-            Currency currency = currencyDataService.get(context.getCurrencyId());
-            context.setCurrencyCode(currency.getCode());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Currency currency = currencyDataService.get(context.getCurrencyId());
+        context.setCurrencyCode(currency.getCode());
     }
 
     private void populateAgent(PromoPayoutContext context) {
-        try {
-            Agent agent = agentDataService.get(context.getAgentId());
-            context.setMasterAgentId(agent.getMasterAgentId());
-            context.setHouseId(agent.getHouseId());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Agent agent = agentDataService.get(context.getAgent().id());
+        context.getAgent().masterAgentId(agent.getMasterAgentId());
+        context.getAgent().houseId(agent.getHouseId());
     }
 
     private void populateVendor(PromoPayoutContext context) {
-        try {
-            Vendor vendor = vendorDataService.get(context.getVendorId());
-            context.setVendorCode(vendor.getCode());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Vendor vendor = vendorDataService.get(context.getVendor().id());
+        context.getVendor().code(vendor.getCode());
     }
 
     private void populateCampaign(PromoPayoutContext context) {
@@ -90,7 +82,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         }
 
         try {
-            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendorId(), context.getCurrencyCode());
+            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().id(), context.getCurrencyCode());
             context.setCampaignUuid(campaign.getUuid());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());
