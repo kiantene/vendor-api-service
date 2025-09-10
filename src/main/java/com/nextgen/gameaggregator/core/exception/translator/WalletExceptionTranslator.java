@@ -74,7 +74,7 @@ public class WalletExceptionTranslator {
     );
 
     public RuntimeException translate(Exception ex) {
-        RuntimeException translatedException = new RuntimeException(ex.getMessage(), ex);
+        RuntimeException translatedException = null;
 
         /**
          * The current AuthenticationException is deprecated.
@@ -159,10 +159,16 @@ public class WalletExceptionTranslator {
             translatedException = new InternalConfigurationException(ex.getMessage(), ex);
         }
 
+        if (translatedException != null) return translatedException;
+
+        if (ex instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+
         /**
          * BetNotFoundException will fall under InternalServerException
          */
-        return translatedException;
+        return new RuntimeException(ex.getMessage(), ex);
     }
 
     private boolean isInternalConfigurationException(Exception ex) {
