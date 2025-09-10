@@ -196,7 +196,7 @@ public class WalletRollbackServiceWrapper {
 
     private GameRound getGameRoundInfo(String vendorClassName, BetRollbackContext context) {
         if (state().getConfig().getRollbackType() == RollbackType.BY_ROUND) {
-            GameRound search = GameRound.of(vendorClassName, context.getRoundId(), null);
+            GameRound search = GameRound.of(vendorClassName, context.getRoundId());
             var roundOpt = gameRoundService.get(search.getId());
 
             if (roundOpt.isEmpty()) {

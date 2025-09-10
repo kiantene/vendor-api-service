@@ -88,6 +88,9 @@ public class GameTransaction {
     @JsonProperty("doneAt")
     private String doneAt;
 
+    @JsonProperty("createdTs")
+    private Long createdTs;
+
     public GameTransaction() {
         this.status = TxnStatus.NEW;
         this.state = GameRoundState.UNSETTLED;
@@ -95,6 +98,7 @@ public class GameTransaction {
 
     public static GameTransaction of(TxnType type, String vendorClassName, String transactionId, long createdTimestamp) {
         GameTransaction txn = new GameTransaction(type, vendorClassName, transactionId);
+        txn.setCreatedTs(createdTimestamp);
         txn.setCreatedAt(DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(createdTimestamp)));
 
         return txn;
