@@ -74,6 +74,8 @@ public class WalletAdjustmentService {
             kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
                     gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
+            //TODO ADJUSTMENT NEED TO REVISIT AGAIN FOR PRODUCE BET HISTORY UNCAP
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             rawBetAdjustmentLog.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
             betAdjustmentLogService.create(rawBetAdjustmentLog);

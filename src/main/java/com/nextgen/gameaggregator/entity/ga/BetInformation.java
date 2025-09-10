@@ -50,6 +50,11 @@ public abstract class BetInformation {
     private Integer betType;
     private Integer isEndRound;
 
+    private BigDecimal uncapWinAmount;
+    private BigDecimal uncapJackpotAmount;
+    private BigDecimal uncapWinLoss;
+    private BigDecimal uncapEffectiveTurnover;
+
     protected BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);

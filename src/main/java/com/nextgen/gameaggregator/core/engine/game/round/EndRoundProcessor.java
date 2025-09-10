@@ -8,6 +8,8 @@ import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
@@ -30,11 +32,11 @@ public class EndRoundProcessor {
     private final SettledBetService settledBetService;
     private final UnsettledBetService unsettledBetService;
     private final VendorPlayerService vendorPlayerService;
-    private final KafkaService kafkaService;
     private final VendorGameService vendorGameService;
     private final VendorCurrencyService vendorCurrencyService;
     private final AgentApiVersionService agentApiVersionService;
     private final GameEndRoundAction gameEndRoundAction;
+    private final BetHistoryProducer betHistoryProducer;
     private final Set<Integer> skipVendorList = new HashSet<>(Set.of(
             Vendors.PGSOFT.getId(),
             Vendors.SPADEGAMING.getId()
@@ -154,47 +156,18 @@ public class EndRoundProcessor {
                                    String agentPlayerUsername,
                                    String vendorPlayerUsername,
                                    VendorCurrency vendorCurrency) throws GameNotSupportedException {
-        BetHistory betHistory = new BetHistory(settledBet);
 
-        if (!isPreProcessingRequired(settledBet.getVendorGameId())) {
-            processNormalBetHistory(
-                    betHistory,
-                    agentPlayerUsername,
-                    vendorPlayerUsername,
-                    gameSession,
-                    vendorCurrency
-            );
-        } else {
-            processPreprocessingBetHistory(betHistory, agentPlayerUsername, vendorPlayerUsername, vendorCurrency);
-        }
-    }
-
-    private void processNormalBetHistory(BetHistory betHistory,
-                                         String agentPlayerUsername,
-                                         String vendorPlayerUsername,
-                                         GameSession gameSession,
-                                         VendorCurrency vendorCurrency) {
-        kafkaService.produceBetHistoryV3(
-                betHistory,
+        BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
                 gameSession.getProductCode(),
                 gameSession.getProductId(),
                 gameSession.getProductGameId(),
                 agentPlayerUsername,
                 vendorPlayerUsername,
-                vendorCurrency.getFromVendorRate()
+                vendorCurrency.getFromVendorRate(),
+                isPreProcessingRequired(settledBet.getVendorGameId()),
+                null
         );
-    }
-
-    private void processPreprocessingBetHistory(BetHistory betHistory, 
-                                                String agentPlayerUsername,
-                                                String vendorPlayerUsername,
-                                                VendorCurrency vendorCurrency) {
-        kafkaService.producePreprocessingBetHistory(
-                betHistory,
-                agentPlayerUsername,
-                vendorPlayerUsername,
-                vendorCurrency.getFromVendorRate()
-        );
+        betHistoryProducer.publish(settledBet, publishContext);
     }
 
     private void notifyEndRoundProcess(EndRoundResult result,
