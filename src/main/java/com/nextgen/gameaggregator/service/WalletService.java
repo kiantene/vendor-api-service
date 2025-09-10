@@ -388,7 +388,7 @@ public class WalletService {
                     kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 }
             }
-            loggingService.logProcessTime("doSettledBetResult ｜ betHistoryProducer.publish", traceId);
+            loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
             // will insert bet info record to this topic for MG
             if (settledBet.getVendorId().equals(17)) {
