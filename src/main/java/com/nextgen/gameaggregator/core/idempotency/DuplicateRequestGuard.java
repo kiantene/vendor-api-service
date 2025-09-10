@@ -25,6 +25,9 @@ public class DuplicateRequestGuard {
     }
 
     public GameTransaction ensureNotDuplicate(TxnType type, String vendorClassName, String key, long timestamp) {
+        if (vendorClassName == null) {
+            throw new IllegalArgumentException("Vendor class name cannot be null, check Vendors enum");
+        }
         GameTransaction probe = GameTransaction.of(type, vendorClassName, key, timestamp);
         var doc = txnService.get(probe);
         if (doc.isPresent()) {
