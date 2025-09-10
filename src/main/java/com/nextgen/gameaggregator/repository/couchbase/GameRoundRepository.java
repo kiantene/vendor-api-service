@@ -74,6 +74,9 @@ public class GameRoundRepository {
         if (d.isSettled()) {
             specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
         }
+        if (d.isEnded()) {
+            specs.add(MutateInSpec.upsert("isEnded", true));
+        }
 
         // For aggregates: read current totals once to compute new values (CAS protects write)
         if (d.betDelta().isPresent() || d.winDelta().isPresent() || d.isSettled()) {
@@ -89,7 +92,7 @@ public class GameRoundRepository {
             specs.add(MutateInSpec.replace("betAmount", bet.toPlainString()));
             specs.add(MutateInSpec.replace("winAmount", win.toPlainString()));
 
-            var opts = d.isSettled()
+            var opts = d.isEnded()
                     ? MutateInOptions.mutateInOptions().cas(gr.cas()).expiry(ttl)
                     : MutateInOptions.mutateInOptions().cas(gr.cas());
 
@@ -98,31 +101,6 @@ public class GameRoundRepository {
             collection.mutateIn(d.docId(), specs);
         }
     }
-
-//    public void updateTxnStatus(String docId,
-//                                int idx,
-//                                StatusRecord statusRecord,
-//                                boolean isSettled,
-//                                Duration ttlIfSettled) {
-//
-//        String base = "transactions[" + idx + "].";
-//        List<MutateInSpec> specs = new ArrayList<>();
-//        specs.add(MutateInSpec.replace(base + "status", statusRecord.status().name()));
-//        specs.add(MutateInSpec.upsert(
-//                base + statusRecord.timeKey(),
-//                statusRecord.timeValue()
-//        ));
-//
-//        if (isSettled) {
-//            specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
-//        }
-//
-//        MutateInOptions opts = isSettled
-//                ? MutateInOptions.mutateInOptions().expiry(ttlIfSettled)
-//                : MutateInOptions.mutateInOptions();
-//
-//        collection.mutateIn(docId, specs, opts);
-//    }
 
     public void updateRoundState(String docId, GameRoundState state) {
         collection.mutateIn(docId, List.of(MutateInSpec.upsert("state", state.name())));

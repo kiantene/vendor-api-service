@@ -14,7 +14,8 @@ public record TxnDelta(
         Optional<TxnStatus> status,   // SENT / SUCCESS / FAILED (when changing status)
         Optional<TimeField> timeField,// which time to write
         Optional<String> timeValueUtc,// "HH:mm:ss.SSS" in UTC
-        boolean isSettled             // if true, set state=SETTLED and apply TTL
+        boolean isSettled,            // if true, set state=SETTLED and apply TTL'
+        boolean isEnded
 ) {
 
     public static TxnDelta finalizeSuccess(String docId,
@@ -23,7 +24,8 @@ public record TxnDelta(
                                            BigDecimal betDelta,
                                            BigDecimal winDelta,
                                            String doneAtUtc,
-                                           boolean isSettled) {
+                                           boolean isSettled,
+                                           boolean isEnded) {
         return new TxnDelta(
                 docId,
                 idx,
@@ -33,7 +35,8 @@ public record TxnDelta(
                 Optional.of(TxnStatus.SUCCESS),
                 Optional.of(TimeField.DONE_AT),
                 Optional.of(doneAtUtc),
-                isSettled
+                isSettled,
+                isEnded
         );
     }
 

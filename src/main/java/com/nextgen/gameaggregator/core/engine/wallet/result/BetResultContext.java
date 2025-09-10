@@ -40,6 +40,7 @@ public class BetResultContext implements GameSessionData, VendorPlayerAware, Ven
     private String vendorSessionToken;
     private Long vendorBetTime;
     private Long vendorSettleTime;
+    private Boolean roundEnded;
 
     // --- internal values ---
 

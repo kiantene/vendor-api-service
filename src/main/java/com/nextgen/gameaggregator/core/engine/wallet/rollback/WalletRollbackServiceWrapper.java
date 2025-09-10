@@ -47,11 +47,9 @@ public class WalletRollbackServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
 
         try {
-            context.setVendorId(logContext.getVendorId());
+            GameTransaction txn = guard.ensureNotDuplicate(TxnType.ROLLBACK, logContext.getVendorClassName(), context.getIdempotencyKey());
 
-            GameTransaction txn = guard.ensureNotDuplicate(TxnType.ROLLBACK, context.getVendorId(), context.getIdempotencyKey());
-
-            GameRound round = getGameRoundInfo(context);
+            GameRound round = getGameRoundInfo(logContext.getVendorClassName(), context);
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
@@ -192,9 +190,9 @@ public class WalletRollbackServiceWrapper {
         );
     }
 
-    private GameRound getGameRoundInfo(BetRollbackContext context) {
+    private GameRound getGameRoundInfo(String vendorClassName, BetRollbackContext context) {
         if (state().getConfig().getRollbackType() == RollbackType.BY_ROUND) {
-            GameRound search = GameRound.of(context.getVendorId(), context.getRoundId());
+            GameRound search = GameRound.of(vendorClassName, context.getRoundId());
             var roundOpt = gameRoundService.get(search.getId());
 
             if (roundOpt.isEmpty()) {
