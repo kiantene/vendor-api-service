@@ -58,6 +58,10 @@ public class GameTransactionService {
     }
 
     public void markSuccess(GameTransaction txn, BigDecimal balance) {
+        markSuccess(txn, balance, false);
+    }
+
+    public void markSuccess(GameTransaction txn, BigDecimal balance, Boolean isEnded) {
         txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
@@ -69,7 +73,8 @@ public class GameTransactionService {
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getDoneAt(),
-                GameRoundState.SETTLED == txn.getState()
+                GameRoundState.SETTLED == txn.getState(),
+                Optional.of(isEnded).orElse(false)
         );
 
         gameRoundService.applyTxnDelta(delta);

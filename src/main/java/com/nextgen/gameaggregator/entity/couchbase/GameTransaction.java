@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 @Data
 public class GameTransaction {
 
+    @JsonProperty("vendorClassName")
+    private String vendorClassName;
+
     @JsonProperty("idx")
     private Integer idx;
 
@@ -84,25 +87,25 @@ public class GameTransaction {
         this.state = GameRoundState.UNSETTLED;
     }
 
-    public static GameTransaction of(TxnType type, Integer vendorId, String transactionId) {
-        return new GameTransaction(type, vendorId, transactionId);
+    public static GameTransaction of(TxnType type, String vendorClassName, String transactionId) {
+        return new GameTransaction(type, vendorClassName, transactionId);
     }
 
-    public GameTransaction(TxnType type, Integer vendorId, String transactionId) {
+    public GameTransaction(TxnType type, String vendorClassName, String transactionId) {
         this();
         this.type = type;
-        this.vendorId = vendorId;
+        this.vendorClassName = vendorClassName;
         this.transactionId = transactionId;
     }
 
     @JsonIgnore
     public String getId() {
-        return vendorId + "::" + transactionId;
+        return vendorClassName + "::" + transactionId;
     }
 
     @JsonIgnore
     public String getRoundDocId() {
-        return vendorId + "::" + roundId;
+        return vendorClassName + "::" + roundId;
     }
 
     @JsonIgnore

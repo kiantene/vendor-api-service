@@ -163,7 +163,6 @@ public class WalletExceptionTranslator {
          */
         // Handle unexpected exceptions
         log.error("Unexpected exception during wallet operation", ex);
-        throw new InternalServerException("Unexpected error during wallet operation", ex);
     }
 
     private boolean isInternalConfigurationException(Exception ex) {
