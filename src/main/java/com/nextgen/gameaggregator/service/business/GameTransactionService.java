@@ -68,7 +68,7 @@ public class GameTransactionService {
                 txn.getWinAmount(),
                 txn.getDoneAt(),
                 GameRoundState.SETTLED == txn.getState(),
-                Optional.of(isEnded).orElse(false)
+                Optional.ofNullable(isEnded).orElse(false)
         );
 
         gameRoundService.applyTxnDelta(delta);
