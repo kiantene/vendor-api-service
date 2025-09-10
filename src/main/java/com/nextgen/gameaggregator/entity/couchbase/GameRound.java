@@ -63,6 +63,9 @@ public class GameRound {
     @JsonProperty("isEnded")
     private Boolean isEnded;
 
+    @JsonProperty("createdTs")
+    private Long createdTs;
+
     public GameRound() {
         this.txnCount = 1;
         this.state = GameRoundState.UNSETTLED;
@@ -71,15 +74,14 @@ public class GameRound {
         this.isEnded = false;
     }
 
-    public GameRound(String className, String roundId, String createdAt) {
+    public GameRound(String className, String roundId) {
         this();
         this.className = className;
         this.roundId = roundId;
-        this.createdAt = createdAt;
     }
 
-    public static GameRound of(String className, String roundId, String createdAt) {
-        return new GameRound(className, roundId, createdAt);
+    public static GameRound of(String className, String roundId) {
+        return new GameRound(className, roundId);
     }
 
     @JsonIgnore

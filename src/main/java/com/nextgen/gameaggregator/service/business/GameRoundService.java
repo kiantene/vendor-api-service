@@ -54,13 +54,15 @@ public class GameRoundService {
     }
 
     private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {
-        GameRound round = GameRound.of(txn.getClassName(), txn.getRoundId(), txn.getCreatedAt());
+        GameRound round = GameRound.of(txn.getClassName(), txn.getRoundId());
         round.setVendorId(txn.getVendorId());
         round.setUsername(txn.getUsername());
         round.setGameCode(txn.getGameCode());
         round.setCurrency(txn.getCurrency());
         round.setAgentMeta(agentMeta);
         round.setTransactions(List.of(RoundTxn.of(txn)));
+        round.setCreatedAt(txn.getCreatedAt());
+        round.setCreatedTs(txn.getCreatedTs());
         txn.setIdx(0);
 
         return round;
