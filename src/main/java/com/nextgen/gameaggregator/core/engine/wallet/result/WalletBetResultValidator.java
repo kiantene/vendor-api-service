@@ -14,7 +14,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class WalletBetResultValidator {
+class WalletBetResultValidator {
     private static final Set<ResultType> NON_BET_RESULT_TYPES = Set.of(
             ResultType.WIN,
             ResultType.LOSE,

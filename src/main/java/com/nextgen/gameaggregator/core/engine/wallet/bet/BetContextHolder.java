@@ -21,7 +21,7 @@ public class BetContextHolder {
     public static BetWrapperContext getRequired() {
         BetWrapperContext context = contextHolder.get();
         if (context == null) {
-            throw new IllegalStateException("BetResultWrapperContext not initialized");
+            throw new IllegalStateException("BetWrapperContext not initialized");
         }
         return context;
     }

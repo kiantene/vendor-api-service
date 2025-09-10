@@ -14,7 +14,7 @@ public abstract class AbstractPromoPayoutController<Q, R> extends AbstractProces
     }
 
     @Override
-    protected PlayerBalanceData executeService(PromoPayoutContext context) {
+    protected PlayerBalanceData executeService(PromoPayoutContext context, Q request) {
         return promoPayoutService.process(context);
     }
 }

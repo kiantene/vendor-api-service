@@ -17,11 +17,16 @@ import lombok.Data;
 @Data
 @Builder
 public class BetRollbackContext implements GameSessionData {
+    /**
+     * @deprecated use configure in controller to set rollbackType
+     */
+    @Deprecated
     private RollbackType rollbackType;
     private String traceId;
     private String idempotencyKey;
     private String vendorBetId;
     private String roundId;
+    private String vendorGameCode;
     private String vendorPlayerUsername;
     private String token;
     private String vendorSessionToken;
