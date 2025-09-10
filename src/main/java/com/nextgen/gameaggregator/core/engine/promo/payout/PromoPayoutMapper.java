@@ -13,7 +13,7 @@ public class PromoPayoutMapper {
 
         return PromoPayoutRequest.builder()
                 .traceId(context.getTraceId())
-                .username(context.getAgentPlayerUsername())
+                .username(context.getAgent().playerUsername())
                 .transactionId(context.getTransactionId())
                 .campaignId(Objects.requireNonNullElse(context.getCampaignUuid(), null))
                 .currency(context.getCurrencyCode())

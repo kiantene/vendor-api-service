@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientApiRequest;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.common.OperatorApiCallerV2;
@@ -31,7 +30,6 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
-        context.setTransactionId(UuidUtil.newUuidV7StringRaw());
 
         // TODO : currency conversion
         // TODO : store in couchbase?
@@ -45,19 +43,18 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                 .transactionId(context.getTransactionId())
                 .vendorTransactionId(context.getVendorTransactionId())
                 .campaignUuid(context.getCampaignUuid())
-                .agentPlayerId(context.getAgentPlayerId())
-                .agentPlayerUsername(context.getAgentPlayerUsername())
-                .vendorPlayerId(context.getVendorPlayerId())
+                .agentPlayerId(context.getAgent().playerId())
+                .agentPlayerUsername(context.getAgent().playerUsername())
+                .vendorPlayerId(context.getVendor().playerId())
                 .vendorPlayerUsername(context.getVendorPlayerUsername())
 
+                .vendorId(context.getVendor().id())
+                .vendorCode(context.getVendor().code())
+                .vendorLineId(context.getVendor().lineId())
 
-                .vendorId(context.getVendorId())
-                .vendorCode(context.getVendorCode())
-                .vendorLineId(context.getVendorLineId())
-
-                .agentId(context.getAgentId())
-                .masterAgentId(context.getMasterAgentId())
-                .houseId(context.getHouseId())
+                .agentId(context.getAgent().id())
+                .masterAgentId(context.getAgent().masterAgentId())
+                .houseId(context.getAgent().houseId())
 
                 .currencyId(context.getCurrencyId())
                 .currencyCode(context.getCurrencyCode())
@@ -71,17 +68,18 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
 
     private PlayerBalanceData callToOperator(PromoPayoutContext context) {
         try {
+            PromoPayoutContext.Agent agent = context.getAgent();
             ClientApiRequest<PromoPayoutRequest> apiRequest = clientRequestService.createClientApiRequest(
-                    context.getAgentId(),
+                    agent.id(),
                     EndPoints.PROMO_PAYOUT,
                     mapper.toPromoPayoutRequest(context)
             );
             ClientBalanceResponse response;
-            if (clientRequestService.shouldMockResponse(context.getAgentPlayerUsername())) {
+            if (clientRequestService.shouldMockResponse(agent.playerUsername())) {
                 response = clientRequestService.mockClientResponse(
                         context.getTraceId(),
                         context.getCurrencyCode(),
-                        context.getAgentPlayerUsername()
+                        agent.playerUsername()
                 );
             } else {
                 response = operatorApiCaller.post(
@@ -110,8 +108,8 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         try {
             String operatorData = objectMapper.writeValueAsString(clientApiRequest.getRequestObject());
             betResultRetryLogService.create(operatorData,
-                    context.getVendorId(),
-                    context.getAgentId(),
+                    context.getVendor().id(),
+                    context.getAgent().id(),
                     context.getVendorTransactionId(),
                     context.getVendorTransactionId(),
                     context.getTransactionId(),
