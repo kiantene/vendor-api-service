@@ -14,7 +14,14 @@ public abstract class AbstractBetRollbackController<Q, R> extends AbstractProces
     }
 
     @Override
-    protected PlayerBalanceData executeService(BetRollbackContext context) {
-        return walletService.process(context);
+    protected PlayerBalanceData executeService(BetRollbackContext context, Q request) {
+        return walletService
+                .initialise(context)
+                .configure(config -> configure(config, request))
+                .process();
+    }
+
+    protected void configure(BetRollbackConfig config, Q request) {
+        // override for config
     }
 }

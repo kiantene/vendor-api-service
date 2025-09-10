@@ -25,7 +25,7 @@ public abstract class AbstractProcessorController<Q, R, C> {
 
         if (preProcessHook != null) preProcessHook.accept(context);
 
-        PlayerBalanceData data = executeService(context);
+        PlayerBalanceData data = executeService(context, request);
 
         R response = mapToVendor(context, data);
 
@@ -54,5 +54,5 @@ public abstract class AbstractProcessorController<Q, R, C> {
         return responseMapper.toVendor(context, balanceData);
     }
 
-    protected abstract PlayerBalanceData executeService(C context);
+    protected abstract PlayerBalanceData executeService(C context, Q request);
 }

@@ -32,7 +32,7 @@ public class BetController extends AbstractBetController<BetRequest, SuccessResp
     }
 
     @Override
-    public void configure(BetConfig config, BetContext context) {
+    public void configure(BetConfig config, BetRequest request) {
         config.returnSuccessOnDuplicate(true);
     }
 }

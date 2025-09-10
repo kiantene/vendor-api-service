@@ -46,7 +46,14 @@ public class GameSessionDataService {
         try {
             return getGameSession(gameSessionData);
         } catch (GameSessionExpiredException ex) {
-            return regenerateGameSession(gameSessionData);
+            // regenerate only when username is available
+            // some vendors don't provide username on api request, they only provide token
+            // TODO: what if vendor sends a result, but token is not available due to TTL and no username present in request to regenerate token?
+            if (gameSessionData.getVendorPlayerUsername() != null) {
+                return regenerateGameSession(gameSessionData);
+            } else {
+                throw ex;
+            }
         }
     }
 
