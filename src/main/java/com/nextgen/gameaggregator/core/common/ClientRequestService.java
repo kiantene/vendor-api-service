@@ -1,15 +1,20 @@
 package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
+import com.nextgen.gameaggregator.core.service.AgentDataService;
+import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,15 +22,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@EnableConfigurationProperties(WalletServiceProperties.class)
 public class ClientRequestService {
-    @Value("${testing.stub-prefix:stub}")
-    private String usernamePrefix;
     private final Validator validator;
     private final AgentApiCredentialDataService credentialService;
+    private final AgentDataService agentService;
+    private final WalletServiceProperties props;
+    @Value("${testing.stub-prefix:stub}")
+    private String usernamePrefix;
 
-    public ClientRequestService(Validator validator, AgentApiCredentialDataService credentialService) {
+    public ClientRequestService(Validator validator,
+                                AgentApiCredentialDataService credentialService,
+                                AgentDataService agentService,
+                                WalletServiceProperties props) {
         this.validator = validator;
         this.credentialService = credentialService;
+        this.agentService = agentService;
+        this.props = props;
     }
 
     public <T> ClientApiRequest<T> createClientApiRequest(Integer agentId, String path, T requestObject) {
@@ -33,12 +46,20 @@ public class ClientRequestService {
         validateRequestObject(requestObject);
 
         AgentApiCredential credential = loadCredential(agentId);
+        Agent agent = agentService.get(agentId);
+
+        String baseUrl = credential.getCallbackUrl();
+        if (SeamlessType.SEAMLESS_TRANSFER.code.equals(agent.getSeamlessType())) {
+            baseUrl = props.getHost() + "/seamless";
+        }
 
         return ClientApiRequest.<T>builder()
                 .agentId(agentId)
                 .path(path)
                 .requestObject(requestObject)
-                .credential(credential)
+                .baseUrl(baseUrl)
+                .apiKey(credential.getApiKey())
+                .apiSecret(credential.getApiSecret())
                 .build();
     }
 
