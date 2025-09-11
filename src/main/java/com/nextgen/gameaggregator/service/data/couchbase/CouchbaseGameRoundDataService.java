@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Map;
 
 @Service
 public class CouchbaseGameRoundDataService implements GameRoundDataService {
@@ -34,6 +35,11 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     @Override
     public void appendTxn(String docId, RoundTxn roundTxn, long cas) {
         runWithCasRetry(() -> repo.appendTxn(docId, roundTxn, cas));
+    }
+
+    @Override
+    public void updateTxn(String docId, int idx, Map<String, Object> updates) {
+        repo.updateTxn(docId, idx, updates);
     }
 
     @Override

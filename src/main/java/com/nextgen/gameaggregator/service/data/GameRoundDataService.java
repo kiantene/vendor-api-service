@@ -7,11 +7,13 @@ import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 
 import java.time.Duration;
+import java.util.Map;
 
 public interface GameRoundDataService {
     KvDoc<GameRound> findById(String id);
     void insert(GameRound round);
     void appendTxn(String docId, RoundTxn roundTxn, long cas);
+    void updateTxn(String docId, int idx, Map<String, Object> updates);
     void setRoundState(String docId, GameRoundState state);
     void applyTxnDelta(TxnDelta delta, Duration ttl);
 }

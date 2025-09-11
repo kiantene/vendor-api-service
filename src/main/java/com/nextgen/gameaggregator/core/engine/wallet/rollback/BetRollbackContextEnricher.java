@@ -58,6 +58,10 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
             );
         }
 
+        if (context.getGameSession() == null) {
+            context.setGameSession(gameSession);
+        }
+
         if (context.getVendorService() == null) {
             context.setVendorService(InternalVendorService.getInstance(applicationContext));
         }

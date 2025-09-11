@@ -74,14 +74,6 @@ public class GameTransactionService {
         gameRoundService.applyTxnDelta(delta);
     }
 
-    public void markError(GameTransaction txn, Exception ex) {
-        if (txn == null) return;
-
-        txn.setException(ex.getClass().getSimpleName());
-        txn.setDoneAt(getNow());
-        txnDataService.updateStatus(txn, null, TxnStatus.ERROR);
-    }
-
     private String getNow() {
         return TIME_FORMATTER.format(Instant.now());
     }

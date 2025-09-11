@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -55,6 +56,17 @@ public class GameRoundRepository {
                 ),
                 MutateInOptions.mutateInOptions().cas(cas)
         );
+    }
+
+    public void updateTxn(String docId, int idx, Map<String, Object> updates) {
+        if (updates.isEmpty()) return;
+
+        final String base = "transactions[" + idx + "]";
+        var specs = new ArrayList<MutateInSpec>();
+
+        updates.forEach((k, v) -> specs.add(MutateInSpec.upsert(base + "." + k, v)));
+
+        collection.mutateIn(docId, specs);
     }
 
     public void applyTxnDelta(TxnDelta d, Duration ttl) {

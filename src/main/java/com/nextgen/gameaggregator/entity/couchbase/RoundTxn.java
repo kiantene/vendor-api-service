@@ -21,6 +21,9 @@ public class RoundTxn {
     @JsonProperty("status")
     private TxnStatus status;
 
+    @JsonProperty("exception")
+    private String exception;
+
     @JsonProperty("sentAt")
     private String sentAt;
 

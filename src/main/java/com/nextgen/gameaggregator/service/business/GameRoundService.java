@@ -2,16 +2,24 @@ package com.nextgen.gameaggregator.service.business;
 
 import com.nextgen.gameaggregator.entity.couchbase.*;
 import com.nextgen.gameaggregator.enums.GameRoundState;
+import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class GameRoundService {
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("HH:mm:ss.SSS")
+            .withZone(ZoneOffset.UTC);
     private static final Duration ROUND_TTL = Duration.ofHours(12);
     private final GameRoundDataService data;
 
@@ -51,6 +59,16 @@ public class GameRoundService {
 
     public void updateRoundState(String docId, GameRoundState state) {
         data.setRoundState(docId, state);
+    }
+
+    public void markTxnError(GameTransaction txn, Exception exception) {
+        Map<String, Object> updates = Map.of(
+                "status", TxnStatus.ERROR.name(),
+                "exception", exception.getClass().getSimpleName(),
+                "doneAt", getNow()
+        );
+
+        data.updateTxn(txn.getRoundDocId(), txn.getIdx(), updates);
     }
 
     private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {
@@ -104,5 +122,9 @@ public class GameRoundService {
 
         // Check if any existing transaction has the same ID
         return txnList.stream().anyMatch(t -> transactionIdToFind.equals(t.getId()));
+    }
+
+    private String getNow() {
+        return TIME_FORMATTER.format(Instant.now());
     }
 }
