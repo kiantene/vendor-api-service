@@ -51,7 +51,7 @@ public class CancelBetNSettleService {
             // 2. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameService.getGameSessionByUsername(cancelBetNSettleDto.getUid(), cancelBetNSettleDto.getMType());
+                gameSession = gameService.getGameSessionByUsername(cancelBetNSettleDto.getUid(), cancelBetNSettleDto.getGType() + "_" + cancelBetNSettleDto.getMType());
             } catch (AuthenticationException playerNotFoundException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetNSettleDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyId(gameSession);
