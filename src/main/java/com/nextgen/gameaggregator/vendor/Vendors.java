@@ -49,7 +49,7 @@ public enum Vendors {
     }
 
     public String getCallback() {
-        return CALLBACK_PREFIX + className + "/";
+        return CALLBACK_PREFIX + className;
     }
 
     // ---- lookup maps ----
