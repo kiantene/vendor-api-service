@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@Deprecated(since = "max.payout", forRemoval = true)
 public class BetTxnToBetHistoryMapper {
 
     /**

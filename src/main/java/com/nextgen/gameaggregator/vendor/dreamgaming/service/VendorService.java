@@ -6,12 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.AppendDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.dreamgaming.api.rollback.RollbackDto;
@@ -24,15 +23,20 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
     private final GameSessionService gameSessionService;
+    private final SettledBetService settledBetService;
 
-    public VendorService(GameSessionService gameSessionService) {
+    public VendorService(GameSessionService gameSessionService,
+                         SettledBetService settledBetService) {
         this.gameSessionService = gameSessionService;
+        this.settledBetService = settledBetService;
     }
 
     public static String md5Generator(String input) {
@@ -161,5 +165,16 @@ public class VendorService extends BaseVendorService {
         } else {
             vo.getMember().setBalance(balance);
         }
+    }
+
+    public BigDecimal calculateTotalWinAmount(Long vendorPlayerId, String roundId) throws BetNotFoundException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
+        if (settledBetList == null || settledBetList.isEmpty()) {
+            throw new BetNotFoundException();
+        }
+        return settledBetList.stream()
+                .map(SettledBet::getWinAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
