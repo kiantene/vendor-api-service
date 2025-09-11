@@ -31,13 +31,6 @@ public enum Vendors {
     @Getter
     private final boolean newFramework;
 
-    Vendors(int id, Integer timeoutMillis, String className, boolean newFramework) {
-        this.id = id;
-        this.timeoutMillis = timeoutMillis;
-        this.className = className;
-        this.newFramework = newFramework;
-    }
-
     // ---- lookup maps ----
     private static final Map<Integer, Vendors> BY_ID = new HashMap<>();
 
@@ -45,6 +38,13 @@ public enum Vendors {
         for (Vendors v : values()) {
             BY_ID.put(v.id, v);
         }
+    }
+
+    Vendors(int id, Integer timeoutMillis, String className, boolean newFramework) {
+        this.id = id;
+        this.timeoutMillis = timeoutMillis;
+        this.className = className;
+        this.newFramework = newFramework;
     }
 
     public static Vendors fromId(int id) {
