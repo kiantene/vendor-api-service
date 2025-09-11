@@ -42,6 +42,10 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
             context.setIsFreeSpin(0);
         }
 
+        if (context.getVendorSettleTime() == null) {
+            context.setVendorSettleTime(context.getResultTime());
+        }
+
         BetResultWrapperContext wrapperContext = BetResultContextHolder.getRequired();
         if (wrapperContext.getVendorService() == null) {
             wrapperContext.setVendorService(InternalVendorService.getInstance(applicationContext));
