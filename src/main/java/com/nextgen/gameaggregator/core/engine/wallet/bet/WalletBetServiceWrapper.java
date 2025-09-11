@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -119,7 +120,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 CouchbaseDataIntegrityException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+        GameRound round = gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
                 gameSession,
@@ -128,7 +129,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 httpRequestLog
         );
         txn.setGaBetId(betEvent.getBetInformation().getBetId());
-        gameTransactionService.markSuccess(txn, betEvent.getLastBalance());
+        gameTransactionService.markSuccess(round, txn, betEvent.getLastBalance());
 
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),

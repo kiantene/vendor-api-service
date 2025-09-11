@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service.business;
 import com.nextgen.gameaggregator.entity.couchbase.*;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,12 @@ public class GameRoundService {
 
     public void applyTxnDelta(TxnDelta delta) {
         data.applyTxnDelta(delta, ROUND_TTL);
+    }
+
+    public boolean isResultBeforeBet(GameRound round, ResultType resultType) {
+        boolean isBetType = ResultType.BET_WIN == resultType || ResultType.BET_LOSE == resultType;
+        return round.getTxnCount() == 1 // only 1 transaction in game_round
+                && !isBetType; // not a bet type
     }
 
     public void updateRoundState(String docId, GameRoundState state) {

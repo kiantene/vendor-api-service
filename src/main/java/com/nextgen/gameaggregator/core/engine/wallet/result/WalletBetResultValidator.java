@@ -23,9 +23,11 @@ class WalletBetResultValidator {
 
     private final BetValidator validator;
 
-    public void validateRequestContext(BetResultContext context) {
+    public void validateRequestContext(BetResultContext context, BetResultConfig config) {
 
-        // TODO: validate context object
+        if (SettleType.ROUND == config.getSettleType() && context.getRoundEnded() == null) {
+            throw new IllegalArgumentException("BetResultContext.roundEnded must be set if SettleType=Round");
+        }
     }
 
     /**

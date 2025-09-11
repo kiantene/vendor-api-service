@@ -125,7 +125,7 @@ public class WalletRollbackServiceWrapper {
         // TODO: check for operator status, if is successful then return success
 
         String currency = "";
-        return PlayerBalanceData.getDefault(context.getTraceId(), context.getVendorPlayerUsername(), currency);
+        return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), currency);
     }
 
     /**

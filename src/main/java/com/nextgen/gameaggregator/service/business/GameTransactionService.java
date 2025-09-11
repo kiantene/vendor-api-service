@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.service.business;
 
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -41,21 +44,23 @@ public class GameTransactionService {
         return txn;
     }
 
-    public void markSent(GameTransaction txn, AgentMeta agentMeta) {
-        if (TxnStatus.SENT == txn.getStatus()) return;
-
+    public GameRound markSent(GameTransaction txn, AgentMeta agentMeta) {
         txn.setStatus(TxnStatus.SENT);
         txn.setSentAt(getNow());
         txnDataService.update(txn);
 
-        gameRoundService.save(txn, agentMeta);
+        return gameRoundService.save(txn, agentMeta);
     }
 
-    public void markSuccess(GameTransaction txn, BigDecimal balance) {
-        markSuccess(txn, balance, false);
+    public void markPending(GameTransaction txn) {
+        // TODO: update status
     }
 
-    public void markSuccess(GameTransaction txn, BigDecimal balance, Boolean isEnded) {
+    public void markSuccess(GameRound round, GameTransaction txn, BigDecimal balance) {
+        markSuccess(round, txn, balance, false);
+    }
+
+    public void markSuccess(GameRound round, GameTransaction txn, BigDecimal balance, Boolean isEnded) {
         txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
@@ -64,6 +69,7 @@ public class GameTransactionService {
                 txn.getRoundDocId(),
                 txn.getIdx(),
                 txn.getGaBetId(),
+                balance,
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getDoneAt(),
@@ -72,6 +78,18 @@ public class GameTransactionService {
         );
 
         gameRoundService.applyTxnDelta(delta);
+
+        if (Boolean.TRUE.equals(isEnded)) {
+            round.getTransactions()
+                    .stream()
+                    .filter(RoundTxn::isSuccessfulBet)
+                    .forEach(t -> markSettled(t.getId(), txn.getSettleTime()));
+        }
+    }
+
+    public void markSettled(String txnId, long settledTime) {
+        Duration ttl = Duration.ofHours(3);
+        txnDataService.updateToSettled(txnId, settledTime, ttl);
     }
 
     private String getNow() {
