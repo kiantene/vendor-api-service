@@ -70,7 +70,10 @@ public class WalletBetResultServiceWrapper {
             // TODO: handle BetNotFoundException (race condition)
             guard.clear();
             RuntimeException exception = walletExceptionTranslator.translate(ex);
-            gameRoundService.markTxnError(txn, exception);
+            if (txn != null) {
+                gameRoundService.markTxnError(txn, exception);
+            }
+
             throw exception;
         } finally {
             cleanup();

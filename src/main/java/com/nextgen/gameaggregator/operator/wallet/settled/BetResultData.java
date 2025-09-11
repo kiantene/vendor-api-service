@@ -27,4 +27,5 @@ public interface BetResultData {
     default boolean getShouldSettleByBet() {
         return false;
     }
+    default boolean isNewFramework() { return false; }
 }

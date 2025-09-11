@@ -233,7 +233,6 @@ public class UnsettledBetService {
     public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, ResultType resultType)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException, InsufficientBalanceException {
 
-        String transactionId = betResultData.getExternalTransactionId();
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
         Integer vendorGameId = gameSession.getVendorGameId();
@@ -241,6 +240,18 @@ public class UnsettledBetService {
         UnsettledBet unsettledBet = null;
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        /**
+         * if vendor is configured to use new framework, skip the following idempotency check (getUnsettledBetByRoundIdWithErrorResponse)
+         * idempotency check will be done on WalletBetServiceWrapper->guard.ensureNotDuplicate instead
+         */
+        if (betResultData.isNewFramework()) {
+            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
+            unsettledBet.setCreateTime(System.currentTimeMillis());
+            unsettledBetCachingService.save(unsettledBet);
+
+            return unsettledBet;
+        }
 
         try {
             unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundIdWithErrorResponse(vendorBetId, roundId, vendorGameId, vendorPlayerId);
