@@ -14,7 +14,6 @@ public class RollbackRequestMapper implements BetRollbackContextMapper<RollbackR
                 .vendorBetId(vendorRequest.getTransactionOriginalId())
                 .roundId(vendorRequest.getRoundId())
                 .vendorPlayerUsername(vendorRequest.getPlayerId())
-                .timestamp(System.currentTimeMillis())
                 .build();
     }
 }

@@ -14,7 +14,6 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .vendorGameCode(request.getGameCode())
                 .vendorPlayerUsername(request.getPlayerId())
                 .winAmount(request.getAmount())
-                .vendorSettleTime(System.currentTimeMillis())
                 .build();
     }
 }

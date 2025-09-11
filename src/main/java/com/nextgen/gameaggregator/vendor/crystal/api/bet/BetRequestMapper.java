@@ -15,7 +15,6 @@ public class BetRequestMapper implements BetContextMapper<BetRequest> {
                 .vendorPlayerUsername(request.getPlayerId())
                 .vendorCurrency(request.getCurrencyCode())
                 .betAmount(request.getAmount())
-                .timestamp(System.currentTimeMillis())
                 .build();
     }
 }
