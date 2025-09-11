@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.util.StackTraceUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,7 @@ public class VendorService extends BaseVendorService {
         try {
             return DateTimeConversionUtils.toUnixTimestamp(gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
         } catch (Exception exception) {
-            log.error("Invalid Parse JDB Timestamp - Round Id = " + roundId + " | ts = " + ts + " | gameDate = " + gameDate + " | error = " + exception.getMessage());
+            log.error("Invalid Parse JDB Timestamp - Round Id = " + roundId + " | ts = " + ts + " | gameDate = " + gameDate + " | error = " + StackTraceUtils.getStackTraceAsString(exception));
         }
         return ts;
     }
