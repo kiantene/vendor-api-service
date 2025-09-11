@@ -161,12 +161,12 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return VendorService.toTimestamp(this.gameDate, this.ts);
+        return VendorService.toTimestamp(this.gameDate, this.ts, this.getRoundId());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.toTimestamp(this.gameDate, this.ts);
+        return VendorService.toTimestamp(this.gameDate, this.ts, this.getRoundId());
     }
 
     @Override

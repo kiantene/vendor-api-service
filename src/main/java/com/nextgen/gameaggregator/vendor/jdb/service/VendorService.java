@@ -55,11 +55,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static Long toTimestamp(String gameDate, Long ts) {
+    public static Long toTimestamp(String gameDate, Long ts, String roundId) {
         try {
             return DateTimeConversionUtils.toUnixTimestamp(gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
         } catch (Exception exception) {
-            log.error("Invalid Parse JDB Timestamp - " + exception.getMessage());
+            log.error("Invalid Parse JDB Timestamp - Round Id = " + roundId + " | ts = " + ts + " | gameDate = " + gameDate + " | error = " + exception.getMessage());
         }
         return ts;
     }
