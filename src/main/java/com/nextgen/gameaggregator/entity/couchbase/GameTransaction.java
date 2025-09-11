@@ -122,7 +122,7 @@ public class GameTransaction {
 
     @JsonIgnore
     public String getId() {
-        return className + "::" + transactionId;
+        return className + "::" + type + "::" + transactionId;
     }
 
     @JsonIgnore
