@@ -163,12 +163,12 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.STANDARD, ZoneId.of("GMT-4"));
+        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.STANDARD, ZoneId.of("GMT-4"));
+        return DateTimeConversionUtils.toUnixTimestamp(this.gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
     }
 
     @Override
