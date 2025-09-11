@@ -27,12 +27,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
 
     @Override
     protected void doEnrich(BetRollbackContext context) {
-        if (context.getVendorService() == null) {
-            context.setVendorService(InternalVendorService.getInstance(applicationContext));
-        }
-        if (context.getTimestamp() == null) {
-            context.setTimestamp(System.currentTimeMillis());
-        }
+        // handle enrichment in enrichByGameSession
     }
 
     public void enrichByGameSession(BetRollbackContext context,
@@ -63,6 +58,18 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
             );
         }
 
+        if (context.getVendorService() == null) {
+            context.setVendorService(InternalVendorService.getInstance(applicationContext));
+        }
+
+        if (context.getHttpRequestLog() == null) {
+            context.setHttpRequestLog(LogContextService.toHttpRequestLog(logContext));
+        }
+
+        if (context.getTimestamp() == null) {
+            context.setTimestamp(logContext.getStart());
+        }
+
         enrich(context);
     }
 
@@ -86,7 +93,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         }
 
         if (context.getTimestamp() == null) {
-            context.setTimestamp(System.currentTimeMillis());
+            context.setTimestamp(logContext.getStart());
         }
     }
 
