@@ -61,10 +61,17 @@ public class GameRoundService {
         data.setRoundState(docId, state);
     }
 
-    public void markTxnError(GameTransaction txn, Exception exception) {
+    public void markTxnError(GameTransaction txn, RuntimeException ex) {
+        if (txn == null) return;
+
+        String exName = ex.getClass().getSimpleName();
+        if (exName.equals("RuntimeException") && ex.getCause() != null) {
+            exName = ex.getCause().getClass().getSimpleName();
+        }
+
         Map<String, Object> updates = Map.of(
                 "status", TxnStatus.ERROR.name(),
-                "exception", exception.getClass().getSimpleName(),
+                "exception", exName,
                 "doneAt", getNow()
         );
 
