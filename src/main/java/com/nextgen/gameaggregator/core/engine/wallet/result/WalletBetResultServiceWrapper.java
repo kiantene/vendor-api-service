@@ -42,10 +42,9 @@ public class WalletBetResultServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetResultContext context = state().getBetResultContext();
-        GameTransaction txn = null;
 
         try {
-            txn = guard.ensureNotDuplicate(
+            GameTransaction txn = guard.ensureNotDuplicate(
                     TxnType.RESULT,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -66,12 +65,8 @@ public class WalletBetResultServiceWrapper {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
             // TODO: handle BetNotFoundException (race condition)
-
             guard.clear();
-            RuntimeException translatedEx = walletExceptionTranslator.translate(ex);
-            gameTransactionService.markError(txn, translatedEx);
-
-            throw translatedEx;
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);

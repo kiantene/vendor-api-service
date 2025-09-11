@@ -47,10 +47,9 @@ public class WalletRollbackServiceWrapper {
     public PlayerBalanceData process() {
         BetRollbackContext context = state().getBetRollbackContext();
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
-        GameTransaction txn = null;
 
         try {
-            txn = guard.ensureNotDuplicate(
+            GameTransaction txn = guard.ensureNotDuplicate(
                     TxnType.ROLLBACK,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -68,10 +67,7 @@ public class WalletRollbackServiceWrapper {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
             guard.clear();
-            RuntimeException translatedEx = walletExceptionTranslator.translate(ex);
-            gameTransactionService.markError(txn, translatedEx);
-
-            throw translatedEx;
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
