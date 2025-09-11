@@ -82,9 +82,6 @@ public class GameTransaction {
     @JsonProperty("state")
     private GameRoundState state;
 
-    @JsonProperty("exception")
-    private String exception;
-
     @JsonProperty("betTime")
     private Long betTime;
 

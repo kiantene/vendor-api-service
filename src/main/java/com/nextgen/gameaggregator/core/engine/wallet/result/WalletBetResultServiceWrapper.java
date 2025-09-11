@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class WalletBetResultServiceWrapper {
     private final BetResultContextEnricher enricher;
     private final BetResultDataMapper betResultDataMapper;
     private final GameSessionDataService gameSessionDataService;
+    private final GameRoundService gameRoundService;
     private final GameTransactionService gameTransactionService;
     private final WalletBetResultValidator validator;
     private final WalletExceptionTranslator walletExceptionTranslator;
@@ -42,9 +44,10 @@ public class WalletBetResultServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetResultContext context = state().getBetResultContext();
+        GameTransaction txn = null;
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(
+            txn = guard.ensureNotDuplicate(
                     TxnType.RESULT,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -66,7 +69,9 @@ public class WalletBetResultServiceWrapper {
         } catch (Exception ex) {
             // TODO: handle BetNotFoundException (race condition)
             guard.clear();
-            throw walletExceptionTranslator.translate(ex);
+            RuntimeException exception = walletExceptionTranslator.translate(ex);
+            gameRoundService.markTxnError(txn, exception);
+            throw exception;
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);

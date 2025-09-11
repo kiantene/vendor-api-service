@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
-import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +35,6 @@ public class WalletRollbackServiceWrapper {
     private final BetRollbackContextEnricher enricher;
     private final GameSessionDataService gameSessionDataService;
     private final GameRoundService gameRoundService;
-    private final GameTransactionService gameTransactionService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final BetRollbackProcessor processor;
