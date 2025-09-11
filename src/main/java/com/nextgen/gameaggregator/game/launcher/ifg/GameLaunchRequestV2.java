@@ -8,8 +8,6 @@ import lombok.Data;
 public class GameLaunchRequestV2 implements LaunchRequestPayload {
     private String project;
     private String game;
-    private String platform;
-    private String lang;
-    private String demo;
+    private String language;
     private String auth;
 }

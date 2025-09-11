@@ -115,7 +115,7 @@ public class TransferAction {
                     balance = betEvent.getLastBalance();
                 }
                 case TradeType.PAYOUT -> {
-                    ResultType resultType = getResultType(transferDto, gameSession);
+                    ResultType resultType = getResultType(transferDto);
                     balance = walletService.processBetResult(traceId, gameSession,
                             transferDto, resultType, vendorService, httpRequestLog);
                 }
@@ -134,13 +134,6 @@ public class TransferAction {
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
-
-        } catch (BetResultIdempotentViolationException e) {
-            httpService.logError(httpRequestLog, e);
-            vo.setResponseCode(ResponseCodes.SUCCESS);
-            transferDataVo.setBalance(e.getBalance().toBigInteger());
-            transferDataVo.setTradeType(transferDto.getTradeType());
-            transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
 
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
@@ -200,32 +193,12 @@ public class TransferAction {
 
     }
 
-    private ResultType getResultType(TransferDto dto, GameSession gameSession) {
-        ResultType resultType = ResultType.BET; // Default value is bet
-
-        //Check If is an unsettled bet is found,then settle that bet with result type win
-        boolean isUnsettled = vendorService.searchUnsettledBetForSettle(dto, gameSession);
-
-        if (dto.getTradeType() == TradeType.PAYOUT && dto.getTradeAmount().compareTo(BigDecimal.ZERO) > 0) {
-
-            if (isUnsettled) {
-                //If got any roundId then use win for settle this bet
-                resultType = ResultType.WIN;
-            } else {
-                resultType = ResultType.BET_WIN;
-            }
-
-        } else if (dto.getTradeType() == TradeType.PAYOUT) {
-
-            if (isUnsettled) {
-                resultType = ResultType.END;
-            } else {
-                resultType = ResultType.BET_LOSE;
-            }
-
+    private ResultType getResultType(TransferDto dto) {
+        // Default BET_LOSE
+        if (dto.getTradeAmount().compareTo(BigDecimal.ZERO) > 0) {
+            return ResultType.BET_WIN;
         }
-        return resultType;
-
+        return ResultType.BET_LOSE;
     }
 
 }

@@ -3,14 +3,13 @@ package com.nextgen.gameaggregator.vendor.jdb.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonParseException;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
-import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
-import com.nextgen.gameaggregator.exception.InvalidDateException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
+import com.nextgen.gameaggregator.util.DateTimeConverter;
+import com.nextgen.gameaggregator.util.StackTraceUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +19,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZoneId;
 
 @Service
 @Slf4j
@@ -58,15 +56,13 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static Long toTimestamp(String dateString) throws InvalidDateException {
+    public static Long toTimestamp(String gameDate, Long ts, String roundId) {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-            Date date = dateFormat.parse(dateString);
-            long unixTimestamp = date.getTime() / 1000L;
-            return unixTimestamp;
+            return DateTimeConversionUtils.toUnixTimestamp(gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
         } catch (Exception exception) {
-            throw new InvalidDateException(exception.getMessage());
+            log.error("Invalid Parse JDB Timestamp - Round Id = " + roundId + " | ts = " + ts + " | gameDate = " + gameDate + " | error = " + StackTraceUtils.getStackTraceAsString(exception));
         }
+        return ts;
     }
 
     @Override

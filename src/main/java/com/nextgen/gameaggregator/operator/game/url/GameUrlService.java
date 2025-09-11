@@ -103,6 +103,13 @@ public class GameUrlService {
             long startTime = System.currentTimeMillis();
             httpRequestLog.setBetStart(startTime);
 
+            //GA-11725 Update skipVendorCall to include new gamelaunch mode
+            if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
+                //TODO Move response mocking inside framework to improve gamelaunch test
+                gameUrlData.setGameUrl("SkipCallToVendor");
+                return gameUrlData;
+            }
+
             AbstractGameLaunchHandler<Object, Object> vendorGameLauncher = gameLauncherRegistry.getHandler(vendorClassName);
             if (vendorGameLauncher != null) {
                 Map<String, VendorLineCredential> credentialMap = vendorLineService.mapCredentialsByName(vendorLine.getId());
@@ -137,19 +144,13 @@ public class GameUrlService {
 
                 httpRequestLog.setRequestBody(new Gson().toJson(formData.toSingleValueMap()));
 
-                //GA-9567 Add toggle to skip call to vendor based on player name
-                //GA-10147 Migrate logic into testSupportService to manage test special logic better
-                if (testSupportService.shouldSkipVendorCall(gameSession.getAgentPlayerUsername())) {
-                    gameUrlData.setGameUrl("SkipCallToVendor");
-                } else {
-                    GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
+                GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
 
-                    if (gameUrlVo == null) throw new InvalidVendorResponseException();
+                if (gameUrlVo == null) throw new InvalidVendorResponseException();
 
-                    //token will be replaced if vendor's token is needed to verify for action files.
-                    String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
-                    gameUrlData.setGameUrl(gameUrlText);
-                }
+                //token will be replaced if vendor's token is needed to verify for action files.
+                String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                gameUrlData.setGameUrl(gameUrlText);
 
                 gameUrlData.setToken(gameSession.getToken());
             }

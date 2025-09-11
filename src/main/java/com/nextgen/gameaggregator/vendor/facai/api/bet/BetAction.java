@@ -75,8 +75,10 @@ public class BetAction {
             //calculate vendor threshold. if the time is over 4 sec, direct send error to vendor.
             this.checkVendorTimeout(betDto);
 
-            //get rawGameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
+            //get rawGameSession by player username without game id
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getMemberAccount());
+            if (gameSession == null) throw new AuthenticationException();
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameId(), gameSession);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, betDto, gameSession, jsonParam);

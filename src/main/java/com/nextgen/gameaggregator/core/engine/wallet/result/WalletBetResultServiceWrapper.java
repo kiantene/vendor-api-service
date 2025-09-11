@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
@@ -22,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -37,7 +35,6 @@ public class WalletBetResultServiceWrapper {
     private final GameSessionDataService gameSessionDataService;
     private final GameTransactionService gameTransactionService;
     private final WalletBetResultValidator validator;
-    private final WalletBetResultBatchService batchService;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final WalletService walletService;
 
@@ -45,10 +42,9 @@ public class WalletBetResultServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetResultContext context = state().getBetResultContext();
-        GameTransaction txn = null;
 
         try {
-            txn = guard.ensureNotDuplicate(
+            GameTransaction txn = guard.ensureNotDuplicate(
                     TxnType.RESULT,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -63,22 +59,14 @@ public class WalletBetResultServiceWrapper {
 
             validator.validateBusinessState(gameSession, context, resultType);
 
-            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, txn, resultType, httpRequestLog);
-
-            doProcessBatch(context);
-
-            return playerBalance;
+            return processBetResultTransaction(context, gameSession, txn, resultType, httpRequestLog);
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
             // TODO: handle BetNotFoundException (race condition)
-
             guard.clear();
-            RuntimeException translatedEx = walletExceptionTranslator.translate(ex);
-            gameTransactionService.markError(txn, translatedEx);
-
-            throw translatedEx;
+            throw walletExceptionTranslator.translate(ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -88,18 +76,6 @@ public class WalletBetResultServiceWrapper {
     private PlayerBalanceData handleDuplicateRequest(BetResultContext context, DuplicateRequestException ex) {
         // TODO: check for operator status, if is successful then return success
         throw ex;
-    }
-
-    private void doProcessBatch(BetResultContext context) {
-        BetResultConfig config = state().getConfig();
-
-        if (config.getProcessingMode().isBatchMode()) {
-            List<BetTransaction> txnList = context.getBetTransactions();
-
-            if (txnList == null || txnList.isEmpty()) return;
-
-            batchService.processBatch(txnList, context);
-        }
     }
 
     private PlayerBalanceData processBetResultTransaction(
