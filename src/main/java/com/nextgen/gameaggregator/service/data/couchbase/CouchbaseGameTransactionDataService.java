@@ -36,6 +36,8 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     @Override
     public void update(GameTransaction doc) {
         Map<String, Object> updates = new HashMap<>();
+        updates.put("vendorBetId", doc.getVendorBetId());
+        updates.put("vendorId", doc.getVendorId());
         updates.put("username", doc.getUsername());
         updates.put("roundId", doc.getRoundId());
         updates.put("gameCode", doc.getGameCode());
@@ -64,6 +66,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updateIfNotNull(updates, "idx", txn.getIdx());
         updateIfNotNull(updates, "balance", balance);
         updateIfNotNull(updates, "gaBetId", txn.getGaBetId());
+        updateIfNotNull(updates, "exception", txn.getException());
 
         if (TxnStatus.SENT == status) {
             updates.put("sentAt", txn.getSentAt());
