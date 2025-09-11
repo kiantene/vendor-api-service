@@ -90,6 +90,10 @@ public class GameRoundRepository {
             specs.add(MutateInSpec.upsert("isEnded", true));
         }
 
+        if (d.lastBalance().isPresent()) {
+            specs.add(MutateInSpec.upsert("lastBalance", d.lastBalance().get().toPlainString()));
+        }
+
         // For aggregates: read current totals once to compute new values (CAS protects write)
         if (d.betDelta().isPresent() || d.winDelta().isPresent() || d.isSettled()) {
             var gr = collection.get(d.docId());

@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -47,6 +48,8 @@ public class WalletBetResultServiceWrapper {
         GameTransaction txn = null;
 
         try {
+            validator.validateRequestContext(context, state().getConfig());
+
             txn = guard.ensureNotDuplicate(
                     TxnType.RESULT,
                     logContext.getVendorClassName(),
@@ -67,7 +70,8 @@ public class WalletBetResultServiceWrapper {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
-            // TODO: handle BetNotFoundException (race condition)
+            // TODO: if operator error, add to retry queue and return success to vendor
+
             guard.clear();
             RuntimeException exception = walletExceptionTranslator.translate(ex);
             if (txn != null) {
@@ -98,7 +102,17 @@ public class WalletBetResultServiceWrapper {
                 BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         enricher.enrichGameTransaction(txn, context);
-        gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+        GameRound round = gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+
+        /**
+         * If we receive result txn first before the bet txn arrives, we do not send the result to operator.
+         * Instead, we wait for bet and send it together
+         */
+        if (gameRoundService.isResultBeforeBet(round, resultType)) {
+            gameTransactionService.markPending(txn);
+            return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
+        }
+
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -108,7 +122,7 @@ public class WalletBetResultServiceWrapper {
                 httpRequestLog
         );
         txn.setGaBetId(httpRequestLog.getGaBetId());
-        gameTransactionService.markSuccess(txn, balance, context.getRoundEnded());
+        gameTransactionService.markSuccess(round, txn, balance, context.getRoundEnded());
 
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),
@@ -124,13 +138,13 @@ public class WalletBetResultServiceWrapper {
         return this;
     }
 
-    private BetResultWrapperContext state() {
-        return BetResultContextHolder.getRequired();
-    }
-
     public WalletBetResultServiceWrapper configure(Consumer<BetResultConfig> configurer) {
         configurer.accept(state().getConfig());
         return this;
+    }
+
+    private BetResultWrapperContext state() {
+        return BetResultContextHolder.getRequired();
     }
 
     /**

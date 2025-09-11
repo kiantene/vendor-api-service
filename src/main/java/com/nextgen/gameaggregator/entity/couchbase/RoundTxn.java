@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.entity.couchbase;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
@@ -39,5 +40,20 @@ public class RoundTxn {
         roundTxn.setDoneAt(txn.getDoneAt());
 
         return roundTxn;
+    }
+
+    @JsonIgnore
+    public boolean isSuccess() {
+        return status == TxnStatus.SUCCESS;
+    }
+
+    @JsonIgnore
+    public boolean isBet() {
+        return type == TxnType.BET;
+    }
+
+    @JsonIgnore
+    public boolean isSuccessfulBet() {
+        return isBet() && isSuccess();
     }
 }

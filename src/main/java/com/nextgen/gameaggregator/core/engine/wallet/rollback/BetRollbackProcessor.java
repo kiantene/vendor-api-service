@@ -74,11 +74,7 @@ public class BetRollbackProcessor {
     }
 
     private PlayerBalanceData defaultBalanceData(BetRollbackContext context, String currency) {
-        return PlayerBalanceData.getDefault(
-                context.getTraceId(),
-                context.getVendorPlayerUsername(),
-                currency
-        );
+        return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), currency);
     }
 
     private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, RoundTxn txn) {

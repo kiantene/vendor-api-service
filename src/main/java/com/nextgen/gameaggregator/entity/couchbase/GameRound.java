@@ -38,6 +38,9 @@ public class GameRound {
     @JsonProperty("currency")
     private String currency;
 
+    @JsonProperty("lastBalance")
+    private BigDecimal lastBalance;
+
     @JsonProperty("betAmount")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)

@@ -82,6 +82,17 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     }
 
     @Override
+    public void updateToSettled(String docId, long settledTime, Duration ttl) {
+        Map<String, Object> updates = Map.of(
+                "state", GameRoundState.SETTLED.name(),
+                "settleTime", settledTime
+        );
+
+        repo.update(docId, updates, ttl);
+    }
+
+
+    @Override
     public void deleteById(String id) {
         repo.delete(id);
     }
