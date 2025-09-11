@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
+import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +36,7 @@ public class WalletRollbackServiceWrapper {
     private final BetRollbackContextEnricher enricher;
     private final GameSessionDataService gameSessionDataService;
     private final GameRoundService gameRoundService;
+    private final GameTransactionService gameTransactionService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final BetRollbackProcessor processor;
@@ -45,9 +47,10 @@ public class WalletRollbackServiceWrapper {
     public PlayerBalanceData process() {
         BetRollbackContext context = state().getBetRollbackContext();
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        GameTransaction txn = null;
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(
+            txn = guard.ensureNotDuplicate(
                     TxnType.ROLLBACK,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -65,7 +68,10 @@ public class WalletRollbackServiceWrapper {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
             guard.clear();
-            throw walletExceptionTranslator.translate(ex);
+            RuntimeException translatedEx = walletExceptionTranslator.translate(ex);
+            gameTransactionService.markError(txn, translatedEx);
+
+            throw translatedEx;
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());

@@ -34,8 +34,14 @@ public class GameTransaction {
     @JsonProperty("type")
     private TxnType type;
 
+    /**
+     * Unique identifier to prevent duplicate transaction
+     */
     @JsonProperty("transactionId")
     private String transactionId;
+
+    @JsonProperty("vendorBetId")
+    private String vendorBetId;
 
     @JsonProperty("vendorId")
     private Integer vendorId;
@@ -75,6 +81,9 @@ public class GameTransaction {
 
     @JsonProperty("state")
     private GameRoundState state;
+
+    @JsonProperty("exception")
+    private String exception;
 
     @JsonProperty("betTime")
     private Long betTime;

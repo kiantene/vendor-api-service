@@ -60,23 +60,20 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         Duration ttl = null;
         Map<String, Object> updates = new HashMap<>();
 
-        updates.put("idx", txn.getIdx());
-        updates.put("gaBetId", txn.getGaBetId());
         updates.put("status", status.name());
-
-        if (balance != null) {
-            updates.put("balance", balance.toPlainString()); // convert to String to avoid loss of precision
-        }
+        updateIfNotNull(updates, "idx", txn.getIdx());
+        updateIfNotNull(updates, "balance", balance);
+        updateIfNotNull(updates, "gaBetId", txn.getGaBetId());
 
         if (TxnStatus.SENT == status) {
             updates.put("sentAt", txn.getSentAt());
-        } else if (TxnStatus.SUCCESS == status) {
+        } else if (TxnStatus.SUCCESS == status || TxnStatus.ERROR == status) {
             updates.put("doneAt", txn.getDoneAt());
         }
 
         if (GameRoundState.SETTLED == txn.getState()) {
             updates.put("state", txn.getState().name());
-            ttl = Duration.ofHours(12);
+            ttl = Duration.ofHours(3);
         }
 
         repo.update(txn.getId(), updates, ttl);
@@ -90,7 +87,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     private void updateIfNotNull(Map<String, Object> map, String field, Object value) {
         if (value != null) {
             if (value instanceof BigDecimal decimal) {
-                map.put(field, decimal.toPlainString());
+                map.put(field, decimal.toPlainString()); // convert to String to avoid loss of precision
             } else {
                 map.put(field, value);
             }
