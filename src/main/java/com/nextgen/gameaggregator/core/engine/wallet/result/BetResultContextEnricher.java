@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.InternalVendorService;
 import com.nextgen.gameaggregator.core.service.VendorGameDataService;
@@ -18,16 +19,16 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
     private final ApplicationContext applicationContext;
 
     public BetResultContextEnricher(AgentPlayerDataService agentPlayerDataService,
-                                       VendorPlayerDataService vendorPlayerDataService,
-                                       VendorGameDataService vendorGameDataService,
-                                       ApplicationContext applicationContext) {
+                                    VendorPlayerDataService vendorPlayerDataService,
+                                    VendorGameDataService vendorGameDataService,
+                                    ApplicationContext applicationContext) {
         super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
         this.applicationContext = applicationContext;
     }
 
     @Override
     protected void doEnrich(BetResultContext context) {
-        context.setResultTime(System.currentTimeMillis());
+        context.setResultTime(LogContextHolder.get().getStart());
 
         if (context.getVendorBetId() == null) {
             context.setVendorBetId(context.getIdempotencyKey());
@@ -47,7 +48,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         }
     }
 
-    public void enrichByGameSession(BetResultContext context, GameSession gameSession) {
+    public void enrichByGameSession(BetResultContext context, GameSession gameSession, BetResultConfig config) {
         if (context.getVendorPlayerUsername() == null) {
             context.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         }
@@ -59,9 +60,14 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         }
 
         enrich(context);
+
+        if (context.getRoundEnded() == null && config.getSettleType() == SettleType.BET) {
+            context.setRoundEnded(true);
+        }
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetResultContext context) {
+        txn.setVendorBetId(context.getVendorBetId());
         txn.setVendorId(context.getVendorId());
         txn.setUsername(context.getVendorPlayerUsername());
         txn.setRoundId(context.getRoundId());

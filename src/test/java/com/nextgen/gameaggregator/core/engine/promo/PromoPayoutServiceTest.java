@@ -36,8 +36,6 @@ class PromoPayoutServiceTest {
 
         // Create test data
         context = PromoPayoutContext.builder()
-                .traceId(UuidUtil.newUuidV7StringRaw())
-                .vendorClassName("pgsoft")
                 .idempotencyKey("1952611929575260160-1952611929575260160-403-0")
                 .vendorPlayerUsername("1e8yrfpf5qr")
                 .vendorCurrency("THB")

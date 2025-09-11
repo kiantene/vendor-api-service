@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.VendorGameDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
@@ -20,7 +21,7 @@ class BetContextEnricher extends BaseEnricher<BetContext> {
     @Override
     protected void doEnrich(BetContext context) {
         if (context.getTimestamp() == null) {
-            context.setTimestamp(System.currentTimeMillis());
+            context.setTimestamp(LogContextHolder.get().getStart());
         }
         if (context.getVendorBetId() == null) {
             context.setVendorBetId(context.getIdempotencyKey());
@@ -46,6 +47,7 @@ class BetContextEnricher extends BaseEnricher<BetContext> {
     }
 
     public void enrichGameTransaction(GameTransaction txn, BetContext context) {
+        txn.setVendorBetId(context.getVendorBetId());
         txn.setVendorId(context.getVendorId());
         txn.setUsername(context.getVendorPlayerUsername());
         txn.setRoundId(context.getRoundId());
