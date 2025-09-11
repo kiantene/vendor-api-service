@@ -59,6 +59,7 @@ public class VendorService extends BaseVendorService {
         try {
             return DateTimeConversionUtils.toUnixTimestamp(gameDate, DateTimeConverter.EU_FORMAT, ZoneId.of("GMT-4"));
         } catch (Exception exception) {
+            log.error("Invalid Parse JDB Timestamp - " + exception.getMessage());
         }
         return ts;
     }
