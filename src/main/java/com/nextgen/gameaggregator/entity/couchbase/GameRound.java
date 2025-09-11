@@ -92,6 +92,11 @@ public class GameRound {
         return className + "::" + roundId;
     }
 
+    @JsonIgnore
+    public boolean isSettled() {
+        return state == GameRoundState.SETTLED;
+    }
+
     public void setBetAmount(BigDecimal betAmount) {
         this.betAmount = (betAmount == null) ? BigDecimal.ZERO : betAmount;
     }
