@@ -43,6 +43,11 @@ public class BetDto implements BetResultData {
     private Long gameRoundSeqNo;
 
     @NotBlank
+    @JsonProperty("gType")
+    @Pattern(regexp = "^[0-9]+$")
+    private String gType;
+
+    @NotBlank
     @JsonProperty("mType")
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
