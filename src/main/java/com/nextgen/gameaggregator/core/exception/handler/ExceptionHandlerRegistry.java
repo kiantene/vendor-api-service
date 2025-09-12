@@ -63,6 +63,9 @@ public final class ExceptionHandlerRegistry {
 
         handlers.put(BetNotFoundException.class,
                 mapper -> ex -> mapper.onBetNotFound((BetNotFoundException) ex));
+
+        handlers.put(RollbackNotAllowedException.class,
+                mapper -> ex -> mapper.onRollbackNotAllowed((RollbackNotAllowedException) ex));
     }
 
     private static void registerTransformationExceptions(Map<Class<? extends Exception>, Function<VendorExceptionMapper, Function<Exception, VendorErrorResponse>>> handlers) {
