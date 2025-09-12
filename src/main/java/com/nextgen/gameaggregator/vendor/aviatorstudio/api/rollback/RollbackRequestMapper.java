@@ -9,14 +9,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class RollbackRequestMapper implements BetRollbackContextMapper<BetResultRequest> {
     @Override
-    public BetRollbackContext toInternal(BetResultRequest vendorRequest) {
+    public BetRollbackContext toInternal(BetResultRequest request) {
         return BetRollbackContext.builder()
-                .rollbackType(RollbackType.BY_BET)
-                .idempotencyKey(vendorRequest.getTransactionId())
-                .vendorPlayerUsername(vendorRequest.getUsername())
-                .vendorBetId(vendorRequest.getPreviousTransactionId())
-                .vendorSessionToken(vendorRequest.getSessionId())
-                .token(vendorRequest.getToken())
+                .idempotencyKey(request.getTransactionId())
+                .vendorGameCode(request.getGameId())
+                .vendorPlayerUsername(request.getUsername())
+                .vendorBetId(request.getPreviousTransactionId())
+                .vendorSessionToken(request.getSessionId())
+                .token(request.getToken())
                 .timestamp(System.currentTimeMillis())
                 .build();
     }

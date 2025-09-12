@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -25,27 +26,32 @@ public class BetNSettleService {
     private final ValidationService validationService;
     private final VendorService vendorService;
     private final HttpService httpService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public BetNSettleService(GameServiceImpl gameService,
                              WalletService walletService,
                              ValidationService validationService,
                              VendorService vendorService,
-                             HttpService httpService) {
+                             HttpService httpService,
+                             RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameService = gameService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.httpService = httpService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo betNSettle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
+        boolean isRequestExists = false;
+        BetNSettleDto betNSettleDto = new BetNSettleDto();
 
         try {
             // Convert original request body into dto
-            BetNSettleDto betNSettleDto = HttpService.convertJsonToDto(actionDto.getParams(), BetNSettleDto.class);
+            betNSettleDto = HttpService.convertJsonToDto(actionDto.getParams(), BetNSettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betNSettleDto);
@@ -53,13 +59,21 @@ public class BetNSettleService {
             // 2. Verify session token
             GameSession gameSession = gameService.getGameSessionByUsername(betNSettleDto.getUid(), betNSettleDto.getGType() + "_" + betNSettleDto.getMType());
 
-            // 3. Verify remaining parameters (Verify against database values)
+            // 3. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(betNSettleDto, betNSettleDto.getUid()) == null) {
+                requestIdempotentLogService.create(betNSettleDto, betNSettleDto.getUid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);
 
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            // 4.3 Process Bet Result and End Round
+            // 5. Send bet request to Operator
+            // 5.1 check if player has enough balance
+            // 5.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
+            // 5.3 Process Bet Result and End Round
             ResultType resultType = getResultType(betNSettleDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, actionDto.getHttpRequestLog());
 
@@ -120,6 +134,11 @@ public class BetNSettleService {
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betNSettleDto, betNSettleDto.getUid());
+            }
         }
 
         return vo;

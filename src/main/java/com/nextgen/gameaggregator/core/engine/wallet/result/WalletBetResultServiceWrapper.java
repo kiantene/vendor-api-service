@@ -50,6 +50,8 @@ public class WalletBetResultServiceWrapper {
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
+            enricher.enrichByGameSession(context, gameSession);
+
             ResultType resultType = getResultType(context);
 
             validator.validateBusinessState(gameSession, context, resultType);

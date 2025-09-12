@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -160,12 +161,12 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return ts;
+        return VendorService.toTimestamp(this.gameDate, this.ts, this.getRoundId());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return ts;
+        return VendorService.toTimestamp(this.gameDate, this.ts, this.getRoundId());
     }
 
     @Override

@@ -44,7 +44,7 @@ public class CheckAction {
         this.vendorService = vendorService;
     }
 
-    @PostMapping(path = {EndPoints.CHECK, EndPoints.SID})
+    @PostMapping(path = EndPoints.CHECK)
     public ResponseVo checkAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -66,7 +66,7 @@ public class CheckAction {
                     throw new InvalidRequestException();
                 }
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(checkDto.getUserId());
-                if(Objects.isNull(gameSession.getVendorToken())){
+                if (Objects.isNull(gameSession.getVendorToken())) {
                     gameSession.setVendorToken(gameSession.getToken());
                     gameSessionService.updateSession(gameSession);
                 }
