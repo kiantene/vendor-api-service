@@ -20,6 +20,9 @@ public class GameRound {
     @JsonProperty("createdAt")
     private String createdAt;
 
+    @JsonProperty("state")
+    private GameRoundState state;
+
     @JsonProperty("className")
     private String className;
 
@@ -59,9 +62,6 @@ public class GameRound {
 
     @JsonProperty("transactions")
     private List<RoundTxn> transactions;
-
-    @JsonProperty("state")
-    private GameRoundState state;
 
     @JsonProperty("isEnded")
     private Boolean isEnded;
