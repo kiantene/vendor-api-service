@@ -57,16 +57,16 @@ public class SettleService {
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(settleDto);
 
-            // 2. Verify session token
-            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid(), settleDto.getGType() + "_" + settleDto.getMType());
-
-            // 3. Request idempotent checking.
+            // 2. Request idempotent checking.
             if (requestIdempotentLogService.checkExists(settleDto, settleDto.getUid()) == null) {
                 requestIdempotentLogService.create(settleDto, settleDto.getUid());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
+
+            // 3. Verify session token
+            GameSession gameSession = gameService.getGameSessionByUsername(settleDto.getUid(), settleDto.getGType() + "_" + settleDto.getMType());
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance

@@ -50,16 +50,16 @@ public class BetService {
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            // 2. Verify session token
-            GameSession gameSession = gameService.getGameSessionByUsername(betDto.getUid(), betDto.getGType() + "_" + betDto.getMType());
-
-            // 3. Request idempotent checking.
+            // 2. Request idempotent checking.
             if (requestIdempotentLogService.checkExists(betDto, betDto.getUid()) == null) {
                 requestIdempotentLogService.create(betDto, betDto.getUid());
             } else {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
+
+            // 3. Verify session token
+            GameSession gameSession = gameService.getGameSessionByUsername(betDto.getUid(), betDto.getGType() + "_" + betDto.getMType());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
