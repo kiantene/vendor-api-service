@@ -43,11 +43,6 @@ public class BetDto implements BetResultData {
     private Long gameRoundSeqNo;
 
     @NotBlank
-    @JsonProperty("gType")
-    @Pattern(regexp = "^[0-9]+$")
-    private String gType;
-
-    @NotBlank
     @JsonProperty("mType")
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
@@ -64,9 +59,9 @@ public class BetDto implements BetResultData {
         // trim the provider's category for decide round id value
         String trimCategory = this.mType.toString().toString().substring(0, 2);
 
-        if (trimCategory.equals(Formats.SPRIBE)) {
+        if(trimCategory.equals(Formats.SPRIBE)){
             return this.transferId.toString();
-        } else {
+        }else{
             return this.gameRoundSeqNo.toString();
         }
     }
