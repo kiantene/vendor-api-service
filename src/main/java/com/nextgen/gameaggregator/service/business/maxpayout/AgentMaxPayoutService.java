@@ -39,7 +39,9 @@ public class AgentMaxPayoutService {
         BigDecimal winAmount = betInfo.getWinAmount();
         BigDecimal jackpotAmount = betInfo.getJackpotAmount();
 
-        if (winAmount == null || winAmount.signum() == 0 || jackpotAmount == null || jackpotAmount.signum() == 0) return empty;
+        if ((winAmount == null || winAmount.signum() == 0) && (jackpotAmount == null || jackpotAmount.signum() == 0)) {
+            return empty;
+        }
 
         Optional<Agent> agent = getAgent(betInfo.getAgentId());
         if (agent.isEmpty()) return empty;
