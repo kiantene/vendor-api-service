@@ -20,6 +20,9 @@ public interface VendorExceptionMapper extends VendorComponent {
     default VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
         return onDuplicateRequest(new DuplicateRequestException(ex.getMessage(), ex));
     }
+    default VendorErrorResponse onBetNotFound(BetNotFoundException ex) {
+        return onInternalError(new InternalServerException(ex.getMessage(), ex));
+    }
 
     /**
      * These are unexpected errors

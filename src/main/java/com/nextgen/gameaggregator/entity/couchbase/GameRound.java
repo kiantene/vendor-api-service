@@ -20,6 +20,9 @@ public class GameRound {
     @JsonProperty("createdAt")
     private String createdAt;
 
+    @JsonProperty("state")
+    private GameRoundState state;
+
     @JsonProperty("className")
     private String className;
 
@@ -60,9 +63,6 @@ public class GameRound {
     @JsonProperty("transactions")
     private List<RoundTxn> transactions;
 
-    @JsonProperty("state")
-    private GameRoundState state;
-
     @JsonProperty("isEnded")
     private Boolean isEnded;
 
@@ -90,6 +90,11 @@ public class GameRound {
     @JsonIgnore
     public String getId() {
         return className + "::" + roundId;
+    }
+
+    @JsonIgnore
+    public boolean isSettled() {
+        return state == GameRoundState.SETTLED;
     }
 
     public void setBetAmount(BigDecimal betAmount) {

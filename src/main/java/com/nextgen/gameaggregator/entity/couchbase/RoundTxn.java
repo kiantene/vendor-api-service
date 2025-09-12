@@ -53,7 +53,17 @@ public class RoundTxn {
     }
 
     @JsonIgnore
+    public boolean isResult() {
+        return type == TxnType.RESULT;
+    }
+
+    @JsonIgnore
     public boolean isSuccessfulBet() {
         return isBet() && isSuccess();
+    }
+
+    @JsonIgnore
+    public boolean isSuccessfulBetOrResult() {
+        return isSuccess() && (isBet() || isResult());
     }
 }

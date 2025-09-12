@@ -25,6 +25,9 @@ public class GameTransaction {
     @JsonProperty("createdAt")
     private String createdAt;
 
+    @JsonProperty("state")
+    private GameRoundState state;
+
     @JsonProperty("className")
     private String className;
 
@@ -78,9 +81,6 @@ public class GameTransaction {
 
     @JsonProperty("status")
     private TxnStatus status;
-
-    @JsonProperty("state")
-    private GameRoundState state;
 
     @JsonProperty("betTime")
     private Long betTime;

@@ -108,7 +108,8 @@ public class WalletBetResultServiceWrapper {
          * If we receive result txn first before the bet txn arrives, we do not send the result to operator.
          * Instead, we wait for bet and send it together
          */
-        if (gameRoundService.isResultBeforeBet(round, resultType)) {
+        boolean isResultBeforeBetEnabled = state().getConfig().isAllowResultBeforeBet();
+        if (isResultBeforeBetEnabled && gameRoundService.isResultBeforeBet(round, resultType)) {
             gameTransactionService.markPending(txn);
             return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
         }

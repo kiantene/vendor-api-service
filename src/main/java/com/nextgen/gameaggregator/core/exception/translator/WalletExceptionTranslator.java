@@ -159,15 +159,16 @@ public class WalletExceptionTranslator {
             translatedException = new InternalConfigurationException(ex.getMessage(), ex);
         }
 
+        if (ex instanceof BetNotFoundException) {
+            throw new com.nextgen.gameaggregator.core.exception.BetNotFoundException(ex.getMessage(), ex);
+        }
+
         if (translatedException != null) return translatedException;
 
         if (ex instanceof RuntimeException runtimeException) {
             return runtimeException;
         }
 
-        /**
-         * BetNotFoundException will fall under InternalServerException
-         */
         return new RuntimeException(ex.getMessage(), ex);
     }
 

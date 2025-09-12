@@ -60,6 +60,9 @@ public final class ExceptionHandlerRegistry {
 
         handlers.put(DuplicateRequestException.class,
                 mapper -> ex -> mapper.onDuplicateRequest((DuplicateRequestException) ex));
+
+        handlers.put(BetNotFoundException.class,
+                mapper -> ex -> mapper.onBetNotFound((BetNotFoundException) ex));
     }
 
     private static void registerTransformationExceptions(Map<Class<? extends Exception>, Function<VendorExceptionMapper, Function<Exception, VendorErrorResponse>>> handlers) {

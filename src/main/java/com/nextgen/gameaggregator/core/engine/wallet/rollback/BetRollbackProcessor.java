@@ -18,7 +18,9 @@ import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.entity.ga.BetHistoryV3;
-import com.nextgen.gameaggregator.enums.*;
+import com.nextgen.gameaggregator.enums.BetResultType;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
@@ -60,13 +62,12 @@ public class BetRollbackProcessor {
 
         List<RoundTxn> txnList = round.getTransactions();
 
-        if (round.getState() == GameRoundState.SETTLED) {
+        if (round.isSettled()) {
             produceBetHistory(context, round);
         }
 
         txnList.stream()
-                .filter(t -> (t.getType() == TxnType.BET || t.getType() == TxnType.RESULT))
-                .filter(t -> t.getStatus() == TxnStatus.SUCCESS)
+                .filter(RoundTxn::isSuccessfulBetOrResult)
                 .forEach(t -> callToOperator(context, round, t));
 
         // TODO: update status to rollback
