@@ -23,7 +23,7 @@ class RollbackDataMapper {
 
             @Override
             public Long getVendorSettledTime() {
-                return Optional.ofNullable(context.getTimestamp()).orElse(System.currentTimeMillis());
+                return context.getTimestamp();
             }
 
             @Override
