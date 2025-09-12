@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.GameCategory;
 import com.nextgen.gameaggregator.core.entity.Vendor;
+import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
 import com.nextgen.gameaggregator.core.service.GameCategoryDataService;
 import com.nextgen.gameaggregator.core.service.VendorDataService;
@@ -49,7 +50,7 @@ public class BetRollbackProcessor {
     // TODO: temporary, will move to BetHistoryProducer
     private final KafkaTemplate<String, String> stringKafkaTemplate;
 
-    public PlayerBalanceData process(BetRollbackContext context, GameTransaction txn) {
+    public PlayerBalanceData process(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
         String docId = txn.getRoundDocId();
         Optional<GameRound> roundOpt = gameRoundService.get(docId);
 
@@ -63,7 +64,11 @@ public class BetRollbackProcessor {
         List<RoundTxn> txnList = round.getTransactions();
 
         if (round.isSettled()) {
-            produceBetHistory(context, round);
+            if (config.isAllowRollbackForSettledBet()) {
+                produceBetHistory(context, round);
+            } else {
+                throw new RollbackNotAllowedException("Round already settled.");
+            }
         }
 
         txnList.stream()

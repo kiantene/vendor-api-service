@@ -165,7 +165,7 @@ public class WalletRollbackServiceWrapper {
     }
 
     private PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction txn) {
-        return processor.process(context, txn);
+        return processor.process(context, txn, state().getConfig());
     }
 
     private PlayerBalanceData processRollbackByBet(BetRollbackContext context) throws
