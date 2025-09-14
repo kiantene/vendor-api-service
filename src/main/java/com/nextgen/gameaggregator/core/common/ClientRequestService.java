@@ -15,6 +15,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -55,6 +56,7 @@ public class ClientRequestService {
 
         return ClientApiRequest.<T>builder()
                 .agentId(agentId)
+                .method(HttpMethod.POST)
                 .path(path)
                 .requestObject(requestObject)
                 .baseUrl(baseUrl)
