@@ -21,7 +21,7 @@ public class GameRoundService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
             .ofPattern("HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
-    private static final Duration ROUND_TTL = Duration.ofHours(12);
+    private static final Duration ROUND_TTL = Duration.ofHours(6);
     private final GameRoundDataService data;
 
     public GameRoundService(GameRoundDataService data) {

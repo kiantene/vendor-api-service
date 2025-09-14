@@ -27,7 +27,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
 
     @Override
     protected void doEnrich(BetRollbackContext context) {
-        // handle enrichment in enrichByGameSession
+
     }
 
     public void enrichByGameSession(BetRollbackContext context,
@@ -101,8 +101,24 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         }
     }
 
-    public void enrichGameTransaction(GameTransaction txn, BetRollbackContext context) {
-        txn.setVendorId(context.getVendorId());
+    public void enrichGameTransaction(GameTransaction txn, BetRollbackContext context, LogContext logContext) {
+        if (context.getTimestamp() == null) {
+            context.setTimestamp(logContext.getStart());
+        }
+
+        txn.setVendorBetId(context.getVendorBetId());
         txn.setRoundId(context.getRoundId());
+    }
+
+    public void enrichByGameRound(BetRollbackContext context, GameRound round, GameTransaction txn) {
+        txn.setVendorId(round.getVendorId());
+        txn.setUsername(round.getUsername());
+        txn.setGameCode(round.getGameCode());
+        txn.setCurrency(round.getCurrency());
+        context.setVendorId(round.getVendorId());
+        context.setVendorPlayerUsername(round.getUsername());
+        context.setVendorGameCode(round.getGameCode());
+        context.setVendorCurrencyCode(round.getCurrency());
+        enrich(context);
     }
 }

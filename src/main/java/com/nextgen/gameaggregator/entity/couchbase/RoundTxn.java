@@ -19,6 +19,9 @@ public class RoundTxn {
     @JsonProperty("gaBetId")
     private String gaBetId;
 
+    @JsonProperty("vendorBetId")
+    private String vendorBetId;
+
     @JsonProperty("status")
     private TxnStatus status;
 
@@ -35,6 +38,7 @@ public class RoundTxn {
         RoundTxn roundTxn = new RoundTxn();
         roundTxn.setId(txn.getId());
         roundTxn.setType(txn.getType());
+        roundTxn.setVendorBetId(txn.getVendorBetId());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());

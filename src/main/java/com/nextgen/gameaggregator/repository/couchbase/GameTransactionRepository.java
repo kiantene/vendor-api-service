@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.repository.couchbase;
 
 import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.java.Collection;
-import com.couchbase.client.java.kv.GetResult;
-import com.couchbase.client.java.kv.MutateInOptions;
-import com.couchbase.client.java.kv.MutateInSpec;
-import com.couchbase.client.java.kv.MutationResult;
+import com.couchbase.client.java.kv.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,6 +39,15 @@ public class GameTransactionRepository {
         String id = content.getId();
 
         MutationResult res = collection.insert(id, content);
+        return new KvDoc<>(id, res.cas(), content);
+    }
+
+    public KvDoc<GameTransaction> insertWithTTL(GameTransaction content, Duration ttl) {
+        String id = content.getId();
+
+        InsertOptions options = InsertOptions.insertOptions().expiry(ttl);
+        MutationResult res = collection.insert(id, content, options);
+
         return new KvDoc<>(id, res.cas(), content);
     }
 

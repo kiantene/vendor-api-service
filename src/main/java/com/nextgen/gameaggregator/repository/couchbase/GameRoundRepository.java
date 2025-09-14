@@ -118,7 +118,16 @@ public class GameRoundRepository {
         }
     }
 
-    public void updateRoundState(String docId, GameRoundState state) {
-        collection.mutateIn(docId, List.of(MutateInSpec.upsert("state", state.name())));
+    public void updateRoundState(String docId, GameRoundState state, Duration ttl) {
+        var specs = new ArrayList<MutateInSpec>();
+
+        specs.add(MutateInSpec.upsert("state", state.name()));
+
+        if (ttl != null) {
+            var opts = MutateInOptions.mutateInOptions().expiry(ttl);
+            collection.mutateIn(docId, specs, opts);
+        } else {
+            collection.mutateIn(docId, specs);
+        }
     }
 }
