@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Field mapping rules for Bet Result Request:
@@ -69,4 +70,8 @@ public class BetResultContext implements GameSessionData, VendorPlayerAware, Ven
     private Long resultTime;
 
     private List<BetTransaction> betTransactions;
+
+    public boolean isRoundEnded() {
+        return Optional.ofNullable(roundEnded).orElse(false);
+    }
 }

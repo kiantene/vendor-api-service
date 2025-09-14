@@ -1,11 +1,13 @@
 package com.nextgen.gameaggregator.service.data.couchbase;
 
+import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.repository.couchbase.GameTransactionRepository;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class CouchbaseGameTransactionDataService implements GameTransactionDataService {
     private final GameTransactionRepository repo;
 
@@ -110,7 +113,11 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
 
     @Override
     public void deleteById(String id) {
-        repo.delete(id);
+        try {
+            repo.delete(id);
+        } catch (DocumentNotFoundException ex) {
+            log.warn(this.getClass().getSimpleName() + ".delete: " + id + " does not exists");
+        }
     }
 
     private void updateIfNotNull(Map<String, Object> map, String field, Object value) {

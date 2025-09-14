@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service.data.producer;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContext;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentPlayer;
@@ -13,16 +14,15 @@ import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.GameCategoryDataService;
 import com.nextgen.gameaggregator.core.service.VendorDataService;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
+import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.service.CurrencyConversionService;
-import com.nextgen.gameaggregator.service.KafkaService;
-import com.nextgen.gameaggregator.service.VendorPlayerService;
-import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
+import com.nextgen.gameaggregator.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,9 +39,11 @@ public class BetHistoryProducer {
     private final AgentDataService agentDataService;
     private final AgentPlayerDataService agentPlayerDataService;
     private final GameCategoryDataService gameCategoryDataService;
+    private final VendorCurrencyService vendorCurrencyService;
     private final VendorPlayerService vendorPlayerService;
     private final VendorDataService vendorDataService;
-    private final BetTxnToBetHistoryMapper betHistoryMapper;
+    private final BetHistoryMapper betHistoryMapper;
+    private final BetTxnToBetHistoryMapper betTxnToBetHistoryMapper;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private record PlayerUsernames(String agentPlayer, String vendorPlayer) {}
 
@@ -95,6 +97,35 @@ public class BetHistoryProducer {
 
         BetHistoryV3 betHistory = buildCancelledBetHistory(context, round, agent, vendor, gameCategory);
         publish(betHistory);
+    }
+
+    public void publishBetHistoryByRound(BetResultContext context, GameRound round, GameTransaction txn) {
+
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
+
+        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
+        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
+        Vendor vendor = vendorDataService.get(context.getVendorId());
+
+        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+
+        BigDecimal fromVendorRate = getVendorRate(context.getVendorId(), context.getCurrencyId());
+
+        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate);
+
+        publish(betHistory);
+    }
+
+    private BigDecimal getVendorRate(Integer vendorId, Integer currencyId) {
+        try {
+            VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
+            if (vendorCurrency.getFromVendorRate() != null) {
+                return vendorCurrency.getFromVendorRate();
+            }
+        } catch (VendorCurrencyNotSupportException ex) {
+            return BigDecimal.ONE;
+        }
+        return BigDecimal.ONE;
     }
 
     private PlayerUsernames getUsernamesIfNull(BetHistoryPublishContext context,
@@ -192,7 +223,7 @@ public class BetHistoryProducer {
 
         betTransactions
                 .forEach(betTxn -> {
-                    BetHistory betHistory = betHistoryMapper.mapValues(
+                    BetHistory betHistory = betTxnToBetHistoryMapper.mapValues(
                             buildBetHistory(settledBet, context),
                             betTxn
                     );
@@ -201,6 +232,7 @@ public class BetHistoryProducer {
                 });
     }
 
+    // TODO: refactor
     private BetHistoryV3 buildCancelledBetHistory(BetRollbackContext context,
                                                   GameRound round,
                                                   Agent agent,
@@ -211,7 +243,7 @@ public class BetHistoryProducer {
         BigDecimal win      = round.getWinAmount();
         BigDecimal winLoss  = win.subtract(bet);
         BigDecimal turnover = bet;
-        BigDecimal jackpot  = BigDecimal.ZERO; // TODO: implement when we have jackpot use case
+        BigDecimal jackpot  = round.getJackpotAmount();
 
         // TODO: conversion rate
 

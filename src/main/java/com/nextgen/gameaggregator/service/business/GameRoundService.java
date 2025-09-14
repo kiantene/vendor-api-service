@@ -54,8 +54,8 @@ public class GameRoundService {
         return addNewTxnToRound(kvDoc, txn);
     }
 
-    public void applyTxnDelta(TxnDelta delta) {
-        data.applyTxnDelta(delta, ROUND_TTL);
+    public GameRound applyTxnDelta(TxnDelta delta) {
+        return data.applyTxnDelta(delta, ROUND_TTL);
     }
 
     public boolean isResultBeforeBet(GameRound round, ResultType resultType) {

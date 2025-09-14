@@ -54,4 +54,12 @@ public class BetResultConfig {
         this.allowResultBeforeBet = flag;
         return this;
     }
+
+    public boolean isSettledByBet() {
+        return settleType == SettleType.BET;
+    }
+
+    public boolean isSettledByRound() {
+        return settleType == SettleType.ROUND;
+    }
 }

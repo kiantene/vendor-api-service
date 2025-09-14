@@ -1,6 +1,21 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 public enum SettleType {
-    BET,    // Settled by individual bet
-    ROUND   // Settled by round/session
+    /**
+     * Settled by transaction
+     * - Every bet or result transaction will produce 1 bet history record
+     */
+    TRANSACTION,
+
+    /**
+     * Settled by individual bet
+     * - Every bet transaction will be settled by a result transaction and produce 1 bet history record
+     */
+    BET,
+
+    /**
+     * Settled by round
+     * - All transactions within the same round will be grouped and produce 1 bet history record
+     */
+    ROUND
 }

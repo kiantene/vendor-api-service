@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.common;
+package com.nextgen.gameaggregator.core.webclient;
 
 import com.nextgen.core.exception.Http4xxException;
 import com.nextgen.core.exception.Http5xxException;
@@ -22,22 +22,23 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Map;
 
 @Slf4j
 @Component
-@Deprecated(forRemoval = true)
-/**
- * @deprecated use {@link com.nextgen.gameaggregator.core.webclient.OperatorApiCaller}
- */
-public class OperatorApiCallerV2 {
+public class OperatorApiCaller {
     private final WebClient webClient;
+    private WebClientRetryPolicy retryPolicy;
 
-    public OperatorApiCallerV2() {
+    public OperatorApiCaller() {
         this.webClient = createWebClient();
+        this.retryPolicy = WebClientRetryPolicy.getDefault();
+    }
+
+    public void attachRetryPolicy(WebClientRetryPolicy retryPolicy) {
+        this.retryPolicy = retryPolicy;
     }
 
     private WebClient createWebClient() {
@@ -49,9 +50,9 @@ public class OperatorApiCallerV2 {
 
     private HttpClient createHttpClient() {
         return HttpClient.create(createConnectionProvider())
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000) // 2s connect timeout
-                .responseTimeout(Duration.ofSeconds(5))             // 5s total read timeout
-                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(5))); // 5s read timeout (low-level)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
+                .responseTimeout(Duration.ofSeconds(3))
+                .doOnConnected(conn -> conn.addHandlerLast(new ReadTimeoutHandler(3)));
     }
 
     private ConnectionProvider createConnectionProvider() {
@@ -116,21 +117,8 @@ public class OperatorApiCallerV2 {
                 .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
                 .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
                 .toEntity(String.class)
-                .retryWhen(createRetrySpec(path))
+                .retryWhen(retryPolicy.retryWhen(path))
                 .block();
-    }
-
-    private Retry createRetrySpec(String path) {
-        return Retry.backoff(3, Duration.ofSeconds(1))
-                .jitter(0.5)
-                .filter(this::isRetryable)
-                .doBeforeRetry(retrySignal ->
-                        log.warn("[{}] Retrying attempt {} due to: {}",
-                                path,
-                                retrySignal.totalRetries() + 1,
-                                retrySignal.failure())
-                )
-                .onRetryExhaustedThrow((spec, signal) -> signal.failure());
     }
 
     private WebClient.RequestHeadersSpec<?> createRequest(String url, Map<String, String> headers, Object body) {
@@ -182,11 +170,5 @@ public class OperatorApiCallerV2 {
         if (response == null) {
             throw new OperatorApiException("Response is empty", url);
         }
-    }
-
-    private boolean isRetryable(Throwable throwable) {
-        return throwable instanceof java.io.IOException
-                || throwable instanceof io.netty.channel.unix.Errors.NativeIoException
-                || (throwable.getCause() instanceof java.io.IOException);
     }
 }

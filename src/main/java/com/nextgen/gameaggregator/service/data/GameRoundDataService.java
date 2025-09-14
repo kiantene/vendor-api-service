@@ -15,5 +15,5 @@ public interface GameRoundDataService {
     void appendTxn(String docId, RoundTxn roundTxn, long cas);
     void updateTxn(String docId, int idx, Map<String, Object> updates);
     void setRoundState(String docId, GameRoundState state);
-    void applyTxnDelta(TxnDelta delta, Duration ttl);
+    GameRound applyTxnDelta(TxnDelta delta, Duration ttl);
 }

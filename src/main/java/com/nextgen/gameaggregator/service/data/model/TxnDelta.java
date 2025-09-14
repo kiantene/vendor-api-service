@@ -12,6 +12,7 @@ public record TxnDelta(
         Optional<BigDecimal> lastBalance,
         Optional<BigDecimal> betDelta,// +bet on SUCCESS, empty otherwise
         Optional<BigDecimal> winDelta,// +win on SUCCESS, empty otherwise
+        Optional<BigDecimal> jackpotDelta,// +jackpot on SUCCESS, empty otherwise
         Optional<TxnStatus> status,   // SENT / SUCCESS / FAILED (when changing status)
         Optional<TimeField> timeField,// which time to write
         Optional<String> timeValueUtc,// "HH:mm:ss.SSS" in UTC
@@ -25,6 +26,7 @@ public record TxnDelta(
                                            BigDecimal lastBalance,
                                            BigDecimal betDelta,
                                            BigDecimal winDelta,
+                                           BigDecimal jackpotDelta,
                                            String doneAtUtc,
                                            boolean isSettled,
                                            boolean isEnded) {
@@ -35,6 +37,7 @@ public record TxnDelta(
                 Optional.ofNullable(lastBalance),
                 Optional.ofNullable(betDelta),
                 Optional.ofNullable(winDelta),
+                Optional.ofNullable(jackpotDelta),
                 Optional.of(TxnStatus.SUCCESS),
                 Optional.of(TimeField.DONE_AT),
                 Optional.of(doneAtUtc),
