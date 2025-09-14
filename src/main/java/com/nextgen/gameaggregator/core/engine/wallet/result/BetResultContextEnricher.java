@@ -68,7 +68,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
 
         enrich(context);
 
-        if (context.getRoundEnded() == null && config.getSettleType() == SettleType.BET) {
+        if (config.isSettledByBet() && context.getRoundEnded() == null) {
             context.setRoundEnded(true);
         }
     }
@@ -82,6 +82,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         txn.setCurrency(context.getVendorCurrency());
         txn.setBetAmount(context.getBetAmount());
         txn.setWinAmount(context.getWinAmount());
+        txn.setJackpotAmount(context.getJackpotAmount());
         txn.setBetTime(context.getVendorBetTime());
         txn.setSettleTime(context.getVendorSettleTime());
         txn.setState(GameRoundState.SETTLED);

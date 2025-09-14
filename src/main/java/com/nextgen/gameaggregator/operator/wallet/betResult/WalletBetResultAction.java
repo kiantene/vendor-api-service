@@ -389,8 +389,8 @@ public class WalletBetResultAction {
             BetResultWrapperContext wrapperContext = BetResultContextHolder.get();
             BetResultConfig config = wrapperContext.getConfig();
             BetResultContext context = wrapperContext.getBetResultContext();
-            if (SettleType.ROUND == config.getSettleType()) {
-                walletBetResultDto.setIsEndRound(context.getRoundEnded() ? 1 : 0);
+            if (config.isSettledByRound()) {
+                walletBetResultDto.setIsEndRound(context.isRoundEnded() ? 1 : 0);
             }
         }
 

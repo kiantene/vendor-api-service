@@ -71,6 +71,11 @@ public class GameTransaction {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal winAmount;
 
+    @JsonProperty("jackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    private BigDecimal jackpotAmount;
+
     @JsonProperty("balance")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)

@@ -83,7 +83,7 @@ public class GameTransactionService {
         markSuccess(round, txn, balance, false);
     }
 
-    public void markSuccess(GameRound round, GameTransaction txn, BigDecimal balance, Boolean isEnded) {
+    public GameRound markSuccess(GameRound round, GameTransaction txn, BigDecimal balance, Boolean isEnded) {
         txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
@@ -95,19 +95,22 @@ public class GameTransactionService {
                 balance,
                 txn.getBetAmount(),
                 txn.getWinAmount(),
+                txn.getJackpotAmount(),
                 txn.getDoneAt(),
                 GameRoundState.SETTLED == txn.getState(),
                 Optional.ofNullable(isEnded).orElse(false)
         );
 
-        gameRoundService.applyTxnDelta(delta);
+        GameRound updatedRound = gameRoundService.applyTxnDelta(delta);
 
         if (Boolean.TRUE.equals(isEnded)) {
-            round.getTransactions()
+            updatedRound.getTransactions()
                     .stream()
                     .filter(RoundTxn::isSuccessfulBet)
                     .forEach(t -> markSettled(t.getId(), txn.getSettleTime()));
         }
+
+        return updatedRound;
     }
 
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {

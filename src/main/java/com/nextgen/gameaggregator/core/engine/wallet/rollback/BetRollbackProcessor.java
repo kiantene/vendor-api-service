@@ -3,11 +3,11 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientApiRequest;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
-import com.nextgen.gameaggregator.core.common.OperatorApiCallerV2;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
+import com.nextgen.gameaggregator.core.webclient.OperatorApiCaller;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
@@ -34,7 +34,7 @@ public class BetRollbackProcessor {
     private final GameRoundService gameRoundService;
     private final GameTransactionService gameTransactionService;
     private final ClientRequestService clientRequestService;
-    private final OperatorApiCallerV2 operatorApiCaller;
+    private final OperatorApiCaller operatorApiCaller;
     private final BetHistoryProducer betHistoryProducer;
     private final LegacyCleanupService legacyCleanupService;
 
@@ -128,7 +128,6 @@ public class BetRollbackProcessor {
         BigDecimal balance = Optional.ofNullable(balanceData.getBalance()).orElse(round.getLastBalance());
         gameTransactionService.markRollback(round, txn, balance);
 
-        // TODO: update status to rollback
         return new PlayerBalanceData(
                 round.getUsername(),
                 round.getCurrency(),

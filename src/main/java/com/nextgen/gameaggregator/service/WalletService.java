@@ -379,10 +379,14 @@ public class WalletService {
 
                 loggingService.logStart();
                 if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                    // kafkaService.produceWarehouseBetHistory
-                    //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
-                    kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                            gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    /**
+                     * Exclude bet history produce logic if vendor is running on new framework
+                     * @see {@link com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper}
+                     */
+                    if (!httpRequestLog.isBetHistoryProduceDisabled()) {
+                        kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                                gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    }
                 } else {
                     // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                     kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);

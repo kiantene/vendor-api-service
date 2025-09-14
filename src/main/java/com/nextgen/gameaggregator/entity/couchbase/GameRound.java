@@ -54,6 +54,11 @@ public class GameRound {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal winAmount;
 
+    @JsonProperty("jackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    private BigDecimal jackpotAmount;
+
     @JsonProperty("agentMeta")
     private AgentMeta agentMeta;
 
@@ -74,6 +79,7 @@ public class GameRound {
         this.state = GameRoundState.UNSETTLED;
         this.betAmount = BigDecimal.ZERO;
         this.winAmount = BigDecimal.ZERO;
+        this.jackpotAmount = BigDecimal.ZERO;
         this.isEnded = false;
     }
 

@@ -69,53 +69,28 @@ public class GameRoundRepository {
         collection.mutateIn(docId, specs);
     }
 
-    public void applyTxnDelta(TxnDelta d, Duration ttl) {
-        final String base = "transactions[" + d.idx() + "]";
+    public GameRound applyTxnDelta(TxnDelta d, Duration ttl) {
         var specs = new ArrayList<MutateInSpec>();
 
-        specs.add(MutateInSpec.upsert(base + ".gaBetId", d.gaBetId()));
-        d.status().ifPresent(s -> specs.add(MutateInSpec.replace(base + ".status", s.name())));
-        if (d.timeField().isPresent() && d.timeValueUtc().isPresent()) {
-            String path = switch (d.timeField().get()) {
-                case SENT_AT -> base + ".sentAt";
-                case DONE_AT -> base + ".doneAt";
-            };
-            specs.add(MutateInSpec.upsert(path, d.timeValueUtc().get()));
-        }
+        addTransactionFieldUpdates(specs, d);
 
-        if (d.isSettled()) {
-            specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
-        }
+        addGameStateUpdates(specs, d);
+
+        var gr = collection.get(d.docId());
+        var round = gr.contentAs(GameRound.class);
+        var updatedAmounts = calculateUpdatedAmounts(round, d);
+
+        addAmountsUpdate(specs, updatedAmounts);
+
+        var opts = MutateInOptions.mutateInOptions().cas(gr.cas());
+
         if (d.isEnded()) {
-            specs.add(MutateInSpec.upsert("isEnded", true));
+            opts.expiry(ttl);
         }
 
-        if (d.lastBalance().isPresent()) {
-            specs.add(MutateInSpec.upsert("lastBalance", d.lastBalance().get().toPlainString()));
-        }
+        collection.mutateIn(d.docId(), specs, opts);
 
-        // For aggregates: read current totals once to compute new values (CAS protects write)
-        if (d.betDelta().isPresent() || d.winDelta().isPresent() || d.isSettled()) {
-            var gr = collection.get(d.docId());
-            var round = gr.contentAs(GameRound.class);
-
-            BigDecimal bet = Optional.ofNullable(round.getBetAmount()).orElse(BigDecimal.ZERO);
-            BigDecimal win = Optional.ofNullable(round.getWinAmount()).orElse(BigDecimal.ZERO);
-
-            if (d.betDelta().isPresent()) bet = bet.add(d.betDelta().get());
-            if (d.winDelta().isPresent()) win = win.add(d.winDelta().get());
-
-            specs.add(MutateInSpec.replace("betAmount", bet.toPlainString()));
-            specs.add(MutateInSpec.replace("winAmount", win.toPlainString()));
-
-            var opts = d.isEnded()
-                    ? MutateInOptions.mutateInOptions().cas(gr.cas()).expiry(ttl)
-                    : MutateInOptions.mutateInOptions().cas(gr.cas());
-
-            collection.mutateIn(d.docId(), specs, opts);
-        } else {
-            collection.mutateIn(d.docId(), specs);
-        }
+        return round;
     }
 
     public void updateRoundState(String docId, GameRoundState state, Duration ttl) {
@@ -130,4 +105,78 @@ public class GameRoundRepository {
             collection.mutateIn(docId, specs);
         }
     }
+
+    private void addTransactionFieldUpdates(List<MutateInSpec> specs, TxnDelta d) {
+        final String basePath = "transactions[" + d.idx() + "]";
+
+        // Always update gaBetId
+        specs.add(MutateInSpec.upsert(basePath + ".gaBetId", d.gaBetId()));
+
+        // Update status if present
+        d.status().ifPresent(status ->
+                specs.add(MutateInSpec.upsert(basePath + ".status", status.name())));
+
+        // Update time fields if present
+        addTimeFieldUpdate(specs, basePath, d);
+    }
+
+    private void addGameStateUpdates(List<MutateInSpec> specs, TxnDelta d) {
+        if (d.isSettled()) {
+            specs.add(MutateInSpec.upsert("state", GameRoundState.SETTLED.name()));
+        }
+
+        if (d.isEnded()) {
+            specs.add(MutateInSpec.upsert("isEnded", true));
+        }
+
+        d.lastBalance().ifPresent(balance ->
+                specs.add(MutateInSpec.upsert("lastBalance", balance.toPlainString())));
+    }
+
+    private void addTimeFieldUpdate(List<MutateInSpec> specs, String base, TxnDelta d) {
+        if (d.timeField().isEmpty() || d.timeValueUtc().isEmpty()) {
+            return;
+        }
+
+        d.timeField().ifPresent(timeField -> {
+            String timePath = base + switch(timeField) {
+                case SENT_AT -> ".sentAt";
+                case DONE_AT -> ".doneAt";
+            };
+
+            specs.add(MutateInSpec.upsert(timePath, d.timeValueUtc().get()));
+        });
+    }
+
+    private void addAmountsUpdate(List<MutateInSpec> specs, AggregateAmounts amounts) {
+        specs.add(MutateInSpec.upsert("betAmount", amounts.bet().toPlainString()));
+        specs.add(MutateInSpec.upsert("winAmount", amounts.win().toPlainString()));
+        specs.add(MutateInSpec.upsert("jackpotAmount", amounts.jackpot().toPlainString()));
+    }
+
+    private AggregateAmounts calculateUpdatedAmounts(GameRound gameRound, TxnDelta d) {
+        BigDecimal bet = Optional.ofNullable(gameRound.getBetAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal win = Optional.ofNullable(gameRound.getWinAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal jackpot = Optional.ofNullable(gameRound.getJackpotAmount()).orElse(BigDecimal.ZERO);
+
+        // Apply deltas
+        if (d.betDelta().isPresent()) {
+            bet = bet.add(d.betDelta().get());
+        }
+        if (d.winDelta().isPresent()) {
+            win = win.add(d.winDelta().get());
+        }
+        if (d.jackpotDelta().isPresent()) {
+            jackpot = jackpot.add(d.jackpotDelta().get());
+        }
+
+        // Update the GameRound object in-place
+        gameRound.setBetAmount(bet);
+        gameRound.setWinAmount(win);
+        gameRound.setJackpotAmount(jackpot);
+
+        return new AggregateAmounts(bet, win, jackpot);
+    }
+
+    private record AggregateAmounts(BigDecimal bet, BigDecimal win, BigDecimal jackpot) {}
 }

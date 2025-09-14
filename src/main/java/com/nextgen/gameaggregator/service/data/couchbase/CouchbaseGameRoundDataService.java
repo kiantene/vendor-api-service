@@ -49,8 +49,8 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     }
 
     @Override
-    public void applyTxnDelta(TxnDelta delta, Duration ttl) {
-        repo.applyTxnDelta(delta, ttl);
+    public GameRound applyTxnDelta(TxnDelta delta, Duration ttl) {
+        return repo.applyTxnDelta(delta, ttl);
     }
 
     private static void runWithCasRetry(Runnable op) {
