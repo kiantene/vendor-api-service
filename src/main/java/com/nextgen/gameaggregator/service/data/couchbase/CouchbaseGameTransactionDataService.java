@@ -34,17 +34,23 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     }
 
     @Override
+    public void insertWithTTL(GameTransaction doc, Duration ttl) {
+        KvDoc<GameTransaction> kvDoc = repo.insertWithTTL(doc, ttl);
+    }
+
+    @Override
     public void update(GameTransaction doc) {
         Map<String, Object> updates = new HashMap<>();
-        updates.put("vendorBetId", doc.getVendorBetId());
+
         updates.put("vendorId", doc.getVendorId());
         updates.put("username", doc.getUsername());
-        updates.put("roundId", doc.getRoundId());
         updates.put("gameCode", doc.getGameCode());
         updates.put("currency", doc.getCurrency());
         updates.put("status", doc.getStatus().name());
         updates.put("state", doc.getState().name());
 
+        updateIfNotNull(updates, "vendorBetId", doc.getVendorBetId());
+        updateIfNotNull(updates, "roundId", doc.getRoundId());
         updateIfNotNull(updates, "betAmount", doc.getBetAmount());
         updateIfNotNull(updates, "betTime", doc.getBetTime());
         updateIfNotNull(updates, "winAmount", doc.getWinAmount());
@@ -82,7 +88,8 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
     }
 
     @Override
-    public void updateToSettled(String docId, long settledTime, Duration ttl) {
+    public void updateToSettled(String docId, long settledTime) {
+        Duration ttl = Duration.ofHours(3);
         Map<String, Object> updates = Map.of(
                 "state", GameRoundState.SETTLED.name(),
                 "settleTime", settledTime
@@ -91,6 +98,15 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         repo.update(docId, updates, ttl);
     }
 
+    @Override
+    public void updateToRefunded(String docId) {
+        Duration ttl = Duration.ofHours(3);
+        Map<String, Object> updates = Map.of(
+                "state", GameRoundState.REFUNDED.name()
+        );
+
+        repo.update(docId, updates, ttl);
+    }
 
     @Override
     public void deleteById(String id) {

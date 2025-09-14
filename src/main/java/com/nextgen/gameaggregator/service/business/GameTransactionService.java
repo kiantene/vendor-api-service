@@ -1,14 +1,17 @@
 package com.nextgen.gameaggregator.service.business;
 
+import com.couchbase.client.core.error.DocumentExistsException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,6 +23,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GameTransactionService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
             .ofPattern("HH:mm:ss.SSS")
@@ -29,11 +33,15 @@ public class GameTransactionService {
     private final GameRoundService gameRoundService;
 
     public Optional<GameTransaction> get(GameTransaction txn) {
-        var doc = txnDataService.findById(txn.getId());
+        GameTransaction doc = txnDataService.findById(txn.getId());
 
-        if (doc == null) return Optional.empty();
+        return doc != null ? Optional.of(doc) : Optional.empty();
+    }
 
-        return Optional.of(doc);
+    public Optional<GameTransaction> get(String id) {
+        GameTransaction doc = txnDataService.findById(id);
+
+        return doc != null ? Optional.of(doc) : Optional.empty();
     }
 
     public GameTransaction save(GameTransaction txn) {
@@ -48,6 +56,21 @@ public class GameTransactionService {
         txn.setStatus(TxnStatus.SENT);
         txn.setSentAt(getNow());
         txnDataService.update(txn);
+
+        /**
+         * Create an alias copy of the same txn but using vendorBetId as primary key (docId)
+         * This alias copy is used for rollback using vendorBetId and will expire in 7 days
+         */
+        if (txn.getType() == TxnType.BET && !txn.getTransactionId().equals(txn.getVendorBetId())) {
+            GameTransaction betTxn = txn.copy();
+            betTxn.setTransactionId(txn.getVendorBetId());
+            try {
+                txnDataService.insertWithTTL(txn, Duration.ofDays(7));
+            } catch (DocumentExistsException ex) {
+                // don't throw error even if document already exists
+                log.warn("GameTransaction (" + betTxn.getId() + ") already exists");
+            }
+        }
 
         return gameRoundService.save(txn, agentMeta);
     }
@@ -87,9 +110,19 @@ public class GameTransactionService {
         }
     }
 
+    public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
+        rollbackTxn.setState(GameRoundState.SETTLED);
+        txnDataService.updateStatus(rollbackTxn, balance, TxnStatus.SUCCESS);
+
+        gameRoundService.updateRoundState(round.getId(), GameRoundState.REFUNDED);
+    }
+
+    public void markRefunded(String txnDocId) {
+        txnDataService.updateToRefunded(txnDocId);
+    }
+
     public void markSettled(String txnId, long settledTime) {
-        Duration ttl = Duration.ofHours(3);
-        txnDataService.updateToSettled(txnId, settledTime, ttl);
+        txnDataService.updateToSettled(txnId, settledTime);
     }
 
     private String getNow() {

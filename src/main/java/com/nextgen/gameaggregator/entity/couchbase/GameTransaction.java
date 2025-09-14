@@ -117,6 +117,33 @@ public class GameTransaction {
         this.transactionId = transactionId;
     }
 
+    public GameTransaction copy() {
+        GameTransaction copy = new GameTransaction();
+        copy.createdAt = this.createdAt;
+        copy.state = this.state;
+        copy.className = this.className;
+        copy.idx = this.idx;
+        copy.type = this.type;
+        copy.transactionId = this.transactionId;
+        copy.vendorBetId = this.vendorBetId;
+        copy.vendorId = this.vendorId;
+        copy.roundId = this.roundId;
+        copy.username = this.username;
+        copy.gameCode = this.gameCode;
+        copy.currency = this.currency;
+        copy.betAmount = this.betAmount;
+        copy.winAmount = this.winAmount;
+        copy.balance = this.balance;
+        copy.gaBetId = this.gaBetId;
+        copy.status = this.status;
+        copy.betTime = this.betTime;
+        copy.settleTime = this.settleTime;
+        copy.sentAt = this.sentAt;
+        copy.doneAt = this.doneAt;
+        copy.createdTs = this.createdTs;
+        return copy;
+    }
+
     @JsonIgnore
     public String getId() {
         return className + "::" + type + "::" + transactionId;
@@ -128,7 +155,17 @@ public class GameTransaction {
     }
 
     @JsonIgnore
+    public String getRollbackId() {
+        return className + "::" + TxnType.BET + "::" + vendorBetId;
+    }
+
+    @JsonIgnore
     public boolean isSuccess() {
         return status == TxnStatus.SUCCESS;
+    }
+
+    @JsonIgnore
+    public boolean isSettled() {
+        return state == GameRoundState.SETTLED;
     }
 }

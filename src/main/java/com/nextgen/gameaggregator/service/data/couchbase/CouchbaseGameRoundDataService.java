@@ -44,7 +44,8 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
 
     @Override
     public void setRoundState(String docId, GameRoundState state) {
-        repo.updateRoundState(docId, state);
+        Duration ttl = Duration.ofHours(3);
+        repo.updateRoundState(docId, state, ttl);
     }
 
     @Override
