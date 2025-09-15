@@ -277,7 +277,7 @@ public class BetHistoryProducer {
         betHistory.setResultType(BetResultType.BET.code);
         betHistory.setBetType(BetType.NORMAL_BET.code);
         betHistory.setIsFreespin(0);
-        betHistory.setResettleNum(0);
+        betHistory.setResettleNum(1);
         betHistory.setStatus(BetStatus.CANCELLED.code);
         betHistory.setGameSessionToken(round.getAgentMeta().getSession());
         betHistory.setVendorBetTime(context.getTimestamp());
