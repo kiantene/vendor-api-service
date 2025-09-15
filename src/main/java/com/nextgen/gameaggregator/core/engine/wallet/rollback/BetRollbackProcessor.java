@@ -1,15 +1,16 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
-import com.nextgen.gameaggregator.core.common.ClientApiRequest;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
+import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiCaller;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
@@ -37,49 +38,45 @@ public class BetRollbackProcessor {
     private final GameRoundService gameRoundService;
     private final GameTransactionService gameTransactionService;
     private final ClientRequestService clientRequestService;
+    private final ClientResponseValidator clientResponseValidator;
     private final OperatorApiCaller operatorApiCaller;
     private final BetHistoryProducer betHistoryProducer;
     private final RetryQueueService retryQueueService;
     private final LegacyCleanupService legacyCleanupService;
 
-    public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
-        Optional<GameTransaction> betTxnOpt = gameTransactionService.get(txn.getRollbackId());
+    public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
+        GameTransaction betTxn = gameTransactionService.get(rollbackTxn.getRollbackId())
+                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + rollbackTxn.getRollbackId()));
 
-        if (betTxnOpt.isEmpty()) {
-            // throw exception
-            return defaultBalanceData(context, "");
+        RollbackDecision decision = RollbackPolicy.decide(betTxn, config);
+
+        if (decision.isRejected()) {
+            throw new RollbackNotAllowedException(decision.reason());
         }
 
-        GameTransaction betTxn = betTxnOpt.get();
-
-        if (betTxn.isSettled() && (!config.isAllowRollbackForSettledBet())) {
-            throw new RollbackNotAllowedException("Transaction already settled");
+        if (decision.isNoOp()) {
+            return defaultBalanceData(context, betTxn.getCurrency());
         }
 
-        Optional<GameRound> roundOpt = gameRoundService.get(betTxn.getRoundDocId());
+        GameRound round = gameRoundService.get(betTxn.getRoundDocId())
+                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + betTxn.getRoundDocId()));
 
-        if (roundOpt.isEmpty()) {
-            log.error(betTxn.getRoundDocId() + " cannot be found");
-            // should not happen but return default balance just in case it happens.
-            return defaultBalanceData(context, "");
-        }
-
-        GameRound round = roundOpt.get();
-
-        enricher.enrichByGameRound(context, round, txn);
+        enricher.enrichByGameRound(context, round, rollbackTxn);
 
         if (betTxn.isSettled()) {
-            // TODO: should only send message for 1 txn
             betHistoryProducer.publishCancelledBetHistory(context, round);
         }
 
-        legacyCleanupService.cleanup(round, betTxn.getVendorBetId(), context.getVendorGameId(), context.getVendorPlayerId());
-        gameTransactionService.markSent(txn, null);
-        // TODO: check status to decide send or don't send to operator
-        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId());
+        // Update bet txn status to refunded
         gameTransactionService.markRefunded(betTxn.getId());
-        gameTransactionService.markRollback(round, txn, balanceData.getBalance());
+        gameTransactionService.markSent(rollbackTxn, null);
+        legacyCleanupService.cleanup(round, betTxn.getVendorBetId(), context.getVendorGameId(), context.getVendorPlayerId());
 
+        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId());
+
+        gameTransactionService.markRollback(round, rollbackTxn, balanceData.getBalance());
+
+        // translate to vendor's username/currency
         return new PlayerBalanceData(
                 round.getUsername(),
                 round.getCurrency(),
@@ -89,22 +86,22 @@ public class BetRollbackProcessor {
     }
 
     public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
-        String docId = txn.getRoundDocId();
-        Optional<GameRound> roundOpt = gameRoundService.get(docId);
+        GameRound round = gameRoundService.get(txn.getRoundDocId())
+                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + txn.getRoundDocId()));
 
-        if (roundOpt.isEmpty()) {
-            // throw not found
-            return defaultBalanceData(context, "");
+        RollbackDecision decision = RollbackPolicy.decide(round, config);
+
+        if (decision.isRejected()) {
+            throw new RollbackNotAllowedException(decision.reason());
         }
 
-        GameRound round = roundOpt.get();
+        if (decision.isNoOp()) {
+            return defaultBalanceData(context, round.getCurrency());
+        }
 
         enricher.enrichByGameRound(context, round, txn);
 
         if (round.isSettled()) {
-            if (!config.isAllowRollbackForSettledBet()) {
-                throw new RollbackNotAllowedException("Round already settled");
-            }
             betHistoryProducer.publishCancelledBetHistory(context, round);
         }
 
@@ -132,6 +129,7 @@ public class BetRollbackProcessor {
         BigDecimal balance = Optional.ofNullable(balanceData.getBalance()).orElse(round.getLastBalance());
         gameTransactionService.markRollback(round, txn, balance);
 
+        // translate to vendor's username/currency
         return new PlayerBalanceData(
                 round.getUsername(),
                 round.getCurrency(),
@@ -145,14 +143,15 @@ public class BetRollbackProcessor {
     }
 
     private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId) {
-        ClientApiRequest<WalletRollbackDto> apiRequest = null;
-        try {
-            apiRequest = clientRequestService.createClientApiRequest(
-                    round.getAgentMeta().getAgentId(),
-                    EndPoints.WALLET_ROLLBACK,
-                    mapToClientRequest(context, round, gaBetId)
-            );
+        // any exception thrown here is considered internal error
+        WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId);
+        var apiRequest = clientRequestService.createClientApiRequest(
+                round.getAgentMeta().getAgentId(),
+                EndPoints.WALLET_ROLLBACK,
+                requestDto
+        );
 
+        try {
             ClientBalanceResponse response = operatorApiCaller.post(
                     apiRequest.getBaseUrl(),
                     apiRequest.getPath(),
@@ -160,16 +159,22 @@ public class BetRollbackProcessor {
                     apiRequest.getRequestObject()
             );
 
+            clientResponseValidator.validate(response, new ClientResponseValidator.RequestRecord(
+                    requestDto.getTraceId(),
+                    requestDto.getUsername(),
+                    requestDto.getCurrency()
+            ));
+
             return response.getData();
-        } catch (Exception ex) {
-            if (apiRequest != null) {
+        } catch (Exception ex) { // only operator exception then send to retry queue
+            if (shouldRetry(ex)) {
                 retryQueueService
                         .enqueue(RetryHelper.toHttpCallSpec(apiRequest))
                         .subscribe();
             }
-
-            throw ex;
         }
+        // if operator exception then return default balance
+        return defaultBalanceData(context, round.getCurrency());
     }
 
     private WalletRollbackDto mapToClientRequest(BetRollbackContext context, GameRound round, String betId) {
@@ -186,5 +191,10 @@ public class BetRollbackProcessor {
         dto.setTimestamp(context.getTimestamp());
 
         return dto;
+    }
+
+    private boolean shouldRetry(Exception ex) {
+        // if insufficient balance, it is assumed the operator has processed the rollback successfully.
+        return !(ex instanceof InsufficientBalanceException);
     }
 }

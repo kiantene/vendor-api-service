@@ -2,22 +2,21 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
-import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
-import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,14 +27,13 @@ import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WalletRollbackServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "rollback";
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
     private final DuplicateRequestGuard guard;
     private final BetRollbackContextEnricher enricher;
-    private final GameSessionDataService gameSessionDataService;
-    private final GameRoundService gameRoundService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final BetRollbackProcessor processor;
@@ -58,21 +56,18 @@ public class WalletRollbackServiceWrapper {
 
             enricher.enrichGameTransaction(txn, context, logContext);
 
-//            GameRound round = getGameRoundInfo(logContext.getVendorClassName(), context);
-
-//            GameSession gameSession = gameSessionDataService.getOrCreate(context);
-
-//            enricher.enrichByGameSession(context, round, gameSession, logContext);
-
             BetRollbackConfig config = state().getConfig();
 
-            if (RollbackType.BY_ROUND == config.getRollbackType()) {
-                return processor.processRoundRollback(context, txn, state().getConfig());
+            if (config.isRollbackByRound()) {
+                return processor.processRoundRollback(context, txn, config);
             }
-            return processor.processBetRollback(context, txn, state().getConfig());
+            return processor.processBetRollback(context, txn, config);
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
+        } catch (RecordNotFoundException ex) {
+            log.error(ex.getMessage());
+            return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrencyCode());
         } catch (Exception ex) {
             guard.clear();
             throw walletExceptionTranslator.translate(ex);
@@ -158,18 +153,18 @@ public class WalletRollbackServiceWrapper {
     }
 
     private PlayerBalanceData processRollbackTransaction(BetRollbackContext context) throws
-            InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException,
+            InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException,
-            InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
+            InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, com.nextgen.gameaggregator.exception.RecordNotFoundException {
 
         return processRollbackByBet(context);
     }
 
     private PlayerBalanceData processRollbackByBet(BetRollbackContext context) throws
-            InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException,
+            InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException,
             TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException,
-            InvalidFormatException {
+            InvalidFormatException, com.nextgen.gameaggregator.exception.RecordNotFoundException {
 
         BetRollbackConfig config = state().getConfig();
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
@@ -189,21 +184,5 @@ public class WalletRollbackServiceWrapper {
                 balance,
                 httpRequestLog.getOperatorEnd()
         );
-    }
-
-    private GameRound getGameRoundInfo(String vendorClassName, BetRollbackContext context) {
-        if (state().getConfig().getRollbackType() == RollbackType.BY_ROUND) {
-            GameRound search = GameRound.of(vendorClassName, context.getRoundId());
-            var roundOpt = gameRoundService.get(search.getId());
-
-            if (roundOpt.isEmpty()) {
-                // TODO: to handle not found
-                return null;
-            }
-            return roundOpt.get();
-        }
-
-        // TODO: use txn to search round
-        return null;
     }
 }

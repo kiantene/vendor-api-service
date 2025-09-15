@@ -173,4 +173,14 @@ public class GameTransaction {
     public boolean isSettled() {
         return state == GameRoundState.SETTLED;
     }
+
+    @JsonIgnore
+    public boolean isUnsettled() {
+        return state == GameRoundState.UNSETTLED;
+    }
+
+    @JsonIgnore
+    public boolean isRefunded() {
+        return state == GameRoundState.REFUNDED;
+    }
 }

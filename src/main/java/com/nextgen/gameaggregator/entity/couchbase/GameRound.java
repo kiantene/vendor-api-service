@@ -103,6 +103,16 @@ public class GameRound {
         return state == GameRoundState.SETTLED;
     }
 
+    @JsonIgnore
+    public boolean isUnsettled() {
+        return state == GameRoundState.UNSETTLED;
+    }
+
+    @JsonIgnore
+    public boolean isRefunded() {
+        return state == GameRoundState.REFUNDED;
+    }
+
     public void setBetAmount(BigDecimal betAmount) {
         this.betAmount = (betAmount == null) ? BigDecimal.ZERO : betAmount;
     }
