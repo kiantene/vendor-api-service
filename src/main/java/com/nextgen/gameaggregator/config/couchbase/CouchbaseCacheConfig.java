@@ -72,4 +72,15 @@ public class CouchbaseCacheConfig {
     public Collection gameRoundsCollection(@Qualifier("gameScope") Scope scope) {
         return scope.collection("game_rounds");
     }
+
+    // ---------------- For http retry ----------------
+    @Bean("retryScope")
+    public Scope retryScope(@Qualifier("gaBucket") Bucket bucket) {
+        return bucket.scope("retry");
+    }
+
+    @Bean
+    public Collection httpRetryJobsCollection(@Qualifier("retryScope") Scope scope) {
+        return scope.collection("http_retry_jobs");
+    }
 }

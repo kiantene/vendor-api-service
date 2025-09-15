@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientApiRequest;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
+import com.nextgen.gameaggregator.core.retry.RetryHelper;
+import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiCaller;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -36,6 +39,7 @@ public class BetRollbackProcessor {
     private final ClientRequestService clientRequestService;
     private final OperatorApiCaller operatorApiCaller;
     private final BetHistoryProducer betHistoryProducer;
+    private final RetryQueueService retryQueueService;
     private final LegacyCleanupService legacyCleanupService;
 
     public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
@@ -141,8 +145,9 @@ public class BetRollbackProcessor {
     }
 
     private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId) {
+        ClientApiRequest<WalletRollbackDto> apiRequest = null;
         try {
-            ClientApiRequest<WalletRollbackDto> apiRequest = clientRequestService.createClientApiRequest(
+            apiRequest = clientRequestService.createClientApiRequest(
                     round.getAgentMeta().getAgentId(),
                     EndPoints.WALLET_ROLLBACK,
                     mapToClientRequest(context, round, gaBetId)
@@ -157,7 +162,12 @@ public class BetRollbackProcessor {
 
             return response.getData();
         } catch (Exception ex) {
-            // TODO: handle retry
+            if (apiRequest != null) {
+                retryQueueService
+                        .enqueue(RetryHelper.toHttpCallSpec(apiRequest))
+                        .subscribe();
+            }
+
             throw ex;
         }
     }
