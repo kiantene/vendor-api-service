@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.AbstractBetRollbackController;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackConfig;
-import com.nextgen.gameaggregator.core.engine.wallet.rollback.RollbackType;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServiceWrapper;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.enums.RollbackType;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +30,7 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
 
     @Override
     public void configure(BetRollbackConfig config, RollbackRequest request) {
-        config.setRollbackType(RollbackType.BY_ROUND);
+        config.rollbackType(RollbackType.BY_ROUND);
     }
 
     private void enrichResponse(RollbackResponse response, RollbackRequest request) {
