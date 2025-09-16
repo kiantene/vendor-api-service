@@ -127,10 +127,14 @@ public class WalletRollbackServiceWrapper {
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, DuplicateRequestException ex) {
-        // TODO: check for operator status, if is successful then return success
-
-        String currency = Optional.ofNullable(context.getVendorCurrencyCode()).orElse("");
-        return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), currency);
+        GameTransaction txn = ex.getTransaction();
+        if (state().getConfig().isReturnSuccessOnDuplicate() && txn.isSuccess()) {
+            return PlayerBalanceData.getDefault(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrencyCode()
+            );
+        }
+        throw ex;
     }
 
     /**

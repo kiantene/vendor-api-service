@@ -7,9 +7,11 @@ import lombok.Data;
 public class BetRollbackConfig {
     private RollbackType rollbackType;
     private boolean allowRollbackForSettledBet;
+    private boolean returnSuccessOnDuplicate;
 
     public BetRollbackConfig() {
         this.allowRollbackForSettledBet = false;
+        this.returnSuccessOnDuplicate = false;
     }
 
     @Deprecated(forRemoval = true)
@@ -25,6 +27,11 @@ public class BetRollbackConfig {
 
     public BetRollbackConfig allowRollbackForSettledBet(boolean flag) {
         this.allowRollbackForSettledBet = flag;
+        return this;
+    }
+
+    public BetRollbackConfig returnSuccessOnDuplicate(boolean flag) {
+        this.returnSuccessOnDuplicate = flag;
         return this;
     }
 

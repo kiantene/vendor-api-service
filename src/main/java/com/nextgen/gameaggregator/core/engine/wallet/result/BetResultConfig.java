@@ -28,6 +28,7 @@ public class BetResultConfig {
     private SettleType settleType = SettleType.BET; // Default is settled by bet
     private ProcessingMode processingMode = ProcessingMode.SINGLE;
     private boolean allowResultBeforeBet = false;
+    private boolean returnSuccessOnDuplicate = false;
 
     // Chaining methods
     public BetResultConfig betTxn(boolean flag) {
@@ -52,6 +53,11 @@ public class BetResultConfig {
 
     public BetResultConfig allowResultBeforeBet(boolean flag) {
         this.allowResultBeforeBet = flag;
+        return this;
+    }
+
+    public BetResultConfig returnSuccessOnDuplicate(boolean flag) {
+        this.returnSuccessOnDuplicate = flag;
         return this;
     }
 

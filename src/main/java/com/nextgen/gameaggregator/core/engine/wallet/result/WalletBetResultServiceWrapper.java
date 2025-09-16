@@ -89,7 +89,8 @@ public class WalletBetResultServiceWrapper {
 
     private PlayerBalanceData handleDuplicateRequest(BetResultContext context, DuplicateRequestException ex) {
         GameTransaction txn = ex.getTransaction();
-        if (txn != null && txn.isSuccess()) {
+        BetResultConfig config = state().getConfig();
+        if (config.isReturnSuccessOnDuplicate() && txn != null && txn.isSuccess()) {
             return new PlayerBalanceData(
                     context.getVendorPlayerUsername(),
                     context.getVendorCurrency(),
