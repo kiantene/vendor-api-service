@@ -87,6 +87,9 @@ public class GameTransaction {
     @JsonProperty("status")
     private TxnStatus status;
 
+    @JsonProperty("exception")
+    private String exception;
+
     @JsonProperty("betTime")
     private Long betTime;
 
@@ -167,6 +170,11 @@ public class GameTransaction {
     @JsonIgnore
     public boolean isSuccess() {
         return status == TxnStatus.SUCCESS;
+    }
+
+    @JsonIgnore
+    public boolean isStillProcessing() {
+        return status == TxnStatus.SENT;
     }
 
     @JsonIgnore

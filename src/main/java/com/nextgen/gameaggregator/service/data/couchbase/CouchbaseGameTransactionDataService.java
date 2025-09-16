@@ -75,6 +75,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updateIfNotNull(updates, "idx", txn.getIdx());
         updateIfNotNull(updates, "balance", balance);
         updateIfNotNull(updates, "gaBetId", txn.getGaBetId());
+        updateIfNotNull(updates, "exception", txn.getException());
 
         if (TxnStatus.SENT == status) {
             updates.put("sentAt", txn.getSentAt());

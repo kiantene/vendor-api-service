@@ -85,6 +85,10 @@ public class GameRoundService {
         data.updateTxn(txn.getRoundDocId(), txn.getIdx(), updates);
     }
 
+    public void updateRoundTxn(String docId, int idx, Map<String, Object> updates) {
+        data.updateTxn(docId, idx, updates);
+    }
+
     private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {
         GameRound round = GameRound.of(txn.getClassName(), txn.getRoundId());
         round.setVendorId(txn.getVendorId());

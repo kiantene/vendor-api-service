@@ -46,9 +46,10 @@ public class WalletBetServiceWrapper implements WalletBetService {
     public PlayerBalanceData process(BetContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        GameTransaction txn = null;
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(
+            txn = guard.ensureNotDuplicate(
                     TxnType.BET,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -66,8 +67,10 @@ public class WalletBetServiceWrapper implements WalletBetService {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
-            guard.clear();
-            throw walletExceptionTranslator.translate(ex);
+            RuntimeException exception = walletExceptionTranslator.translate(ex);
+            gameTransactionService.markError(txn, exception);
+
+            throw exception;
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);

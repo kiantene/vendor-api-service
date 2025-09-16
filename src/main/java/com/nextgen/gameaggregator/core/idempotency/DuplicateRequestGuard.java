@@ -32,8 +32,12 @@ public class DuplicateRequestGuard {
         var doc = txnService.get(probe);
         if (doc.isPresent()) {
             GameTransaction txn = doc.get();
-            throw new DuplicateRequestException(txn.getId() + " is already processed", txn);
+            if (shouldTreatAsDuplicate(txn)) {
+                throw new DuplicateRequestException(txn.getId() + " is already processed", txn);
+            }
+            return txn;
         }
+
         currentRequest.set(txnService.save(probe));
         return probe;
     }
@@ -50,5 +54,9 @@ public class DuplicateRequestGuard {
     public void cleanup() {
         currentRequest.remove();
         RequestIdempotencyService.cleanupThreadLocal();
+    }
+
+    private boolean shouldTreatAsDuplicate(GameTransaction txn) {
+        return txn.isSuccess() || txn.isStillProcessing();
     }
 }

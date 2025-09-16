@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -111,6 +112,26 @@ public class GameTransactionService {
         }
 
         return updatedRound;
+    }
+
+    public void markError(GameTransaction txn, RuntimeException ex) {
+        if (txn == null) return;
+
+        String exName = ex.getClass().getSimpleName();
+        if (exName.equals("RuntimeException") && ex.getCause() != null) {
+            exName = ex.getCause().getClass().getSimpleName();
+        }
+
+        txn.setException(exName);
+        txnDataService.updateStatus(txn, null, TxnStatus.ERROR);
+
+        Map<String, Object> updates = Map.of(
+                "status", TxnStatus.ERROR.name(),
+                "exception", exName,
+                "doneAt", getNow()
+        );
+
+        gameRoundService.updateRoundTxn(txn.getRoundDocId(), txn.getIdx(), updates);
     }
 
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
