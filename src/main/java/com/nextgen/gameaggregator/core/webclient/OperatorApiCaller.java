@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
@@ -111,6 +112,43 @@ public class OperatorApiCaller {
         }
     }
 
+    public Mono<ClientBalanceResponse> postAsync(
+            String baseUrl,
+            String path,
+            Map<String, String> headers,
+            Object body) {
+
+        final String url = buildFullUrl(baseUrl, path);
+        final LogContext logContext = LogContextHolder.get();
+        populateLogStart(logContext, url, body);
+
+        final long startNano = System.nanoTime();
+
+        return Mono.defer(() -> {
+                    WebClient.RequestHeadersSpec<?> request = createRequest(url, headers, body);
+                    return executeWithRetryAsync(request, url);
+                })
+                .doOnNext(resp -> logContext.setApiStatusCode(resp.getStatusCode().value()))
+                .map(resp -> {
+                    validateResponse(resp, url);
+                    return resp;
+                })
+                // Parse into DTO
+                .map(resp -> parseResponse(resp, url))
+                // Map transport-level/network errors → OperatorNetworkException
+                .onErrorMap(WebClientRequestException.class,
+                        ex -> new OperatorNetworkException(ex.getMessage(), url, ex))
+                // Map 4xx/5xx → OperatorApiException
+                .onErrorMap(Http4xxException.class,
+                        ex -> new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex))
+                .onErrorMap(Http5xxException.class,
+                        ex -> new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex))
+                // Any other unexpected error → OperatorApiException
+                .onErrorMap(ex -> !(ex instanceof OperatorApiException) && !(ex instanceof OperatorNetworkException),
+                        ex -> new OperatorApiException("Unexpected client error", ex))
+                .doFinally(sig -> recordEnd(logContext, startNano, /*statusCode=*/null));
+    }
+
     private ResponseEntity<String> executeWithRetry(WebClient.RequestHeadersSpec<?> request, String path) {
         return request
                 .retrieve()
@@ -119,6 +157,18 @@ public class OperatorApiCaller {
                 .toEntity(String.class)
                 .retryWhen(retryPolicy.retryWhen(path))
                 .block();
+    }
+
+    private Mono<ResponseEntity<String>> executeWithRetryAsync(
+            WebClient.RequestHeadersSpec<?> request,
+            String path) {
+
+        return request
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
+                .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
+                .toEntity(String.class)
+                .retryWhen(retryPolicy.retryWhen(path)); // your existing policy
     }
 
     private WebClient.RequestHeadersSpec<?> createRequest(String url, Map<String, String> headers, Object body) {
