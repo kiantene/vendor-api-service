@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -27,7 +28,15 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
 
     @Override
     protected void doEnrich(BetRollbackContext context) {
+        LogContext logContext = LogContextHolder.get();
 
+        if (context.getTraceId() == null) {
+            context.setTraceId(logContext.getTraceId());
+        }
+
+        if (context.getTimestamp() == null) {
+            context.setTimestamp(logContext.getStart());
+        }
     }
 
     public void enrichByGameSession(BetRollbackContext context,
@@ -101,11 +110,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         }
     }
 
-    public void enrichGameTransaction(GameTransaction txn, BetRollbackContext context, LogContext logContext) {
-        if (context.getTimestamp() == null) {
-            context.setTimestamp(logContext.getStart());
-        }
-
+    public void enrichGameTransaction(GameTransaction txn, BetRollbackContext context) {
         txn.setVendorBetId(context.getVendorBetId());
         txn.setRoundId(context.getRoundId());
     }
