@@ -66,7 +66,7 @@ public class GameTransactionService {
             GameTransaction betTxn = txn.copy();
             betTxn.setTransactionId(txn.getVendorBetId());
             try {
-                txnDataService.insertWithTTL(txn, Duration.ofDays(7));
+                txnDataService.insertWithTTL(betTxn, Duration.ofDays(7));
             } catch (DocumentExistsException ex) {
                 // don't throw error even if document already exists
                 log.warn("GameTransaction (" + betTxn.getId() + ") already exists");
