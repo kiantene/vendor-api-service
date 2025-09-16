@@ -54,7 +54,7 @@ public class WalletRollbackServiceWrapper {
                     logContext.getStart()
             );
 
-            enricher.enrichGameTransaction(txn, context, logContext);
+            enricher.enrichGameTransaction(txn, context);
 
             BetRollbackConfig config = state().getConfig();
 
