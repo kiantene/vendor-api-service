@@ -9,7 +9,8 @@ public enum RoomCode {
     MATCHING(1),
     BONUS(2),
     SINGLE(3),
-    FISHING(4);
+    FISHING(4),
+    SLOT(6);
 
     public final int code;
 

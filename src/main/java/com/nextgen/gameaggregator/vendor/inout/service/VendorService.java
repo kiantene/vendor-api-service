@@ -91,7 +91,6 @@ public class VendorService extends BaseVendorService {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidPlayerException {
-        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -111,8 +110,6 @@ public class VendorService extends BaseVendorService {
         // 6. Verify X-SIGNATURE
         ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
 
-        validationService.validateEligibleBet(gameSession, vendorPlayerUsername);
-
     }
 
     public CommonVo exceptionHandler(Exception e, CommonVo responseVo) {
@@ -120,7 +117,11 @@ public class VendorService extends BaseVendorService {
             responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        } else if (e instanceof InsufficientBalanceException) {
+        }else if (e instanceof BetNotFoundException ||
+                e instanceof BetResultNotFoundException ||
+                e instanceof  RecordNotFoundException) {
+            responseVo.setError(ResponseCode.DEBIT_TRANSACTION_NOT_FOUND);
+        }  else if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
         } else if (e instanceof DisabledVendorLineException ||
                 e instanceof DisabledGameException ||
