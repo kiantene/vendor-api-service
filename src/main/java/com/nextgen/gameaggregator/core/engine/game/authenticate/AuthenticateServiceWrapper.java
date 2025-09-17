@@ -47,7 +47,7 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
                     httpRequestLog
             );
         } catch (Exception ex) {
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }

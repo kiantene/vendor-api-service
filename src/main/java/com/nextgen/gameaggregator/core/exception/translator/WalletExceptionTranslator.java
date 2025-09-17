@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.core.exception.translator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
+import com.nextgen.gameaggregator.core.exception.VendorCallbackException;
 import com.nextgen.gameaggregator.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -73,7 +75,7 @@ public class WalletExceptionTranslator {
             DisabledGameException.class
     );
 
-    public RuntimeException translate(Exception ex) {
+    public RuntimeException translate(Exception ex, VendorRequestContext context) {
         RuntimeException translatedException = null;
 
         /**
@@ -81,7 +83,7 @@ public class WalletExceptionTranslator {
          * To catch and throw as GameSessionExpiredException.
          */
         if (ex instanceof AuthenticationException) {
-            translatedException = new GameSessionExpiredException(ex.getMessage());
+            translatedException = new GameSessionExpiredException(context, ex.getMessage());
         }
 
         /**
@@ -89,7 +91,7 @@ public class WalletExceptionTranslator {
          * To catch and re-throw from the core library GameTerminatedException.
          */
         if (ex instanceof GameTerminatedException) {
-            translatedException = new com.nextgen.gameaggregator.core.exception.GameTerminatedException(ex.getMessage());
+            translatedException = new com.nextgen.gameaggregator.core.exception.GameTerminatedException(context, ex.getMessage());
         }
 
         /**
@@ -97,7 +99,7 @@ public class WalletExceptionTranslator {
          * To catch and re-throw from the core library InsufficientBalanceException.
          */
         if (ex instanceof InsufficientBalanceException) {
-            translatedException = new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException();
+            translatedException = new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException(context);
         }
 
         if (ex instanceof DisabledAgentPlayerException) {

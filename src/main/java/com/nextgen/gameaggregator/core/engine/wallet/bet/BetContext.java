@@ -2,9 +2,10 @@ package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
-import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
-import lombok.Builder;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
@@ -16,12 +17,10 @@ import java.math.BigDecimal;
  * <p>roundId        - Vendor’s round ID, used for rollback when rollbackType = BY_ROUND.</p>
  */
 @Data
-@Builder
-public class BetContext implements GameSessionData, VendorPlayerAware, VendorGameAware {
-    /**
-     * Provided by the vendor to ensure the same bet request is not processed multiple times.
-     */
-    private String idempotencyKey;
+@SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+public class BetContext extends VendorRequestContext implements VendorPlayerAware, VendorGameAware {
+
     /**
      * The unique identifier for this specific bet as provided by the vendor.
      * Used for reconciliation and tracking with the external system.
@@ -32,21 +31,11 @@ public class BetContext implements GameSessionData, VendorPlayerAware, VendorGam
      * This helps group related transactions within a single game round.
      */
     private String roundId;
-    private String vendorGameCode;
-    private String vendorPlayerUsername;
-    private String vendorCurrency;
     private BigDecimal betAmount;
-    /**
-     * GA generated game session token during game launch.
-     * Need to map if vendor returns back GA's token.
-     */
-    private String token;
-    private String vendorSessionToken; // Vendor's game session token provided in vendor's request.
+
     private Long timestamp; // Vendor bet time
 
     // --- internal values ---
-    private String traceId;
-    private String vendorClassName;
     private String currencyCode; // GA internal currency code, auto-populated for Operator API
 
     /**

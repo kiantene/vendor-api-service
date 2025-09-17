@@ -2,12 +2,13 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
 import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
-import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Field mapping rules for Rollback Request:
@@ -17,22 +18,16 @@ import lombok.Data;
  * <p>roundId        - Same as bet request roundId. Used if rollbackType = BY_ROUND.</p>
  */
 @Data
-@Builder
-public class BetRollbackContext implements GameSessionData, VendorPlayerAware, VendorGameAware {
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class BetRollbackContext extends VendorRequestContext implements VendorPlayerAware, VendorGameAware {
     /**
      * @deprecated use configure in controller to set rollbackType
      */
     @Deprecated
     private RollbackType rollbackType;
-    private String traceId;
-    private String idempotencyKey;
     private String vendorBetId;
     private String roundId;
-    private String vendorGameCode;
-    private String vendorPlayerUsername;
-    private String vendorCurrencyCode;
-    private String token;
-    private String vendorSessionToken;
     private Long timestamp;
 
     // --- internal values ---

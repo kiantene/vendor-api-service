@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
@@ -46,7 +47,7 @@ public class BetRollbackProcessor {
 
     public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         GameTransaction betTxn = gameTransactionService.get(rollbackTxn.getRollbackId())
-                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + rollbackTxn.getRollbackId()));
+                .orElseThrow(() -> new RecordNotFoundException("GameTransaction not found for processBetRollback: " + rollbackTxn.getRollbackId()));
 
         RollbackDecision decision = RollbackPolicy.decide(betTxn, config);
 
@@ -59,7 +60,7 @@ public class BetRollbackProcessor {
         }
 
         GameRound round = gameRoundService.get(betTxn.getRoundDocId())
-                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + betTxn.getRoundDocId()));
+                .orElseThrow(() -> new InternalServerException("GameRound not found for processBetRollback: " + betTxn.getRoundDocId()));
 
         enricher.enrichByGameRound(context, round, rollbackTxn);
 
@@ -87,7 +88,7 @@ public class BetRollbackProcessor {
 
     public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
         GameRound round = gameRoundService.get(txn.getRoundDocId())
-                .orElseThrow(() -> new RecordNotFoundException("Record not found: " + txn.getRoundDocId()));
+                .orElseThrow(() -> new RecordNotFoundException("GameRound not found for processRoundRollback: " + txn.getRoundDocId()));
 
         RollbackDecision decision = RollbackPolicy.decide(round, config);
 
@@ -163,7 +164,7 @@ public class BetRollbackProcessor {
                     requestDto.getTraceId(),
                     requestDto.getUsername(),
                     requestDto.getCurrency()
-            ));
+            ), context);
 
             return response.getData();
         } catch (Exception ex) { // only operator exception then send to retry queue

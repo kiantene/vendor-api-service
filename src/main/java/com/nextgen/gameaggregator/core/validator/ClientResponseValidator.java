@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.validator;
 
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
@@ -14,7 +15,7 @@ import java.util.Optional;
 @Slf4j
 public class ClientResponseValidator {
 
-    public void validate(ClientBalanceResponse response, RequestRecord request) throws InvalidOperatorResponseException {
+    public void validate(ClientBalanceResponse response, RequestRecord request, VendorRequestContext context) throws InvalidOperatorResponseException {
         String traceId = String.valueOf(response.getTraceId());
         if (!request.traceId().equals(traceId)) {
             log.warn("Trace Id does not match (expected: {}) (actual: {})", request.traceId(), traceId);
@@ -53,11 +54,11 @@ public class ClientResponseValidator {
         BigDecimal balance = data.getBalance();
         if (balance == null) {
             log.warn("[{}] Balance is empty", request.traceId());
-            throw new InsufficientBalanceException("Balance is empty");
+            throw new InsufficientBalanceException(context, "Balance is empty");
         }
 
         if (balance.signum() < 0) {
-            throw new InsufficientBalanceException("Balance is " + balance.toPlainString());
+            throw new InsufficientBalanceException(context, "Balance is " + balance.toPlainString());
         }
     }
 

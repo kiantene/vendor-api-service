@@ -24,7 +24,7 @@ public interface VendorExceptionMapper extends VendorComponent {
         return onInternalError(new InternalServerException(ex.getMessage(), ex));
     }
     default VendorErrorResponse onRollbackNotAllowed(RollbackNotAllowedException ex) {
-        return onInternalError(new InternalServerException("isAllowRollbackForSettledBet is configured to false", ex));
+        return onInternalError(new InternalServerException("onRollbackNotAllowed is thrown but not implemented", ex));
     }
 
     /**

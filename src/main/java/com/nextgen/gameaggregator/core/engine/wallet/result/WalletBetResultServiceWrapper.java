@@ -75,7 +75,7 @@ public class WalletBetResultServiceWrapper {
             // TODO: if operator error, add to retry queue and return success to vendor
 
             guard.clear();
-            RuntimeException exception = walletExceptionTranslator.translate(ex);
+            RuntimeException exception = walletExceptionTranslator.translate(ex, context);
             if (txn != null) {
                 gameRoundService.markTxnError(txn, exception);
             }

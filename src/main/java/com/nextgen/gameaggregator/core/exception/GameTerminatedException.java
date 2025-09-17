@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class GameTerminatedException extends RuntimeException {
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class GameTerminatedException extends VendorCallbackException {
     public GameTerminatedException() { super(); }
 
-    public GameTerminatedException(String message) {
-        super(message);
+    public GameTerminatedException(VendorRequestContext context, String message) {
+        super(context, message);
     }
 }

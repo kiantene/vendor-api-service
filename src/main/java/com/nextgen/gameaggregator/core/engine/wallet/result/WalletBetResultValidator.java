@@ -50,7 +50,7 @@ class WalletBetResultValidator {
 
         if (isNonBetResultType(resultType)) return;
 
-        validator.validateBusinessState(session, context.getVendorPlayerUsername());
+        validator.validateBusinessState(session, context.getVendorPlayerUsername(), context);
     }
 
     private boolean isNonBetResultType(ResultType resultType) {
