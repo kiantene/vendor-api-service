@@ -59,7 +59,7 @@ public class BetService {
             }
 
             // 3. Verify session token
-            GameSession gameSession = gameService.getGameSessionByUsername(betDto.getUid());
+            GameSession gameSession = gameService.getGameSessionByUsername(betDto.getUid(), betDto.getGType() + "_" + betDto.getMType());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
@@ -137,10 +137,7 @@ public class BetService {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
 
-        // Verify vendor gameCode, currency and platform
-        String[] parts = gameSession.getVendorGameCode().split("_");
-        int mType = Integer.parseInt(parts[1]);
-        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        // Verify currency and platform
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
