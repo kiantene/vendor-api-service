@@ -28,20 +28,12 @@ public class AsyncConfig {
         ex.setAwaitTerminationSeconds(30); // Maximum time to wait during shutdown for tasks to finish.
         ex.initialize();
 
-//        new ExecutorServiceMetrics(
-//                ex.getThreadPoolExecutor(),
-//                "endround.executor",
-//                Tags.of("executor", "endRound")
-//        ).bindTo(registry);
-
         // Micrometer metrics for this executor
-        Executor monitored = ExecutorServiceMetrics.monitor(
+        return ExecutorServiceMetrics.monitor(
                 registry,
                 ex.getThreadPoolExecutor(),
                 "endround.executor",
                 Tags.of("executor", "endRound")
         );
-
-        return monitored;
     }
 }
