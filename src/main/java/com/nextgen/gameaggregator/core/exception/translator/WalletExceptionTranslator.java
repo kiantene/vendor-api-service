@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
-import com.nextgen.gameaggregator.core.exception.VendorCallbackException;
 import com.nextgen.gameaggregator.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -90,7 +89,7 @@ public class WalletExceptionTranslator {
          * The current GameTerminatedException is deprecated.
          * To catch and re-throw from the core library GameTerminatedException.
          */
-        if (ex instanceof GameTerminatedException) {
+        else if (ex instanceof GameTerminatedException) {
             translatedException = new com.nextgen.gameaggregator.core.exception.GameTerminatedException(context, ex.getMessage());
         }
 
@@ -98,12 +97,12 @@ public class WalletExceptionTranslator {
          * The current InsufficientBalanceException is deprecated.
          * To catch and re-throw from the core library InsufficientBalanceException.
          */
-        if (ex instanceof InsufficientBalanceException) {
+        else if (ex instanceof InsufficientBalanceException) {
             translatedException = new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException(context);
         }
 
-        if (ex instanceof DisabledAgentPlayerException) {
-            translatedException = new PlayerDisabledException(ex.getMessage());
+        else if (ex instanceof DisabledAgentPlayerException) {
+            translatedException = new PlayerDisabledException(context, ex.getMessage());
         }
 
         /**
@@ -115,20 +114,20 @@ public class WalletExceptionTranslator {
          *
          * Same behavior for DisabledGameException
          */
-        if (isBetNotAllowedException(ex)) {
-            translatedException = new com.nextgen.gameaggregator.core.exception.BetNotAllowedException(ex.getMessage(), ex);
+        else if (isBetNotAllowedException(ex)) {
+            translatedException = new com.nextgen.gameaggregator.core.exception.BetNotAllowedException(context, ex.getMessage(), ex);
         }
 
         /**
          * InvalidPlayerException will be thrown if vendorPlayerUsername cannot be found.
          * This could be related to wrong username sent by the vendor, or record is missing in database.
          */
-        if (ex instanceof InvalidPlayerException) {
+        else if (ex instanceof InvalidPlayerException) {
             translatedException = new com.nextgen.core.exception.InvalidRequestException("Player cannot be found");
         }
 
-        if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
-            translatedException = new DuplicateBetException(idempotentEx.getBetId());
+        else if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
+            translatedException = new DuplicateBetException(context, idempotentEx.getBetId());
         }
 
         /**
@@ -149,20 +148,20 @@ public class WalletExceptionTranslator {
          * GA must always accept the cancel bet request and only sends to Operator
          * after receiving a response (regardless success or fail) from Operator.
          */
-        if (ex instanceof TransactionStillProcessingException) {
-            translatedException = new DuplicateBetException(ex.getMessage());
+        else if (ex instanceof TransactionStillProcessingException) {
+            translatedException = new DuplicateBetException(context, ex.getMessage());
         }
 
         /**
          * InvalidAgentApiCredentialException
          * VendorCurrencyNotSupportException
          */
-        if (isInternalConfigurationException(ex)) {
+        else if (isInternalConfigurationException(ex)) {
             translatedException = new InternalConfigurationException(ex.getMessage(), ex);
         }
 
-        if (ex instanceof BetNotFoundException) {
-            throw new com.nextgen.gameaggregator.core.exception.BetNotFoundException(ex.getMessage(), ex);
+        else if (ex instanceof BetNotFoundException) {
+            translatedException = new com.nextgen.gameaggregator.core.exception.BetNotFoundException(context, ex.getMessage(), ex);
         }
 
         if (translatedException != null) return translatedException;

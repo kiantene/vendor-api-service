@@ -4,10 +4,10 @@ import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import lombok.Getter;
 
 @Getter
-public abstract class VendorCallbackException extends RuntimeException {
+public class VendorCallbackException extends RuntimeException {
     private final VendorRequestContext context;
 
-    protected  VendorCallbackException() {
+    protected VendorCallbackException() {
         super();
         this.context = null;
     }

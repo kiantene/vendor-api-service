@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class DuplicateBetException extends RuntimeException {
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class DuplicateBetException extends VendorCallbackException {
     public DuplicateBetException() { super(); }
 
-    public DuplicateBetException(String message) {
-        super(message);
+    public DuplicateBetException(VendorRequestContext context, String message) {
+        super(context, message);
     }
 }

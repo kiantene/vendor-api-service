@@ -42,7 +42,10 @@ public class ClientRequestService {
         this.props = props;
     }
 
-    public <T> ClientApiRequest<T> createClientApiRequest(Integer agentId, String path, T requestObject) {
+    public <T> ClientApiRequest<T> createClientApiRequest(String traceId,
+                                                          Integer agentId,
+                                                          String path,
+                                                          T requestObject) {
         validateInputs(agentId, path, requestObject);
         validateRequestObject(requestObject);
 
@@ -55,11 +58,12 @@ public class ClientRequestService {
         }
 
         return ClientApiRequest.<T>builder()
+                .traceId(traceId)
                 .agentId(agentId)
                 .method(HttpMethod.POST)
+                .baseUrl(baseUrl)
                 .path(path)
                 .requestObject(requestObject)
-                .baseUrl(baseUrl)
                 .apiKey(credential.getApiKey())
                 .apiSecret(credential.getApiSecret())
                 .build();

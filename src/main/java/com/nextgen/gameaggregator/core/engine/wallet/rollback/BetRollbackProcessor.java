@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
+import com.nextgen.gameaggregator.core.retry.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
@@ -147,6 +148,7 @@ public class BetRollbackProcessor {
         // any exception thrown here is considered internal error
         WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId);
         var apiRequest = clientRequestService.createClientApiRequest(
+                requestDto.getTraceId(),
                 round.getAgentMeta().getAgentId(),
                 EndPoints.WALLET_ROLLBACK,
                 requestDto
@@ -170,7 +172,7 @@ public class BetRollbackProcessor {
         } catch (Exception ex) { // only operator exception then send to retry queue
             if (shouldRetry(ex)) {
                 retryQueueService
-                        .enqueue(RetryHelper.toHttpCallSpec(apiRequest))
+                        .enqueue(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.BET_ROLLBACK)
                         .subscribe();
             }
         }
