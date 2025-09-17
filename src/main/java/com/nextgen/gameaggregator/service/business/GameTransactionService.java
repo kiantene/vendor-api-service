@@ -89,6 +89,12 @@ public class GameTransactionService {
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
 
+        if (txn.getType() == TxnType.BET && !txn.getTransactionId().equals(txn.getVendorBetId())) {
+            GameTransaction betTxn = txn.copy();
+            betTxn.setTransactionId(txn.getVendorBetId());
+            txnDataService.updateStatus(betTxn, balance, TxnStatus.SUCCESS);
+        }
+
         TxnDelta delta = TxnDelta.finalizeSuccess(
                 txn.getRoundDocId(),
                 txn.getIdx(),
