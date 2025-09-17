@@ -23,7 +23,8 @@ class RollbackDataMapper {
 
             @Override
             public Long getVendorSettledTime() {
-                return Optional.ofNullable(context.getTimestamp()).orElse(System.currentTimeMillis());
+                // can be null, core engine will get from either unsettled/settled bet
+                return context.getTimestamp();
             }
 
             @Override
