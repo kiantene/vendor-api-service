@@ -55,7 +55,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getDebitId();
+        return this.getTransactionId();
     }
 
     @Override
@@ -75,7 +75,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(getAmount());
+        return null;
     }
 
     @Override
