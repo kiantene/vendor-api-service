@@ -5,11 +5,14 @@ import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
+import com.nextgen.gameaggregator.vendor.crystal.api.result.BetResultResponse;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.crystal.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+
+import java.math.RoundingMode;
 
 @Component(EndPoints.CLASS_NAME)
 public class CrystalExceptionMapper implements VendorExceptionMapper {
@@ -45,12 +48,13 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.FORBIDDEN);
-    }
-
-    @Override
-    public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
-        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.INTERNAL_SERVER_ERROR);
+        BetResultResponse betResultResponse= BetResultResponse.builder()
+                .data(BetResultResponse.Data.builder()
+                        .balance(ex.getTransaction().getBalance().setScale(2, RoundingMode.DOWN))
+                        .actionId(ex.getTransaction().getTransactionId())
+                        .build())
+                .build();
+        return new VendorErrorResponse(HttpStatus.OK, betResultResponse);
     }
 
     @Override
