@@ -326,6 +326,18 @@ public class WalletService {
 
             BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData);
 
+            //Handle for WIN Scenario, CQ9)
+            if (resultType == ResultType.WIN) {
+                settledBet.setWinAmount(walletBetResultData.getWinAmount());
+                settledBet.setWinLoss(walletBetResultData.getWinLoss().subtract(settledBet.getBetAmount()));
+                settledBet.setEffectiveTurnover(walletBetResultData.getEffectiveTurnover());
+                settledBet.setJackpotAmount(walletBetResultData.getJackpotAmount());
+                settledBet.setUncapWinAmount(walletBetResultData.getUncapWinAmount());
+                settledBet.setUncapWinLoss(walletBetResultData.getUncapWinLoss());
+                settledBet.setUncapEffectiveTurnover(walletBetResultData.getUncapEffectiveTurnover());
+                settledBet.setUncapJackpotAmount(walletBetResultData.getUncapJackpotAmount());
+            }
+
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, cappedBetResult.getWinAmount(), settledBet.getOperatorStatus())) {
                 balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(
                         traceId,
