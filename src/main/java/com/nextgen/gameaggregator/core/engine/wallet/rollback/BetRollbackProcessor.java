@@ -63,11 +63,9 @@ public class BetRollbackProcessor {
         GameRound round = gameRoundService.get(betTxn.getRoundDocId())
                 .orElseThrow(() -> new InternalServerException("GameRound not found for processBetRollback: " + betTxn.getRoundDocId()));
 
-        enricher.enrichByGameRound(context, round, rollbackTxn);
+        enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
 
-        if (betTxn.isSettled()) {
-            betHistoryProducer.publishCancelledBetHistory(context, round);
-        }
+        betHistoryProducer.publishBetHistoryForRollback(context, round, betTxn);
 
         // Update bet txn status to refunded
         gameTransactionService.markRefunded(betTxn.getId());
@@ -87,9 +85,9 @@ public class BetRollbackProcessor {
         );
     }
 
-    public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction txn, BetRollbackConfig config) {
-        GameRound round = gameRoundService.get(txn.getRoundDocId())
-                .orElseThrow(() -> new RecordNotFoundException("GameRound not found for processRoundRollback: " + txn.getRoundDocId()));
+    public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
+        GameRound round = gameRoundService.get(rollbackTxn.getRoundDocId())
+                .orElseThrow(() -> new RecordNotFoundException("GameRound not found for processRoundRollback: " + rollbackTxn.getRoundDocId()));
 
         RollbackDecision decision = RollbackPolicy.decide(round, config);
 
@@ -101,7 +99,7 @@ public class BetRollbackProcessor {
             return defaultBalanceData(context, round.getCurrency());
         }
 
-        enricher.enrichByGameRound(context, round, txn);
+        enricher.enrichByGameRound(context, round, rollbackTxn);
 
         if (round.isSettled()) {
             betHistoryProducer.publishCancelledBetHistory(context, round);
@@ -112,7 +110,7 @@ public class BetRollbackProcessor {
                 .filter(t -> t.getGaBetId() != null)
                 .collect(Collectors.groupingBy(RoundTxn::getGaBetId));
 
-        gameTransactionService.markSent(txn, null);
+        gameTransactionService.markSent(rollbackTxn, null);
 
         PlayerBalanceData balanceData = new PlayerBalanceData();
         for (Map.Entry<String, List<RoundTxn>> entry : byGaBetId.entrySet()) {
@@ -129,7 +127,7 @@ public class BetRollbackProcessor {
         }
 
         BigDecimal balance = Optional.ofNullable(balanceData.getBalance()).orElse(round.getLastBalance());
-        gameTransactionService.markRollback(round, txn, balance);
+        gameTransactionService.markRollback(round, rollbackTxn, balance);
 
         // translate to vendor's username/currency
         return new PlayerBalanceData(
