@@ -76,6 +76,14 @@ public class AgentMaxPayoutService {
         final BigDecimal cappedWin = win.min(cappedAmount).max(BigDecimal.ZERO);
         final BigDecimal cappedWinLoss = cappedWin.subtract(bet);
 
+        return this.applyUpdatedAmount(betInfo, cappedWin, cappedWinLoss, cappedJackpot);
+    }
+
+    public BetInformation applyUpdatedAmount(BetInformation betInfo,
+                                             BigDecimal cappedWin,
+                                             BigDecimal cappedWinLoss,
+                                             BigDecimal cappedJackpot) {
+
         betInfo.setUncapWinAmount(betInfo.getWinAmount());
         betInfo.setUncapJackpotAmount(betInfo.getJackpotAmount());
         betInfo.setUncapWinLoss(betInfo.getWinLoss());
