@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -67,10 +68,10 @@ public class WalletRollbackServiceWrapper {
             return handleDuplicateRequest(context, ex);
         } catch (RecordNotFoundException ex) {
             log.error(ex.getMessage());
-            return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrencyCode());
+            throw new RollbackNotAllowedException(ex.getMessage(), ex);
         } catch (Exception ex) {
             guard.clear();
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -94,7 +95,7 @@ public class WalletRollbackServiceWrapper {
             );
         } catch (Exception ex) {
             hasException = true;
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         } finally {
             if (hasException) {
                 LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
@@ -131,7 +132,7 @@ public class WalletRollbackServiceWrapper {
         if (state().getConfig().isReturnSuccessOnDuplicate() && txn.isSuccess()) {
             return PlayerBalanceData.getDefault(
                     context.getVendorPlayerUsername(),
-                    context.getVendorCurrencyCode()
+                    context.getVendorCurrency()
             );
         }
         throw ex;
@@ -149,7 +150,7 @@ public class WalletRollbackServiceWrapper {
                 processRollbackTransaction(context);
             }
         } catch (Exception ex) {
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
             logContextService.logApiRequest(logContext, "");

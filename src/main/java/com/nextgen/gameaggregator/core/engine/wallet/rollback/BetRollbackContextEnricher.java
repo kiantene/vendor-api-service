@@ -60,8 +60,8 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
             );
         }
 
-        if (context.getVendorCurrencyCode() == null) {
-            context.setVendorCurrencyCode(
+        if (context.getVendorCurrency() == null) {
+            context.setVendorCurrency(
                     round != null
                     ? round.getCurrency() : gameSession.getVendorCurrencyCode()
             );
@@ -123,7 +123,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         context.setVendorId(round.getVendorId());
         context.setVendorPlayerUsername(round.getUsername());
         context.setVendorGameCode(round.getGameCode());
-        context.setVendorCurrencyCode(round.getCurrency());
+        context.setVendorCurrency(round.getCurrency());
         enrich(context);
     }
 }

@@ -43,7 +43,7 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
                     httpRequestLog
             );
         } catch (Exception ex) {
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         } finally {
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }

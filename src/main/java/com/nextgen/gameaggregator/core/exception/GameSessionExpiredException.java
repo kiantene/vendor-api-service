@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class GameSessionExpiredException extends RuntimeException {
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class GameSessionExpiredException extends VendorCallbackException {
+
     public GameSessionExpiredException() { super(); }
 
-    public GameSessionExpiredException(String message) {
-        super(message);
+    public GameSessionExpiredException(VendorRequestContext context, String message) {
+        super(context, message);
     }
 }

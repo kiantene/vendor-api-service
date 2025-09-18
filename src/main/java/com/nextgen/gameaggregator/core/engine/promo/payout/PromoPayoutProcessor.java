@@ -70,6 +70,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         try {
             PromoPayoutContext.Agent agent = context.getAgent();
             ClientApiRequest<PromoPayoutRequest> apiRequest = clientRequestService.createClientApiRequest(
+                    context.getTraceId(),
                     agent.id(),
                     EndPoints.PROMO_PAYOUT,
                     mapper.toPromoPayoutRequest(context)

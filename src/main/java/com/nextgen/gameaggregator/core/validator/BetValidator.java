@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.validator;
 
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.GameTerminatedException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
@@ -23,22 +24,22 @@ public class BetValidator {
      * Active game (game level)
      * Active game (house/master agent/agent level)
      */
-    public void validateBusinessState(GameSession session, String vendorPlayerUsername) {
+    public void validateBusinessState(GameSession session, String vendorPlayerUsername, VendorRequestContext context) {
 
-        validateSession(session);
+        validateSession(session, context);
         try {
             validationService.isBetAllowed(session, vendorPlayerUsername);
         } catch (Exception ex) {
-            throw walletExceptionTranslator.translate(ex);
+            throw walletExceptionTranslator.translate(ex, context);
         }
     }
 
-    private void validateSession(GameSession session) throws GameSessionExpiredException, GameTerminatedException {
+    private void validateSession(GameSession session, VendorRequestContext context) throws GameSessionExpiredException, GameTerminatedException {
         if (session == null) {
-            throw new GameSessionExpiredException("Session not found or expired");
+            throw new GameSessionExpiredException(context, "Session not found or expired");
         }
         if (isTerminated(session)) {
-            throw new GameTerminatedException(session.getVendorGameCode() + " game is terminated");
+            throw new GameTerminatedException(context, session.getVendorGameCode() + " game is terminated");
         }
     }
 

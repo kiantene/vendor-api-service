@@ -67,7 +67,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
-            RuntimeException exception = walletExceptionTranslator.translate(ex);
+            RuntimeException exception = walletExceptionTranslator.translate(ex, context);
             gameTransactionService.markError(txn, exception);
 
             throw exception;

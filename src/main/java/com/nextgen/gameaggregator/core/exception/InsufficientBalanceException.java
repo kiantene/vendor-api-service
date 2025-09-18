@@ -1,15 +1,17 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class InsufficientBalanceException extends RuntimeException {
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class InsufficientBalanceException extends VendorCallbackException {
     public InsufficientBalanceException() {
         super();
     }
 
-    public InsufficientBalanceException(String message) {
-        super(message);
+    public InsufficientBalanceException(VendorRequestContext context) {
+        super(context);
     }
 
-    public InsufficientBalanceException(String message, Throwable ex) {
-        super(message, ex);
+    public InsufficientBalanceException(VendorRequestContext context, String message) {
+        super(context, message);
     }
 }
