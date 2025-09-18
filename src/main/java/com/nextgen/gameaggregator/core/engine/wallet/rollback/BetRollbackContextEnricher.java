@@ -126,4 +126,16 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         context.setVendorCurrency(round.getCurrency());
         enrich(context);
     }
+
+    public void enrichByGameRound(BetRollbackContext context,
+                                  GameRound round,
+                                  GameTransaction rollbackTxn,
+                                  GameTransaction betTxn) {
+
+        enrichByGameRound(context, round, rollbackTxn);
+
+        if (betTxn.getSettleTime() == null) {
+            betTxn.setSettleTime(context.getTimestamp());
+        }
+    }
 }

@@ -18,11 +18,11 @@ import java.util.Optional;
 @Component
 public class BetHistoryMapper {
 
-    public BetHistoryV3 initialise(BetResultContext context, String betId) {
+    public BetHistoryV3 initialise(BetHistoryContext context, String betId) {
         BetHistoryV3 betHistory = new BetHistoryV3();
 
         betHistory.setId(betId);
-        betHistory.setExternalTransactionId(context.getIdempotencyKey());
+        betHistory.setExternalTransactionId(context.getExternalTransactionId());
         betHistory.setVendorGameId(context.getVendorGameId());
         betHistory.setVendorPlayerId(context.getVendorPlayerId());
         betHistory.setVendorId(context.getVendorId());
@@ -59,13 +59,14 @@ public class BetHistoryMapper {
     public void mapTransactionFields(BetHistoryV3 betHistory,
                                      GameRound round,
                                      GameTransaction txn,
-                                     BigDecimal fromVendorRate) {
+                                     BigDecimal fromVendorRate,
+                                     boolean fromRound) {
 
-        BigDecimal bet      = convertIfNotZero(round.getBetAmount(), fromVendorRate);
-        BigDecimal win      = convertIfNotZero(round.getWinAmount(), fromVendorRate);
+        BigDecimal bet      = convertIfNotZero(fromRound ? round.getBetAmount() : txn.getBetAmount(), fromVendorRate);
+        BigDecimal win      = convertIfNotZero(fromRound ? round.getWinAmount() : txn.getWinAmount(), fromVendorRate);
         BigDecimal winLoss  = convertIfNotZero(win.subtract(bet), fromVendorRate);
         BigDecimal turnover = bet;
-        BigDecimal jackpot  = convertIfNotZero(round.getJackpotAmount(), fromVendorRate);
+        BigDecimal jackpot  = convertIfNotZero(fromRound ? round.getJackpotAmount() : txn.getJackpotAmount(), fromVendorRate);
 
         betHistory.setGameSessionToken(round.getAgentMeta().getSession());
         betHistory.setRoundId(round.getRoundId());
@@ -77,7 +78,13 @@ public class BetHistoryMapper {
         betHistory.setEffectiveTurnover(turnover);
         betHistory.setJackpotAmount(jackpot);
         betHistory.setIsFreespin(0);
-        betHistory.setVendorBetTime(round.getCreatedTs());
+        betHistory.setVendorBetTime(txn.getBetTime());
+
+        /**
+         * if bet result, settle time follows settlement time from vendor's request
+         * if refund bet, settle time follows the rollback request time (rollback unsettled bet)
+         * if cancel bet, settle time follows the original settled bet's settled time (rollback settled bet)
+         */
         betHistory.setVendorSettleTime(txn.getSettleTime());
 
         // Operator facing fields
@@ -86,6 +93,14 @@ public class BetHistoryMapper {
         betHistory.setAgentPlayerUsername(round.getAgentMeta().getUsername());
 
         betHistory.setResultType(getResultType(win, jackpot));
+    }
+
+    public void negateAmounts(BetHistoryV3 betHistory) {
+        betHistory.setBetAmount(betHistory.getBetAmount().negate());
+        betHistory.setWinAmount(betHistory.getWinAmount().negate());
+        betHistory.setWinLoss(betHistory.getWinLoss().negate());
+        betHistory.setEffectiveTurnover(betHistory.getEffectiveTurnover().negate());
+        betHistory.setJackpotAmount(betHistory.getJackpotAmount().negate());
     }
 
     private BigDecimal convertIfNotZero(BigDecimal value, BigDecimal conversionRate) {

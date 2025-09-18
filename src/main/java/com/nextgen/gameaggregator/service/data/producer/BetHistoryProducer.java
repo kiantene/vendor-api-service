@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.data.producer;
 
+import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
@@ -9,20 +10,21 @@ import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentPlayer;
 import com.nextgen.gameaggregator.core.entity.GameCategory;
 import com.nextgen.gameaggregator.core.entity.Vendor;
-import com.nextgen.gameaggregator.core.service.AgentDataService;
-import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.GameCategoryDataService;
-import com.nextgen.gameaggregator.core.service.VendorDataService;
+import com.nextgen.gameaggregator.core.entity.VendorCurrency;
+import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.CurrencyConversionService;
+import com.nextgen.gameaggregator.service.KafkaService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,7 @@ public class BetHistoryProducer {
     private final AgentDataService agentDataService;
     private final AgentPlayerDataService agentPlayerDataService;
     private final GameCategoryDataService gameCategoryDataService;
-    private final VendorCurrencyService vendorCurrencyService;
+    private final VendorCurrencyDataService vendorCurrencyService;
     private final VendorPlayerService vendorPlayerService;
     private final VendorDataService vendorDataService;
     private final BetHistoryMapper betHistoryMapper;
@@ -99,8 +101,8 @@ public class BetHistoryProducer {
         publish(betHistory);
     }
 
-    public void publishBetHistoryByRound(BetResultContext context, GameRound round, GameTransaction txn) {
-
+    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
         BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
 
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
@@ -111,18 +113,43 @@ public class BetHistoryProducer {
 
         BigDecimal fromVendorRate = getVendorRate(context.getVendorId(), context.getCurrencyId());
 
-        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate);
+        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate, true);
+
+        publish(betHistory);
+    }
+
+    public void publishBetHistoryForRollback(BetRollbackContext rollbackContext, GameRound round, GameTransaction txn) {
+        BetHistoryContext context = BetHistoryContext.of(rollbackContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
+
+        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
+        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
+        Vendor vendor = vendorDataService.get(context.getVendorId());
+
+        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+
+        BigDecimal fromVendorRate = getVendorRate(context.getVendorId(), context.getCurrencyId());
+
+        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate, false);
+
+        if (txn.isSettled()) {
+            betHistoryMapper.negateAmounts(betHistory);
+            betHistory.setStatus(BetStatus.CANCELLED.code);
+            betHistory.setResettleNum(1);
+        } else {
+            betHistory.setStatus(BetStatus.REFUNDED.code);
+        }
 
         publish(betHistory);
     }
 
     private BigDecimal getVendorRate(Integer vendorId, Integer currencyId) {
         try {
-            VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
+            VendorCurrency vendorCurrency = vendorCurrencyService.getVendorIdAndCurrencyId(vendorId, currencyId);
             if (vendorCurrency.getFromVendorRate() != null) {
                 return vendorCurrency.getFromVendorRate();
             }
-        } catch (VendorCurrencyNotSupportException ex) {
+        } catch (EntityNotFoundException ex) {
             return BigDecimal.ONE;
         }
         return BigDecimal.ONE;
