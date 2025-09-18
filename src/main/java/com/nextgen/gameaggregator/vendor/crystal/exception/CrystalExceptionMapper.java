@@ -5,14 +5,10 @@ import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
-import com.nextgen.gameaggregator.vendor.crystal.api.result.BetResultResponse;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.crystal.response.ErrorResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-
-import java.math.RoundingMode;
 
 @Component(EndPoints.CLASS_NAME)
 public class CrystalExceptionMapper implements VendorExceptionMapper {
@@ -23,56 +19,58 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onGameSessionExpired(GameSessionExpiredException ex) {
-        return getErrorResponse(ResponseCodes.INVALID_SIGNATURE, HttpStatus.FORBIDDEN);
+        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
     }
 
     @Override
     public VendorErrorResponse onGameTerminated(GameTerminatedException ex) {
-        return getErrorResponse(ResponseCodes.INVALID_SIGNATURE, HttpStatus.FORBIDDEN);
+        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
     }
 
     @Override
     public VendorErrorResponse onInsufficientBalance(InsufficientBalanceException ex) {
-        return getErrorResponse(ResponseCodes.INSUFFICIENT_FUNDS, HttpStatus.BAD_REQUEST);
+        return getErrorResponse(ResponseCodes.INSUFFICIENT_FUNDS);
     }
 
     @Override
     public VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex) {
-        return getErrorResponse(ResponseCodes.INVALID_SIGNATURE, HttpStatus.FORBIDDEN);
+        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
+    }
+
+    @Override
+    public VendorErrorResponse onBetNotFound(BetNotFoundException ex) {
+        return getErrorResponse(ResponseCodes.TXN_NOT_FOUND);
     }
 
     @Override
     public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
-        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.FORBIDDEN);
+        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
     }
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        BetResultResponse betResultResponse= BetResultResponse.builder()
-                .data(BetResultResponse.Data.builder()
-                        .balance(ex.getTransaction().getBalance().setScale(2, RoundingMode.DOWN))
-                        .actionId(ex.getTransaction().getTransactionId())
-                        .build())
-                .build();
-        return new VendorErrorResponse(HttpStatus.OK, betResultResponse);
+        // BetController & BetResultController already has returnSuccessOnDuplicate set to true
+        // In normal case, this exception should never be thrown, unless there is a bug
+        // therefore we map to internal server exception
+        return onInternalError(new InternalServerException(ex.getMessage(), ex));
     }
 
     @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
-        return getErrorResponse(ResponseCodes.INVALID_PARAMETERS, HttpStatus.INTERNAL_SERVER_ERROR);
+        return getErrorResponse(ResponseCodes.INVALID_PARAMETERS);
     }
 
     @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
-        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND, HttpStatus.INTERNAL_SERVER_ERROR);
+        return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
     }
 
-    private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes, HttpStatus httpStatus) {
-        return new VendorErrorResponse(httpStatus,
+    private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
+        return new VendorErrorResponse(responseCodes.getHttpStatus(),
                 ErrorResponse.builder()
                         .error(ErrorResponse.Error.builder()
-                                .code(String.valueOf(responseCodes.code))
-                                .message(responseCodes.message)
+                                .code(String.valueOf(responseCodes.getCode()))
+                                .message(responseCodes.getMessage())
                                 .build())
                         .build());
     }

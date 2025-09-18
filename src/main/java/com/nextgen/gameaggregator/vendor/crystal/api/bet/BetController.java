@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.crystal.api.bet;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.AbstractBetController;
+import com.nextgen.gameaggregator.core.engine.wallet.bet.BetConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
@@ -24,5 +25,10 @@ public class BetController extends AbstractBetController<BetRequest, BetResponse
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<BetResponse> bet(@Valid @RequestBody BetRequest request) {
         return ResponseEntity.ok(processRequest(request));
+    }
+
+    @Override
+    public void configure(BetConfig config, BetRequest request) {
+        config.returnSuccessOnDuplicate(true);
     }
 }
