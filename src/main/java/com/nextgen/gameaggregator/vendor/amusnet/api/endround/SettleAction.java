@@ -66,7 +66,7 @@ public class SettleAction {
             // Validate request parameters from vendor (Non-database calls)
             this.doValidation(settleDto);
 
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getPlayerId(), settleDto.getVendorGameId());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
