@@ -3,9 +3,9 @@ package com.nextgen.gameaggregator.vendor.crystal.validator;
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.security.signature.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.core.security.signature.ValidationResult;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
-import com.nextgen.gameaggregator.core.security.signature.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.crystal.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
@@ -57,8 +57,8 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
     public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .error((ErrorResponse.Error.builder()
-                        .code(String.valueOf(ResponseCodes.PLAYER_NOT_FOUND))
-                        .message(ResponseCodes.PLAYER_NOT_FOUND.message))
+                        .code(String.valueOf(ResponseCodes.PLAYER_NOT_FOUND.getCode()))
+                        .message(ResponseCodes.PLAYER_NOT_FOUND.getMessage()))
                         .build())
                 .build();
         return new VendorErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, response);
