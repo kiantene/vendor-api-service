@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
-import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -66,9 +65,8 @@ public class WalletRollbackServiceWrapper {
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
-        } catch (RecordNotFoundException ex) {
-            log.error(ex.getMessage());
-            throw new RollbackNotAllowedException(ex.getMessage(), ex);
+        } catch (BetNotFoundException ex) {
+            throw new RollbackNotAllowedException(context, ex);
         } catch (Exception ex) {
             guard.clear();
             throw walletExceptionTranslator.translate(ex, context);
@@ -160,7 +158,9 @@ public class WalletRollbackServiceWrapper {
     private PlayerBalanceData processRollbackTransaction(BetRollbackContext context) throws
             InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException,
-            InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException, com.nextgen.gameaggregator.exception.RecordNotFoundException {
+            InvalidOperatorResponseException, InvalidFormatException,
+            com.nextgen.gameaggregator.exception.BetNotFoundException,
+            com.nextgen.gameaggregator.exception.RecordNotFoundException {
 
         return processRollbackByBet(context);
     }
@@ -168,8 +168,9 @@ public class WalletRollbackServiceWrapper {
     private PlayerBalanceData processRollbackByBet(BetRollbackContext context) throws
             InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException,
-            TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException,
-            InvalidFormatException, com.nextgen.gameaggregator.exception.RecordNotFoundException {
+            TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException,
+            com.nextgen.gameaggregator.exception.BetNotFoundException,
+            com.nextgen.gameaggregator.exception.RecordNotFoundException {
 
         BetRollbackConfig config = state().getConfig();
         HttpRequestLog httpRequestLog = context.getHttpRequestLog();
