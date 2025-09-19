@@ -3,9 +3,11 @@ package com.nextgen.gameaggregator.vendor.crystal.api.bet;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
+@Setter
 @Getter
 @Builder
 public class BetResponse {

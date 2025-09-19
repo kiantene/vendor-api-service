@@ -62,8 +62,19 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
+
+        Throwable rootCause = getRootCause(ex);
+        if (rootCause instanceof BetNotFoundException) {
+            return getErrorResponse(ResponseCodes.TXN_NOT_FOUND);
+        }
         return getErrorResponse(ResponseCodes.PLAYER_NOT_FOUND);
     }
+
+    @Override
+    public VendorErrorResponse onRollbackNotAllowed(RollbackNotAllowedException ex) {
+        return getErrorResponse(ResponseCodes.TXN_NOT_FOUND);
+    }
+
 
     private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
         ErrorResponse errorResponse = ErrorResponse.builder()
@@ -71,5 +82,13 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
                 .build();
 
         return new VendorErrorResponse(responseCodes.getHttpStatus(), errorResponse);
+    }
+
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable.getCause();
+        if (cause != null && cause != throwable) {
+            return getRootCause(cause);
+        }
+        return throwable;
     }
 }

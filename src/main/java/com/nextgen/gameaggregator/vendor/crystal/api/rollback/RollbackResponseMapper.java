@@ -12,6 +12,7 @@ public class RollbackResponseMapper implements BetRollbackVendorResponseMapper<R
 
     @Override
     public RollbackResponse toVendor(BetRollbackContext context, PlayerBalanceData balanceData) {
+
         return RollbackResponse.builder()
                 .data(RollbackResponse.Data.builder()
                         .balance(balanceData.getBalance().setScale(2, RoundingMode.DOWN))

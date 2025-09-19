@@ -30,13 +30,19 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
 
     @Override
     public void configure(BetRollbackConfig config, RollbackRequest request) {
-        config.rollbackType(RollbackType.BY_ROUND);
+        config.rollbackType(RollbackType.BY_ROUND)
+                .returnSuccessOnDuplicate(true);
+
     }
 
     private void enrichResponse(RollbackResponse response, RollbackRequest request) {
+        String vendorBetId = request.getTransactionOriginalId() == null
+                ? request.getTransactionId()
+                : request.getTransactionOriginalId();
+
         RollbackResponse.Data data = RollbackResponse.Data.builder()
                 .balance(response.getData().getBalance())
-                .actionId(request.getTransactionId())
+                .actionId(vendorBetId)
                 .build();
         response.setData(data);
     }

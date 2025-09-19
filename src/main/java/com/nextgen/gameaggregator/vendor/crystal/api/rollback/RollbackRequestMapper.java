@@ -9,9 +9,13 @@ public class RollbackRequestMapper implements BetRollbackContextMapper<RollbackR
 
     @Override
     public BetRollbackContext toInternal(RollbackRequest vendorRequest) {
+        String vendorBetId = vendorRequest.getTransactionOriginalId() == null
+                ? vendorRequest.getTransactionId()
+                : vendorRequest.getTransactionOriginalId();
+
         return BetRollbackContext.builder()
                 .idempotencyKey(vendorRequest.getTransactionId())
-                .vendorBetId(vendorRequest.getTransactionOriginalId())
+                .vendorBetId(vendorBetId)
                 .roundId(vendorRequest.getRoundId())
                 .vendorPlayerUsername(vendorRequest.getPlayerId())
                 .build();

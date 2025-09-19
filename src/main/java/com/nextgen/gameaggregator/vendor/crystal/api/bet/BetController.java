@@ -24,11 +24,19 @@ public class BetController extends AbstractBetController<BetRequest, BetResponse
     @PostMapping(path = EndPoints.BET)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<BetResponse> bet(@Valid @RequestBody BetRequest request) {
-        return ResponseEntity.ok(processRequest(request));
+        return ResponseEntity.ok(processRequest(request,(context, resp)-> enrichResponse(resp, request)));
     }
 
     @Override
     public void configure(BetConfig config, BetRequest request) {
         config.returnSuccessOnDuplicate(true);
+    }
+
+    private void enrichResponse(BetResponse response, BetRequest request) {
+        BetResponse.Data data = BetResponse.Data.builder()
+                .balance(response.getData().getBalance())
+                .actionId(request.getTransactionId())
+                .build();
+        response.setData(data);
     }
 }

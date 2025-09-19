@@ -27,8 +27,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<BetResultResponse> result(@Valid @RequestBody BetResultRequest request) {
 
-        BetResultResponse response = processRequest(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(processRequest(request,(context, resp)-> enrichResponse(resp, request)));
     }
 
     @Override
@@ -36,5 +35,13 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         config.betTxn(false)
                 .returnSuccessOnDuplicate(true)
                 .setSettleType(SettleType.BET);
+    }
+
+    private void enrichResponse(BetResultResponse response, BetResultRequest request) {
+        BetResultResponse.Data data = BetResultResponse.Data.builder()
+                .balance(response.getData().getBalance())
+                .actionId(request.getTransactionId())
+                .build();
+        response.setData(data);
     }
 }
