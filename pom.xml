@@ -38,7 +38,7 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
-        <ga-core.version>1.0.31</ga-core.version>
+        <ga-core.version>1.0.32</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
         <nextgen-core.version>1.0.27</nextgen-core.version>
     </properties>
