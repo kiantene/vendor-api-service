@@ -35,6 +35,7 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
 
     private void enrichResponse(RollbackResponse response, RollbackRequest request) {
         RollbackResponse.Data data = RollbackResponse.Data.builder()
+                .balance(response.getData().getBalance())
                 .actionId(request.getTransactionId())
                 .build();
         response.setData(data);
