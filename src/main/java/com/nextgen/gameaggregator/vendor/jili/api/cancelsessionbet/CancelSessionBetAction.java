@@ -52,9 +52,18 @@ public class CancelSessionBetAction {
             this.doValidation(cancelSessionBetDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(cancelSessionBetDto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelSessionBetDto.getGame()), gameSession);
-
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.verifyToken(cancelSessionBetDto.getToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelSessionBetDto.getGame()), gameSession);
+            } catch (AuthenticationException exception) {
+                gameSession = gameSessionService.generateNewSessionToken(cancelSessionBetDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(cancelSessionBetDto.getGame()));
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(cancelSessionBetDto.getToken());
+                gameSession.setVendorToken(cancelSessionBetDto.getToken());
+            }
+            
             // 3. Verify request parameters
             this.doVerification(cancelSessionBetDto, gameSession);
 
