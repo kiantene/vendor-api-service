@@ -47,13 +47,14 @@ public class WalletBetResultServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetResultContext context = state().getBetResultContext();
+        BetResultConfig config = state().getConfig();
         GameTransaction txn = null;
 
         try {
             validator.validateRequestContext(context, state().getConfig());
 
             txn = guard.ensureNotDuplicate(
-                    TxnType.RESULT,
+                    config.isBetTxn() ? TxnType.BET_N_RESULT : TxnType.RESULT,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
                     logContext.getStart()
@@ -61,7 +62,7 @@ public class WalletBetResultServiceWrapper {
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
-            enricher.enrichByGameSession(context, gameSession, state().getConfig());
+            enricher.enrichByGameSession(context, gameSession, config);
 
             ResultType resultType = getResultType(context);
 

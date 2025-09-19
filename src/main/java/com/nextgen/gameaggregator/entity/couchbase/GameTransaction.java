@@ -191,4 +191,14 @@ public class GameTransaction {
     public boolean isRefunded() {
         return state == GameRoundState.REFUNDED;
     }
+
+    @JsonIgnore
+    public boolean isBet() {
+        return type == TxnType.BET;
+    }
+
+    @JsonIgnore
+    public boolean isBetNResult() {
+        return type == TxnType.BET_N_RESULT;
+    }
 }

@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
-import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.RequiredArgsConstructor;
@@ -60,17 +59,10 @@ public class GameTransactionService {
 
         /**
          * Create an alias copy of the same txn but using vendorBetId as primary key (docId)
-         * This alias copy is used for rollback using vendorBetId and will expire in 7 days
+         * This alias copy is used for rollback using vendorBetId and will expire in 3 days
          */
-        if (txn.getType() == TxnType.BET && !txn.getTransactionId().equals(txn.getVendorBetId())) {
-            GameTransaction betTxn = txn.copy();
-            betTxn.setTransactionId(txn.getVendorBetId());
-            try {
-                txnDataService.insertWithTTL(betTxn, Duration.ofDays(7));
-            } catch (DocumentExistsException ex) {
-                // don't throw error even if document already exists
-                log.warn("GameTransaction (" + betTxn.getId() + ") already exists");
-            }
+        if (shouldCreateAliasTxn(txn)) {
+            createAliasTxn(txn);
         }
 
         return gameRoundService.save(txn, agentMeta);
@@ -89,7 +81,7 @@ public class GameTransactionService {
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
 
-        if (txn.getType() == TxnType.BET && !txn.getTransactionId().equals(txn.getVendorBetId())) {
+        if (shouldCreateAliasTxn(txn)) {
             GameTransaction betTxn = txn.copy();
             betTxn.setTransactionId(txn.getVendorBetId());
             txnDataService.updateStatus(betTxn, balance, TxnStatus.SUCCESS);
@@ -155,11 +147,33 @@ public class GameTransactionService {
         txnDataService.updateToSettled(txnId, settledTime);
     }
 
+    public void deleteById(String id) {
+        txnDataService.deleteById(id);
+    }
+
     private String getNow() {
         return TIME_FORMATTER.format(Instant.now());
     }
 
-    public void deleteById(String id) {
-        txnDataService.deleteById(id);
+    private void createAliasTxn(GameTransaction txn) {
+        int ttl = 3;
+        GameTransaction betTxn = txn.copy();
+        betTxn.setTransactionId(txn.getVendorBetId());
+        try {
+            txnDataService.insertWithTTL(betTxn, Duration.ofDays(ttl));
+        } catch (DocumentExistsException ex) {
+            // don't throw error even if document already exists
+            log.warn("GameTransaction (" + betTxn.getId() + ") already exists");
+        }
+    }
+
+    private boolean shouldCreateAliasTxn(GameTransaction txn) {
+        // if the transaction type is bet and settle
+        boolean isBetNSettle = txn.isBetNResult();
+
+        // or if it is a bet txn and vendor bet id is different from transaction id
+        boolean isVendorBetIdDifferent = txn.isBet() && !txn.getTransactionId().equals(txn.getVendorBetId());
+
+        return isBetNSettle || isVendorBetIdDifferent;
     }
 }
