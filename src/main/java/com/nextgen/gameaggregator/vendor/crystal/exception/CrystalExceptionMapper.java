@@ -66,12 +66,10 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
     }
 
     private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
-        return new VendorErrorResponse(responseCodes.getHttpStatus(),
-                ErrorResponse.builder()
-                        .error(ErrorResponse.Error.builder()
-                                .code(String.valueOf(responseCodes.getCode()))
-                                .message(responseCodes.getMessage())
-                                .build())
-                        .build());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .error(ErrorResponse.Error.of(responseCodes))
+                .build();
+
+        return new VendorErrorResponse(responseCodes.getHttpStatus(), errorResponse);
     }
 }
