@@ -40,6 +40,17 @@ public class VendorCallbackException extends RuntimeException {
         return cause;
     }
 
+    public boolean isBecauseOf(Class<? extends Throwable> type) {
+        Throwable cause = this;
+        while (cause != null && cause != cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
     public String getTransactionId() {
         if (context != null) {
             return context.getTransactionId();
