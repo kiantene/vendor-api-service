@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.BetNotAllowedException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.GameTerminatedException;
@@ -24,6 +25,9 @@ class WalletBetResultValidator {
     private final BetValidator validator;
 
     public void validateRequestContext(BetResultContext context, BetResultConfig config) {
+        if (context.getWinAmount() == null || context.getWinAmount().signum() < 0) {
+            throw new InvalidRequestException("Win amount cannot be empty or negative");
+        }
 
         if (config.isSettledByRound() && context.getRoundEnded() == null) {
             throw new IllegalArgumentException("BetResultContext.roundEnded must be set if SettleType=Round");
