@@ -27,6 +27,11 @@ public class VendorCallbackException extends RuntimeException {
         this.context = context;
     }
 
+    protected VendorCallbackException(VendorRequestContext context, Throwable ex) {
+        super(ex.getMessage(), ex);
+        this.context = context;
+    }
+
     protected VendorCallbackException(VendorRequestContext context, String message, Throwable ex) {
         super(message, ex);
         this.context = context;
