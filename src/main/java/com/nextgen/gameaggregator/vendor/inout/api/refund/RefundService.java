@@ -45,13 +45,14 @@ public class RefundService {
         this.unsettledBetService = unsettledBetService;
     }
 
-    public CommonVo refund(HttpRequestLog httpRequestLog, String xSign) {
+    public CommonVo refund(HttpRequestLog httpRequestLog, String xSign) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
         BigDecimal balance = BigDecimal.ZERO;
         CommonDto<RefundDto> dto = new CommonDto<>();
         CommonVo responseVo = new CommonVo();
         boolean isRequestExists = false;
+        GameSession gameSession = null;
 
         try {
             // 1. Retrieve request body and convert into dto
@@ -70,7 +71,7 @@ public class RefundService {
             }
 
             // 3. Verify session token
-            GameSession gameSession = vendorService.checkGameSession(traceId, dto.getData().getUserId(), dto.getGameMode(), dto.getToken());
+            gameSession = vendorService.checkGameSession(traceId, dto.getData().getUserId(), dto.getGameMode(), dto.getToken());
 
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
@@ -84,8 +85,15 @@ public class RefundService {
             responseVo.setCode(ResponseCode.OK.code);
             responseVo.setBalance(balance.toString());
 
-        } catch (Exception e) {
+        } catch (BetRefundIdempotentViolationException | BetResultIdempotentViolationException e ) {
+            httpService.logError(httpRequestLog, e);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            responseVo.setCode(ResponseCode.OK.code);
+            responseVo.setBalance(balance.toString());
+
+        }  catch (Exception e) {
             this.handleException(e, responseVo, httpRequestLog);
+
         } finally {
             // first request (not request exist) will delete log after process finish.
             if (!isRequestExists) {

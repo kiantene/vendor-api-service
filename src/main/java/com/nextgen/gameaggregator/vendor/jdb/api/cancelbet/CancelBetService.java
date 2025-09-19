@@ -66,7 +66,7 @@ public class CancelBetService {
             // 3. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameService.getGameSessionByUsername(cancelBetDto.getUid()); //token check
+                gameSession = gameService.getGameSessionByUsername(cancelBetDto.getUid(), cancelBetDto.getGType() + "_" + cancelBetDto.getMType()); //token check
             } catch (AuthenticationException authenticationException) { //if expired
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyCode(gameSession, cancelBetDto.getCurrency());
@@ -122,11 +122,6 @@ public class CancelBetService {
             httpService.logError(httpRequestLog, jsonProcessingException);
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
 
-        } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException |
-                 DisabledGameException exception) {
-            httpService.logError(httpRequestLog, exception);
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
@@ -157,9 +152,7 @@ public class CancelBetService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
-            CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
-
+    private void doVerification(CancelBetDto dto, GameSession gameSession) throws CurrencyNotSupportedException {
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }

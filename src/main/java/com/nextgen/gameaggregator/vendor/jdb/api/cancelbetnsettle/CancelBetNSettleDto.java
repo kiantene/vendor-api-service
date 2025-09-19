@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -26,6 +26,16 @@ public class CancelBetNSettleDto implements RollbackData {
     @Size(min = 1, max = 30)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
+
+    @NotBlank
+    @JsonProperty("gType")
+    @Pattern(regexp = "^[0-9]+$")
+    private String gType;
+
+    @NotBlank
+    @JsonProperty("mType")
+    @Pattern(regexp = "^[0-9]+$")
+    private String mType;
 
     @Override
     public String getRollbackId() {
