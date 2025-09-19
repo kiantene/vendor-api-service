@@ -2,6 +2,9 @@ package com.nextgen.gameaggregator.vendor.inout.api.action;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.inout.api.authenticate.AuthenticateService;
@@ -63,7 +66,7 @@ public class GeneralAction {
             vo = this.actionHandling(httpRequestLog, request, dto);
 
         } catch (Exception e) {
-            vo.setError(ResponseCode.INVALID_TOKEN);
+            vo.setError(ResponseCode.UNKNOWN_ERROR);
 
         } finally {
             httpRequestLog.setRequestBody("Request Body: \n" + httpRequestLog.getRequestBody() + "\n\nRequest Header: \n" + vendorService.getHeaders(request));
@@ -74,7 +77,7 @@ public class GeneralAction {
     }
 
     private CommonVo actionHandling(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest, CommonDto<GeneralActionDto> commonDto)
-            throws InvalidRequestException {
+            throws InvalidRequestException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
         CommonVo vo = new CommonVo();
         String xSign = httpServletRequest.getHeader("x-request-sign");
 
@@ -97,7 +100,7 @@ public class GeneralAction {
                 break;
 
             default:
-                vo.setError(ResponseCode.INVALID_TOKEN);
+                vo.setError(ResponseCode.UNKNOWN_ERROR);
                 break;
 
         }
