@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 

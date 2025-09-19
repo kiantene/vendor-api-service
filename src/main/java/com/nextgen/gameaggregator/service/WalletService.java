@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.core.engine.game.round.GameRoundService;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
-import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.Features;
