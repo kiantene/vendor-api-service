@@ -66,7 +66,7 @@ public class WalletRollbackServiceWrapper {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (BetNotFoundException ex) {
-            throw new RollbackNotAllowedException(ex.getMessage(), ex);
+            throw new RollbackNotAllowedException(context, ex);
         } catch (Exception ex) {
             guard.clear();
             throw walletExceptionTranslator.translate(ex, context);

@@ -27,6 +27,11 @@ public class VendorCallbackException extends RuntimeException {
         this.context = context;
     }
 
+    protected VendorCallbackException(VendorRequestContext context, Throwable ex) {
+        super(ex.getMessage(), ex);
+        this.context = context;
+    }
+
     protected VendorCallbackException(VendorRequestContext context, String message, Throwable ex) {
         super(message, ex);
         this.context = context;
@@ -38,6 +43,17 @@ public class VendorCallbackException extends RuntimeException {
             cause = cause.getCause();
         }
         return cause;
+    }
+
+    public boolean isBecauseOf(Class<? extends Throwable> type) {
+        Throwable cause = this;
+        while (cause != null && cause != cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     public String getTransactionId() {

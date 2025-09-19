@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class RollbackNotAllowedException extends RuntimeException {
-    public RollbackNotAllowedException() {
-        super();
-    }
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class RollbackNotAllowedException extends VendorCallbackException {
 
     public RollbackNotAllowedException(String message) {
         super(message);
     }
 
-    public RollbackNotAllowedException(String message, Throwable ex) {
-        super(message, ex);
+    public RollbackNotAllowedException(VendorRequestContext context, Throwable ex) {
+        super(context, ex);
     }
 }
