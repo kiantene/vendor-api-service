@@ -5,8 +5,8 @@ import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.core.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
 import com.nextgen.gameaggregator.core.retry.RetryOrigin;
@@ -48,7 +48,7 @@ public class BetRollbackProcessor {
 
     public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         GameTransaction betTxn = gameTransactionService.get(rollbackTxn.getRollbackId())
-                .orElseThrow(() -> new RecordNotFoundException("GameTransaction not found for processBetRollback: " + rollbackTxn.getRollbackId()));
+                .orElseThrow(() -> new BetNotFoundException("GameTransaction not found for processBetRollback: " + rollbackTxn.getRollbackId()));
 
         RollbackDecision decision = RollbackPolicy.decide(betTxn, config);
 
@@ -87,7 +87,7 @@ public class BetRollbackProcessor {
 
     public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         GameRound round = gameRoundService.get(rollbackTxn.getRoundDocId())
-                .orElseThrow(() -> new RecordNotFoundException("GameRound not found for processRoundRollback: " + rollbackTxn.getRoundDocId()));
+                .orElseThrow(() -> new BetNotFoundException("GameRound not found for processRoundRollback: " + rollbackTxn.getRoundDocId()));
 
         RollbackDecision decision = RollbackPolicy.decide(round, config);
 

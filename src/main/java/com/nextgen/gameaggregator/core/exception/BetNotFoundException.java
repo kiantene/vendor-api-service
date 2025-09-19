@@ -7,6 +7,10 @@ public class BetNotFoundException extends VendorCallbackException {
         super();
     }
 
+    public BetNotFoundException(String message) {
+        super(message);
+    }
+
     public BetNotFoundException(VendorRequestContext context, String message, Throwable ex) {
         super(context, message, ex);
     }
