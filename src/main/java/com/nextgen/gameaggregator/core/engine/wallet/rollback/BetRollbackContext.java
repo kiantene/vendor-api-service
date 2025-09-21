@@ -1,14 +1,17 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.gameaggregator.core.context.VendorCurrencyAware;
 import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.Accessors;
 import lombok.experimental.SuperBuilder;
+
+import java.math.BigDecimal;
 
 /**
  * Field mapping rules for Rollback Request:
@@ -20,7 +23,8 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class BetRollbackContext extends VendorRequestContext implements VendorPlayerAware, VendorGameAware {
+public class BetRollbackContext extends VendorRequestContext implements
+        VendorPlayerAware, VendorGameAware, VendorCurrencyAware {
     /**
      * @deprecated use configure in controller to set rollbackType
      */
@@ -49,7 +53,6 @@ public class BetRollbackContext extends VendorRequestContext implements VendorPl
     private Long agentPlayerId;
     private String agentPlayerUsername;
     private Long vendorPlayerId;
-    private Integer currencyId;
     private Integer vendorLineId;
 
     /**
@@ -59,4 +62,57 @@ public class BetRollbackContext extends VendorRequestContext implements VendorPl
     private String gameCode;
     private String gameName;
     private Integer gameCategoryId;
+
+    @Builder.Default
+    private Currency currency = new Currency();
+
+    @Override
+    public Integer getCurrencyId() {
+        return this.currency.id();
+    }
+
+    @Override
+    public void setCurrencyId(Integer currencyId) {
+        this.currency.id(currencyId);
+    }
+
+    @Override
+    public String getCurrencyCode() {
+        return this.currency.code();
+    }
+
+    @Override
+    public void setCurrencyCode(String code) {
+        this.currency.code(code);
+    }
+
+    @Override
+    public BigDecimal getToVendorRate() {
+        return this.currency.toVendorRate();
+    }
+
+    @Override
+    public void setToVendorRate(BigDecimal rate) {
+        this.currency.toVendorRate(rate);
+    }
+
+    @Override
+    public BigDecimal getFromVendorRate() {
+        return this.currency.fromVendorRate();
+    }
+
+    @Override
+    public void setFromVendorRate(BigDecimal rate) {
+        this.currency.fromVendorRate(rate);
+    }
+
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    public static class Currency {
+        private Integer id;
+        private String code;
+        private BigDecimal fromVendorRate;
+        private BigDecimal toVendorRate;
+    }
 }

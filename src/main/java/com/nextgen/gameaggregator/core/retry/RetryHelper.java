@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.core.retry;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.common.ClientApiRequest;
+import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
 import org.springframework.http.HttpMethod;
 
 public final class RetryHelper {

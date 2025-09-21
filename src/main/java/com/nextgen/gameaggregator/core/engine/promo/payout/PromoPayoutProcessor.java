@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.common.ClientApiRequest;
+import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.common.OperatorApiCallerV2;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> {
+public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientApiResponse> {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final PromoPayoutMapper mapper;
     private final OperatorApiCallerV2 operatorApiCaller;
@@ -75,7 +75,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                     EndPoints.PROMO_PAYOUT,
                     mapper.toPromoPayoutRequest(context)
             );
-            ClientBalanceResponse response;
+            ClientApiResponse response;
             if (clientRequestService.shouldMockResponse(agent.playerUsername())) {
                 response = clientRequestService.mockClientResponse(
                         context.getTraceId(),
@@ -100,7 +100,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
     }
 
     @Override
-    public void onSuccess(PromoPayoutContext context, ClientBalanceResponse result) {
+    public void onSuccess(PromoPayoutContext context, ClientApiResponse result) {
         // TODO : currency conversion
     }
 

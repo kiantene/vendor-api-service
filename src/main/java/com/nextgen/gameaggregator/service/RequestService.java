@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
-import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBetForPatching;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -19,7 +17,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

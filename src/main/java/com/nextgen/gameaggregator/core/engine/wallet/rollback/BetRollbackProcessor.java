@@ -3,16 +3,18 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.retry.RetryPolicy;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
 import com.nextgen.gameaggregator.core.retry.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResult;
+import com.nextgen.gameaggregator.core.webclient.DefaultOperatorCallerLifeCycle;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiCaller;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
@@ -21,6 +23,7 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,13 +77,16 @@ public class BetRollbackProcessor {
 
         PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId());
 
+        // we save the original balance from operator
         gameTransactionService.markRollback(round, rollbackTxn, balanceData.getBalance());
+
+        TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
 
         // translate to vendor's username/currency
         return new PlayerBalanceData(
                 round.getUsername(),
                 round.getCurrency(),
-                balanceData.getBalance(),
+                playerBalance.amount(),
                 balanceData.getTimestamp()
         );
     }
@@ -129,11 +135,13 @@ public class BetRollbackProcessor {
         BigDecimal balance = Optional.ofNullable(balanceData.getBalance()).orElse(round.getLastBalance());
         gameTransactionService.markRollback(round, rollbackTxn, balance);
 
+        TxnAmount playerBalance = TxnAmount.of(balance, context.getToVendorRate());
+
         // translate to vendor's username/currency
         return new PlayerBalanceData(
                 round.getUsername(),
                 round.getCurrency(),
-                balance,
+                playerBalance.amount(),
                 context.getTimestamp()
         );
     }
@@ -153,12 +161,9 @@ public class BetRollbackProcessor {
         );
 
         try {
-            ClientBalanceResponse response = operatorApiCaller.post(
-                    apiRequest.getBaseUrl(),
-                    apiRequest.getPath(),
-                    apiRequest.getHeaders(),
-                    apiRequest.getRequestObject()
-            );
+            ClientApiResult apiResult = operatorApiCaller.post(apiRequest, DefaultOperatorCallerLifeCycle.get());
+            apiResult.throwIfError();
+            ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
 
             clientResponseValidator.validate(response, new ClientResponseValidator.RequestRecord(
                     requestDto.getTraceId(),
@@ -168,7 +173,7 @@ public class BetRollbackProcessor {
 
             return response.getData();
         } catch (Exception ex) { // only operator exception then send to retry queue
-            if (shouldRetry(ex)) {
+            if (RetryPolicy.shouldRetry(RetryOrigin.BET_ROLLBACK, ex)) {
                 retryQueueService
                         .enqueue(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.BET_ROLLBACK)
                         .subscribe();
@@ -192,10 +197,5 @@ public class BetRollbackProcessor {
         dto.setTimestamp(context.getTimestamp());
 
         return dto;
-    }
-
-    private boolean shouldRetry(Exception ex) {
-        // if insufficient balance, it is assumed the operator has processed the rollback successfully.
-        return !(ex instanceof InsufficientBalanceException);
     }
 }

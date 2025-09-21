@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpMethod;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -96,19 +93,27 @@ public class LogContext {
     }
 
     public void setException(Exception ex) {
-        setException(ex.getClass().getSimpleName());
-        setErrorMessage(ex.getMessage());
-        setStackTrace(getStackTrace(ex));
+        setException((Throwable) ex);
+    }
 
-        if (ex instanceof RuntimeException && ex.getCause() != null) {
-            Throwable cause = ex.getCause();
-
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-
-            setRootCause(cause.getClass().getSimpleName());
+    public void setException(Throwable t) {
+        if (t == null) {
+            setException("null");
+            setErrorMessage(null);
+            setStackTrace(null);
+            setRootCause(null);
+            return;
         }
+
+        setException(t.getClass().getSimpleName());
+        this.status = -1; // preserve your current behavior
+
+        setErrorMessage(t.getMessage());
+
+        setStackTrace(LogContextHelper.buildStackTraceString(t, 800));
+
+        Throwable root = LogContextHelper.findRootCause(t);
+        setRootCause(root != null ? root.getClass().getSimpleName() : null);
     }
 
     public void setException(String ex) {
@@ -192,13 +197,6 @@ public class LogContext {
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
         }
-    }
-
-    private String getStackTrace(Exception exception) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        exception.printStackTrace(pw);
-        return sw.toString();
     }
 
     /**
