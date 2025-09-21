@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.core.validator;
 
 import com.nextgen.gameaggregator.core.context.VendorRequestContext;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -9,13 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 @Service
 @Slf4j
 public class ClientResponseValidator {
 
-    public void validate(ClientBalanceResponse response, RequestRecord request, VendorRequestContext context) throws InvalidOperatorResponseException {
+    public void validate(ClientApiResponse response, RequestRecord request, VendorRequestContext context) throws InvalidOperatorResponseException {
         String traceId = String.valueOf(response.getTraceId());
         if (!request.traceId().equals(traceId)) {
             log.warn("Trace Id does not match (expected: {}) (actual: {})", request.traceId(), traceId);

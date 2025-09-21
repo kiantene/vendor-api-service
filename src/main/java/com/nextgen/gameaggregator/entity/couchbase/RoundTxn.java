@@ -11,39 +11,45 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RoundTxn {
     @JsonProperty("id")
-    private String id;
+    protected String id;
 
     @JsonProperty("type")
-    private TxnType type;
+    protected TxnType type;
 
     @JsonProperty("gaBetId")
-    private String gaBetId;
+    protected String gaBetId;
 
     @JsonProperty("vendorBetId")
-    private String vendorBetId;
+    protected String vendorBetId;
 
     @JsonProperty("status")
-    private TxnStatus status;
+    protected TxnStatus status;
 
     @JsonProperty("exception")
-    private String exception;
+    protected String exception;
 
     @JsonProperty("sentAt")
-    private String sentAt;
+    protected String sentAt;
 
     @JsonProperty("doneAt")
-    private String doneAt;
+    protected String doneAt;
 
     public static RoundTxn of(GameTransaction txn) {
         RoundTxn roundTxn = new RoundTxn();
         roundTxn.setId(txn.getId());
         roundTxn.setType(txn.getType());
+        roundTxn.setGaBetId(txn.getGaBetId());
         roundTxn.setVendorBetId(txn.getVendorBetId());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());
 
         return roundTxn;
+    }
+
+    @JsonIgnore
+    public boolean isStillProcessing() {
+        return status == TxnStatus.SENT;
     }
 
     @JsonIgnore
@@ -59,6 +65,11 @@ public class RoundTxn {
     @JsonIgnore
     public boolean isResult() {
         return type == TxnType.RESULT;
+    }
+
+    @JsonIgnore
+    public boolean isBetNResult() {
+        return type == TxnType.BET_N_RESULT;
     }
 
     @JsonIgnore

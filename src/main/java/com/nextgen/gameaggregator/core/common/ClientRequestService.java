@@ -2,13 +2,14 @@ package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
+import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
 import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.validation.ConstraintViolation;
@@ -73,7 +74,7 @@ public class ClientRequestService {
         return username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
     }
 
-    public ClientBalanceResponse mockClientResponse(String traceId, String currency, String username) {
+    public ClientApiResponse mockClientResponse(String traceId, String currency, String username) {
         PlayerBalanceData playerBalanceData = new PlayerBalanceData(
                 username,
                 currency,
@@ -81,7 +82,7 @@ public class ClientRequestService {
                 System.currentTimeMillis()
         );
 
-        ClientBalanceResponse response = new ClientBalanceResponse();
+        ClientApiResponse response = new ClientApiResponse();
         response.setStatus(ResponseCodes.Status.SC_OK.toString());
         response.setTraceId(traceId);
         response.setMessage(ResponseCodes.Status.SC_OK.description + " mock response");

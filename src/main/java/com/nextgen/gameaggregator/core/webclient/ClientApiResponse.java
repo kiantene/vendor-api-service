@@ -1,16 +1,13 @@
-package com.nextgen.gameaggregator.core.engine;
+package com.nextgen.gameaggregator.core.webclient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import lombok.Data;
 
 @Data
-public class ClientBalanceResponse {
-//    @NotBlank(message = "UUID format only")
-//    @Size(min = 36, max = 36, message = "UUID format only")
+public class ClientApiResponse {
     private String traceId;
-//    @NotNull(message = "status can not be blank")
     private String status;
-
     private String message;
 
     @JsonIgnoreProperties(ignoreUnknown = true)

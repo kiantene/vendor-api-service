@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
@@ -20,7 +20,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private static final String ACTION = "payout";
     private final DuplicateRequestGuard guard;
     private final BaseEnricher<PromoPayoutContext> enricher;
-    private final CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> processor;
+    private final CoreEngineProcessor<PromoPayoutContext, ClientApiResponse> processor;
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {

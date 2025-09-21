@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -17,7 +18,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 @Data
-public class GameTransaction {
+@EqualsAndHashCode(callSuper = true)
+public class GameTransaction extends RoundTxn {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
             .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
             .withZone(ZoneOffset.UTC);
@@ -34,8 +36,8 @@ public class GameTransaction {
     @JsonProperty("idx")
     private Integer idx;
 
-    @JsonProperty("type")
-    private TxnType type;
+//    @JsonProperty("type")
+//    private TxnType type;
 
     /**
      * Unique identifier to prevent duplicate transaction
@@ -43,8 +45,8 @@ public class GameTransaction {
     @JsonProperty("transactionId")
     private String transactionId;
 
-    @JsonProperty("vendorBetId")
-    private String vendorBetId;
+//    @JsonProperty("vendorBetId")
+//    private String vendorBetId;
 
     @JsonProperty("vendorId")
     private Integer vendorId;
@@ -81,14 +83,14 @@ public class GameTransaction {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal balance;
 
-    @JsonProperty("gaBetId")
-    private String gaBetId;
+//    @JsonProperty("gaBetId")
+//    private String gaBetId;
 
-    @JsonProperty("status")
-    private TxnStatus status;
+//    @JsonProperty("status")
+//    private TxnStatus status;
 
-    @JsonProperty("exception")
-    private String exception;
+//    @JsonProperty("exception")
+//    private String exception;
 
     @JsonProperty("betTime")
     private Long betTime;
@@ -96,11 +98,11 @@ public class GameTransaction {
     @JsonProperty("settleTime")
     private Long settleTime;
 
-    @JsonProperty("sentAt")
-    private String sentAt;
+//    @JsonProperty("sentAt")
+//    private String sentAt;
 
-    @JsonProperty("doneAt")
-    private String doneAt;
+//    @JsonProperty("doneAt")
+//    private String doneAt;
 
     @JsonProperty("createdTs")
     private Long createdTs;
@@ -152,6 +154,7 @@ public class GameTransaction {
         return copy;
     }
 
+    @Override
     @JsonIgnore
     public String getId() {
         return className + "::" + type + "::" + transactionId;
@@ -168,16 +171,6 @@ public class GameTransaction {
     }
 
     @JsonIgnore
-    public boolean isSuccess() {
-        return status == TxnStatus.SUCCESS;
-    }
-
-    @JsonIgnore
-    public boolean isStillProcessing() {
-        return status == TxnStatus.SENT;
-    }
-
-    @JsonIgnore
     public boolean isSettled() {
         return state == GameRoundState.SETTLED;
     }
@@ -190,15 +183,5 @@ public class GameTransaction {
     @JsonIgnore
     public boolean isRefunded() {
         return state == GameRoundState.REFUNDED;
-    }
-
-    @JsonIgnore
-    public boolean isBet() {
-        return type == TxnType.BET;
-    }
-
-    @JsonIgnore
-    public boolean isBetNResult() {
-        return type == TxnType.BET_N_RESULT;
     }
 }
