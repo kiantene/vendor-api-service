@@ -1,10 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.core.exception.EntityNotFoundException;
-import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.context.BaseEnricher;
-import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
-import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -45,8 +40,6 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
                     context.getVendorPlayerUsername(),
                     context.getVendorCurrency()
             );
-        } catch (EntityNotFoundException ex) {
-            throw new InternalConfigurationException(ex.getMessage(), ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
