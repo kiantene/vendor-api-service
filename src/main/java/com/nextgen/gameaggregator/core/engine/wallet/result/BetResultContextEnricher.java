@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.InternalVendorService;
-import com.nextgen.gameaggregator.core.service.VendorGameDataService;
-import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
+import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.GameRoundState;
@@ -21,8 +18,10 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
     public BetResultContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                     VendorPlayerDataService vendorPlayerDataService,
                                     VendorGameDataService vendorGameDataService,
+                                    CurrencyDataService currencyDataService,
+                                    VendorCurrencyDataService vendorCurrencyDataService,
                                     ApplicationContext applicationContext) {
-        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService, currencyDataService, vendorCurrencyDataService);
         this.applicationContext = applicationContext;
     }
 

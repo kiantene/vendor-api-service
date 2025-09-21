@@ -2,31 +2,34 @@ package com.nextgen.gameaggregator.core.context;
 
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.entity.AgentPlayer;
-import com.nextgen.gameaggregator.core.entity.VendorGame;
-import com.nextgen.gameaggregator.core.entity.VendorPlayer;
-import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
-import com.nextgen.gameaggregator.core.service.VendorGameDataService;
-import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
+import com.nextgen.gameaggregator.core.entity.*;
+import com.nextgen.gameaggregator.core.service.*;
 
 public abstract class BaseEnricher<T> {
     private final AgentPlayerDataService agentPlayerDataService;
     private final VendorPlayerDataService vendorPlayerDataService;
     private final VendorGameDataService vendorGameDataService;
+    private final CurrencyDataService currencyDataService;
+    private final VendorCurrencyDataService vendorCurrencyDataService;
 
     protected BaseEnricher(AgentPlayerDataService agentPlayerDataService,
                            VendorPlayerDataService vendorPlayerDataService,
-                           VendorGameDataService vendorGameDataService) {
+                           VendorGameDataService vendorGameDataService,
+                           CurrencyDataService currencyDataService,
+                           VendorCurrencyDataService vendorCurrencyDataService) {
 
         this.agentPlayerDataService = agentPlayerDataService;
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.vendorGameDataService = vendorGameDataService;
+        this.currencyDataService = currencyDataService;
+        this.vendorCurrencyDataService = vendorCurrencyDataService;
     }
 
     public final void enrich(T target) {
         prepareContext(target);
         enrichVendorPlayer(target);
         enrichVendorGame(target);
+        enrichVendorCurrency(target);
         doEnrich(target); // subclass-specific logic
     }
 
@@ -67,6 +70,28 @@ public abstract class BaseEnricher<T> {
                 context.setGameCode(vendorGame.getCode());
                 context.setGameName(vendorGame.getName());
                 context.setGameCategoryId(vendorGame.getGameCategoryId());
+
+            } catch (EntityNotFoundException e) {
+                throw new InternalConfigurationException(e.getMessage());
+            }
+        }
+    }
+
+    private void enrichVendorCurrency(T target) {
+        if (target instanceof VendorCurrencyAware context && context.getVendorId() != null && context.getCurrencyId() != null) {
+            try {
+                Currency currency = currencyDataService.get(context.getCurrencyId());
+
+                VendorCurrency vendorCurrency = vendorCurrencyDataService.getVendorIdAndCurrencyId(
+                        context.getVendorId(),
+                        context.getCurrencyId()
+                );
+                context.setCurrencyCode(currency.getCode());
+                if (context.getVendorCurrency() == null) {
+                    context.setVendorCurrency(vendorCurrency.getVendorCurrencyCode());
+                }
+                context.setFromVendorRate(vendorCurrency.getFromVendorRate());
+                context.setToVendorRate(vendorCurrency.getToVendorRate());
 
             } catch (EntityNotFoundException e) {
                 throw new InternalConfigurationException(e.getMessage());

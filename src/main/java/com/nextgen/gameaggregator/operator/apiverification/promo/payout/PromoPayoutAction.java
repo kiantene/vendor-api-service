@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.apiverification.promo.payout;
 
-import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutRequest;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutDto;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.apiverification.wallet.slot.ResponseResultVo;
@@ -41,7 +41,7 @@ public class PromoPayoutAction {
         if (requestService.isTestEnvironment()) {
             try {
                 // Retrieve request body in original string format and convert into dto
-                PromoPayoutRequest dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), PromoPayoutRequest.class);
+                PromoPayoutDto dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), PromoPayoutDto.class);
                 responseResultVo.setRequestBody(dto);
 
                 // 1. Validate all fields in the request object
