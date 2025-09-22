@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.VendorApiException;
 import com.nextgen.core.webclient.HandlerResult;
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
@@ -73,6 +74,8 @@ public class GameLaunchService {
         } catch (GameLaunchException ex) {
             logContext.setException(ex);
             throw ex;
+        } catch (VendorApiException ex) {
+            throw new InvalidVendorResponseException(ex.getMessage());
         } catch (InvalidVendorResponseException ex) {
             throw ex;
         } catch (Exception ex) {
