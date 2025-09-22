@@ -164,7 +164,10 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.convertToTimestamp(this.timestamp);
+        if (this.isclosinground != null && this.isclosinground) {
+            VendorService.convertToTimestamp(this.timestamp);
+        }
+        return null;
     }
 
     @Override
