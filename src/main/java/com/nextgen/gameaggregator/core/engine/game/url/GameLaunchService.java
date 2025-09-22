@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.webclient.HandlerResult;
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -74,7 +75,7 @@ public class GameLaunchService {
         } catch (Exception ex) {
             GameLaunchException gameLaunchException = new GameLaunchException(ex.getMessage(), ex);
             logContext.setException(gameLaunchException);
-            throw ex;
+            throw gameLaunchException;
         } finally {
             long endTime = System.currentTimeMillis();
             logContext.setApiEnd(endTime);
@@ -95,9 +96,9 @@ public class GameLaunchService {
         return logContext;
     }
 
-    private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
+    private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) throws Exception {
         LogContext logContext = LogContextHolder.get();
-        launchHandler
+        HandlerResult<Object, Object> apiResult = launchHandler
                 .prepareLaunchRequest(context)
                 .execute(apiExecutor, context)
                 .onSuccess(response -> launchHandler.onSuccess(context, response))
@@ -112,6 +113,10 @@ public class GameLaunchService {
 
                     logContext.setApiResponse(result.getRawResponse());
                 });
+
+        if (!apiResult.isSuccess()) {
+            throw apiResult.getError();
+        }
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
