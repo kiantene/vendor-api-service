@@ -6,6 +6,7 @@ import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.S3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanWrapper;
@@ -58,7 +59,7 @@ public class GameLaunchService {
         return map;
     }
 
-    public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
+    public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) throws InvalidVendorResponseException {
         LogContext logContext = populateLogContext(context);
         try {
             switch (launchHandler.getLaunchMode()) {
@@ -71,6 +72,8 @@ public class GameLaunchService {
             }
         } catch (GameLaunchException ex) {
             logContext.setException(ex);
+            throw ex;
+        } catch (InvalidVendorResponseException ex) {
             throw ex;
         } catch (Exception ex) {
             GameLaunchException gameLaunchException = new GameLaunchException(ex.getMessage(), ex);
