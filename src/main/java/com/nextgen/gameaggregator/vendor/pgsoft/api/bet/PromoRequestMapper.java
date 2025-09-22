@@ -16,7 +16,7 @@ public class PromoRequestMapper implements VendorRequestMapper<PromoPayoutContex
                 .vendorCurrency(vendorRequest.getCurrencyCode())
                 // promo payout history
                 .vendorCampaignCode(vendorRequest.getFreeGameId().toString())
-                .payoutAmount(vendorRequest.getReal_transfer_amount())
+                .vendorPayoutAmount(vendorRequest.getReal_transfer_amount())
                 .vendorTransactionTime(vendorRequest.getCreateTime())
                 .promoType(PromoType.FREE_ROUND)
                 .build();

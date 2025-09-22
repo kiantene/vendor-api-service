@@ -1,122 +1,157 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.core.common.ClientApiRequest;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
-import com.nextgen.gameaggregator.core.common.OperatorApiCallerV2;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.PromoType;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.retry.RetryHelper;
+import com.nextgen.gameaggregator.core.retry.RetryOrigin;
+import com.nextgen.gameaggregator.core.retry.RetryPolicy;
+import com.nextgen.gameaggregator.core.retry.RetryQueueService;
+import com.nextgen.gameaggregator.core.webclient.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
-import com.nextgen.gameaggregator.service.BetResultRetryLogService;
-import com.nextgen.gameaggregator.service.KafkaService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
+import com.nextgen.gameaggregator.service.data.producer.PromoPayoutHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.function.Function;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientBalanceResponse> {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientApiResponse> {
     private final PromoPayoutMapper mapper;
-    private final OperatorApiCallerV2 operatorApiCaller;
     private final ClientRequestService clientRequestService;
-    private final KafkaService kafkaService;
-    private final BetResultRetryLogService betResultRetryLogService;
+    private final OperatorApiCaller operatorApiCaller;
+    private final PromoPayoutHistoryProducer producer;
+    private final RetryQueueService retryQueueService;
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
 
-        // TODO : currency conversion
-        // TODO : store in couchbase?
+        producer.publish(context);
 
-        preProcess(context);
-        return callToOperator(context);
+        PlayerBalanceData balanceData = callToOperator(context);
+        TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
+
+        return new PlayerBalanceData(
+                context.getVendorPlayerUsername(),
+                context.getVendorCurrency(),
+                playerBalance.amount(),
+                balanceData.getTimestamp()
+        );
     }
 
-    private void preProcess(PromoPayoutContext context) {
-        PromoPayoutHistory promoPayoutHistory = PromoPayoutHistory.builder()
-                .transactionId(context.getTransactionId())
-                .vendorTransactionId(context.getVendorTransactionId())
-                .campaignUuid(context.getCampaignUuid())
-                .agentPlayerId(context.getAgent().playerId())
-                .agentPlayerUsername(context.getAgent().playerUsername())
-                .vendorPlayerId(context.getVendor().playerId())
-                .vendorPlayerUsername(context.getVendorPlayerUsername())
+    public Mono<Void> processBatch(PromoPayoutContext context) {
+        final int CONCURRENCY = 16;
+        var transactions = context.getPayoutTransactions();
 
-                .vendorId(context.getVendor().id())
-                .vendorCode(context.getVendor().code())
-                .vendorLineId(context.getVendor().lineId())
+        if (transactions.isEmpty()) return Mono.empty();
 
-                .agentId(context.getAgent().id())
-                .masterAgentId(context.getAgent().masterAgentId())
-                .houseId(context.getAgent().houseId())
+        return Flux.fromIterable(transactions)
+                .flatMap(tx -> {
+                    tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
+                    tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
 
-                .currencyId(context.getCurrencyId())
-                .currencyCode(context.getCurrencyCode())
-                .payoutAmount(context.getPayoutAmount())
-                .promoType(PromoType.FREE_ROUND.id)
-                .status(BetStatus.SETTLED.code)
-                .vendorTransactionTime(context.getVendorTransactionTime())
-                .build();
-        kafkaService.producePromoPayoutHistory(promoPayoutHistory);
+                    return callToOperatorAsync(context, tx)
+                            .map(balanceData -> {
+                                TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
+                                return new PlayerBalanceData(
+                                        context.getVendorPlayerUsername(),
+                                        context.getVendorCurrency(),
+                                        playerBalance.amount(),
+                                        balanceData.getTimestamp()
+                                );
+                            });
+                }, CONCURRENCY)
+                .then();
     }
 
     private PlayerBalanceData callToOperator(PromoPayoutContext context) {
-        try {
-            PromoPayoutContext.Agent agent = context.getAgent();
-            ClientApiRequest<PromoPayoutRequest> apiRequest = clientRequestService.createClientApiRequest(
+        PromoPayoutContext.Agent agent = context.getAgent();
+
+        if (clientRequestService.shouldMockResponse(agent.playerUsername())) {
+            return clientRequestService.mockClientResponse(
                     context.getTraceId(),
-                    agent.id(),
-                    EndPoints.PROMO_PAYOUT,
-                    mapper.toPromoPayoutRequest(context)
-            );
-            ClientBalanceResponse response;
-            if (clientRequestService.shouldMockResponse(agent.playerUsername())) {
-                response = clientRequestService.mockClientResponse(
-                        context.getTraceId(),
-                        context.getCurrencyCode(),
-                        agent.playerUsername()
-                );
-            } else {
-                response = operatorApiCaller.post(
-                        apiRequest.getBaseUrl(),
-                        apiRequest.getPath(),
-                        apiRequest.getHeaders(),
-                        apiRequest.getRequestObject()
-                );
-            }
-//            processor.onSuccess(context, response);
+                    context.getCurrencyCode(),
+                    agent.playerUsername()
+            ).getData();
+        }
+
+        PromoPayoutDto requestDto = mapper.toPromoPayoutRequest(context);
+        var apiRequest = clientRequestService.createClientApiRequest(
+                context.getTraceId(),
+                agent.id(),
+                EndPoints.PROMO_PAYOUT,
+                requestDto
+        );
+
+        try {
+            ClientApiResult apiResult = operatorApiCaller.post(apiRequest, DefaultOperatorCallerLifeCycle.get());
+            apiResult.throwIfError();
+            ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
 
             return response.getData();
         } catch (Exception ex) {
-//            processor.onError(context, clientRequestAuth, ex);
-            throw ex;
+            if (RetryPolicy.shouldRetry(RetryOrigin.PROMO_PAYOUT, ex)) {
+                retryQueueService
+                        .enqueue(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.PROMO_PAYOUT)
+                        .subscribe();
+            }
         }
+
+        return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
+    }
+
+    private Mono<PlayerBalanceData> callToOperatorAsync(PromoPayoutContext context, PayoutTransaction txn) {
+        PromoPayoutContext.Agent agent = context.getAgent();
+        PromoPayoutDto requestDto = mapper.toPromoPayoutRequest(context, txn);
+
+        var apiRequest = clientRequestService.createClientApiRequest(
+                context.getTraceId(),
+                agent.id(),
+                EndPoints.PROMO_PAYOUT,
+                requestDto
+        );
+
+        Function<Throwable, Mono<PlayerBalanceData>> handleErrorWithRetry = ex -> {
+            if (RetryPolicy.shouldRetry(RetryOrigin.PROMO_PAYOUT, (Exception) ex)) {
+                return retryQueueService.enqueue(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.PROMO_PAYOUT)
+                        .thenReturn(PlayerBalanceData.getDefault(
+                                context.getVendorPlayerUsername(),
+                                context.getVendorCurrency()
+                        ));
+            }
+            return Mono.just(PlayerBalanceData.getDefault(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency()
+            ));
+        };
+
+        LogContext logContext = LogContextHolder.get().copy(); // creates a copy from the original logContext
+
+        return operatorApiCaller.postAsync(apiRequest, new DefaultOperatorCallerLifeCycle(logContext))
+                .map(apiResult -> {
+                    apiResult.throwIfError();
+                    ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
+
+                    return response.getData();
+                })
+                // retry handling: enqueue failed request
+                .onErrorResume(handleErrorWithRetry);
     }
 
     @Override
-    public void onSuccess(PromoPayoutContext context, ClientBalanceResponse result) {
-        // TODO : currency conversion
+    public void onSuccess(PromoPayoutContext context, ClientApiResponse result) {
     }
 
     @Override
     public void onError(PromoPayoutContext context, ClientApiRequest<?> clientApiRequest, Exception ex) {
-        try {
-            String operatorData = objectMapper.writeValueAsString(clientApiRequest.getRequestObject());
-            betResultRetryLogService.create(operatorData,
-                    context.getVendor().id(),
-                    context.getAgent().id(),
-                    context.getVendorTransactionId(),
-                    context.getVendorTransactionId(),
-                    context.getTransactionId(),
-                    clientApiRequest.getPath());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }

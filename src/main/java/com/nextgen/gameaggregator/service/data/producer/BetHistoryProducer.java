@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service.data.producer;
 
-import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
@@ -25,6 +24,7 @@ import com.nextgen.gameaggregator.service.CurrencyConversionService;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmounts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -105,15 +105,24 @@ public class BetHistoryProducer {
         BetHistoryContext context = BetHistoryContext.of(betResultContext);
         BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
 
+        Integer vendorId = context.getVendorId();
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
         GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
-        Vendor vendor = vendorDataService.get(context.getVendorId());
+        Vendor vendor = vendorDataService.get(vendorId);
+        VendorCurrency vendorCurrency = vendorCurrencyService.getVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
 
         betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
 
-        BigDecimal fromVendorRate = getVendorRate(context.getVendorId(), context.getCurrencyId());
+        TxnAmounts txnAmounts = TxnAmounts.of(round, vendorCurrency.getFromVendorRate());
 
-        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate, true);
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                txn.getVendorBetId(),
+                txn.getBetTime(),
+                txn.getSettleTime()
+        );
 
         publish(betHistory);
     }
@@ -128,9 +137,16 @@ public class BetHistoryProducer {
 
         betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
 
-        BigDecimal fromVendorRate = getVendorRate(context.getVendorId(), context.getCurrencyId());
+        TxnAmounts txnAmounts = TxnAmounts.of(txn, rollbackContext.getFromVendorRate());
 
-        betHistoryMapper.mapTransactionFields(betHistory, round, txn, fromVendorRate, false);
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                txn.getVendorBetId(),
+                txn.getBetTime(),
+                txn.getSettleTime()
+        );
 
         if (txn.isSettled()) {
             betHistoryMapper.negateAmounts(betHistory);
@@ -141,18 +157,6 @@ public class BetHistoryProducer {
         }
 
         publish(betHistory);
-    }
-
-    private BigDecimal getVendorRate(Integer vendorId, Integer currencyId) {
-        try {
-            VendorCurrency vendorCurrency = vendorCurrencyService.getVendorIdAndCurrencyId(vendorId, currencyId);
-            if (vendorCurrency.getFromVendorRate() != null) {
-                return vendorCurrency.getFromVendorRate();
-            }
-        } catch (EntityNotFoundException ex) {
-            return BigDecimal.ONE;
-        }
-        return BigDecimal.ONE;
     }
 
     private PlayerUsernames getUsernamesIfNull(BetHistoryPublishContext context,

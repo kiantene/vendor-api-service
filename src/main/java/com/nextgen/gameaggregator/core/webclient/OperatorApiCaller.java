@@ -1,14 +1,7 @@
 package com.nextgen.gameaggregator.core.webclient;
 
-import com.nextgen.core.exception.Http4xxException;
-import com.nextgen.core.exception.Http5xxException;
 import com.nextgen.core.webclient.WebClientErrorHandlers;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
-import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.util.JsonUtils;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +12,14 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Component
@@ -68,98 +62,118 @@ public class OperatorApiCaller {
                 .build();
     }
 
-    public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object body) {
-        String url = buildFullUrl(baseUrl, path);
-        LogContext logContext = LogContextHolder.get();
-        populateLogStart(logContext, url, body);
+    public ClientApiResult post(ClientApiRequest<?> request) {
+        return post(request, OperatorCallerLifecycle.noop());
+    }
 
-        long startNano = System.nanoTime();
-        Integer statusCode = null;
+    public ClientApiResult post(ClientApiRequest<?> request, OperatorCallerLifecycle lifecycle) {
+        final Instant start = Instant.now();
+        ResponseEntity<String> response = null;
+        ClientApiResult result = null;
+        Exception error = null;
+        Instant end = null;
+
+        final String traceId = request.getTraceId();
+        final String url = request.getFullUrl();
 
         try {
-            WebClient.RequestHeadersSpec<?> request = createRequest(url, headers, body);
+            var reqSpec = createRequest(url, request.getHeaders(), request.getRequestObject());
+            safe(() -> lifecycle.onBeforeSend(request));
 
-            ResponseEntity<String> response = executeWithRetry(request, url);
-
-            recordEnd(logContext, startNano, statusCode);
+            response = executeWithRetry(reqSpec, url).block();
+            end = Instant.now();
 
             validateResponse(response, url);
 
-            return parseResponse(response, url);
+            final ClientApiResult success = ClientApiResult.success(traceId, url, response, start, end);
+            result = success;
 
-        } catch (WebClientRequestException ex) {
-            /*
-            Possible exceptions:
-            1. ConnectException - cannot connect to the given host/port
-            2. UnknownHostException - host cannot be resolved
-            3. SocketTimeoutException/ReadTimeoutException - connection established, but no data received within x seconds
-            4. Any other network exception
-             */
-            throw new OperatorNetworkException(ex.getMessage(), url, ex);
-
-        } catch (Http4xxException ex) {
-            statusCode = ex.getStatusCode();
-            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex);
-        } catch (Http5xxException ex) {
-            statusCode = ex.getStatusCode();
-            throw new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex);
+            safe(() -> lifecycle.onResponse(request, success));
+            return success;
 
         } catch (Exception ex) {
-            throw new OperatorApiException("Unexpected client error", ex);
+            end = Instant.now();
+            error = ex;
+            result = ClientApiResult.failure(traceId, url, response, start, end, error);
+
+            safe(() -> lifecycle.onError(request, ex));
+            return result;
 
         } finally {
-            recordEnd(logContext, startNano, statusCode);
+            final Instant finalEnd = (end != null) ? end : Instant.now();
+            final ClientApiResult finalResult = (result != null)
+                    ? result
+                    : new ClientApiResult(traceId, url, response, start, finalEnd, error);
+
+            safe(() -> lifecycle.onComplete(request, finalResult));
         }
     }
 
-    public Mono<ClientBalanceResponse> postAsync(
-            String baseUrl,
-            String path,
-            Map<String, String> headers,
-            Object body) {
+    public Mono<ClientApiResult> postAsync(ClientApiRequest<?> request) {
+        return postAsync(request, OperatorCallerLifecycle.noop());
+    }
 
-        final String url = buildFullUrl(baseUrl, path);
-        final LogContext logContext = LogContextHolder.get();
-        populateLogStart(logContext, url, body);
-
-        final long startNano = System.nanoTime();
+    public Mono<ClientApiResult> postAsync(ClientApiRequest<?> request,
+                                           OperatorCallerLifecycle lifecycle) {
+        final Instant start = Instant.now();
+        final String traceId = request.getTraceId();
+        final String url = request.getFullUrl();
+        final AtomicReference<ResponseEntity<String>> response = new AtomicReference<>();
+        final AtomicReference<ClientApiResult> resultRef = new AtomicReference<>();
 
         return Mono.defer(() -> {
-                    WebClient.RequestHeadersSpec<?> request = createRequest(url, headers, body);
-                    return executeWithRetryAsync(request, url);
+                    // Build request lazily to keep everything deferred until subscribe
+                    WebClient.RequestHeadersSpec<?> reqSpec = createRequest(
+                            url,
+                            request.getHeaders(),
+                            request.getRequestObject()
+                    );
+
+                    safe(() -> lifecycle.onBeforeSend(request));
+
+                    // Execute without blocking
+                    return executeWithRetry(reqSpec, url)
+                            .map(resp -> { // Success path
+                                final Instant end = Instant.now();
+                                validateResponse(resp, url);
+
+                                final ClientApiResult success = ClientApiResult.success(traceId, url, resp, start, end);
+                                response.set(resp);
+                                resultRef.set(success);
+
+                                safe(() -> lifecycle.onResponse(request, success));
+                                return success;
+                            })
+                            .onErrorResume(ex -> {
+                                // Error path, still non-blocking
+                                final Instant end = Instant.now();
+
+                                final ClientApiResult failure = new ClientApiResult(
+                                        traceId,
+                                        url,
+                                        null,
+                                        start,
+                                        end,
+                                        (ex instanceof Exception) ? (Exception) ex : new RuntimeException(ex)
+                                );
+                                resultRef.set(failure);
+
+                                safe(() -> lifecycle.onError(request, ex));
+                                return Mono.just(failure);
+                            });
                 })
-                .doOnNext(resp -> logContext.setApiStatusCode(resp.getStatusCode().value()))
-                .map(resp -> {
-                    validateResponse(resp, url);
-                    return resp;
-                })
-                // Parse into DTO
-                .map(resp -> parseResponse(resp, url))
-                // Map transport-level/network errors → OperatorNetworkException
-                .onErrorMap(WebClientRequestException.class,
-                        ex -> new OperatorNetworkException(ex.getMessage(), url, ex))
-                // Map 4xx/5xx → OperatorApiException
-                .onErrorMap(Http4xxException.class,
-                        ex -> new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex))
-                .onErrorMap(Http5xxException.class,
-                        ex -> new OperatorApiException(ex.getMessage(), url, ex.getStatusCode(), "", ex))
-                // Any other unexpected error → OperatorApiException
-                .onErrorMap(ex -> !(ex instanceof OperatorApiException) && !(ex instanceof OperatorNetworkException),
-                        ex -> new OperatorApiException("Unexpected client error", ex))
-                .doFinally(sig -> recordEnd(logContext, startNano, /*statusCode=*/null));
+                .doFinally(sig -> {
+                    ClientApiResult result = resultRef.get();
+                    if (result == null) {
+                        result = new ClientApiResult(traceId, url, response.get(), start, Instant.now(), null);
+                    }
+                    final ClientApiResult finalResult = result;
+
+                    safe(() -> lifecycle.onComplete(request, finalResult));
+                });
     }
 
-    private ResponseEntity<String> executeWithRetry(WebClient.RequestHeadersSpec<?> request, String path) {
-        return request
-                .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
-                .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
-                .toEntity(String.class)
-                .retryWhen(retryPolicy.retryWhen(path))
-                .block();
-    }
-
-    private Mono<ResponseEntity<String>> executeWithRetryAsync(
+    private Mono<ResponseEntity<String>> executeWithRetry(
             WebClient.RequestHeadersSpec<?> request,
             String path) {
 
@@ -168,7 +182,7 @@ public class OperatorApiCaller {
                 .onStatus(HttpStatusCode::is4xxClientError, WebClientErrorHandlers::handle4xx)
                 .onStatus(HttpStatusCode::is5xxServerError, WebClientErrorHandlers::handle5xx)
                 .toEntity(String.class)
-                .retryWhen(retryPolicy.retryWhen(path)); // your existing policy
+                .retryWhen(retryPolicy.retryWhen(path));
     }
 
     private WebClient.RequestHeadersSpec<?> createRequest(String url, Map<String, String> headers, Object body) {
@@ -183,42 +197,11 @@ public class OperatorApiCaller {
                 .body(BodyInserters.fromValue(body));
     }
 
-    private ClientBalanceResponse parseResponse(ResponseEntity<String> response, String url) {
-        LogContext logContext = LogContextHolder.get();
-        logContext.setApiResponse(response.getBody());
-        return JsonUtils.parseSafely(
-                response.getBody(),
-                ClientBalanceResponse.class,
-                ex -> new OperatorApiException(ex.getMessage(), url,
-                        response.getStatusCode().value(), response.getBody(), ex)
-        );
-    }
-
-    private void populateLogStart(LogContext ctx, String url, Object body) {
-        ctx.setApiUrl(url);
-        ctx.setApiBody(body);
-        ctx.setApiStart(System.currentTimeMillis());
-    }
-
-    private void recordEnd(LogContext ctx, long startNano, Integer statusCode) {
-        long elapsedMs = (System.nanoTime() - startNano) / 1_000_000;
-        ctx.setApiEnd(System.currentTimeMillis());
-        ctx.setApiTimeTaken(elapsedMs);
-        ctx.setApiStatusCode(statusCode);
-    }
-
-    private String buildFullUrl(String baseUrl, String path) {
-        if (baseUrl == null) return path;
-        return removeTrailingSlash(baseUrl) + (path != null ? path : "");
-    }
-
-    private String removeTrailingSlash(String url) {
-        return (url != null && url.endsWith("/")) ? url.substring(0, url.length() - 1) : url;
-    }
-
     private void validateResponse(ResponseEntity<String> response, String url) {
         if (response == null) {
             throw new OperatorApiException("Response is empty", url);
         }
     }
+
+    private void safe(Runnable r) { try { r.run(); } catch (Throwable ignored) {} }
 }

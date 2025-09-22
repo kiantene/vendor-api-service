@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.core.common;
 import com.nextgen.core.exception.Http4xxException;
 import com.nextgen.core.exception.Http5xxException;
 import com.nextgen.core.webclient.WebClientErrorHandlers;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -66,7 +66,7 @@ public class OperatorApiCallerV2 {
                 .build();
     }
 
-    public ClientBalanceResponse post(String baseUrl, String path, Map<String, String> headers, Object body) {
+    public ClientApiResponse post(String baseUrl, String path, Map<String, String> headers, Object body) {
         String url = buildFullUrl(baseUrl, path);
         LogContext logContext = LogContextHolder.get();
         populateLogStart(logContext, url, body);
@@ -145,12 +145,12 @@ public class OperatorApiCallerV2 {
                 .body(BodyInserters.fromValue(body));
     }
 
-    private ClientBalanceResponse parseResponse(ResponseEntity<String> response, String url) {
+    private ClientApiResponse parseResponse(ResponseEntity<String> response, String url) {
         LogContext logContext = LogContextHolder.get();
         logContext.setApiResponse(response.getBody());
         return JsonUtils.parseSafely(
                 response.getBody(),
-                ClientBalanceResponse.class,
+                ClientApiResponse.class,
                 ex -> new OperatorApiException(ex.getMessage(), url,
                         response.getStatusCode().value(), response.getBody(), ex)
         );

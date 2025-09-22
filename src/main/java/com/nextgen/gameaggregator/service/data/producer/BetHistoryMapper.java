@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.service.data.producer;
 
-import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.GameCategory;
 import com.nextgen.gameaggregator.core.entity.Vendor;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
-import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.BetHistoryV3;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
+import com.nextgen.gameaggregator.service.data.model.TxnAmounts;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -58,34 +57,35 @@ public class BetHistoryMapper {
 
     public void mapTransactionFields(BetHistoryV3 betHistory,
                                      GameRound round,
-                                     GameTransaction txn,
-                                     BigDecimal fromVendorRate,
-                                     boolean fromRound) {
+                                     TxnAmounts txnAmounts,
+                                     String vendorBetId,
+                                     Long vendorBetTime,
+                                     Long vendorSettleTime) {
 
-        BigDecimal bet      = convertIfNotZero(fromRound ? round.getBetAmount() : txn.getBetAmount(), fromVendorRate);
-        BigDecimal win      = convertIfNotZero(fromRound ? round.getWinAmount() : txn.getWinAmount(), fromVendorRate);
-        BigDecimal winLoss  = convertIfNotZero(win.subtract(bet), fromVendorRate);
-        BigDecimal turnover = bet;
-        BigDecimal jackpot  = convertIfNotZero(fromRound ? round.getJackpotAmount() : txn.getJackpotAmount(), fromVendorRate);
+        BigDecimal bet      = txnAmounts.getBet();
+        BigDecimal win      = txnAmounts.getWin();
+        BigDecimal winLoss  = txnAmounts.getWinLoss();
+        BigDecimal turnover = txnAmounts.getTurnover();
+        BigDecimal jackpot  = txnAmounts.getJackpot();
 
         betHistory.setGameSessionToken(round.getAgentMeta().getSession());
         betHistory.setRoundId(round.getRoundId());
         betHistory.setVendorPlayerUsername(round.getUsername());
-        betHistory.setVendorBetId(txn.getVendorBetId());
+        betHistory.setVendorBetId(vendorBetId);
         betHistory.setBetAmount(bet);
         betHistory.setWinAmount(win);
         betHistory.setWinLoss(winLoss);
         betHistory.setEffectiveTurnover(turnover);
         betHistory.setJackpotAmount(jackpot);
         betHistory.setIsFreespin(0);
-        betHistory.setVendorBetTime(txn.getBetTime());
+        betHistory.setVendorBetTime(vendorBetTime);
 
         /**
          * if bet result, settle time follows settlement time from vendor's request
          * if refund bet, settle time follows the rollback request time (rollback unsettled bet)
          * if cancel bet, settle time follows the original settled bet's settled time (rollback settled bet)
          */
-        betHistory.setVendorSettleTime(txn.getSettleTime());
+        betHistory.setVendorSettleTime(vendorSettleTime);
 
         // Operator facing fields
         betHistory.setCurrencyCode(round.getAgentMeta().getCurrency());
@@ -95,6 +95,45 @@ public class BetHistoryMapper {
         betHistory.setResultType(getResultType(win, jackpot));
     }
 
+//    public void mapTransactionFields(BetHistoryV3 betHistory,
+//                                     GameRound round,
+//                                     GameTransaction txn,
+//                                     BigDecimal fromVendorRate,
+//                                     boolean fromRound) {
+//
+//        BigDecimal bet      = convertIfNotZero(fromRound ? round.getBetAmount() : txn.getBetAmount(), fromVendorRate);
+//        BigDecimal win      = convertIfNotZero(fromRound ? round.getWinAmount() : txn.getWinAmount(), fromVendorRate);
+//        BigDecimal winLoss  = convertIfNotZero(win.subtract(bet), fromVendorRate);
+//        BigDecimal turnover = bet;
+//        BigDecimal jackpot  = convertIfNotZero(fromRound ? round.getJackpotAmount() : txn.getJackpotAmount(), fromVendorRate);
+//
+//        betHistory.setGameSessionToken(round.getAgentMeta().getSession());
+//        betHistory.setRoundId(round.getRoundId());
+//        betHistory.setVendorPlayerUsername(round.getUsername());
+//        betHistory.setVendorBetId(txn.getVendorBetId());
+//        betHistory.setBetAmount(bet);
+//        betHistory.setWinAmount(win);
+//        betHistory.setWinLoss(winLoss);
+//        betHistory.setEffectiveTurnover(turnover);
+//        betHistory.setJackpotAmount(jackpot);
+//        betHistory.setIsFreespin(0);
+//        betHistory.setVendorBetTime(txn.getBetTime());
+//
+//        /**
+//         * if bet result, settle time follows settlement time from vendor's request
+//         * if refund bet, settle time follows the rollback request time (rollback unsettled bet)
+//         * if cancel bet, settle time follows the original settled bet's settled time (rollback settled bet)
+//         */
+//        betHistory.setVendorSettleTime(txn.getSettleTime());
+//
+//        // Operator facing fields
+//        betHistory.setCurrencyCode(round.getAgentMeta().getCurrency());
+//        betHistory.setGameCode(round.getAgentMeta().getGameCode());
+//        betHistory.setAgentPlayerUsername(round.getAgentMeta().getUsername());
+//
+//        betHistory.setResultType(getResultType(win, jackpot));
+//    }
+
     public void negateAmounts(BetHistoryV3 betHistory) {
         betHistory.setBetAmount(betHistory.getBetAmount().negate());
         betHistory.setWinAmount(betHistory.getWinAmount().negate());
@@ -103,11 +142,11 @@ public class BetHistoryMapper {
         betHistory.setJackpotAmount(betHistory.getJackpotAmount().negate());
     }
 
-    private BigDecimal convertIfNotZero(BigDecimal value, BigDecimal conversionRate) {
-        if (value == null || value.signum() == 0) return BigDecimal.ZERO;
-
-        return new BigDecimal(value.multiply(conversionRate).stripTrailingZeros().toPlainString());
-    }
+//    private BigDecimal convertIfNotZero(BigDecimal value, BigDecimal conversionRate) {
+//        if (value == null || value.signum() == 0) return BigDecimal.ZERO;
+//
+//        return new BigDecimal(value.multiply(conversionRate).stripTrailingZeros().toPlainString());
+//    }
 
     private Integer getResultType(BigDecimal win, BigDecimal jackpot) {
         BigDecimal jackpotAmt = Optional.ofNullable(jackpot).orElse(BigDecimal.ZERO);
