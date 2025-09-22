@@ -19,9 +19,11 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
     public BetRollbackContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
                                       VendorGameDataService vendorGameDataService,
+                                      CurrencyDataService currencyDataService,
+                                      VendorCurrencyDataService vendorCurrencyDataService,
                                       ApplicationContext applicationContext,
                                       GameSessionDataService gameSessionDataService) {
-        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService, currencyDataService, vendorCurrencyDataService);
         this.applicationContext = applicationContext;
         this.gameSessionDataService = gameSessionDataService;
     }

@@ -41,7 +41,7 @@ class PromoPayoutServiceTest {
                 .vendorCurrency("THB")
                 // promo payout history
                 .vendorTransactionId("1952611929575260160-1952611929575260160-403-0")
-                .payoutAmount(BigDecimal.TEN)
+                .vendorPayoutAmount(BigDecimal.TEN)
                 .vendorTransactionTime(1754373936436L)
                 .promoType(PromoType.FREE_ROUND)
                 .build();

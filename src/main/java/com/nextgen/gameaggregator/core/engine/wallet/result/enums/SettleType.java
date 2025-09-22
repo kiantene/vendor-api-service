@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.engine.wallet.result;
+package com.nextgen.gameaggregator.core.engine.wallet.result.enums;
 
 public enum SettleType {
     /**

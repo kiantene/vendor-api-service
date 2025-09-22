@@ -4,7 +4,6 @@ import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.entity.Agent;
-import com.nextgen.gameaggregator.core.entity.Currency;
 import com.nextgen.gameaggregator.core.entity.Vendor;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -12,27 +11,28 @@ import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.core.service.data.CampaignDataService;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
-    private final CurrencyDataService currencyDataService;
     private final VendorDataService vendorDataService;
     private final AgentDataService agentDataService;
     private final CampaignDataService campaignDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
-                                      CurrencyDataService currencyDataService,
-                                      VendorDataService vendorDataService,
                                       VendorGameDataService vendorGameDataService,
+                                      CurrencyDataService currencyDataService,
+                                      VendorCurrencyDataService vendorCurrencyDataService,
+                                      VendorDataService vendorDataService,
                                       AgentDataService agentDataService,
                                       CampaignDataService campaignDataService) {
 
-        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
-        this.currencyDataService = currencyDataService;
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService, currencyDataService, vendorCurrencyDataService);
         this.vendorDataService = vendorDataService;
         this.agentDataService = agentDataService;
         this.campaignDataService = campaignDataService;
@@ -47,7 +47,6 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
 
     public void doEnrich(PromoPayoutContext context) {
         this.populateAgent(context);
-        this.populateCurrency(context);
         this.populateVendor(context);
         this.populateCampaign(context);
         LogContext logContext = LogContextHolder.get();
@@ -58,11 +57,22 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         if (context.getTraceId() == null) {
             context.setTraceId(logContext.getTraceId());
         }
-    }
 
-    private void populateCurrency(PromoPayoutContext context) {
-        Currency currency = currencyDataService.get(context.getCurrencyId());
-        context.setCurrencyCode(currency.getCode());
+        if (context.getFromVendorRate() != null) {
+            BigDecimal fromVendorRate = context.getFromVendorRate();
+            if (context.getVendorPayoutAmount() != null) { // single mode
+                context.setPayout(TxnAmount.of(
+                        context.getVendorPayoutAmount(),
+                        fromVendorRate
+                ));
+            } else if (context.getPayoutTransactions() != null && !context.getPayoutTransactions().isEmpty()) {
+                context.getPayoutTransactions()
+                        .forEach(txn -> txn.setPayout(TxnAmount.of(
+                                txn.getVendorPayoutAmount(),
+                                fromVendorRate
+                        )));
+            }
+        }
     }
 
     private void populateAgent(PromoPayoutContext context) {

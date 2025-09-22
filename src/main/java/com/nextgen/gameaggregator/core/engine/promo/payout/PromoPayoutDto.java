@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Builder
 @Getter
-public class PromoPayoutRequest {
+public class PromoPayoutDto {
     /**
      * A unique identifier for tracing the request throughout the system.
      * This can be used for logging, debugging, and correlating related operations.
@@ -58,12 +58,6 @@ public class PromoPayoutRequest {
     @NotNull(message = "Amount is required.")
     @PositiveOrZero
     private final BigDecimal amount;
-
-    /**
-     * The type of promotion payout (e.g., "BONUS", "REBATE", "CASHBACK").
-     */
-    @NotBlank(message = "Payout type is required and cannot be blank.")
-    private final String type;
 
     /**
      * The timestamp indicating when the promotion payout request was initiated, in milliseconds since the Unix epoch.

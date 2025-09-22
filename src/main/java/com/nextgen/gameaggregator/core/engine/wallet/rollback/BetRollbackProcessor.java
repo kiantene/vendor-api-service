@@ -3,16 +3,15 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
-import com.nextgen.gameaggregator.core.retry.RetryPolicy;
-import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
 import com.nextgen.gameaggregator.core.retry.RetryOrigin;
+import com.nextgen.gameaggregator.core.retry.RetryPolicy;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResult;
 import com.nextgen.gameaggregator.core.webclient.DefaultOperatorCallerLifeCycle;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiCaller;
@@ -54,10 +53,7 @@ public class BetRollbackProcessor {
                 .orElseThrow(() -> new BetNotFoundException("GameTransaction not found for processBetRollback: " + rollbackTxn.getRollbackId()));
 
         RollbackDecision decision = RollbackPolicy.decide(betTxn, config);
-
-        if (decision.isRejected()) {
-            throw new RollbackNotAllowedException(decision.reason());
-        }
+        decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {
             return defaultBalanceData(context, betTxn.getCurrency());
@@ -96,10 +92,7 @@ public class BetRollbackProcessor {
                 .orElseThrow(() -> new BetNotFoundException("GameRound not found for processRoundRollback: " + rollbackTxn.getRoundDocId()));
 
         RollbackDecision decision = RollbackPolicy.decide(round, config);
-
-        if (decision.isRejected()) {
-            throw new RollbackNotAllowedException(decision.reason());
-        }
+        decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {
             return defaultBalanceData(context, round.getCurrency());
