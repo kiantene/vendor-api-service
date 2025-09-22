@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.exception.translator;
 
 import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
@@ -9,6 +10,7 @@ import com.nextgen.gameaggregator.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -123,7 +125,9 @@ public class WalletExceptionTranslator {
          * This could be related to wrong username sent by the vendor, or record is missing in database.
          */
         else if (ex instanceof InvalidPlayerException) {
-            translatedException = new com.nextgen.core.exception.InvalidRequestException("Player cannot be found");
+            translatedException = InternalServerException.causedBy(ex, Map.of(
+                    VendorRequestContext.KEY, context
+            ));
         }
 
         else if (ex instanceof BetResultIdempotentViolationException idempotentEx) {
@@ -157,7 +161,9 @@ public class WalletExceptionTranslator {
          * VendorCurrencyNotSupportException
          */
         else if (isInternalConfigurationException(ex)) {
-            translatedException = new InternalConfigurationException(ex.getMessage(), ex);
+            translatedException = InternalServerException.causedBy(ex, Map.of(
+                    VendorRequestContext.KEY, context
+            ));
         }
 
         else if (ex instanceof BetNotFoundException) {
