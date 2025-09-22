@@ -56,7 +56,7 @@ public class WalletBetResultServiceWrapper {
             Optional<GameRound> roundOpt = gameRoundService.get(GameRound.of(className, context.getRoundId()).getId());
 
             BetResultDecision decision = BetResultPolicy.decide(roundOpt, config);
-            decision.throwIfRejected(context);
+            decision.throwIfRejected(context, config);
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 

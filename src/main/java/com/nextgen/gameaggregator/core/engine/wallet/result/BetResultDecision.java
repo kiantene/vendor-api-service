@@ -12,9 +12,9 @@ public record BetResultDecision (BetResultDecisionType type,
     public boolean isRejected() { return type == BetResultDecisionType.REJECT; }
     public boolean isNoOp()     { return type == BetResultDecisionType.NO_OP; }
 
-    public void throwIfRejected(VendorRequestContext context) {
+    public void throwIfRejected(VendorRequestContext context, BetResultConfig config) {
         if (isRejected()) {
-            throw new BetResultRejectedException(context, createException());
+            throw new BetResultRejectedException(context, createException(), config);
         }
     }
 
