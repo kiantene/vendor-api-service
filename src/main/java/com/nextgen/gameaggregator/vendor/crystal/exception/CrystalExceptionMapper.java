@@ -75,6 +75,11 @@ public class CrystalExceptionMapper implements VendorExceptionMapper {
         return getErrorResponse(ResponseCodes.TXN_NOT_FOUND);
     }
 
+    @Override
+    public VendorErrorResponse onBetResultRejected(BetResultRejectedException ex) {
+        return getErrorResponse(ResponseCodes.TXN_NOT_FOUND);
+    }
+
 
     private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
         ErrorResponse errorResponse = ErrorResponse.builder()

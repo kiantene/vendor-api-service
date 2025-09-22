@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.crystal.api.result;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
-import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
 
     @Override
     public void configure(BetResultConfig config, BetResultRequest request) {
-        config.betTxn(false)
+        config.betAndResult(false)
                 .returnSuccessOnDuplicate(true)
                 .setSettleType(SettleType.BET);
     }
