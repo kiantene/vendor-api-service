@@ -112,7 +112,8 @@ public class BalanceAction {
 
         //5. Verify signature
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, body), dto.getSignature(), AuthenticationException::new);
+        String normalizedBody = "GET".equalsIgnoreCase(method) ? "" : body;
+        ValidationUtils.isEquals(VendorService.signatureGenerator(secretKey, method, normalizedBody), dto.getSignature(), AuthenticationException::new);
 
         //6. verify ClientExternalKey
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getClientExternalKey(), AuthenticationException::new);
