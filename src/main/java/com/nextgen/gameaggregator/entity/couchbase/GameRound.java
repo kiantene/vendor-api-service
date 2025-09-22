@@ -113,6 +113,10 @@ public class GameRound {
         return state == GameRoundState.REFUNDED;
     }
 
+    public boolean isEnded() {
+        return Boolean.TRUE.equals(isEnded);
+    }
+
     public void setBetAmount(BigDecimal betAmount) {
         this.betAmount = (betAmount == null) ? BigDecimal.ZERO : betAmount;
     }

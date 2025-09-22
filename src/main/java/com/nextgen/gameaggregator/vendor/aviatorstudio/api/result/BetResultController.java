@@ -42,7 +42,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
 
     @Override
     public void configure(BetResultConfig config, BetResultRequest request) {
-        config.betTxn(false)
+        config.betAndResult(false)
                 .setSettleType(SettleType.BET);
     }
 
