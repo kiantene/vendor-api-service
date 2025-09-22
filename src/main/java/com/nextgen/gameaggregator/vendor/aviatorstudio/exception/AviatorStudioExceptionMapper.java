@@ -54,6 +54,11 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
     }
 
     @Override
+    public VendorErrorResponse onBetResultRejected(BetResultRejectedException ex) {
+        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
         return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }

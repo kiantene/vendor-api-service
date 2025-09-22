@@ -1,18 +1,20 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.BetResultDecisionType;
+import com.nextgen.gameaggregator.core.exception.BetResultRejectedException;
 
 public record BetResultDecision (BetResultDecisionType type,
                                  String reason,
-                                 Class<? extends Exception> exceptionClass) {
+                                 Class<? extends Throwable> exceptionClass) {
 
     public boolean isAllowed()  { return type == BetResultDecisionType.ALLOW; }
     public boolean isRejected() { return type == BetResultDecisionType.REJECT; }
     public boolean isNoOp()     { return type == BetResultDecisionType.NO_OP; }
 
-    public void throwIfRejected() {
+    public void throwIfRejected(VendorRequestContext context) {
         if (isRejected()) {
-            throw createException();
+            throw new BetResultRejectedException(context, createException());
         }
     }
 

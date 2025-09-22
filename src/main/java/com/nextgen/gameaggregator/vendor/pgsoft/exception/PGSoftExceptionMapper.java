@@ -81,6 +81,11 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper {
         return new VendorErrorResponse(HttpStatus.OK, responseVo);
     }
 
+    @Override
+    public VendorErrorResponse onBetResultRejected(BetResultRejectedException ex) {
+        return getErrorResponse(ResponseCodes.OPERATION_FAILED);
+    }
+
     // applicable for promo payout
     @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {

@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
 
 public record RollbackDecision(RollbackDecisionType type,
                                String reason,
-                               Class<? extends Exception> exceptionClass) {
+                               Class<? extends Throwable> exceptionClass) {
     public boolean isAllowed()  { return type == RollbackDecisionType.ALLOW; }
     public boolean isRejected() { return type == RollbackDecisionType.REJECT; }
     public boolean isNoOp()     { return type == RollbackDecisionType.NO_OP; }
