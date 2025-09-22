@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
+import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
+import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -21,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -65,6 +69,10 @@ public class WalletRollbackServiceWrapper {
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
+        } catch (RoundNotFoundException ex) {
+            throw InternalServerException.causedBy(ex, Map.of(
+                    VendorRequestContext.KEY, context
+            ));
         } catch (BetNotFoundException ex) {
             throw new RollbackNotAllowedException(context, ex);
         } catch (Exception ex) {

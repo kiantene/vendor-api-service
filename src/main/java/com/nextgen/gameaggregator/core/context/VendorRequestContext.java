@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @SuperBuilder(toBuilder = true)
 public abstract class VendorRequestContext implements GameSessionData {
+    public static final String KEY = "VendorRequestContext";
     /**
      * A unique identifier for tracing requests across distributed services.
      * Used for debugging and logging to follow the lifecycle of a bet transaction.

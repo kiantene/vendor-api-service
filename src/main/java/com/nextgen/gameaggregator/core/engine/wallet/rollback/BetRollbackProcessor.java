@@ -5,6 +5,7 @@ import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
 import com.nextgen.gameaggregator.core.retry.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryPolicy;
@@ -60,7 +61,7 @@ public class BetRollbackProcessor {
         }
 
         GameRound round = gameRoundService.get(betTxn.getRoundDocId())
-                .orElseThrow(() -> new InternalServerException("GameRound not found for processBetRollback: " + betTxn.getRoundDocId()));
+                .orElseThrow(() -> new RoundNotFoundException("GameRound not found for processBetRollback: " + betTxn.getRoundDocId()));
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
 
