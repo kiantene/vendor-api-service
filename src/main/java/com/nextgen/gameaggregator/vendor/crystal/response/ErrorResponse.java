@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.crystal.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.vendor.crystal.constant.ResponseCodes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +11,8 @@ import lombok.Getter;
 public class ErrorResponse {
 
     private Error error;
+    private Data data;
+
 
     @Getter
     @AllArgsConstructor
@@ -23,5 +26,10 @@ public class ErrorResponse {
                     responseCode.getMessage()
             );
         }
+    }
+    @Getter
+    @Builder
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    public static class Data {
     }
 }
