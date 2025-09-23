@@ -79,6 +79,7 @@ public class CreditAction {
             try {
                 gameSession = gameSessionService.verifyToken(creditDto.getToken()); //token check
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+
             } catch (AuthenticationException authenticationException) { //if expired
                 UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(creditDto.getRound());
                 gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId()); //generate new token
