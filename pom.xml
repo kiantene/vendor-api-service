@@ -40,7 +40,7 @@
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
         <ga-core.version>1.0.32</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
-        <nextgen-core.version>1.0.31</nextgen-core.version>
+        <nextgen-core.version>1.0.33</nextgen-core.version>
     </properties>
 
     <dependencies>
