@@ -28,22 +28,19 @@ public class VendorService extends BaseVendorService {
     private final VendorGameService vendorGameService;
     private final ValidationService validationService;
     private final HttpService httpService;
-    private final VendorService vendorService;
 
     public VendorService(VendorLineService vendorLineService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
                          ValidationService validationService,
-                         HttpService httpService,
-                         VendorService vendorService) {
+                         HttpService httpService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.validationService = validationService;
         this.httpService = httpService;
-        this.vendorService = vendorService;
     }
 
     public static String hashHMACSha256(String data, String secret) {
@@ -64,7 +61,7 @@ public class VendorService extends BaseVendorService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            gameSession = this.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
         } catch (AuthenticationException e) {
             gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
             gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
