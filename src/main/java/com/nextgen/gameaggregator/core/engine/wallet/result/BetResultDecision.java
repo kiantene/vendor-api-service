@@ -39,4 +39,8 @@ public record BetResultDecision (BetResultDecisionType type,
     public static BetResultDecision reject(String reason, Class<? extends Exception> exceptionClass) {
         return new BetResultDecision(BetResultDecisionType.REJECT, reason, exceptionClass);
     }
+
+    public static BetResultDecision noop() {
+        return new BetResultDecision(BetResultDecisionType.NO_OP, "", null);
+    }
 }

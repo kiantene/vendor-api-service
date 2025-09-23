@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class GameRoundService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
             .ofPattern("HH:mm:ss.SSS")
@@ -58,12 +60,6 @@ public class GameRoundService {
         return data.applyTxnDelta(delta, ROUND_TTL);
     }
 
-    public boolean isResultBeforeBet(GameRound round, ResultType resultType) {
-        boolean isBetType = ResultType.BET_WIN == resultType || ResultType.BET_LOSE == resultType;
-        return round.getTxnCount() == 1 // only 1 transaction in game_round
-                && !isBetType; // not a bet type
-    }
-
     public void updateRoundState(String docId, GameRoundState state) {
         data.setRoundState(docId, state);
     }
@@ -71,22 +67,41 @@ public class GameRoundService {
     public void markTxnError(GameTransaction txn, RuntimeException ex) {
         if (txn == null) return;
 
-        String exName = ex.getClass().getSimpleName();
-        if (exName.equals("RuntimeException") && ex.getCause() != null) {
-            exName = ex.getCause().getClass().getSimpleName();
-        }
-
+        String exName = getMeaningfulExceptionName(ex);
         Map<String, Object> updates = Map.of(
                 "status", TxnStatus.ERROR.name(),
                 "exception", exName,
                 "doneAt", getNow()
         );
 
-        data.updateTxn(txn.getRoundDocId(), txn.getIdx(), updates);
+        try {
+            // if idx is null, means that an exception is thrown before txn is being saved
+            if (txn.getIdx() == null) {
+                txn.setStatus(TxnStatus.ERROR);
+                txn.setException(exName);
+                txn.setDoneAt(getNow());
+                save(txn, null);
+            } else {
+                data.updateTxn(txn.getRoundDocId(), txn.getIdx(), updates);
+            }
+        } catch (Exception e) {
+            log.error("markTxnError failed on: " + e.getMessage());
+        }
     }
 
     public void updateRoundTxn(String docId, int idx, Map<String, Object> updates) {
         data.updateTxn(docId, idx, updates);
+    }
+
+    private String getMeaningfulExceptionName(RuntimeException ex) {
+        Throwable current = ex;
+
+        // Keep unwrapping while we have generic RuntimeException with causes
+        while (current.getClass() == RuntimeException.class && current.getCause() != null) {
+            current = current.getCause();
+        }
+
+        return current.getClass().getSimpleName();
     }
 
     private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {

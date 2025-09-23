@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import java.math.BigDecimal;
 class BetResultProcessor {
     private final BetResultDataMapper betResultDataMapper;
     private final BetHistoryProducer betHistoryProducer;
-    private final GameRoundService gameRoundService;
     private final GameTransactionService gameTransactionService;
     private final WalletService walletService;
 
@@ -41,14 +39,17 @@ class BetResultProcessor {
             BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
         BetResultConfig config = state.getConfig();
-        GameRound round = gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+        GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
 
         /**
          * If we receive result txn first before the bet txn arrives, we do not send the result to operator.
          * Instead, we wait for bet and send it together
          */
-        boolean isResultBeforeBetEnabled = config.isAllowResultBeforeBet();
-        if (isResultBeforeBetEnabled && gameRoundService.isResultBeforeBet(round, resultType)) {
+        BetResultDecision decision = BetResultPolicy.decideResultBeforeBet(round, config);
+        decision.throwIfRejected(context, config);
+
+        if (decision.isAllowed()) {
+            // TODO: this logic is not implemented yet
             gameTransactionService.markPending(txn);
             return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
         }
@@ -93,7 +94,7 @@ class BetResultProcessor {
             InsufficientBalanceException, TransactionStillProcessingException,
             BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
 
-        GameRound round = gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+        GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -111,16 +112,5 @@ class BetResultProcessor {
                 balance,
                 httpRequestLog.getOperatorEnd()
         );
-    }
-
-    private AgentMeta buildAgentMeta(BetResultContext context, GameSession gameSession) {
-        AgentMeta agentMeta = new AgentMeta();
-        agentMeta.setAgentId(context.getAgentId());
-        agentMeta.setUsername(context.getAgentPlayerUsername());
-        agentMeta.setCurrency(context.getCurrencyCode());
-        agentMeta.setGameCode(context.getGameCode());
-        agentMeta.setSession(gameSession.getToken());
-
-        return agentMeta;
     }
 }

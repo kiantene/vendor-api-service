@@ -36,17 +36,11 @@ public class GameTransaction extends RoundTxn {
     @JsonProperty("idx")
     private Integer idx;
 
-//    @JsonProperty("type")
-//    private TxnType type;
-
     /**
      * Unique identifier to prevent duplicate transaction
      */
     @JsonProperty("transactionId")
     private String transactionId;
-
-//    @JsonProperty("vendorBetId")
-//    private String vendorBetId;
 
     @JsonProperty("vendorId")
     private Integer vendorId;
@@ -83,26 +77,11 @@ public class GameTransaction extends RoundTxn {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal balance;
 
-//    @JsonProperty("gaBetId")
-//    private String gaBetId;
-
-//    @JsonProperty("status")
-//    private TxnStatus status;
-
-//    @JsonProperty("exception")
-//    private String exception;
-
     @JsonProperty("betTime")
     private Long betTime;
 
     @JsonProperty("settleTime")
     private Long settleTime;
-
-//    @JsonProperty("sentAt")
-//    private String sentAt;
-
-//    @JsonProperty("doneAt")
-//    private String doneAt;
 
     @JsonProperty("createdTs")
     private Long createdTs;
