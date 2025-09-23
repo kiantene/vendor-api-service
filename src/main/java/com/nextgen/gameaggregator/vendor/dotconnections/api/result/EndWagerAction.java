@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -207,7 +209,9 @@ public class EndWagerAction {
             AuthenticationException,
             InvalidSignatureException,
             InvalidRequestException,
-            InvalidProviderException {
+            InvalidProviderException,
+            BetResultIdempotentViolationException,
+            BetNotFoundException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -229,6 +233,8 @@ public class EndWagerAction {
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
+        // Verify this round have place bet or not for VAT test (because this resultType is BET_WIN/BET_LOSE)
+        this.verifyBetStatus(dto);
     }
 
     private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
@@ -250,5 +256,19 @@ public class EndWagerAction {
             gameSession.setVendorToken(traceId);
         }
         return gameSession;
+    }
+
+    private void verifyBetStatus(EndWagerDto dto) throws BetNotFoundException, BetResultIdempotentViolationException {
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+
+        if (unsettledBet == null) {
+            RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
+            if (rawBetIdempotentLog == null) {
+                throw new BetNotFoundException();
+            } else {
+                throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
+            }
+
+        }
     }
 }
