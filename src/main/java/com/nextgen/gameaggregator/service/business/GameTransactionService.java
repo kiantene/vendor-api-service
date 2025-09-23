@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.data.GameTransactionDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.RequiredArgsConstructor;
@@ -158,6 +159,7 @@ public class GameTransactionService {
     private void createAliasTxn(GameTransaction txn) {
         int ttl = 3;
         GameTransaction betTxn = txn.copy();
+        betTxn.setType(TxnType.BET); // alias txn will always be type BET so that getRollbackId can find
         betTxn.setTransactionId(txn.getVendorBetId());
         try {
             txnDataService.insertWithTTL(betTxn, Duration.ofDays(ttl));
