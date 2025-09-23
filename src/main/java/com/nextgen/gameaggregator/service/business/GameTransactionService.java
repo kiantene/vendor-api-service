@@ -84,6 +84,7 @@ public class GameTransactionService {
 
         if (shouldCreateAliasTxn(txn)) {
             GameTransaction betTxn = txn.copy();
+            betTxn.setType(TxnType.BET);
             betTxn.setTransactionId(txn.getVendorBetId());
             txnDataService.updateStatus(betTxn, balance, TxnStatus.SUCCESS);
         }
