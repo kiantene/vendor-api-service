@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.game.launcher.winfinity;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
@@ -21,15 +23,12 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
     private static final String HEADER_BEARER = "Bearer ";
 
     private final BearerTokenService bearerTokenService;
-    private final LogContextService logContextService;
 
     public WinfinGameLauncher(VendorCredentialUtils credentialUtils,
-                              BearerTokenService bearerTokenService,
-                              LogContextService logContextService) {
+                              BearerTokenService bearerTokenService) {
 
         super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class);
         this.bearerTokenService = bearerTokenService;
-        this.logContextService = logContextService;
     }
 
     @Override
@@ -87,7 +86,9 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
     @Override
     public Map<String, String> getHeaders(GameLaunchContext context, GameLaunchRequest gameLaunchRequest) {
         String bearerToken = BearerTokenHolder.getToken();
-        logContextService.debug("bearer", bearerToken);
+        LogContext logContext = LogContextHolder.get();
+        logContext.putApiHeader("bearer", bearerToken);
+
         //clear thread
         BearerTokenHolder.clear();
         return Map.of(

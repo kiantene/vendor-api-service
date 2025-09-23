@@ -6,14 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.UuidUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpMethod;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -43,6 +41,7 @@ public class LogContext {
      * Target URL of the outbound API request to the external system
      */
     private String apiUrl;
+    private Map<String, String> apiHeaders;
     /**
      * Outbound request payload sent to external systems (e.g., game vendor APIs)
      */
@@ -71,6 +70,11 @@ public class LogContext {
         this.traceId = UuidUtil.newUuidV7StringRaw();
         this.start = System.currentTimeMillis();
         this.time = this.formatTimestamp(this.start);
+        this.apiHeaders = Collections.emptyMap();
+    }
+
+    public boolean isGeneralLog() {
+        return this.logGroup.equalsIgnoreCase("general");
     }
 
     public LogContext setLogGroup(String logGroup) {
@@ -96,24 +100,36 @@ public class LogContext {
     }
 
     public void setException(Exception ex) {
-        setException(ex.getClass().getSimpleName());
-        setErrorMessage(ex.getMessage());
-        setStackTrace(getStackTrace(ex));
+        setException((Throwable) ex);
+    }
 
-        if (ex instanceof RuntimeException && ex.getCause() != null) {
-            Throwable cause = ex.getCause();
-
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-
-            setRootCause(cause.getClass().getSimpleName());
+    public void setException(Throwable t) {
+        if (t == null) {
+            setException("null");
+            setErrorMessage(null);
+            setStackTrace(null);
+            setRootCause(null);
+            return;
         }
+
+        setException(t.getClass().getSimpleName());
+        this.status = -1; // preserve your current behavior
+
+        setErrorMessage(t.getMessage());
+
+        setStackTrace(LogContextHelper.buildStackTraceString(t, 800));
+
+        Throwable root = LogContextHelper.findRootCause(t);
+        setRootCause(root != null ? root.getClass().getSimpleName() : null);
     }
 
     public void setException(String ex) {
         this.exception = ex;
         this.status = -1;
+    }
+
+    public void putApiHeader(String key, String value) {
+        this.apiHeaders.put(key, value);
     }
 
     public void put(String key, Object value) {
@@ -166,6 +182,7 @@ public class LogContext {
             base.put("body", body);
             base.put("response", response);
             base.put("apiUrl", apiUrl);
+            base.put("apiHeader", apiHeaders != null && !apiHeaders.isEmpty() ? apiHeaders.toString() : null);
             base.put("apiBody", apiBody);
             base.put("apiResponse", apiResponse);
             base.put("apiStart", apiStart);
@@ -192,13 +209,6 @@ public class LogContext {
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
         }
-    }
-
-    private String getStackTrace(Exception exception) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        exception.printStackTrace(pw);
-        return sw.toString();
     }
 
     /**
@@ -228,6 +238,7 @@ public class LogContext {
 
         // Outbound API details
         clone.apiUrl = this.apiUrl;
+        clone.apiHeaders.putAll(this.apiHeaders);
         clone.apiBody = this.apiBody;
         clone.apiResponse = this.apiResponse;
         clone.apiStart = this.apiStart;
