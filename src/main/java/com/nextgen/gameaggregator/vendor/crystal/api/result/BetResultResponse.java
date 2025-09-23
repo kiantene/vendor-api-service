@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.crystal.api.result;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +11,7 @@ import java.math.BigDecimal;
 @Builder
 public class BetResultResponse {
     private Data data;
-    private Error error;
+    private final String error; // vendor is expecting null value
 
     @Getter
     @Builder
@@ -21,9 +20,4 @@ public class BetResultResponse {
         private String actionId;
     }
 
-    @Getter
-    @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class Error {
-    }
 }

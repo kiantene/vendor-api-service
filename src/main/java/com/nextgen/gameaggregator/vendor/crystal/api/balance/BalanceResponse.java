@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.crystal.api.balance;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,17 +10,11 @@ import java.math.BigDecimal;
 public class BalanceResponse {
 
     private Data data;
-    private Error error;
+    private final String error; // vendor is expecting null value
 
     @Getter
     @Builder
     public static class Data {
         private BigDecimal balance;
-    }
-
-    @Getter
-    @Builder
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    public static class Error {
     }
 }
