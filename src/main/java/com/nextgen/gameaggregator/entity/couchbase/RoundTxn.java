@@ -40,6 +40,7 @@ public class RoundTxn {
         roundTxn.setType(txn.getType());
         roundTxn.setGaBetId(txn.getGaBetId());
         roundTxn.setVendorBetId(txn.getVendorBetId());
+        roundTxn.setException(txn.getException());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());

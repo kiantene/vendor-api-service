@@ -117,11 +117,7 @@ public class GameTransactionService {
     public void markError(GameTransaction txn, RuntimeException ex) {
         if (txn == null) return;
 
-        String exName = ex.getClass().getSimpleName();
-        if (exName.equals("RuntimeException") && ex.getCause() != null) {
-            exName = ex.getCause().getClass().getSimpleName();
-        }
-
+        String exName = getMeaningfulExceptionName(ex);
         txn.setException(exName);
         txnDataService.updateStatus(txn, null, TxnStatus.ERROR);
 
@@ -131,7 +127,11 @@ public class GameTransactionService {
                 "doneAt", getNow()
         );
 
-        gameRoundService.updateRoundTxn(txn.getRoundDocId(), txn.getIdx(), updates);
+        if (txn.getIdx() != null) {
+            gameRoundService.updateRoundTxn(txn.getRoundDocId(), txn.getIdx(), updates);
+        } else {
+            log.error("idx is null for txn.docId: " + txn.getId());
+        }
     }
 
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
@@ -155,6 +155,17 @@ public class GameTransactionService {
 
     private String getNow() {
         return TIME_FORMATTER.format(Instant.now());
+    }
+
+    private String getMeaningfulExceptionName(RuntimeException ex) {
+        Throwable current = ex;
+
+        // Keep unwrapping while we have generic RuntimeException with causes
+        while (current.getClass() == RuntimeException.class && current.getCause() != null) {
+            current = current.getCause();
+        }
+
+        return current.getClass().getSimpleName();
     }
 
     private void createAliasTxn(GameTransaction txn) {

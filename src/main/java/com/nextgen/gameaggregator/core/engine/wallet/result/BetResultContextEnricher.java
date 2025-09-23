@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
@@ -85,5 +86,15 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         txn.setBetTime(context.getVendorBetTime());
         txn.setSettleTime(context.getVendorSettleTime());
         txn.setState(GameRoundState.SETTLED);
+    }
+
+    public Mono<Void> enrichGameTransactionIfEmpty(GameTransaction txn, BetResultContext context) {
+        return Mono.defer(() -> {
+            // if idx is null, means that an exception is thrown before enrichGameTransaction is called
+            if (txn.getIdx() == null) {
+                return Mono.fromRunnable(() -> enrichGameTransaction(txn, context));
+            }
+            return Mono.empty();
+        });
     }
 }

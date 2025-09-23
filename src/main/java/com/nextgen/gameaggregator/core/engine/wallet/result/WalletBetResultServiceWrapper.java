@@ -16,7 +16,10 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -24,6 +27,7 @@ import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WalletBetResultServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "result";
@@ -77,15 +81,7 @@ public class WalletBetResultServiceWrapper {
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
-            // TODO: if operator error, add to retry queue and return success to vendor
-
-            guard.clear();
-            RuntimeException exception = walletExceptionTranslator.translate(ex, context);
-            if (txn != null) {
-                gameRoundService.markTxnError(txn, exception);
-            }
-
-            throw exception;
+            throw handleException(context, txn, ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -106,6 +102,27 @@ public class WalletBetResultServiceWrapper {
         throw ex;
     }
 
+    private RuntimeException handleException(BetResultContext context, GameTransaction txn, Exception ex) {
+        // TODO: if operator error, add to retry queue and return success to vendor
+
+        guard.clear();
+        RuntimeException exception = walletExceptionTranslator.translate(ex, context);
+
+        markTxnError(context, txn, exception)
+                .doOnError(t -> log.warn("markTxnError failed for txn {}", txn.getId(), t))
+                .subscribe(); // fire and forget, don't block vendor response
+
+        return exception;
+    }
+
+    private Mono<Void> markTxnError(BetResultContext context, GameTransaction txn, RuntimeException ex) {
+        return enricher.enrichGameTransactionIfEmpty(txn, context)
+                .then(Mono.<Void>fromRunnable(
+                        () -> gameRoundService.markTxnError(txn, ex))   // this is a blocking call
+                        .subscribeOn(Schedulers.boundedElastic())       // use a separate thread to handle blocking
+                );
+    }
+
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
         BetResultWrapperContext state = new BetResultWrapperContext(context);
         BetResultContextHolder.set(state);
@@ -124,6 +141,10 @@ public class WalletBetResultServiceWrapper {
     private void cleanup() {
         guard.cleanup();
         BetResultContextHolder.clear();
+    }
+
+    private Mono<Void> markTxnErrorMono(GameTransaction txn, RuntimeException ex) {
+        return Mono.fromRunnable(() -> gameRoundService.markTxnError(txn, ex));
     }
 
     /**

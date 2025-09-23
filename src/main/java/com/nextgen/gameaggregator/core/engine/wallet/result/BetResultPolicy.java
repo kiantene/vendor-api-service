@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RoundAlreadyEndedException;
 import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -31,6 +32,25 @@ public class BetResultPolicy {
         // - betAndResult requests (when round not ended)
         // - Round exists and not ended
         // - Round not found but result-before-bet is enabled
+        return BetResultDecision.allow();
+    }
+
+    public static BetResultDecision decideResultBeforeBet(GameRound round, BetResultConfig config) {
+
+        // won't have this scenario if it is bet and result endpoint, so just allow
+        if (config.isBetAndResult()) return BetResultDecision.allow();
+
+        // if bet txn exists, txn count should be 2 or more, because bet + result = 2 txn
+        boolean betTxnExists = round.getTxnCount() > 1;
+
+        if (betTxnExists) { // if bet txn exists, then do nothing and proceed for settlement
+            return BetResultDecision.noop();
+        }
+
+        // reject if bet not exists and config is disabled
+        if (!config.isAllowResultBeforeBet()) {
+            return BetResultDecision.reject("Bet not found", BetNotFoundException.class);
+        }
         return BetResultDecision.allow();
     }
 }
