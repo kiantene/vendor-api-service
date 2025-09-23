@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 @Service
 @Slf4j
 public class BalanceService {
-
     private final GameService gameService;
     private final WalletService walletService;
     private final ValidationService validationService;

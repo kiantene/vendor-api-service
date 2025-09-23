@@ -11,5 +11,5 @@ import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
  */
 @FunctionalInterface
 public interface BetRollbackContextMapper<V> extends VendorRequestMapper<BetRollbackContext, V> {
-    BetRollbackContext toInternal(V vendorRequest);
+    BetRollbackContext toInternal(V request);
 }

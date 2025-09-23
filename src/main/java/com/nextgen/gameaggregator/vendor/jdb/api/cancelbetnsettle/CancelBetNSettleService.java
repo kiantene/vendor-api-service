@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -23,45 +24,57 @@ public class CancelBetNSettleService {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final HttpService httpService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public CancelBetNSettleService(GameServiceImpl gameService,
                                    GameSessionService gameSessionService,
                                    WalletService walletService,
                                    VendorService vendorService,
-                                   HttpService httpService) {
+                                   HttpService httpService, RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameService = gameService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.httpService = httpService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         // Construct VO
         CommonVo vo = new CommonVo();
+        boolean isRequestExists = false;
+        CancelBetNSettleDto cancelBetNSettleDto = new CancelBetNSettleDto();
 
         try {
             // Convert original request body into dto
-            CancelBetNSettleDto cancelBetNSettleDto = HttpService.convertJsonToDto(actionDto.getParams(), CancelBetNSettleDto.class);
+            cancelBetNSettleDto = HttpService.convertJsonToDto(actionDto.getParams(), CancelBetNSettleDto.class);
 
             // 1. Validate request parameters from vendor
             this.doValidation(cancelBetNSettleDto);
 
-            // 2. Verify session token
+            // 2. Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(cancelBetNSettleDto, cancelBetNSettleDto.getUid()) == null) {
+                requestIdempotentLogService.create(cancelBetNSettleDto, cancelBetNSettleDto.getUid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
+            // 3. Verify session token
             GameSession gameSession;
             try {
-                gameSession = gameService.getGameSessionByUsername(cancelBetNSettleDto.getUid());
+                gameSession = gameService.getGameSessionByUsername(cancelBetNSettleDto.getUid(), cancelBetNSettleDto.getGType() + "_" + cancelBetNSettleDto.getMType());
             } catch (AuthenticationException playerNotFoundException) {
                 gameSession = gameSessionService.generateNewSessionToken(cancelBetNSettleDto.getUid()); //generate new token
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
             }
-            // 3. Verify remaining parameters (Verify against database values)
+            // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelBetNSettleDto, gameSession);
 
-            // 4. Send refund to Operator
+            // 5. Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, cancelBetNSettleDto, gameSession, vendorService, actionDto.getHttpRequestLog());
 
             vo.setBalance(balance);
@@ -115,6 +128,11 @@ public class CancelBetNSettleService {
             httpService.logError(httpRequestLog, exception);
             vo.setErrorResponseCode(ResponseCode.FAILED);
 
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelBetNSettleDto, cancelBetNSettleDto.getUid());
+            }
         }
 
         return vo;

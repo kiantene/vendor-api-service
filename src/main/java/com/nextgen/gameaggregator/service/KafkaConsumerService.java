@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -13,6 +14,9 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
 import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
+import com.nextgen.gameaggregator.service.data.VendorFeatureDataService;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.BetHistoryPublishContext;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
@@ -43,12 +47,13 @@ public class KafkaConsumerService {
     private final HttpService httpService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
-    private final CachingService cachingService;
     private final AgentApiVersionService agentApiVersionService;
     private final Set<Integer> skipVendorList;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final WalletService walletService;
     private final GameSessionService gameSessionService;
+    private final BetHistoryProducer betHistoryProducer;
+    private final VendorFeatureDataService vendorFeatureService;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -60,10 +65,12 @@ public class KafkaConsumerService {
                                 HttpService httpService,
                                 AgentPlayerService agentPlayerService,
                                 VendorPlayerService vendorPlayerService,
-                                CachingService cachingService,
                                 AgentApiVersionService agentApiVersionService,
                                 UnsettledBetCachingService unsettledBetCachingService,
-                                WalletService walletService, GameSessionService gameSessionService) {
+                                WalletService walletService,
+                                GameSessionService gameSessionService,
+                                BetHistoryProducer betHistoryProducer,
+                                VendorFeatureDataService vendorFeatureService) {
 
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -75,14 +82,16 @@ public class KafkaConsumerService {
         this.httpService = httpService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
-        this.cachingService = cachingService;
         this.agentApiVersionService = agentApiVersionService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
+        this.betHistoryProducer = betHistoryProducer;
+        this.vendorFeatureService = vendorFeatureService;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
+    // TODO: To be removed, no longer in used after migrated to EndRoundProcessor
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException, BetNotFoundException {
 
@@ -132,6 +141,8 @@ public class KafkaConsumerService {
                 //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
                 kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
                         gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+
+                //OBSELETE so does not require produceBetHistoryUncap
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
@@ -219,16 +230,30 @@ public class KafkaConsumerService {
             settledBetService.save(settledBet, settledBet.getRawData());
 
             //prepare insert new betHistory data
-            BetHistory betHistory = new BetHistory(settledBet);
-            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
-                // kafkaService.produceWarehouseBetHistory
-                //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
-                kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                        gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+            if (vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
+                /**
+                 * Feature toggle to use refactored logic
+                 */
+                doPublishBetHistory(
+                        settledBet,
+                        vendorService,
+                        gameSession,
+                        agentPlayer.getUsername(),
+                        vendorPlayer.getUsername(),
+                        vendorCurrency.getFromVendorRate()
+                );
             } else {
-                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                BetHistory betHistory = new BetHistory(settledBet);
+                if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                    // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+                    // kafkaService.produceWarehouseBetHistory
+                    //         (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                    kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                            gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+                } else {
+                    // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                    kafkaService.producePreprocessingBetHistory(betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+                }
             }
 
             //prepare delete unsettledBet
@@ -277,6 +302,26 @@ public class KafkaConsumerService {
                 RequestService.processEndRoundLogPatching(processEndRoundLog, exception, endRoundSettledBetForPatching);
             }
         }
+    }
+
+    private void doPublishBetHistory(SettledBet settledBet,
+                                     BaseVendorService vendorService,
+                                     GameSession gameSession,
+                                     String agentPlayerUsername,
+                                     String vendorPlayerUsername,
+                                     BigDecimal fromVendorConversionRate) {
+        boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
+        BetHistoryPublishContext publishContext = new BetHistoryPublishContext(
+                gameSession.getProductCode(),
+                gameSession.getProductId(),
+                gameSession.getProductGameId(),
+                agentPlayerUsername,
+                vendorPlayerUsername,
+                fromVendorConversionRate,
+                requirePreprocessing,
+                null
+        );
+        betHistoryProducer.publish(settledBet, publishContext);
     }
 
     private void processResultTypeWin(SettledBet settledBet) {

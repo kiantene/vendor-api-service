@@ -34,9 +34,6 @@ public class VendorSignatureService {
             if (!additionalFields.isEmpty()) {
                 request.enrichRequestFields(additionalFields);
                 additionalFields.forEach(logContextService::debug);
-                additionalFields.forEach((k, v) -> {
-                    System.out.println(k + " : " + v);
-                });
             }
 
             return result;

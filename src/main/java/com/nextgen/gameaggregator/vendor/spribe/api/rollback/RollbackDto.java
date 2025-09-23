@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -52,7 +51,7 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
