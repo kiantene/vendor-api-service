@@ -28,19 +28,22 @@ public class VendorService extends BaseVendorService {
     private final VendorGameService vendorGameService;
     private final ValidationService validationService;
     private final HttpService httpService;
+    private final VendorService vendorService;
 
     public VendorService(VendorLineService vendorLineService,
                          GameSessionService gameSessionService,
                          AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService,
                          ValidationService validationService,
-                         HttpService httpService) {
+                         HttpService httpService,
+                         VendorService vendorService) {
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.validationService = validationService;
         this.httpService = httpService;
+        this.vendorService = vendorService;
     }
 
     public static String hashHMACSha256(String data, String secret) {
@@ -61,6 +64,7 @@ public class VendorService extends BaseVendorService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
         } catch (AuthenticationException e) {
             gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
             gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
@@ -117,11 +121,11 @@ public class VendorService extends BaseVendorService {
             responseVo.setError(ResponseCode.INVALID_TOKEN);
         } else if (e instanceof AuthenticationException) {
             responseVo.setError(ResponseCode.ACCOUNT_LOCKED);
-        }else if (e instanceof BetNotFoundException ||
+        } else if (e instanceof BetNotFoundException ||
                 e instanceof BetResultNotFoundException ||
-                e instanceof  RecordNotFoundException) {
+                e instanceof RecordNotFoundException) {
             responseVo.setError(ResponseCode.DEBIT_TRANSACTION_NOT_FOUND);
-        }  else if (e instanceof InsufficientBalanceException) {
+        } else if (e instanceof InsufficientBalanceException) {
             responseVo.setError(ResponseCode.INSUFFICIENT_FUNDS);
         } else if (e instanceof DisabledVendorLineException ||
                 e instanceof DisabledGameException ||
