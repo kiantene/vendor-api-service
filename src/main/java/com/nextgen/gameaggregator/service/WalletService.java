@@ -331,7 +331,6 @@ public class WalletService {
                 walletBetResultData.setBetAmount(BigDecimal.ZERO);
                 if (cappedBetResult.getUncapWinAmount() != null) {
                     agentMaxPayoutService.applyUpdatedAmount(settledBet, cappedBetResult.getWinAmount(), cappedBetResult.getWinLoss(), cappedBetResult.getJackpotAmount());
-//                    cappedBetResult.setEffectiveTurnover(cappedBetResult.getWinAmount().subtract(settledBet.getBetAmount()));
                 }
             }
 
