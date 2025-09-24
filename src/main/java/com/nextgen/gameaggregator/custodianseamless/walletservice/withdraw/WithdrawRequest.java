@@ -38,14 +38,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class WithdrawRequest {
 
-    @Value("${walletservice.host}")
-    private String walletServiceUrl;
-
-    @Value("${walletservice.timeout:1000}")
-    public Integer timeout;
-
     private final AuthenticationService authenticationService;
     private final TransferService transferService;
+    @Value("${walletservice.timeout:1000}")
+    public Integer timeout;
+    @Value("${walletservice.host}")
+    private String walletServiceUrl;
 
     public WithdrawRequest(AuthenticationService authenticationService, TransferService transferService) {
         this.authenticationService = authenticationService;
@@ -196,7 +194,7 @@ public class WithdrawRequest {
             throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
         }
 
-        if (!transferWalletRequestLog.getUsername().equals(username)) {
+        if (!transferWalletRequestLog.getUsername().equalsIgnoreCase(username)) {
             throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_USERNAME_MISMATCHED.code);
         }
 
