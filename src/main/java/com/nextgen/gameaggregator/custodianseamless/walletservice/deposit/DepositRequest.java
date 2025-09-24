@@ -29,7 +29,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -39,14 +38,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class DepositRequest {
 
-    @Value("${walletservice.host}")
-    private String walletServiceUrl;
-
-    @Value("${walletservice.timeout:1000}")
-    public Integer timeout;
-
     private final AuthenticationService authenticationService;
     private final TransferService transferService;
+    @Value("${walletservice.timeout:1000}")
+    public Integer timeout;
+    @Value("${walletservice.host}")
+    private String walletServiceUrl;
 
     public DepositRequest(AuthenticationService authenticationService, TransferService transferService) {
 
@@ -198,7 +195,7 @@ public class DepositRequest {
             throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
         }
 
-        if (!transferWalletRequestLog.getUsername().equals(username)) {
+        if (!transferWalletRequestLog.getUsername().equalsIgnoreCase(username)) {
             throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_USERNAME_MISMATCHED.code);
         }
 

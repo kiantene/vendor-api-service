@@ -40,15 +40,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class BalanceRequest {
 
-    @Value("${walletservice.host}")
-    private String walletServiceUrl;
-
-    @Value("${walletservice.timeout:1000}")
-    public Integer timeout;
-
     private final AuthenticationService authenticationService;
     private final TransferService transferService;
     private final LoggingService loggingService;
+    @Value("${walletservice.timeout:1000}")
+    public Integer timeout;
+    @Value("${walletservice.host}")
+    private String walletServiceUrl;
 
     public BalanceRequest(AuthenticationService authenticationService,
                           TransferService transferService,
@@ -180,7 +178,7 @@ public class BalanceRequest {
             throw new InvalidWalletServiceResponseException(INVALID_RESPONSE);
         }
 
-        if (!transferWalletRequestLog.getUsername().equals(username)) {
+        if (!transferWalletRequestLog.getUsername().equalsIgnoreCase(username)) {
             throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_USERNAME_MISMATCHED.code);
         }
 
