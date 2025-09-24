@@ -87,7 +87,7 @@ public class WinfinGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequ
     public Map<String, String> getHeaders(GameLaunchContext context, GameLaunchRequest gameLaunchRequest) {
         String bearerToken = BearerTokenHolder.getToken();
         LogContext logContext = LogContextHolder.get();
-        logContext.putApiHeader("bearer", bearerToken);
+        logContext.putApiHeader(HEADER_AUTH, HEADER_BEARER + bearerToken);
 
         //clear thread
         BearerTokenHolder.clear();
