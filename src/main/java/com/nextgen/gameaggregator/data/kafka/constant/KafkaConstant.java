@@ -14,7 +14,6 @@ public class KafkaConstant {
     public static final String TOPIC_BET_HISTORY_PREPROCESSING = "topic_bet_history_preprocessing";
     public static final String TOPIC_BET_HISTORY_PREPROCESSING_V2 = "topic_bet_history_preprocessing_v2";
     public static final String TOPIC_BET_HISTORY_PREPROCESSING_V3 = "topic_bet_history_preprocessing_v3";
-    public static final String TOPIC_END_ROUND_PROCESS_V2 = "topic_end_round_process_v2";
     public static final String TOPIC_END_ROUND_PROCESS_V3 = "topic_end_round_process_v3";
     public static final String TOPIC_REFUND_PROCESS = "topic_refund_process";
     public static final String TOPIC_UNSETTLED_BET = "sports_unsettled_bet";
