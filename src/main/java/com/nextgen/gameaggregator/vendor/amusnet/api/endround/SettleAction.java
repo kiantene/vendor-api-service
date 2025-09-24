@@ -66,8 +66,15 @@ public class SettleAction {
             // Validate request parameters from vendor (Non-database calls)
             this.doValidation(settleDto);
 
+            // Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getVendorGameId(), gameSession);
+
+            // Update game code except jackpot game
+            Set<String> excludedGameIds = Set.of("996", "998", "999", "8888");
+            boolean isJackpotGame = excludedGameIds.contains(settleDto.getVendorGameId());
+            if (!isJackpotGame) {
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getVendorGameId(), gameSession);
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
