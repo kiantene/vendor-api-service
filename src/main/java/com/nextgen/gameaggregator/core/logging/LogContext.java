@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -70,7 +70,7 @@ public class LogContext {
         this.traceId = UuidUtil.newUuidV7StringRaw();
         this.start = System.currentTimeMillis();
         this.time = this.formatTimestamp(this.start);
-        this.apiHeaders = Collections.emptyMap();
+        this.apiHeaders = new HashMap<>();
     }
 
     public boolean isGeneralLog() {
