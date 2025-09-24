@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
@@ -37,7 +38,7 @@ public class GameTransaction extends RoundTxn {
     private Integer idx;
 
     /**
-     * Unique identifier to prevent duplicate transaction
+     * Vendor's request unique identifier to prevent duplicate transaction
      */
     @JsonProperty("transactionId")
     private String transactionId;
@@ -93,6 +94,7 @@ public class GameTransaction extends RoundTxn {
 
     public static GameTransaction of(TxnType type, String vendorClassName, String transactionId, long createdTimestamp) {
         GameTransaction txn = new GameTransaction(type, vendorClassName, transactionId);
+        txn.setGaBetId(UuidUtil.newUuidV7String());
         txn.setCreatedTs(createdTimestamp);
         txn.setCreatedAt(DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(createdTimestamp)));
 

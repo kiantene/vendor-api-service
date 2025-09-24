@@ -240,10 +240,10 @@ public class WalletBetAction {
          * TODO: existing operator will be impacted by this change
          */
         Integer vendorId = betInformation.getVendorId();
-        if (vendorId != null && !Vendors.isNewFramework(vendorId)) {
-            walletBetDto.setExternalTransactionId(betInformation.getVendorBetId());
-        } else {
+        if (vendorId != null && Vendors.isNewFramework(vendorId)) { // map correctly
             walletBetDto.setExternalTransactionId(betInformation.getExternalTransactionId());
+        } else {
+            walletBetDto.setExternalTransactionId(betInformation.getVendorBetId());
         }
 
         walletBetDto.setAmount(amount);

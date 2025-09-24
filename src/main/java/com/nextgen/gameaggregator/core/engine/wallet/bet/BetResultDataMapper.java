@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 @Component
 class BetResultDataMapper {
-    public BetResultData toBetResultData(BetContext context) {
+    public BetResultData toBetResultData(BetContext context, String gaBetId) {
         return new BetResultData() {
             @Override
             public String getExternalTransactionId() {
@@ -82,6 +82,9 @@ class BetResultDataMapper {
 
             @Override
             public boolean isNewFramework() { return true; }
+
+            @Override
+            public String getGaBetId() { return gaBetId; }
         };
     }
 }
