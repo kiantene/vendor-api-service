@@ -24,7 +24,7 @@ public class BetResultPolicy {
         }
 
         // Reject if round not found and result-before-bet is not allowed
-        if (roundOpt.isEmpty() && !config.isAllowResultBeforeBet()) {
+        if (roundOpt.isEmpty() && !config.isBetAndResult() && !config.isAllowResultBeforeBet()) {
             return BetResultDecision.reject("Round not found", RoundNotFoundException.class);
         }
 
