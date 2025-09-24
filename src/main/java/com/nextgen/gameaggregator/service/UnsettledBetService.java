@@ -292,7 +292,14 @@ public class UnsettledBetService {
         UnsettledBet unsettledBet = new UnsettledBet(betResultData, vendorGameId, vendorPlayerId);
 
         unsettledBet.setInternalTransactionId(traceId);
-        unsettledBet.setBetId(traceId);
+        if (betResultData.isNewFramework() && betResultData.getGaBetId() != null) {
+            /**
+             * New framework will generate GA bet id first
+             */
+            unsettledBet.setBetId(betResultData.getGaBetId());
+        } else {
+            unsettledBet.setBetId(traceId);
+        }
         unsettledBet.setVendorGameId(gameSession.getVendorGameId());
         unsettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
         unsettledBet.setVendorId(gameSession.getVendorId());

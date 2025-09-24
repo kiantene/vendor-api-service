@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
-import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -50,6 +49,7 @@ public class BetRollbackProcessor {
     private final LegacyCleanupService legacyCleanupService;
 
     public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
+        // There is a possibility that the alias txn is not created yet if an error is encountered before markSent is called
         GameTransaction betTxn = gameTransactionService.get(rollbackTxn.getRollbackId())
                 .orElseThrow(() -> new BetNotFoundException("GameTransaction not found for processBetRollback: " + rollbackTxn.getRollbackId()));
 
