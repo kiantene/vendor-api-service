@@ -58,9 +58,23 @@ public class SessionBetAction {
             this.doValidation(sessionBetDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(sessionBetDto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetDto.getGame()), gameSession);
-
+            GameSession gameSession;
+            try {
+                gameSession = gameSessionService.verifyToken(sessionBetDto.getToken());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(sessionBetDto.getGame()), gameSession);
+            } catch (AuthenticationException authenticationException) {
+                // if bet then throw back authentication exception
+                if (sessionBetDto.getType().equals(Formats.SESSION_BET_TYPE_BET)) {
+                    throw authenticationException;
+                }
+                gameSession = gameSessionService.generateNewSessionToken(sessionBetDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(sessionBetDto.getGame()));
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(sessionBetDto.getToken());
+                gameSession.setVendorToken(sessionBetDto.getToken());
+            }
+            
+            // 3. Verify request parameters
             this.doVerification(sessionBetDto, gameSession);
 
             // bet endpoint operator time out set 3.5sec
