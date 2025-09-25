@@ -49,6 +49,11 @@ public class RoundTxn {
     }
 
     @JsonIgnore
+    public boolean isError() {
+        return status == TxnStatus.ERROR;
+    }
+
+    @JsonIgnore
     public boolean isStillProcessing() {
         return status == TxnStatus.SENT;
     }

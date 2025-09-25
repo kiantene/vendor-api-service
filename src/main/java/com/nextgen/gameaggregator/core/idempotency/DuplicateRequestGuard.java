@@ -57,6 +57,6 @@ public class DuplicateRequestGuard {
     }
 
     private boolean shouldTreatAsDuplicate(GameTransaction txn) {
-        return txn.isSuccess() || txn.isStillProcessing();
+        return !txn.isError();
     }
 }
