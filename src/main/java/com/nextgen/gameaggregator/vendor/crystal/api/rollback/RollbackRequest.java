@@ -2,10 +2,9 @@ package com.nextgen.gameaggregator.vendor.crystal.api.rollback;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-
-import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,12 +33,6 @@ public class RollbackRequest {
     @Size(max = 255)
     @JsonProperty("transactionOriginalId")
     private String transactionOriginalId;
-
-    @NotNull
-    @Digits(integer = 20, fraction = 8)
-    @DecimalMin(value = "0.0")
-    @JsonProperty("amount")
-    private BigDecimal amount;
 
     @NotBlank
     @Size(max = 255)
