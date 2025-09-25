@@ -8,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
-
 @Service
 @Slf4j
 public class CouchbaseRetryQueueService implements RetryQueueService {
@@ -36,7 +34,7 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
 
     private static HttpRetryJob toJob(HttpCallSpec spec, RetryOrigin origin) {
         HttpRetryJob job = new HttpRetryJob();
-        job.setId(buildId(spec, origin));
+        job.setId(spec.getTraceId());
         job.setTraceId(spec.getTraceId());
         job.setOrigin(origin.name());
         job.setMethod(spec.getMethod());
@@ -44,15 +42,6 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
         job.setHeaders(spec.getHeaders());
         job.setBodyJson(spec.getBodyJson());
         return job;
-    }
-
-    private static String buildId(HttpCallSpec spec, RetryOrigin origin) {
-        String raw = spec.getMethod() + "|" +
-                spec.getUrl() + "|" +
-                spec.getIdempotencyKey() + "|" +
-                (spec.getBodyJson() == null ? "" : spec.getBodyJson());
-        String hash = sha256Hex(raw);
-        return origin + "::" + hash;
     }
 
     private static void logError(HttpRetryJob job, Throwable e) {
