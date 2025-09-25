@@ -24,7 +24,7 @@ public final class RetryHelper {
         }
 
         return HttpCallSpec.builder()
-                .idempotencyKey(request.getSignature())
+                .idempotencyKey(request.getTraceId())
                 .traceId(request.getTraceId())
                 .url(request.getFullUrl())
                 .method(request.getMethod() == null ? HttpMethod.POST.name() : request.getMethod().name())
