@@ -231,21 +231,7 @@ public class WalletBetAction {
         walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
-
-        /**
-         * Jeff: this is legacy code, not sure why it was mapped this way
-         * but for vendors running on new framework, it will be mapped correctly.
-         *
-         * TODO: When we start migrating old vendors to use new framework,
-         * TODO: existing operator will be impacted by this change
-         */
-        Integer vendorId = betInformation.getVendorId();
-        if (vendorId != null && Vendors.isNewFramework(vendorId)) { // map correctly
-            walletBetDto.setExternalTransactionId(betInformation.getExternalTransactionId());
-        } else {
-            walletBetDto.setExternalTransactionId(betInformation.getVendorBetId());
-        }
-
+        walletBetDto.setExternalTransactionId(betInformation.getVendorBetId());
         walletBetDto.setAmount(amount);
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betInformation.getRoundId());
