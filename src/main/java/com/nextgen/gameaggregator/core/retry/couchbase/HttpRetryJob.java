@@ -23,6 +23,8 @@ public class HttpRetryJob {
     private String traceId;
     @JsonProperty("origin")
     private String origin;
+    @JsonProperty("partition")
+    private int partition;
 
     // ------ Request Info ------
     @JsonProperty("method")

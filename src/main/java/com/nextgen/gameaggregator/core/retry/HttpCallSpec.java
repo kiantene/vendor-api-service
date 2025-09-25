@@ -14,5 +14,6 @@ public class HttpCallSpec {
     private String url;
     private Map<String, String> headers;
     private String bodyJson;
+    private int partition;
     private long requestTime;
 }
