@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.amusnet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.amusnet.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.amusnet.constant.JackpotGames;
 import com.nextgen.gameaggregator.vendor.amusnet.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.amusnet.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.Set;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -70,8 +70,7 @@ public class SettleAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getPlayerId());
 
             // Update game code except jackpot game
-            Set<String> excludedGameIds = Set.of("996", "998", "999", "8888");
-            boolean isJackpotGame = excludedGameIds.contains(settleDto.getVendorGameId());
+            boolean isJackpotGame = JackpotGames.isJackpotGame(settleDto.getVendorGameId());
             if (!isJackpotGame) {
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(settleDto.getVendorGameId(), gameSession);
             }
@@ -126,8 +125,7 @@ public class SettleAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), settleDto.getPlayerId(), AuthenticationException::new);
 
         //2. Check for excluded jackpot games
-        Set<String> excludedGameIds = Set.of("996", "998", "999", "8888");
-        boolean isJackpotGame = excludedGameIds.contains(settleDto.getVendorGameId());
+        boolean isJackpotGame = JackpotGames.isJackpotGame(settleDto.getVendorGameId());
 
         //3. If not jackpot, verify unsettled bet logic
         if (!isJackpotGame) {
