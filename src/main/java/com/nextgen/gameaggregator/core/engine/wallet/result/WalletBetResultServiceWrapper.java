@@ -143,10 +143,6 @@ public class WalletBetResultServiceWrapper {
         BetResultContextHolder.clear();
     }
 
-    private Mono<Void> markTxnErrorMono(GameTransaction txn, RuntimeException ex) {
-        return Mono.fromRunnable(() -> gameRoundService.markTxnError(txn, ex));
-    }
-
     /**
      * Scenarios:
      * 1. WIN        -> Win transaction for a previous bet (not a bet)
