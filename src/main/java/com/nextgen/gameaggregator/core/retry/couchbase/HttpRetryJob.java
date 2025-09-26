@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.retry.couchbase;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.core.retry.enums.RetryJobStatus;
 import lombok.Data;
 
 import java.time.Instant;
@@ -24,7 +25,11 @@ public class HttpRetryJob {
     @JsonProperty("origin")
     private String origin;
     @JsonProperty("partition")
-    private int partition;
+    private Integer partition;
+    @JsonProperty("partitionKey")
+    private String partitionKey;
+    @JsonProperty("transactionTime")
+    private Long transactionTime;
 
     // ------ Request Info ------
     @JsonProperty("method")
@@ -36,12 +41,21 @@ public class HttpRetryJob {
     @JsonProperty("bodyJson")
     private String bodyJson;
 
+    // ------ Status & Tracking ------
+    @JsonProperty("status")
+    private RetryJobStatus status;
+    @JsonProperty("lastAttemptAt")
+    private Long lastAttemptAt;
+    @JsonProperty("lastError")
+    private String lastError;
+    @JsonProperty("lastHttpStatus")
+    private Integer lastHttpStatus;
+
     // ------ Scheduling Info ------
     @JsonProperty("attempts")
     private int attempts;
     @JsonProperty("nextRunAt")
     private long nextRunAt;
-
     @JsonProperty("createdTs")
     private long createdTs;
 
@@ -50,5 +64,6 @@ public class HttpRetryJob {
         this.createdAt = DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(this.createdTs));
         this.attempts = 0;
         this.nextRunAt = System.currentTimeMillis();
+        this.status = RetryJobStatus.PENDING;
     }
 }

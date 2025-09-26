@@ -45,8 +45,10 @@ public class ClientRequestService {
 
     public <T> ClientApiRequest<T> createClientApiRequest(String traceId,
                                                           Integer agentId,
+                                                          String agentPlayerUsername,
                                                           String path,
-                                                          T requestObject) {
+                                                          T requestObject,
+                                                          Long transactionTime) {
         validateInputs(agentId, path, requestObject);
         validateRequestObject(requestObject);
 
@@ -61,12 +63,14 @@ public class ClientRequestService {
         return ClientApiRequest.<T>builder()
                 .traceId(traceId)
                 .agentId(agentId)
+                .agentPlayerUsername(agentPlayerUsername)
                 .method(HttpMethod.POST)
                 .baseUrl(baseUrl)
                 .path(path)
                 .requestObject(requestObject)
                 .apiKey(credential.getApiKey())
                 .apiSecret(credential.getApiSecret())
+                .transactionTime(transactionTime)
                 .build();
     }
 

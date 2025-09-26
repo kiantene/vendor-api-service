@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.core.retry.couchbase;
 
 import com.couchbase.client.core.error.DocumentExistsException;
 import com.nextgen.gameaggregator.core.retry.HttpCallSpec;
-import com.nextgen.gameaggregator.core.retry.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
+import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -38,10 +38,12 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
         job.setTraceId(spec.getTraceId());
         job.setOrigin(origin.name());
         job.setPartition(spec.getPartition());
+        job.setPartitionKey(spec.getPartitionKey());
         job.setMethod(spec.getMethod());
         job.setUrl(spec.getUrl());
         job.setHeaders(spec.getHeaders());
         job.setBodyJson(spec.getBodyJson());
+        job.setTransactionTime(spec.getTransactionTime());
         return job;
     }
 

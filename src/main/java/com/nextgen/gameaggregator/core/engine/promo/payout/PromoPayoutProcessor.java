@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
-import com.nextgen.gameaggregator.core.retry.RetryOrigin;
+import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryPolicy;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.webclient.*;
@@ -88,8 +88,10 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         var apiRequest = clientRequestService.createClientApiRequest(
                 context.getTraceId(),
                 agent.id(),
+                agent.playerUsername(),
                 EndPoints.PROMO_PAYOUT,
-                requestDto
+                requestDto,
+                requestDto.getTimestamp()
         );
 
         try {
@@ -116,8 +118,10 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         var apiRequest = clientRequestService.createClientApiRequest(
                 context.getTraceId(),
                 agent.id(),
+                agent.playerUsername(),
                 EndPoints.PROMO_PAYOUT,
-                requestDto
+                requestDto,
+                requestDto.getTimestamp()
         );
 
         Function<Throwable, Mono<PlayerBalanceData>> handleErrorWithRetry = ex -> {

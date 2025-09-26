@@ -10,10 +10,12 @@ import java.util.Map;
 public class HttpCallSpec {
     private String traceId;
     private String idempotencyKey;
+    private int partition;
+    private String partitionKey;
     private String method;
     private String url;
     private Map<String, String> headers;
     private String bodyJson;
-    private int partition;
     private long requestTime;
+    private Long transactionTime;
 }
