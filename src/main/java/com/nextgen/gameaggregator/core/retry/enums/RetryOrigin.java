@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.core.retry;
+package com.nextgen.gameaggregator.core.retry.enums;
 
 public enum RetryOrigin {
     BET_RESULT,

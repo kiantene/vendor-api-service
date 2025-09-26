@@ -22,4 +22,14 @@ public class JsonUtils {
             throw exceptionSupplier.apply(e);
         }
     }
+
+    public static <T> String toJson(T object) {
+        if (object == null) throw new IllegalArgumentException("JSON serialize failed: object is null");
+
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException("JSON serialize failed: " + exception.getMessage(), exception);
+        }
+    }
 }

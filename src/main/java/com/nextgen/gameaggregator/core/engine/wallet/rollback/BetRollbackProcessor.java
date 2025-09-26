@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
-import com.nextgen.gameaggregator.core.retry.RetryOrigin;
+import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryPolicy;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
@@ -150,8 +150,10 @@ public class BetRollbackProcessor {
         var apiRequest = clientRequestService.createClientApiRequest(
                 requestDto.getTraceId(),
                 round.getAgentMeta().getAgentId(),
+                requestDto.getUsername(),
                 EndPoints.WALLET_ROLLBACK,
-                requestDto
+                requestDto,
+                requestDto.getTimestamp()
         );
 
         try {

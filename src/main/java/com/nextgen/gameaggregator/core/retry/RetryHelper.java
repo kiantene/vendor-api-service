@@ -1,28 +1,18 @@
 package com.nextgen.gameaggregator.core.retry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
 import org.springframework.http.HttpMethod;
 
 public final class RetryHelper {
     private static final int TOTAL_PARTITIONS = 8;
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-
     private RetryHelper() {}
 
     public static HttpCallSpec toHttpCallSpec(ClientApiRequest<?> request) {
         if (request == null) throw new IllegalArgumentException("Request cannot be null");
 
-        String json = null;
-        if (request.getRequestObject() != null) {
-            try {
-                json = mapper.writeValueAsString(request.getRequestObject());
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize request object", e);
-            }
-        }
+        String json = JsonUtils.toJson(request.getRequestObject());
 
         return HttpCallSpec.builder()
                 .idempotencyKey(request.getTraceId())
@@ -31,8 +21,10 @@ public final class RetryHelper {
                 .method(request.getMethod() == null ? HttpMethod.POST.name() : request.getMethod().name())
                 .headers(request.getHeaders())
                 .bodyJson(json)
-                .partition(request.getAgentId().hashCode() % TOTAL_PARTITIONS)
+                .partition(request.calculatePartition(TOTAL_PARTITIONS))
+                .partitionKey(request.getPartitionKey())
                 .requestTime(System.currentTimeMillis())
+                .transactionTime(request.getTransactionTime())
                 .build();
     }
 }
