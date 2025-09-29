@@ -16,7 +16,7 @@ public class RollbackResponseMapper implements BetRollbackVendorResponseMapper<R
         return RollbackResponse.builder()
                 .data(RollbackResponse.Data.builder()
                         .balance(balanceData.getBalance().setScale(2, RoundingMode.DOWN))
-                        .actionId(context.getVendorBetId())
+                        .actionId(context.getIdempotencyKey())
                         .build())
                 .build();
     }

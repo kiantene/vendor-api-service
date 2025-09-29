@@ -40,13 +40,10 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     }
 
     private void enrichResponse(RollbackResponse response, RollbackRequest request) {
-        String vendorBetId = request.getTransactionOriginalId() == null
-                ? request.getTransactionId()
-                : request.getTransactionOriginalId();
 
         RollbackResponse.Data data = RollbackResponse.Data.builder()
                 .balance(response.getData().getBalance())
-                .actionId(vendorBetId)
+                .actionId(request.getTransactionId())
                 .build();
         response.setData(data);
     }
