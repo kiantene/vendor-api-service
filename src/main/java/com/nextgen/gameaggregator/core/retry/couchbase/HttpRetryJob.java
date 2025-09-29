@@ -28,6 +28,8 @@ public class HttpRetryJob {
     private Integer partition;
     @JsonProperty("partitionKey")
     private String partitionKey;
+    @JsonProperty("agentId")
+    private Integer agentId;
     @JsonProperty("transactionTime")
     private Long transactionTime;
 
