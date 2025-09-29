@@ -162,9 +162,11 @@ public class BetRollbackProcessor {
             ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
 
             clientResponseValidator.validate(response, new ClientResponseValidator.RequestRecord(
+                    "wallet.rollback",
                     requestDto.getTraceId(),
                     requestDto.getUsername(),
-                    requestDto.getCurrency()
+                    requestDto.getCurrency(),
+                    false
             ), context);
 
             return response.getData();
