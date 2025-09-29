@@ -25,7 +25,7 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     @PostMapping(path = EndPoints.REFUND)
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<RollbackResponse> rollback(@Valid @RequestBody RollbackRequest request) {
-        return ResponseEntity.ok(processRequest(request,(context, resp)-> enrichResponse(resp, request)));
+        return ResponseEntity.ok(processRequest(request));
     }
 
     @Override
@@ -37,14 +37,5 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
                         : RollbackType.BY_ROUND
         ).returnSuccessOnDuplicate(true);
 
-    }
-
-    private void enrichResponse(RollbackResponse response, RollbackRequest request) {
-
-        RollbackResponse.Data data = RollbackResponse.Data.builder()
-                .balance(response.getData().getBalance())
-                .actionId(request.getTransactionId())
-                .build();
-        response.setData(data);
     }
 }

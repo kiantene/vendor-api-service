@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.crystal.api.result;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
-import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.vendor.crystal.constant.EndPoints;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +27,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
     @VendorExceptionHandler(className = EndPoints.CLASS_NAME)
     public ResponseEntity<BetResultResponse> result(@Valid @RequestBody BetResultRequest request) {
 
-        return ResponseEntity.ok(processRequest(request,(context, resp)-> enrichResponse(resp, request)));
+        return ResponseEntity.ok(processRequest(request));
     }
 
     @Override
@@ -35,13 +35,5 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         config.betAndResult(false)
                 .returnSuccessOnDuplicate(true)
                 .setSettleType(SettleType.BET);
-    }
-
-    private void enrichResponse(BetResultResponse response, BetResultRequest request) {
-        BetResultResponse.Data data = BetResultResponse.Data.builder()
-                .balance(response.getData().getBalance())
-                .actionId(request.getTransactionId())
-                .build();
-        response.setData(data);
     }
 }
