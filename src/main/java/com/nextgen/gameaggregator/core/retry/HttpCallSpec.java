@@ -12,6 +12,7 @@ public class HttpCallSpec {
     private String idempotencyKey;
     private int partition;
     private String partitionKey;
+    private Integer agentId;
     private String method;
     private String url;
     private Map<String, String> headers;

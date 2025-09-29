@@ -23,6 +23,7 @@ public final class RetryHelper {
                 .bodyJson(json)
                 .partition(request.calculatePartition(TOTAL_PARTITIONS))
                 .partitionKey(request.getPartitionKey())
+                .agentId(request.getAgentId())
                 .requestTime(System.currentTimeMillis())
                 .transactionTime(request.getTransactionTime())
                 .build();

@@ -39,6 +39,7 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
         job.setOrigin(origin.name());
         job.setPartition(spec.getPartition());
         job.setPartitionKey(spec.getPartitionKey());
+        job.setAgentId(spec.getAgentId());
         job.setMethod(spec.getMethod());
         job.setUrl(spec.getUrl());
         job.setHeaders(spec.getHeaders());
