@@ -97,6 +97,7 @@ public class CancelBetAction {
                         // throw to dlq
                         // TODO : after unsettle bet with retry still bet not found, need to add log error
                         // httpService.logError(httpRequestLog, exception);
+                        this.logException(newWalletRequest, exception);
                         log.error(exception.getMessage());
                     } finally {
                         walletRequestService.end(newWalletRequest, httpRequestLog, vo);
@@ -104,24 +105,46 @@ public class CancelBetAction {
                 });
             }
 
-        } catch (JsonProcessingException |
-                 InvalidPlayerException |
-                 BetNotAllowedException exception) {
+        } catch (JsonProcessingException exception) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, exception);
+            this.logException(walletRequest, exception);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         } catch (DuplicateRequestException duplicateRequestException) {
             httpService.logError(httpRequestLog, duplicateRequestException);
             vo.setResponseCode(ResponseCode.SUCCESS);
+            this.logException(walletRequest, duplicateRequestException);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
+            this.logException(walletRequest, e);
             walletRequestService.end(walletRequest, httpRequestLog, vo);
         }
 
         return vo;
+    }
+
+
+    public static Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    public void logException(WalletRequest walletRequest, Exception exception) {
+        if (exception.getCause() != null) {
+            Throwable rootCause = getRootCause(exception.getCause());
+            walletRequest.setErrorMessage(rootCause.getClass().getSimpleName() + " - " + rootCause.getMessage());
+        } else if (exception.getMessage() != null) {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        } else {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName());
+        }
+
     }
 }

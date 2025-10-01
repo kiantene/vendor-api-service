@@ -80,6 +80,6 @@ public class VendorService extends BaseVendorService {
     }
 
     public String getExtractToken(String token) {
-        return token.substring(token.indexOf("_") + 1);
+        return token.substring(token.lastIndexOf("_") + 1);
     }
 }

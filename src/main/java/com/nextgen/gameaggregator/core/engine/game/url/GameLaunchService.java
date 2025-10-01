@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.VendorApiException;
+import com.nextgen.core.webclient.HandlerResult;
 import com.nextgen.core.webclient.VendorApiExecutor;
 import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.service.S3Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Service;
@@ -22,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class GameLaunchService {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final S3Service s3Service;
     private final VendorApiExecutor apiExecutor;
 
@@ -54,7 +60,7 @@ public class GameLaunchService {
         return map;
     }
 
-    public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
+    public void processLaunchRequest(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) throws InvalidVendorResponseException {
         LogContext logContext = populateLogContext(context);
         try {
             switch (launchHandler.getLaunchMode()) {
@@ -68,10 +74,14 @@ public class GameLaunchService {
         } catch (GameLaunchException ex) {
             logContext.setException(ex);
             throw ex;
+        } catch (VendorApiException ex) {
+            throw new InvalidVendorResponseException(ex.getMessage());
+        } catch (InvalidVendorResponseException ex) {
+            throw ex;
         } catch (Exception ex) {
             GameLaunchException gameLaunchException = new GameLaunchException(ex.getMessage(), ex);
             logContext.setException(gameLaunchException);
-            throw ex;
+            throw gameLaunchException;
         } finally {
             long endTime = System.currentTimeMillis();
             logContext.setApiEnd(endTime);
@@ -92,14 +102,27 @@ public class GameLaunchService {
         return logContext;
     }
 
-    private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) {
+    private void callExternalApi(GameLaunchContext context, AbstractGameLaunchHandler<Object, Object> launchHandler) throws Exception {
         LogContext logContext = LogContextHolder.get();
-        launchHandler
+        HandlerResult<Object, Object> apiResult = launchHandler
                 .prepareLaunchRequest(context)
                 .execute(apiExecutor, context)
                 .onSuccess(response -> launchHandler.onSuccess(context, response))
                 .onError(result -> logContext.setException(result.getError()))
-                .onComplete(result -> logContext.setApiResponse(result.getRawResponse()));
+                .onComplete(result -> {
+                    try {
+                        String requestBody = OBJECT_MAPPER.writeValueAsString(result.getRequestObject());
+                        context.setVendorFormData(requestBody);
+                    } catch (Exception ex) {
+                        log.error(ex.getMessage());
+                    }
+
+                    logContext.setApiResponse(result.getRawResponse());
+                });
+
+        if (!apiResult.isSuccess()) {
+            throw apiResult.getError();
+        }
     }
 
     private void buildStaticHtml(GameLaunchContext context, GameLaunchHandler<Object, Object> launchHandler) {
@@ -128,7 +151,7 @@ public class GameLaunchService {
         try {
             logContext.setApiBody(request);
             logContext.setApiResponse(gameUrl);
-            context.setVendorFormData(new ObjectMapper().writeValueAsString(request));
+            context.setVendorFormData(OBJECT_MAPPER.writeValueAsString(request));
         } catch (Exception exception) {
             logContext.setException(exception.getClass().getName());
             logContext.setErrorMessage(exception.getMessage());
