@@ -68,11 +68,11 @@ public class BetAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getPlayerId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getVendorGameId(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
-
-
+            
             BetEvent betEvent = walletService.processBet
                     (httpRequestLog.getId(), gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             balance = betEvent.getLastBalance();

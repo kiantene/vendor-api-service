@@ -35,7 +35,7 @@ public class BalanceService {
 
         try {
             // Get GameSession with token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getMsid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);

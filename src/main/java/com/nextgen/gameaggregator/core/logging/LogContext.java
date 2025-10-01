@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,6 +41,7 @@ public class LogContext {
      * Target URL of the outbound API request to the external system
      */
     private String apiUrl;
+    private Map<String, String> apiHeaders;
     /**
      * Outbound request payload sent to external systems (e.g., game vendor APIs)
      */
@@ -68,6 +70,11 @@ public class LogContext {
         this.traceId = UuidUtil.newUuidV7StringRaw();
         this.start = System.currentTimeMillis();
         this.time = this.formatTimestamp(this.start);
+        this.apiHeaders = new HashMap<>();
+    }
+
+    public boolean isGeneralLog() {
+        return this.logGroup.equalsIgnoreCase("general");
     }
 
     public LogContext setLogGroup(String logGroup) {
@@ -121,6 +128,10 @@ public class LogContext {
         this.status = -1;
     }
 
+    public void putApiHeader(String key, String value) {
+        this.apiHeaders.put(key, value);
+    }
+
     public void put(String key, Object value) {
         extraFields.put(key, value);
     }
@@ -171,6 +182,7 @@ public class LogContext {
             base.put("body", body);
             base.put("response", response);
             base.put("apiUrl", apiUrl);
+            base.put("apiHeader", apiHeaders != null && !apiHeaders.isEmpty() ? apiHeaders.toString() : null);
             base.put("apiBody", apiBody);
             base.put("apiResponse", apiResponse);
             base.put("apiStart", apiStart);
@@ -226,6 +238,7 @@ public class LogContext {
 
         // Outbound API details
         clone.apiUrl = this.apiUrl;
+        clone.apiHeaders.putAll(this.apiHeaders);
         clone.apiBody = this.apiBody;
         clone.apiResponse = this.apiResponse;
         clone.apiStart = this.apiStart;

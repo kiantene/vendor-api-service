@@ -5,14 +5,20 @@ import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class GameSessionDataService {
     private final GameSessionService gameSessionService;
+    private final RawGameSessionRepository repository;
 
     /**
      * Retrieves game session using available session identifiers in priority order:
@@ -94,14 +100,18 @@ public class GameSessionDataService {
         }
     }
 
+    @Cacheable(value = "GameSessions", key = "{#username, #context.vendorGameCode}", cacheManager = "cacheManager")
     public GameSession getByVendorPlayerUsername(String username, VendorRequestContext context) {
-        GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(username);
+        List<GameSession> gameSessionList = repository.findByVendorPlayerUsername(username);
 
-        if (gameSession == null) {
+        if (gameSessionList.isEmpty()) {
             throw new GameSessionExpiredException(context, "Game session has expired");
         }
 
-        return gameSession;
+        return gameSessionList.stream()
+                .filter(g -> g.getVendorGameCode().equals(context.getVendorGameCode()))
+                .max(Comparator.comparingLong(GameSession::getCreateTime))
+                .orElseThrow(() -> new GameSessionExpiredException(context, "Game session has expired"));
     }
 
     public void updateVendorToken(GameSession gameSession, String newToken) {

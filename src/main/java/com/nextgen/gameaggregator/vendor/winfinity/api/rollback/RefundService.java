@@ -41,7 +41,7 @@ public class RefundService {
             GameSession gameSession;
 
             try {
-                gameSession = gameSessionService.verifyToken(dto.getMsid());
+                gameSession = gameSessionService.verifyVendorToken(dto.getMsid());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 gameSession = gameSessionService.generateNewSessionToken(dto.getUid());
