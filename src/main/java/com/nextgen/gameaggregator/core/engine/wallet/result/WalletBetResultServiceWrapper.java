@@ -18,8 +18,6 @@ import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -108,19 +106,13 @@ public class WalletBetResultServiceWrapper {
         guard.clear();
         RuntimeException exception = walletExceptionTranslator.translate(ex, context);
 
-        markTxnError(context, txn, exception)
-                .doOnError(t -> log.warn("markTxnError failed for txn {}", txn.getId(), t))
+        enricher.enrichGameTransactionIfEmpty(txn, context)
+                .then(gameRoundService.markTxnErrorAsync(txn, exception))
+                .doOnError(t -> log.error("markTxnError failed for txn {}", txn.getId(), t))
+                .onErrorComplete() // swallow error, don't terminate subscription
                 .subscribe(); // fire and forget, don't block vendor response
 
         return exception;
-    }
-
-    private Mono<Void> markTxnError(BetResultContext context, GameTransaction txn, RuntimeException ex) {
-        return enricher.enrichGameTransactionIfEmpty(txn, context)
-                .then(Mono.<Void>fromRunnable(
-                        () -> gameRoundService.markTxnError(txn, ex))   // this is a blocking call
-                        .subscribeOn(Schedulers.boundedElastic())       // use a separate thread to handle blocking
-                );
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {

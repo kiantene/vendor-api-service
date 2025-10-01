@@ -8,6 +8,8 @@ import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -62,6 +64,12 @@ public class GameRoundService {
 
     public void updateRoundState(String docId, GameRoundState state) {
         data.setRoundState(docId, state);
+    }
+
+    public Mono<Void> markTxnErrorAsync(GameTransaction txn, RuntimeException ex) {
+        return Mono.fromRunnable(() -> markTxnError(txn, ex))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
     }
 
     public void markTxnError(GameTransaction txn, RuntimeException ex) {
