@@ -59,8 +59,8 @@ public abstract class AbstractGameLaunchHandler<Q, R> implements GameLaunchHandl
 
     protected AbstractGameLaunchHandler<Q, R> prepareLaunchRequest(GameLaunchContext context) {
         LogContext logContext = LogContextHolder.get();
-        logContext.setLogGroup("Game");
-        logContext.setType("Launcher");
+        logContext.setLogGroup("game");
+        logContext.setType("launcher");
         logContext.setAgentId(context.getAgentId());
         logContext.setVendorId(context.getVendorId());
         logContext.setUsername(context.getAgentPlayerUsername());
