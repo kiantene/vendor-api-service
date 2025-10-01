@@ -37,7 +37,7 @@ public class TipsService {
             this.doValidation(dto);
 
             // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getMsid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)

@@ -43,7 +43,7 @@ public class PayinService {
             this.doValidation(dto);
 
             // Get GameSession with token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+            GameSession gameSession = gameSessionService.verifyVendorToken(dto.getMsid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getTbid(), gameSession);
 
             // Verify remaining parameters (Verify against database values)

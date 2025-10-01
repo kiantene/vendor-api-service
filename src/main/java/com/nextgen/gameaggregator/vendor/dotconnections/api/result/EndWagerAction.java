@@ -130,7 +130,7 @@ public class EndWagerAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseDataVo.setBrandUid((dto.getBrandUid() == null)?"":dto.getBrandUid());
+            responseDataVo.setBrandUid((dto.getBrandUid() == null) ? "" : dto.getBrandUid());
             responseDataVo.setCurrency(dto.getCurrency());
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
@@ -209,7 +209,9 @@ public class EndWagerAction {
             AuthenticationException,
             InvalidSignatureException,
             InvalidRequestException,
-            InvalidProviderException {
+            InvalidProviderException,
+            BetResultIdempotentViolationException,
+            BetNotFoundException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -231,42 +233,42 @@ public class EndWagerAction {
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
+        // Verify this round have place bet or not for VAT test (because this resultType is BET_WIN/BET_LOSE)
+        this.verifyBetStatus(dto);
     }
 
     private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
 
         GameSession gameSession;
-
         try {
             String token = cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(dto.getBrandUid(), dto.roundId, null);
 
             if (token == null) {
-                throw new AuthenticationException();
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             } else {
                 gameSession = gameSessionService.verifyToken(token);
             }
-
         } catch (AuthenticationException e) {
-            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
-
-            if (unsettledBet == null) {
-                RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
-                if (rawBetIdempotentLog == null) {
-                    throw new BetNotFoundException();
-                } else {
-                    throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
-                }
-
-            } else {
-                gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
-                gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
+            gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
         }
-
         return gameSession;
+    }
+
+    private void verifyBetStatus(EndWagerDto dto) throws BetNotFoundException, BetResultIdempotentViolationException {
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+
+        if (unsettledBet == null) {
+            RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
+            if (rawBetIdempotentLog == null) {
+                throw new BetNotFoundException();
+            } else {
+                throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
+            }
+
+        }
     }
 }
