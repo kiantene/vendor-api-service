@@ -19,6 +19,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class WalletRollbackServiceWrapper {
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
     private final DuplicateRequestGuard guard;
     private final BetRollbackContextEnricher enricher;
+    private final GameRoundService gameRoundService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
     private final BetRollbackProcessor processor;
@@ -49,9 +51,10 @@ public class WalletRollbackServiceWrapper {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetRollbackContext context = state().getBetRollbackContext();
+        GameTransaction txn = null;
 
         try {
-            GameTransaction txn = guard.ensureNotDuplicate(
+            txn = guard.ensureNotDuplicate(
                     TxnType.ROLLBACK,
                     logContext.getVendorClassName(),
                     context.getIdempotencyKey(),
@@ -60,24 +63,12 @@ public class WalletRollbackServiceWrapper {
 
             enricher.enrichGameTransaction(txn, context);
 
-            BetRollbackConfig config = state().getConfig();
-
-            if (config.isRollbackByRound()) {
-                return processor.processRoundRollback(context, txn, config);
-            }
-            return processor.processBetRollback(context, txn, config);
+            return processRollback(context, txn);
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
-        } catch (RoundNotFoundException ex) {
-            throw InternalServerException.causedBy(ex, Map.of(
-                    VendorRequestContext.KEY, context
-            ));
-        } catch (BetNotFoundException ex) {
-            throw new RollbackNotAllowedException(context, ex);
         } catch (Exception ex) {
-            guard.clear();
-            throw walletExceptionTranslator.translate(ex, context);
+            throw handleException(ex, context, txn);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
@@ -133,6 +124,15 @@ public class WalletRollbackServiceWrapper {
         BetRollbackContextHolder.clear();
     }
 
+    private PlayerBalanceData processRollback(BetRollbackContext context, GameTransaction txn) {
+        BetRollbackConfig config = state().getConfig();
+
+        if (config.isRollbackByRound()) {
+            return processor.processRoundRollback(context, txn, config);
+        }
+        return processor.processBetRollback(context, txn, config);
+    }
+
     private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, DuplicateRequestException ex) {
         GameTransaction txn = ex.getTransaction();
         if (state().getConfig().isReturnSuccessOnDuplicate() && txn.isSuccess()) {
@@ -142,6 +142,25 @@ public class WalletRollbackServiceWrapper {
             );
         }
         throw ex;
+    }
+
+    private RuntimeException handleException(Exception ex, BetRollbackContext context, GameTransaction txn) {
+        guard.clear();
+
+        RuntimeException runtimeException;
+        if (ex instanceof RoundNotFoundException) {
+            runtimeException = InternalServerException.causedBy(ex, Map.of(VendorRequestContext.KEY, context));
+        } else if (ex instanceof BetNotFoundException) {
+            runtimeException = new RollbackNotAllowedException(context, ex);
+        } else {
+            runtimeException = walletExceptionTranslator.translate(ex, context);
+        }
+        gameRoundService.markTxnErrorAsync(txn, runtimeException)
+                .doOnError(t -> log.error("markTxnError failed for txn {}", txn.getId(), t))
+                .onErrorComplete() // swallow error, don't terminate subscription
+                .subscribe(); // fire and forget, don't block vendor response
+
+        return runtimeException;
     }
 
     /**
