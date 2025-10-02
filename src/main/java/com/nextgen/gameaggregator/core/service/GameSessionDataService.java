@@ -109,7 +109,8 @@ public class GameSessionDataService {
         }
 
         return gameSessionList.stream()
-                .filter(g -> g.getVendorGameCode().equals(context.getVendorGameCode()))
+                .filter(g -> context.getVendorGameCode() == null // if vendorGameCode is null, means vendor did not provide
+                        || g.getVendorGameCode().equals(context.getVendorGameCode())) // if not null then we match the game code
                 .max(Comparator.comparingLong(GameSession::getCreateTime))
                 .orElseThrow(() -> new GameSessionExpiredException(context, "Game session has expired"));
     }
