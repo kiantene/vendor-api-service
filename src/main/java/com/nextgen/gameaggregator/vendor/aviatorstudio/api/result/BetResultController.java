@@ -43,7 +43,8 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
     @Override
     public void configure(BetResultConfig config, BetResultRequest request) {
         config.betAndResult(false)
-                .setSettleType(SettleType.BET);
+                .returnSuccessOnDuplicate(true)
+                .settleType(SettleType.BET);
     }
 
     private boolean isSettle(BetResultRequest request) {
