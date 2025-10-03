@@ -80,13 +80,14 @@ public class CreditAction {
             this.doValidation(creditDto);
 
 
-
             BigDecimal balance;
 
             //If is cancel, process cancel bet
-            if(creditDto.getIsCancel() == 1) {
+            if (creditDto.getIsCancel() == 1) {
                 try {
                     gameSession = gameSessionService.verifyToken(creditDto.getSid());
+                    gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+
                     // Check game category to set game code
                     creditDto.setGameCategory(gameSession.getGameCategoryId());
                     this.doVerification(creditDto, gameSession, secretKey);
@@ -100,18 +101,18 @@ public class CreditAction {
                     gameSession.setVendorToken(newToken);
                 }
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
-                if( idempotentCheckAfterSettle == 1){
+                if (idempotentCheckAfterSettle == 1) {
                     throw new BetResultIdempotentViolationException();
                 }
 
-                balance = walletService.processRollback(traceId,  creditDto, gameSession, vendorService, httpRequestLog);
+                balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
             }
             //4. Else process normally
             else {
                 gameSession = gameSessionService.verifyToken(creditDto.getSid());
 
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
-                if( idempotentCheckAfterSettle == 1){
+                if (idempotentCheckAfterSettle == 1) {
                     throw new BetResultIdempotentViolationException();
                 }
 
@@ -125,7 +126,7 @@ public class CreditAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCESS);
 
-        } catch (GameNotSupportedException  |
+        } catch (GameNotSupportedException |
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
@@ -142,11 +143,11 @@ public class CreditAction {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.ACCESS_DENIED);
             httpService.logError(httpRequestLog, e);
-        }catch (BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.DUPLICATE_CREDIT);
             httpService.logError(httpRequestLog, e);
-        }catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.INVALID_USER);
             httpService.logError(httpRequestLog, e);
@@ -185,7 +186,7 @@ public class CreditAction {
 
         //Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(credentialKey,secretKey, InvalidSignatureException::new);
+        ValidationUtils.isEquals(credentialKey, secretKey, InvalidSignatureException::new);
 
         //Verify UserId
         String vendorToken = String.valueOf(creditDto.getUserId());
@@ -201,7 +202,7 @@ public class CreditAction {
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         SettledBet settledBet;
-        Integer betCheck= 0;
+        Integer betCheck = 0;
 
         try {
 
