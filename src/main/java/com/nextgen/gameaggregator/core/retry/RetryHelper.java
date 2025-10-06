@@ -21,11 +21,15 @@ public final class RetryHelper {
                 .method(request.getMethod() == null ? HttpMethod.POST.name() : request.getMethod().name())
                 .headers(request.getHeaders())
                 .bodyJson(json)
-                .partition(request.calculatePartition(TOTAL_PARTITIONS))
+                .partition(calculatePartition(request))
                 .partitionKey(request.getPartitionKey())
                 .agentId(request.getAgentId())
                 .requestTime(System.currentTimeMillis())
                 .transactionTime(request.getTransactionTime())
                 .build();
+    }
+
+    private static int calculatePartition(Partitionable partitionable) {
+        return partitionable.getPartitionKey().hashCode() % RetryHelper.TOTAL_PARTITIONS;
     }
 }
