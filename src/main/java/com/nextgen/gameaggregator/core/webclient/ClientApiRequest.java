@@ -60,11 +60,6 @@ public class ClientApiRequest<T> implements Partitionable {
     }
 
     @Override
-    public int calculatePartition(int totalPartitions) {
-        return this.agentId.hashCode() % totalPartitions;
-    }
-
-    @Override
     public String getPartitionKey() {
         return this.agentPlayerUsername;
     }
