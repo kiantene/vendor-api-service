@@ -110,6 +110,7 @@ public class CreditAction {
             //4. Else process normally
             else {
                 gameSession = gameSessionService.verifyToken(creditDto.getSid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
 
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
                 if (idempotentCheckAfterSettle == 1) {
