@@ -55,6 +55,7 @@ public class CreditAction {
     @PostMapping(path = EndPoints.CREDIT)
     public ResponseVo creditAction(HttpServletRequest request) {
 
+        BigDecimal balance;
         VendorService vendorService = new VendorService(gameSessionService);
         autowireCapableBeanFactory.autowireBean(vendorService);
 
@@ -67,58 +68,33 @@ public class CreditAction {
         String secretKey = request.getHeader("secret-key");
 
         try {
-
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
-            // 3. Verify session token
-            GameSession gameSession;
-            String newToken = (creditDto.getSid() != null) ? creditDto.getSid() : traceId;
-
             //Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
+            String newToken = (creditDto.getSid() != null) ? creditDto.getSid() : traceId;
+            //Verify session token
+            GameSession gameSession = this.verifyTokenAndCheckGameSession(creditDto, newToken);
 
-
-            BigDecimal balance;
+            this.doVerification(creditDto, gameSession, secretKey);
 
             //If is cancel, process cancel bet
             if (creditDto.getIsCancel() == 1) {
-                try {
-                    gameSession = gameSessionService.verifyToken(creditDto.getSid());
-                    gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
 
-                    // Check game category to set game code
-                    creditDto.setGameCategory(gameSession.getGameCategoryId());
-                    this.doVerification(creditDto, gameSession, secretKey);
-
-                } catch (AuthenticationException authenticationException) {
-                    UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(creditDto.getRoundId());
-                    gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
-                    gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
-                    gameSessionService.updateByVendorCurrencyId(gameSession);
-                    gameSession.setToken(newToken);
-                    gameSession.setVendorToken(newToken);
-                }
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
                 if (idempotentCheckAfterSettle == 1) {
                     throw new BetResultIdempotentViolationException();
                 }
 
                 balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
-            }
-            //4. Else process normally
-            else {
-                gameSession = gameSessionService.verifyToken(creditDto.getSid());
-                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
-
+            } else {
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
                 if (idempotentCheckAfterSettle == 1) {
                     throw new BetResultIdempotentViolationException();
                 }
 
-                creditDto.setGameCategory(gameSession.getGameCategoryId());
-                this.doVerification(creditDto, gameSession, secretKey);
                 vendorService.verifyIsPreProcessingVendorGame(gameSession.getVendorGameId());
                 ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
                 balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
@@ -219,6 +195,26 @@ public class CreditAction {
         return betCheck;
     }
 
+
+    private GameSession verifyTokenAndCheckGameSession(CreditDto creditDto, String newToken) throws GameNotSupportedException, BetNotFoundException, InvalidPlayerException, VendorCurrencyNotSupportException {
+
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            creditDto.setGameCategory(gameSession.getGameCategoryId());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+
+        } catch (AuthenticationException authenticationException) {
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(creditDto.getRoundId());
+            gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
+            creditDto.setGameCategory(unsettledBet.getGameCategoryId());
+            gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(newToken);
+            gameSession.setVendorToken(newToken);
+        }
+        return gameSession;
+    }
 
 }
 
