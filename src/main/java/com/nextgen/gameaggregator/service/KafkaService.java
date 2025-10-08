@@ -292,7 +292,7 @@ public class KafkaService {
         try {
             String json = OBJECT_MAPPER.writeValueAsString(betHistoryV3);
 
-            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V3, json);
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
                 log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
@@ -341,7 +341,7 @@ public class KafkaService {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(betHistoryV3);
 
-            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V3, json);
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
                 log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
