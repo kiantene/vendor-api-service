@@ -64,7 +64,6 @@ public class BonusAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(bonusDto.getSid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(bonusDto.getGameId(), gameSession);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(bonusDto);
