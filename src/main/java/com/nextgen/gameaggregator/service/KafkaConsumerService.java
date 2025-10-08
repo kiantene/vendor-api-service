@@ -492,6 +492,38 @@ public class KafkaConsumerService {
         }
     }
 
+    @KafkaListener(topics = KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void patchingSportUnsettledBetToRefundBet(String message) {
+        HttpRequestLog log = httpService.startReconDataPatchingLog();
+        String traceId = log.getId();
+        GeneralVo vo = new GeneralVo();
+
+        try {
+            // set request body to show original kafka data
+            log.setRequestBody(message);
+            // convert to Object
+            EndRoundSettledBetForPatching endRoundSettledBetForPatching = parseMessage(message);
+            // validate vendorPlayerId or vendorPlayerUsername
+            validateBetData(endRoundSettledBetForPatching);
+            // generate gameSession by vendorPlayerId or vendorPlayerUsername
+            GameSession session = initGameSession(endRoundSettledBetForPatching);
+
+            // process Rollback or BetResult
+            if (endRoundSettledBetForPatching.isRefund()) {
+                processRollbackCase(endRoundSettledBetForPatching, session, log);
+            } else {
+                processSettleCase(traceId, endRoundSettledBetForPatching, session, log);
+            }
+
+            vo.setResponseCode(ResponseCode.SUCCESS);
+        } catch (Exception e) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(log, e);
+        } finally {
+            httpService.end(log, vo);
+        }
+    }
+
     private EndRoundSettledBetForPatching parseMessage(String message) throws IOException {
         return new ObjectMapper().readValue(message, EndRoundSettledBetForPatching.class);
     }
