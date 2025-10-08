@@ -72,7 +72,7 @@ public class BetRollbackProcessor {
         gameTransactionService.markSent(rollbackTxn, null);
         legacyCleanupService.cleanup(round, betTxn.getVendorBetId(), context.getVendorGameId(), context.getVendorPlayerId());
 
-        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId());
+        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId(), betTxn.getTransactionId());
 
         // we save the original balance from operator
         gameTransactionService.markRollback(round, rollbackTxn, balanceData.getBalance());
@@ -102,6 +102,7 @@ public class BetRollbackProcessor {
         enricher.enrichByGameRound(context, round, rollbackTxn);
 
         if (round.isSettled()) {
+            //TODO: to revisit if we want standardise the bet history for round rollback by using transaction id from bet txn
             betHistoryProducer.publishCancelledBetHistory(context, round);
         }
 
@@ -117,7 +118,9 @@ public class BetRollbackProcessor {
             String gaBetId = entry.getKey();
 
             // 1. Call once per gaBetId -> overwrite each time
-            balanceData = callToOperator(context, round, gaBetId);
+            // Use the original bet txn's id as external id for rollback.
+            // TODO: to revisit later if we want to use a different external id for round rollback
+            balanceData = callToOperator(context, round, gaBetId, context.getTransactionId());
 
             // 2. Update every txn in this group
             entry.getValue().forEach(t -> {
@@ -144,9 +147,9 @@ public class BetRollbackProcessor {
         return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), currency);
     }
 
-    private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId) {
+    private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId, String transactionId) {
         // any exception thrown here is considered internal error
-        WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId);
+        WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId, transactionId);
         var apiRequest = clientRequestService.createClientApiRequest(
                 requestDto.getTraceId(),
                 round.getAgentMeta().getAgentId(),
@@ -181,13 +184,13 @@ public class BetRollbackProcessor {
         return defaultBalanceData(context, round.getCurrency());
     }
 
-    private WalletRollbackDto mapToClientRequest(BetRollbackContext context, GameRound round, String betId) {
+    private WalletRollbackDto mapToClientRequest(BetRollbackContext context, GameRound round, String betId, String transactionId) {
         WalletRollbackDto dto = new WalletRollbackDto();
 
         dto.setTraceId(context.getTraceId());
         dto.setTransactionId(UuidUtil.newUuidV7String());
         dto.setBetId(betId);
-        dto.setExternalTransactionId(context.getIdempotencyKey());
+        dto.setExternalTransactionId(transactionId);
         dto.setRoundId(round.getRoundId());
         dto.setGameCode(round.getAgentMeta().getGameCode());
         dto.setUsername(round.getAgentMeta().getUsername());
