@@ -20,7 +20,7 @@ public class RollbackService {
         BetRollbackContext context = requestMapper.toInternal(request);
         PlayerBalanceData balanceData = walletService
                 .initialise(context)
-                .configure(config -> config.rollbackType(RollbackType.BY_BET))
+                .configure(config -> config.rollbackType(RollbackType.BY_BET).returnSuccessOnDuplicate(true))
                 .process();
         return responseMapper.toVendor(context, balanceData);
     }
