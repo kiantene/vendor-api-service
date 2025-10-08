@@ -296,7 +296,7 @@ public class WalletService {
 
                         //do not send aggregated settledBet as betResultDataForOperator for settled and win scenario
                         walletBetResultData = new SettledBet(betResultData, internalTransactionId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId(), gameSession);
-                        walletBetResultData.setBetAmount(BigDecimal.ZERO);
+                        walletBetResultData.setBetAmount(settledBet.getBetAmount());
                         walletBetResultData.setBetId(settledBet.getBetId());
                         walletBetResultData.setVendorBetTime(settledBet.getVendorBetTime());
                         walletBetResultData.setWinLoss(settledBet.getWinLoss());
@@ -325,6 +325,14 @@ public class WalletService {
             walletBetResultData.setBalance(settledBet.getBalance());
 
             BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData);
+
+            //Handle for WIN Scenario, CQ9
+            if (resultType == ResultType.WIN) {
+                walletBetResultData.setBetAmount(BigDecimal.ZERO);
+                if (cappedBetResult.getUncapWinAmount() != null) {
+                    agentMaxPayoutService.applyUpdatedAmount(settledBet, cappedBetResult.getWinAmount(), cappedBetResult.getWinLoss(), cappedBetResult.getJackpotAmount());
+                }
+            }
 
             if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, cappedBetResult.getWinAmount(), settledBet.getOperatorStatus())) {
                 balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(

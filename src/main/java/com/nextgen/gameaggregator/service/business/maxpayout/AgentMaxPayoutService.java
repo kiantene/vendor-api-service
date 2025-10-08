@@ -28,7 +28,7 @@ public class AgentMaxPayoutService {
         }
 
         return getPayoutCapAmount(betInfo)
-                .filter(cap -> shouldApplyCap(betInfo.getWinAmount(), cap))
+                .filter(cap -> shouldApplyCap(betInfo, cap))
                 .map(cap -> applyCalculation(betInfo, cap))
                 .orElse(betInfo);
     }
@@ -37,8 +37,11 @@ public class AgentMaxPayoutService {
         Optional<BigDecimal> empty = Optional.empty();
 
         BigDecimal winAmount = betInfo.getWinAmount();
+        BigDecimal jackpotAmount = betInfo.getJackpotAmount();
 
-        if (winAmount == null || winAmount.signum() == 0) return empty;
+        if ((winAmount == null || winAmount.signum() == 0) && (jackpotAmount == null || jackpotAmount.signum() == 0)) {
+            return empty;
+        }
 
         Optional<Agent> agent = getAgent(betInfo.getAgentId());
         if (agent.isEmpty()) return empty;
@@ -56,20 +59,30 @@ public class AgentMaxPayoutService {
         return Optional.of(capAmount);
     }
 
-    private boolean shouldApplyCap(BigDecimal winAmount, BigDecimal cap) {
-        if (cap == null || winAmount == null) {
+    private boolean shouldApplyCap(BetInformation betInfo, BigDecimal cap) {
+        if (cap == null || betInfo.getWinAmount() == null || betInfo.getJackpotAmount() == null) {
             return false;
         }
-        // only apply if win is strictly greater than cap
-        return winAmount.compareTo(cap) > 0;
+
+        return betInfo.getWinAmount().compareTo(cap) > 0 || betInfo.getJackpotAmount().compareTo(cap) > 0;
     }
 
-    private BetInformation applyCalculation(BetInformation betInfo, BigDecimal cappedWin) {
+    private BetInformation applyCalculation(BetInformation betInfo, BigDecimal cappedAmount) {
         final BigDecimal bet        = normalize(betInfo.getBetAmount());
         final BigDecimal jackpot    = normalize(betInfo.getJackpotAmount());
+        final BigDecimal win        = normalize(betInfo.getWinAmount());
 
-        final BigDecimal cappedJackpot = jackpot.min(cappedWin).max(BigDecimal.ZERO);
+        final BigDecimal cappedJackpot = jackpot.min(cappedAmount).max(BigDecimal.ZERO);
+        final BigDecimal cappedWin = win.min(cappedAmount).max(BigDecimal.ZERO);
         final BigDecimal cappedWinLoss = cappedWin.subtract(bet);
+
+        return this.applyUpdatedAmount(betInfo, cappedWin, cappedWinLoss, cappedJackpot);
+    }
+
+    public BetInformation applyUpdatedAmount(BetInformation betInfo,
+                                             BigDecimal cappedWin,
+                                             BigDecimal cappedWinLoss,
+                                             BigDecimal cappedJackpot) {
 
         betInfo.setUncapWinAmount(betInfo.getWinAmount());
         betInfo.setUncapJackpotAmount(betInfo.getJackpotAmount());
