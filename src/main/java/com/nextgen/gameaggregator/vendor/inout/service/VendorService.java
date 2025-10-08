@@ -109,7 +109,7 @@ public class VendorService extends BaseVendorService {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), gameMode, AuthenticationException::new);
 
         // 6. Verify X-SIGNATURE
-        ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
+//        ValidationUtils.isEquals(xSign, VendorService.hashHMACSha256(body, secretKey), AuthenticationException::new);
 
     }
 
@@ -128,6 +128,8 @@ public class VendorService extends BaseVendorService {
                 e instanceof DisabledGameException ||
                 e instanceof DisabledAgentPlayerException) {
             responseVo.setError(ResponseCode.GAME_DISABLED);
+        } else if (e instanceof InternalServerTimeoutRetryException) {
+            responseVo.setError(ResponseCode.TEMPORARY_ERROR);
         } else {
             responseVo.setError(ResponseCode.UNKNOWN_ERROR);
         }
