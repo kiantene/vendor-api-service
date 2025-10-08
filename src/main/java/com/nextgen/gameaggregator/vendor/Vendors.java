@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor;
 
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 
+//@formatter:off
 public enum Vendors {
     // Add vendor according to id in sequence
     PRAGMATIC       (1,   null, "pragmaticplay", false),
@@ -20,37 +23,13 @@ public enum Vendors {
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds
     private static final String CALLBACK_PREFIX = "/api/v1/";
+    @Getter
     private final int id;
     private final Integer timeoutMillis;
+    @Getter
     private final String className;
+    @Getter
     private final boolean newFramework;
-
-    Vendors(int id, Integer timeoutMillis, String className, boolean newFramework) {
-        this.id = id;
-        this.timeoutMillis = timeoutMillis;
-        this.className = className;
-        this.newFramework = newFramework;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public int getTimeoutMillis() {
-        return timeoutMillis != null ? timeoutMillis : DEFAULT_TIMEOUT_MILLIS;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public boolean isNewFramework() {
-        return newFramework;
-    }
-
-    public String getCallback() {
-        return CALLBACK_PREFIX + className + "/";
-    }
 
     // ---- lookup maps ----
     private static final Map<Integer, Vendors> BY_ID = new HashMap<>();
@@ -59,6 +38,13 @@ public enum Vendors {
         for (Vendors v : values()) {
             BY_ID.put(v.id, v);
         }
+    }
+
+    Vendors(int id, Integer timeoutMillis, String className, boolean newFramework) {
+        this.id = id;
+        this.timeoutMillis = timeoutMillis;
+        this.className = className;
+        this.newFramework = newFramework;
     }
 
     public static Vendors fromId(int id) {
@@ -83,5 +69,13 @@ public enum Vendors {
             }
         }
         return null;
+    }
+
+    public int getTimeoutMillis() {
+        return timeoutMillis != null ? timeoutMillis : DEFAULT_TIMEOUT_MILLIS;
+    }
+
+    public String getCallback() {
+        return CALLBACK_PREFIX + className;
     }
 }

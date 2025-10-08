@@ -66,6 +66,12 @@ public class HttpRequestLog {
     @JsonIgnore
     private WalletRequest walletRequest;
 
+    @JsonIgnore
+    private String gaBetId;
+
+    @JsonIgnore
+    private boolean betHistoryProduceDisabled;
+
     public HttpRequestLog() {
         this.id = UUID.randomUUID().toString();
         this.startTime = System.currentTimeMillis();

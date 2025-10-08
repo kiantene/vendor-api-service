@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.core.engine;
 
-import com.nextgen.gameaggregator.core.common.ClientApiRequest;
+import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
 
 public interface CoreEngineProcessor<C, R> {
     PlayerBalanceData process(C context);

@@ -4,7 +4,6 @@ import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.entity.Agent;
-import com.nextgen.gameaggregator.core.entity.Currency;
 import com.nextgen.gameaggregator.core.entity.Vendor;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -12,27 +11,28 @@ import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.core.service.data.CampaignDataService;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
-    private final CurrencyDataService currencyDataService;
     private final VendorDataService vendorDataService;
     private final AgentDataService agentDataService;
     private final CampaignDataService campaignDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
-                                      CurrencyDataService currencyDataService,
-                                      VendorDataService vendorDataService,
                                       VendorGameDataService vendorGameDataService,
+                                      CurrencyDataService currencyDataService,
+                                      VendorCurrencyDataService vendorCurrencyDataService,
+                                      VendorDataService vendorDataService,
                                       AgentDataService agentDataService,
                                       CampaignDataService campaignDataService) {
 
-        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService);
-        this.currencyDataService = currencyDataService;
+        super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService, currencyDataService, vendorCurrencyDataService);
         this.vendorDataService = vendorDataService;
         this.agentDataService = agentDataService;
         this.campaignDataService = campaignDataService;
@@ -47,41 +47,43 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
 
     public void doEnrich(PromoPayoutContext context) {
         this.populateAgent(context);
-        this.populateCurrency(context);
         this.populateVendor(context);
         this.populateCampaign(context);
         LogContext logContext = LogContextHolder.get();
-        logContext.setVendorId(context.getVendorId());
-        logContext.setAgentId(context.getAgentId());
-        logContext.setUsername(context.getAgentPlayerUsername());
-    }
+        logContext.setVendorId(context.getVendor().id());
+        logContext.setAgentId(context.getAgent().id());
+        logContext.setUsername(context.getAgent().playerUsername());
 
-    private void populateCurrency(PromoPayoutContext context) {
-        try {
-            Currency currency = currencyDataService.get(context.getCurrencyId());
-            context.setCurrencyCode(currency.getCode());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
+        if (context.getTraceId() == null) {
+            context.setTraceId(logContext.getTraceId());
+        }
+
+        if (context.getFromVendorRate() != null) {
+            BigDecimal fromVendorRate = context.getFromVendorRate();
+            if (context.getVendorPayoutAmount() != null) { // single mode
+                context.setPayout(TxnAmount.of(
+                        context.getVendorPayoutAmount(),
+                        fromVendorRate
+                ));
+            } else if (context.getPayoutTransactions() != null && !context.getPayoutTransactions().isEmpty()) {
+                context.getPayoutTransactions()
+                        .forEach(txn -> txn.setPayout(TxnAmount.of(
+                                txn.getVendorPayoutAmount(),
+                                fromVendorRate
+                        )));
+            }
         }
     }
 
     private void populateAgent(PromoPayoutContext context) {
-        try {
-            Agent agent = agentDataService.get(context.getAgentId());
-            context.setMasterAgentId(agent.getMasterAgentId());
-            context.setHouseId(agent.getHouseId());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Agent agent = agentDataService.get(context.getAgent().id());
+        context.getAgent().masterAgentId(agent.getMasterAgentId());
+        context.getAgent().houseId(agent.getHouseId());
     }
 
     private void populateVendor(PromoPayoutContext context) {
-        try {
-            Vendor vendor = vendorDataService.get(context.getVendorId());
-            context.setVendorCode(vendor.getCode());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Vendor vendor = vendorDataService.get(context.getVendor().id());
+        context.getVendor().code(vendor.getCode());
     }
 
     private void populateCampaign(PromoPayoutContext context) {
@@ -90,7 +92,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         }
 
         try {
-            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendorId(), context.getCurrencyCode());
+            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().id(), context.getCurrencyCode());
             context.setCampaignUuid(campaign.getUuid());
         } catch (EntityNotFoundException e) {
             throw new InternalConfigurationException(e.getMessage());

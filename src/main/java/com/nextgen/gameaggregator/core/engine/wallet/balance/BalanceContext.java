@@ -1,14 +1,12 @@
 package com.nextgen.gameaggregator.core.engine.wallet.balance;
 
-import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
-import lombok.Builder;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
-public class BalanceContext implements GameSessionData {
-    private String vendorPlayerUsername;
-    private String vendorCurrency;
-    private String vendorSessionToken;
-    private String token;
+@SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+public class BalanceContext extends VendorRequestContext {
 }

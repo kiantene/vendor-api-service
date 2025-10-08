@@ -6,9 +6,8 @@ import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.response.ErrorResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Component(EndPoints.CLASS_NAME)
@@ -20,50 +19,51 @@ public class AviatorStudioExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onGameSessionExpired(GameSessionExpiredException ex) {
-        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+        return ErrorResponse.of(ResponseCodes.AUTH_ERROR);
     }
 
     @Override
     public VendorErrorResponse onGameTerminated(GameTerminatedException ex) {
-        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+        return ErrorResponse.of(ResponseCodes.AUTH_ERROR);
     }
 
     @Override
     public VendorErrorResponse onInsufficientBalance(InsufficientBalanceException ex) {
-        return getErrorResponse(ResponseCode.INSUFFICIENT_FUNDS, HttpStatus.BAD_REQUEST);
+        return ErrorResponse.of(ResponseCodes.INSUFFICIENT_FUNDS);
     }
 
     @Override
     public VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex) {
-        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+        return ErrorResponse.of(ResponseCodes.AUTH_ERROR);
     }
 
     @Override
     public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
-        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+        return ErrorResponse.of(ResponseCodes.AUTH_ERROR);
     }
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        return getErrorResponse(ResponseCode.AUTH_ERROR, HttpStatus.FORBIDDEN);
+        return ErrorResponse.of(ResponseCodes.SERVER_ERROR);
     }
 
     @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
-        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ErrorResponse.of(ResponseCodes.SERVER_ERROR);
+    }
+
+    @Override
+    public VendorErrorResponse onBetResultRejected(BetResultRejectedException ex) {
+        return ErrorResponse.of(ResponseCodes.SERVER_ERROR);
     }
 
     @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
-        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ErrorResponse.of(ResponseCodes.SERVER_ERROR);
     }
 
     @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
-        return getErrorResponse(ResponseCode.SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    private VendorErrorResponse getErrorResponse(ResponseCode responseCode, HttpStatus httpStatus) {
-        return new VendorErrorResponse(httpStatus, new ErrorResponse(responseCode));
+        return ErrorResponse.of(ResponseCodes.SERVER_ERROR);
     }
 }

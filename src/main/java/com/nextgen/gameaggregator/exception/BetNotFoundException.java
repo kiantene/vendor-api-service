@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
+@Deprecated
 public class BetNotFoundException extends Exception {
 
     public BetNotFoundException() {

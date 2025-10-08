@@ -20,6 +20,13 @@ public interface VendorExceptionMapper extends VendorComponent {
     default VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
         return onDuplicateRequest(new DuplicateRequestException(ex.getMessage(), ex));
     }
+    default VendorErrorResponse onBetNotFound(BetNotFoundException ex) {
+        return onInternalError(new InternalServerException(ex.getMessage(), ex));
+    }
+    default VendorErrorResponse onRollbackNotAllowed(RollbackNotAllowedException ex) {
+        return onInternalError(new InternalServerException("onRollbackNotAllowed is thrown but not implemented", ex));
+    }
+    VendorErrorResponse onBetResultRejected(BetResultRejectedException ex);
 
     /**
      * These are unexpected errors

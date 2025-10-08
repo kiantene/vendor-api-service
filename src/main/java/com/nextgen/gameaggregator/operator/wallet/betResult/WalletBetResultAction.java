@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.*;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
@@ -117,6 +118,7 @@ public class WalletBetResultAction {
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorStart(System.currentTimeMillis());
+            httpRequestLog.setGaBetId(dto.getBetId());
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
@@ -381,6 +383,15 @@ public class WalletBetResultAction {
         if (betInformation.getIsEndRound() != null && agentApiVersion == 2 && this.skipVendorList.contains(vendorId)) {
             //if isEndRound configure not empty from DTO, and agentApiVersion is 2, and is PGSOFT and SPADEGAMING then set the isEndRound value
             walletBetResultDto.setIsEndRound(betInformation.getIsEndRound());
+        }
+
+        if (BetResultContextHolder.isInitialized()) {
+            BetResultWrapperContext wrapperContext = BetResultContextHolder.get();
+            BetResultConfig config = wrapperContext.getConfig();
+            BetResultContext context = wrapperContext.getBetResultContext();
+            if (config.isSettledByRound()) {
+                walletBetResultDto.setIsEndRound(context.isRoundEnded() ? 1 : 0);
+            }
         }
 
         return walletBetResultDto;

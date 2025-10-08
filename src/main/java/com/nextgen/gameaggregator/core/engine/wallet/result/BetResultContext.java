@@ -2,13 +2,15 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.context.VendorGameAware;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
-import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Field mapping rules for Bet Result Request:
@@ -21,34 +23,24 @@ import java.util.List;
  *                  Must match bet request roundId if provided.</p>
  */
 @Data
-@Builder
-public class BetResultContext implements GameSessionData, VendorPlayerAware, VendorGameAware {
+@SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+public class BetResultContext extends VendorRequestContext implements VendorPlayerAware, VendorGameAware {
     // --- Vendor mapping fields ---
-    private String idempotencyKey;
     private String vendorBetId;
     private String roundId;
-    private String vendorGameCode;
-    private String vendorPlayerUsername;
-    private String vendorCurrency;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winloss;
     private BigDecimal effectiveTurnover;
     private BigDecimal jackpotAmount;
     private Integer isFreeSpin;
-    private String token;
-    private String vendorSessionToken;
     private Long vendorBetTime;
     private Long vendorSettleTime;
+    private Boolean roundEnded;
 
     // --- internal values ---
 
-    /**
-     * A unique identifier for tracing requests across distributed services.
-     * Used for debugging and logging to follow the lifecycle of a bet transaction.
-     */
-    private String traceId;
-    private String vendorClassName;
     private Integer vendorId;
     private Long vendorPlayerId;
     private Integer agentId;
@@ -68,4 +60,8 @@ public class BetResultContext implements GameSessionData, VendorPlayerAware, Ven
     private Long resultTime;
 
     private List<BetTransaction> betTransactions;
+
+    public boolean isRoundEnded() {
+        return Optional.ofNullable(roundEnded).orElse(false);
+    }
 }
