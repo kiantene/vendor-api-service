@@ -103,7 +103,7 @@ public class BetHistoryProducer {
 
     public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
         BetHistoryContext context = BetHistoryContext.of(betResultContext);
-        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
 
         Integer vendorId = context.getVendorId();
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
@@ -129,7 +129,7 @@ public class BetHistoryProducer {
 
     public void publishBetHistoryForRollback(BetRollbackContext rollbackContext, GameRound round, GameTransaction txn) {
         BetHistoryContext context = BetHistoryContext.of(rollbackContext);
-        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId());
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
 
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
         GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
