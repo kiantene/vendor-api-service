@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 
@@ -23,14 +24,20 @@ public class BetResultConfig {
         }
     }
 
-    private boolean betTxn = false;
+    /**
+     * betAndResult = true means this api request contains bet amount and require processing
+     * of bet and result together (resultType=BET_WIN | BET_LOSE)
+     */
+    private boolean betAndResult = false;
     private ResultType resultType;
     private SettleType settleType = SettleType.BET; // Default is settled by bet
     private ProcessingMode processingMode = ProcessingMode.SINGLE;
+    private boolean allowResultBeforeBet = false;
+    private boolean returnSuccessOnDuplicate = false;
 
     // Chaining methods
-    public BetResultConfig betTxn(boolean flag) {
-        this.betTxn = flag;
+    public BetResultConfig betAndResult(boolean flag) {
+        this.betAndResult = flag;
         return this;
     }
 
@@ -47,5 +54,23 @@ public class BetResultConfig {
     public BetResultConfig processingMode(ProcessingMode processingMode) {
         this.processingMode = processingMode;
         return this;
+    }
+
+    public BetResultConfig allowResultBeforeBet(boolean flag) {
+        this.allowResultBeforeBet = flag;
+        return this;
+    }
+
+    public BetResultConfig returnSuccessOnDuplicate(boolean flag) {
+        this.returnSuccessOnDuplicate = flag;
+        return this;
+    }
+
+    public boolean isSettledByBet() {
+        return settleType == SettleType.BET;
+    }
+
+    public boolean isSettledByRound() {
+        return settleType == SettleType.ROUND;
     }
 }

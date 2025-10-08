@@ -27,4 +27,10 @@ public interface BetResultData {
     default boolean getShouldSettleByBet() {
         return false;
     }
+
+    /**
+     * Logic for new framework to support backward compatibility
+     */
+    default boolean isNewFramework() { return false; }
+    default String getGaBetId() { return null; }
 }

@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.game.GameSessionData;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
-public class AuthenticateContext implements GameSessionData {
-    private String token;
-    private String vendorPlayerUsername;
-    private String vendorCurrency;
-    private String vendorSessionToken;
+@SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+public class AuthenticateContext extends VendorRequestContext implements GameSessionData {
 }

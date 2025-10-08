@@ -1,0 +1,65 @@
+package com.nextgen.gameaggregator.core.exception;
+
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+import lombok.Getter;
+
+@Getter
+public class VendorCallbackException extends RuntimeException {
+    private final VendorRequestContext context;
+
+    protected VendorCallbackException() {
+        super();
+        this.context = null;
+    }
+
+    protected VendorCallbackException(String message) {
+        super(message);
+        this.context = null;
+    }
+
+    protected VendorCallbackException(VendorRequestContext context) {
+        super();
+        this.context = context;
+    }
+
+    protected VendorCallbackException(VendorRequestContext context, String message) {
+        super(message);
+        this.context = context;
+    }
+
+    protected VendorCallbackException(VendorRequestContext context, Throwable ex) {
+        super(ex.getMessage(), ex);
+        this.context = context;
+    }
+
+    protected VendorCallbackException(VendorRequestContext context, String message, Throwable ex) {
+        super(message, ex);
+        this.context = context;
+    }
+
+    public Throwable getRootCause() {
+        Throwable cause = this;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    public boolean isCausedBy(Class<? extends Throwable> type) {
+        Throwable cause = this;
+        while (cause != null && cause != cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    public String getTransactionId() {
+        if (context != null) {
+            return context.getTransactionId();
+        }
+        return null;
+    }
+}

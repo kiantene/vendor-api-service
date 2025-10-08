@@ -52,6 +52,7 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
         formData.add("password", VendorService.md5Generator(gameSession.getVendorPlayerUsername()));
         formData.add("currencyName", gameSession.getVendorCurrencyCode());
         formData.add("winLimit", credentials.get(Credentials.WIN_LIMIT));
+        formData.add("language", gameSession.getVendorLanguageCode());
 
         return formData;
     }

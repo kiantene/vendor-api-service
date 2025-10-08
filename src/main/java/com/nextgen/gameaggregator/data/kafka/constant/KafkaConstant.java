@@ -8,6 +8,7 @@ public class KafkaConstant {
     public static final String TOPIC_BET_HISTORY = "topic_bet_history";
     public static final String TOPIC_BET_HISTORY_V2 = "topic_bet_history_v2";
     public static final String TOPIC_BET_HISTORY_V3 = "topic_bet_history_v3";
+    public static final String TOPIC_BET_HISTORY_V4 = "topic_bet_history_v4";
     public static final String TOPIC_BET_HISTORY_UNCAP = "topic_bet_history_uncap";
     public static final String OPERATOR_REQUEST_DLQ = "operator_request_dlq";
     public static final String TOPIC_WAREHOUSE_BET_HISTORY = "topic_warehouse_bet_history";

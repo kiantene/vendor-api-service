@@ -12,13 +12,13 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.150</version>
+    <version>1.1.151</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-10-01T07:39:10Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-10-08T08:51:19Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
@@ -38,9 +38,9 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
-        <ga-core.version>1.0.27</ga-core.version>
+        <ga-core.version>1.0.32</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
-        <nextgen-core.version>1.0.27</nextgen-core.version>
+        <nextgen-core.version>1.0.34</nextgen-core.version>
     </properties>
 
     <dependencies>
@@ -291,6 +291,17 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <parameters>true</parameters>
+                </configuration>
             </plugin>
         </plugins>
     </build>

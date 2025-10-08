@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
-import com.nextgen.gameaggregator.core.exception.*;
-import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
+import com.nextgen.gameaggregator.core.exception.BetNotAllowedException;
+import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
+import com.nextgen.gameaggregator.core.exception.GameTerminatedException;
+import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
 import com.nextgen.gameaggregator.core.validator.BetValidator;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,6 @@ class WalletBetValidator {
             GameSessionExpiredException, GameTerminatedException,
             PlayerDisabledException, BetNotAllowedException {
 
-        validator.validateBusinessState(session, betContext.getVendorPlayerUsername());
+        validator.validateBusinessState(session, betContext.getVendorPlayerUsername(), betContext);
     }
 }

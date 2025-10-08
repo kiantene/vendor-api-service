@@ -123,6 +123,9 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
+        if (this.getBetStatus().equals(BetStatus.UNSETTLED)) {
+            return creationTimeMs;
+        }
         return null;
     }
 
