@@ -17,11 +17,11 @@ import java.util.Optional;
 @Component
 public class BetHistoryMapper {
 
-    public BetHistoryV3 initialise(BetHistoryContext context, String betId) {
+    public BetHistoryV3 initialise(BetHistoryContext context, String betId, String externalTransactionId) {
         BetHistoryV3 betHistory = new BetHistoryV3();
 
         betHistory.setId(betId);
-        betHistory.setExternalTransactionId(context.getExternalTransactionId());
+        betHistory.setExternalTransactionId(externalTransactionId);
         betHistory.setVendorGameId(context.getVendorGameId());
         betHistory.setVendorPlayerId(context.getVendorPlayerId());
         betHistory.setVendorId(context.getVendorId());
