@@ -1,15 +1,22 @@
 package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.exception.InternalConfigurationException;
-import com.nextgen.gameaggregator.core.engine.ClientBalanceResponse;
+import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
+import com.nextgen.gameaggregator.core.service.AgentDataService;
+import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
+import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,28 +24,53 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@EnableConfigurationProperties(WalletServiceProperties.class)
 public class ClientRequestService {
-    @Value("${testing.stub-prefix:stub}")
-    private String usernamePrefix;
     private final Validator validator;
     private final AgentApiCredentialDataService credentialService;
+    private final AgentDataService agentService;
+    private final WalletServiceProperties props;
+    @Value("${testing.stub-prefix:stub}")
+    private String usernamePrefix;
 
-    public ClientRequestService(Validator validator, AgentApiCredentialDataService credentialService) {
+    public ClientRequestService(Validator validator,
+                                AgentApiCredentialDataService credentialService,
+                                AgentDataService agentService,
+                                WalletServiceProperties props) {
         this.validator = validator;
         this.credentialService = credentialService;
+        this.agentService = agentService;
+        this.props = props;
     }
 
-    public <T> ClientApiRequest<T> createClientApiRequest(Integer agentId, String path, T requestObject) {
+    public <T> ClientApiRequest<T> createClientApiRequest(String traceId,
+                                                          Integer agentId,
+                                                          String agentPlayerUsername,
+                                                          String path,
+                                                          T requestObject,
+                                                          Long transactionTime) {
         validateInputs(agentId, path, requestObject);
         validateRequestObject(requestObject);
 
         AgentApiCredential credential = loadCredential(agentId);
+        Agent agent = agentService.get(agentId);
+
+        String baseUrl = credential.getCallbackUrl();
+        if (SeamlessType.SEAMLESS_TRANSFER.code.equals(agent.getSeamlessType())) {
+            baseUrl = props.getHost() + "/seamless";
+        }
 
         return ClientApiRequest.<T>builder()
+                .traceId(traceId)
                 .agentId(agentId)
+                .agentPlayerUsername(agentPlayerUsername)
+                .method(HttpMethod.POST)
+                .baseUrl(baseUrl)
                 .path(path)
                 .requestObject(requestObject)
-                .credential(credential)
+                .apiKey(credential.getApiKey())
+                .apiSecret(credential.getApiSecret())
+                .transactionTime(transactionTime)
                 .build();
     }
 
@@ -46,7 +78,7 @@ public class ClientRequestService {
         return username.toLowerCase().startsWith(usernamePrefix.toLowerCase());
     }
 
-    public ClientBalanceResponse mockClientResponse(String traceId, String currency, String username) {
+    public ClientApiResponse mockClientResponse(String traceId, String currency, String username) {
         PlayerBalanceData playerBalanceData = new PlayerBalanceData(
                 username,
                 currency,
@@ -54,7 +86,7 @@ public class ClientRequestService {
                 System.currentTimeMillis()
         );
 
-        ClientBalanceResponse response = new ClientBalanceResponse();
+        ClientApiResponse response = new ClientApiResponse();
         response.setStatus(ResponseCodes.Status.SC_OK.toString());
         response.setTraceId(traceId);
         response.setMessage(ResponseCodes.Status.SC_OK.description + " mock response");

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.exception;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.Getter;
 
+@Deprecated
 @Getter
 public class InsufficientBalanceException extends Exception {
     private final Integer operatorStatus;

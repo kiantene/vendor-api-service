@@ -1,11 +1,13 @@
 package com.nextgen.gameaggregator.core.exception;
 
-public class BetNotAllowedException extends RuntimeException {
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+
+public class BetNotAllowedException extends VendorCallbackException {
     public BetNotAllowedException() {
         super();
     }
 
-    public BetNotAllowedException(String message, Throwable ex) {
-        super(message, ex);
+    public BetNotAllowedException(VendorRequestContext context, String message, Throwable ex) {
+        super(context, message, ex);
     }
 }

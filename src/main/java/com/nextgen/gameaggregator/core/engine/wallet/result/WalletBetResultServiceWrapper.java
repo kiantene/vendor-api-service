@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
@@ -9,115 +8,111 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
+import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameRoundService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WalletBetResultServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "result";
     private final DuplicateRequestGuard guard;
     private final BetResultContextEnricher enricher;
-    private final BetResultDataMapper betResultDataMapper;
+    private final BetResultProcessor processor;
     private final GameSessionDataService gameSessionDataService;
+    private final GameRoundService gameRoundService;
     private final WalletBetResultValidator validator;
-    private final WalletBetResultBatchService batchService;
     private final WalletExceptionTranslator walletExceptionTranslator;
-    private final WalletService walletService;
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        String className = logContext.getVendorClassName();
         BetResultContext context = state().getBetResultContext();
+        BetResultConfig config = state().getConfig();
+        GameTransaction txn = null;
 
         try {
-            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
+            validator.validateRequestContext(context, state().getConfig());
 
-            enricher.enrich(context);
+            txn = guard.ensureNotDuplicate(
+                    config.isBetAndResult() ? TxnType.BET_N_RESULT : TxnType.RESULT,
+                    className,
+                    context.getIdempotencyKey(),
+                    logContext.getStart()
+            );
 
-            validator.validateRequestContext(context);
+            Optional<GameRound> roundOpt = gameRoundService.get(GameRound.of(className, context.getRoundId()).getId());
+
+            BetResultDecision decision = BetResultPolicy.decide(roundOpt, config);
+            decision.throwIfRejected(context, config);
 
             GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
-            enricher.enrichByGameSession(context, gameSession);
+            enricher.enrichByGameSession(context, gameSession, config);
 
-            ResultType resultType = getResultType(context);
+            ResultType resultType = getResultType(context, config);
 
             validator.validateBusinessState(gameSession, context, resultType);
 
-            PlayerBalanceData playerBalance = processBetResultTransaction(context, gameSession, resultType, httpRequestLog);
+            enricher.enrichGameTransaction(txn, context);
 
-            doProcessBatch(context);
+            if (config.isBetAndResult()) {
+                return processor.processBetAndResultTransaction(context, gameSession, txn, resultType, httpRequestLog, state());
+            }
 
-            return playerBalance;
+            return processor.processResultTransaction(context, gameSession, txn, resultType, httpRequestLog, state());
 
         } catch (DuplicateRequestException ex) {
             return handleDuplicateRequest(context, ex);
         } catch (Exception ex) {
-            // TODO: handle BetNotFoundException (race condition)
-
-            guard.clear();
-            walletExceptionTranslator.translateAndThrow(ex);
+            throw handleException(context, txn, ex);
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, httpRequestLog);
         }
-        return null;
     }
 
     private PlayerBalanceData handleDuplicateRequest(BetResultContext context, DuplicateRequestException ex) {
-        // TODO: check for operator status, if is successful then return success
-        return null;
-    }
-
-    private void doProcessBatch(BetResultContext context) {
+        GameTransaction txn = ex.getTransaction();
         BetResultConfig config = state().getConfig();
-
-        if (config.getProcessingMode().isBatchMode()) {
-            List<BetTransaction> txnList = context.getBetTransactions();
-
-            if (txnList == null || txnList.isEmpty()) return;
-
-            batchService.processBatch(txnList, context);
+        if (config.isReturnSuccessOnDuplicate() && txn != null && txn.isSuccess()) {
+            return new PlayerBalanceData(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    Optional.ofNullable(txn.getBalance()).orElse(BigDecimal.ZERO),
+                    System.currentTimeMillis()
+            );
         }
+        throw ex;
     }
 
-    private PlayerBalanceData processBetResultTransaction(
-            BetResultContext context,
-            GameSession gameSession,
-            ResultType resultType,
-            HttpRequestLog httpRequestLog) throws
-                InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
-                BetResultIdempotentViolationException, MergedBetDataIntegrityException,
-                InsufficientBalanceException, TransactionStillProcessingException,
-                BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
+    private RuntimeException handleException(BetResultContext context, GameTransaction txn, Exception ex) {
+        // TODO: if operator error, add to retry queue and return success to vendor
 
-        BigDecimal balance = walletService.processBetResult(
-                httpRequestLog.getId(),
-                gameSession,
-                betResultDataMapper.toBetResultData(context),
-                resultType,
-                state().getVendorService(),
-                httpRequestLog
-        );
+        guard.clear();
+        RuntimeException exception = walletExceptionTranslator.translate(ex, context);
 
-        return new PlayerBalanceData(
-                context.getVendorPlayerUsername(),
-                context.getVendorCurrency(),
-                balance,
-                httpRequestLog.getOperatorEnd()
-        );
+        enricher.enrichGameTransactionIfEmpty(txn, context)
+                .then(gameRoundService.markTxnErrorAsync(txn, exception))
+                .doOnError(t -> log.error("markTxnError failed for txn {}", txn.getId(), t))
+                .onErrorComplete() // swallow error, don't terminate subscription
+                .subscribe(); // fire and forget, don't block vendor response
+
+        return exception;
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
@@ -126,13 +121,18 @@ public class WalletBetResultServiceWrapper {
         return this;
     }
 
+    public WalletBetResultServiceWrapper configure(Consumer<BetResultConfig> configurer) {
+        configurer.accept(state().getConfig());
+        return this;
+    }
+
     private BetResultWrapperContext state() {
         return BetResultContextHolder.getRequired();
     }
 
-    public WalletBetResultServiceWrapper configure(Consumer<BetResultConfig> configurer) {
-        configurer.accept(state().getConfig());
-        return this;
+    private void cleanup() {
+        guard.cleanup();
+        BetResultContextHolder.clear();
     }
 
     /**
@@ -142,11 +142,10 @@ public class WalletBetResultServiceWrapper {
      * 3. BET_LOSE   -> Bet with no win
      * 4. END        -> Non-bet transaction with no win (default fallback)
      */
-    private ResultType getResultType(BetResultContext context) {
-        BetResultConfig config = state().getConfig();
+    private ResultType getResultType(BetResultContext context, BetResultConfig config) {
         if (config.getResultType() != null) return config.getResultType();
 
-        boolean isBet = config.isBetTxn();
+        boolean isBet = config.isBetAndResult();
         BigDecimal winAmount = Optional.ofNullable(context.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmount = Optional.ofNullable(context.getJackpotAmount()).orElse(BigDecimal.ZERO);
         boolean hasWin = winAmount.compareTo(BigDecimal.ZERO) > 0;
@@ -157,10 +156,5 @@ public class WalletBetResultServiceWrapper {
         } else {
             return (hasWin || hasJackpot) ? ResultType.WIN : ResultType.END;
         }
-    }
-
-    private void cleanup() {
-        guard.cleanup();
-        BetResultContextHolder.clear();
     }
 }

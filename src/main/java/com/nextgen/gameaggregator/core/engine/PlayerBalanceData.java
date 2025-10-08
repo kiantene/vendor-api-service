@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor
@@ -15,7 +16,9 @@ public class PlayerBalanceData {
     private BigDecimal balance;
     private Long timestamp;
 
-    public static PlayerBalanceData getDefault(String traceId, String username, String currency) {
+    public static PlayerBalanceData getDefault(String username, String currency) {
+        currency = Optional.ofNullable(currency).orElse("");
+
         return new PlayerBalanceData(
                 username,
                 currency,

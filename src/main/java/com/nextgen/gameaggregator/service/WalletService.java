@@ -3,11 +3,12 @@ package com.nextgen.gameaggregator.service;
 import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.couchbase.client.core.error.UnambiguousTimeoutException;
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.common.FeatureToggle;
 import com.nextgen.gameaggregator.core.engine.game.round.GameRoundService;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
-import com.nextgen.gameaggregator.core.engine.wallet.result.SettleType;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.Features;
@@ -374,11 +375,12 @@ public class WalletService {
             settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
 
             // send settled bet to kafka
-            if (vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
+            if (FeatureToggle.useRefactoredPublishBetHistory(settledBet.getVendorId())
+                || vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
                 /**
-                 * Feature toggle to use refactored logic
+                 * Feature toggle to use refactored logic, will affect vendors who are enabled for max payout as well
                  */
-                doPublishBetHistory(settledBet, vendorService, gameSession, fromVendorConversionRate);
+                doPublishBetHistory(settledBet, vendorService, gameSession, fromVendorConversionRate, httpRequestLog);
             } else {
                 /**
                  * @deprecated below logic to be removed, use doPublishBetHistory as the refactored version
@@ -387,16 +389,20 @@ public class WalletService {
 
                 loggingService.logStart();
                 if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                    // kafkaService.produceWarehouseBetHistory
-                    //         (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
-                    kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                            gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    /**
+                     * Exclude bet history produce logic if vendor is running on new framework
+                     * @see {@link com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper}
+                     */
+                    if (!httpRequestLog.isBetHistoryProduceDisabled()) {
+                        kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                                gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    }
                 } else {
                     // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                     kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
                 }
+                loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
             }
-            loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
             // will insert bet info record to this topic for MG
             if (settledBet.getVendorId().equals(17)) {
@@ -455,7 +461,14 @@ public class WalletService {
         return balanceVo;
     }
 
-    private void doPublishBetHistory(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, BigDecimal fromVendorConversionRate) {
+    private void doPublishBetHistory(SettledBet settledBet,
+                                     BaseVendorService vendorService,
+                                     GameSession gameSession,
+                                     BigDecimal fromVendorConversionRate,
+                                     HttpRequestLog httpRequestLog) {
+
+        if (httpRequestLog.isBetHistoryProduceDisabled()) return;
+
         boolean requirePreprocessing = vendorService.getBetPreprocess().getIsPreProcessBet();
         var mode = BetResultConfig.ProcessingMode.SINGLE;
         List<BetTransaction> txnList = null;

@@ -79,6 +79,11 @@ class BetResultDataMapper {
             public BetStatus getBetStatus() {
                 return BetStatus.SETTLED;
             }
+
+            @Override
+            public boolean isNewFramework() {
+                return true;
+            }
         };
     }
 }

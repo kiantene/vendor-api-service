@@ -6,20 +6,35 @@ import java.util.Objects;
 
 @Component
 public class PromoPayoutMapper {
-    public PromoPayoutRequest toPromoPayoutRequest(PromoPayoutContext context) {
+    public PromoPayoutDto toPromoPayoutRequest(PromoPayoutContext context) {
         if (context == null) {
             return null;
         }
 
-        return PromoPayoutRequest.builder()
+        return PromoPayoutDto.builder()
                 .traceId(context.getTraceId())
-                .username(context.getAgentPlayerUsername())
+                .username(context.getAgent().playerUsername())
                 .transactionId(context.getTransactionId())
                 .campaignId(Objects.requireNonNullElse(context.getCampaignUuid(), null))
                 .currency(context.getCurrencyCode())
-                .amount(context.getPayoutAmount())
-                .type(context.getPromoType().code)
+                .amount(context.getPayout().amount())
                 .timestamp(context.getVendorTransactionTime())
+                .build();
+    }
+
+    public PromoPayoutDto toPromoPayoutRequest(PromoPayoutContext context, PayoutTransaction txn) {
+        if (context == null) {
+            return null;
+        }
+
+        return PromoPayoutDto.builder()
+                .traceId(txn.getTraceId())
+                .username(context.getAgent().playerUsername()) // TODO: potential issue if txn username != context username
+                .transactionId(txn.getTransactionId())
+                .campaignId(Objects.requireNonNullElse(context.getCampaignUuid(), null))
+                .currency(context.getCurrencyCode())
+                .amount(txn.getPayout().amount())
+                .timestamp(txn.getVendorTransactionTime())
                 .build();
     }
 }

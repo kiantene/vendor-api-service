@@ -26,7 +26,7 @@ import java.util.Map;
 @EnableJpaRepositories(
         entityManagerFactoryRef = "entityManagerFactoryGaServiceWriterDb",//配置连接工厂 entityManagerFactory
         transactionManagerRef = "transactionManagerGaServiceWriterDb", //配置 事物管理器  transactionManager
-        basePackages = {"com.nextgen.gameaggregator.repository.ga.writer", "com.nextgen.gameaggregator.core.repository"}//设置持久层所在位置
+        basePackages = {"com.nextgen.gameaggregator.repository.ga.writer"}//设置持久层所在位置
 )
 public class GaServiceWriterDataSourceConfig {
 
@@ -87,7 +87,7 @@ public class GaServiceWriterDataSourceConfig {
                 //设置数据源属性
                 .properties(properties)
                 //设置实体类所在位置.扫描所有带有 @Entity 注解的类
-                .packages("com.nextgen.gameaggregator.entity.ga", "com.nextgen.gameaggregator.core.entity")
+                .packages("com.nextgen.gameaggregator.entity.ga")
                 // Spring会将EntityManagerFactory注入到Repository之中.有了 EntityManagerFactory之后,
                 // Repository就能用它来创建 EntityManager 了,然后 EntityManager 就可以针对数据库执行操作
                 .persistenceUnit("mysqlPersistenceUnitGaWriter")
