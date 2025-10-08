@@ -227,9 +227,6 @@ public class WalletService {
         loggingService.logStart();
         try {
             settledBet = settledBetService.idempotentCheck(traceId, gameSession, betResultData);
-            if (true) {
-                throw new AmbiguousTimeoutException("simulate timeout", null);
-            }
         } catch (AmbiguousTimeoutException | UnambiguousTimeoutException couchbaseTimeoutException) {
             throw new InternalServerTimeoutRetryException(couchbaseTimeoutException.getMessage());
         }
