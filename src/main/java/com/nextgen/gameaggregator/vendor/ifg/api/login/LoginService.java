@@ -37,7 +37,7 @@ public class LoginService {
     @Autowired
     private VendorService vendorService;
 
-    public CommonVo login(HttpRequestLog httpRequestLog, String traceId){
+    public CommonVo login(HttpRequestLog httpRequestLog, String traceId) {
         LoginServiceDto loginDto = new LoginServiceDto();
         LoginServiceVo vo = new LoginServiceVo();
         BalanceVo balanceVo = new BalanceVo();
@@ -46,7 +46,7 @@ public class LoginService {
         ErrorVo errorVo = new ErrorVo();
         XmlMapper xmlMapper = new XmlMapper();
 
-        try{
+        try {
             loginDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), LoginServiceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -72,7 +72,7 @@ public class LoginService {
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
 
             // set enterVo
             enterVo.setId(loginDto.getEnter().getId());
@@ -97,7 +97,7 @@ public class LoginService {
             vo.setEnter(enterVo);
 
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e){
+        } catch (InvalidRequestException e) {
 
             // set errorVo
             if (e.getValidation() != null) {
@@ -110,9 +110,9 @@ public class LoginService {
 
                 errorVo.setCode(violation);
 
-                if(violation.equals(ResponseCodes.INVALID_KEY)){
+                if (violation.equals(ResponseCodes.INVALID_KEY)) {
                     errorVo.setMsg(ResponseCodes.I_K);
-                }else{
+                } else {
                     errorVo.setMsg(ResponseCodes.G_N_A);
                 }
 
@@ -151,7 +151,7 @@ public class LoginService {
             vo.setEnter(enterVo);
 
             httpService.logError(httpRequestLog, e);
-        } catch(Exception e) {
+        } catch (Exception e) {
 
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
@@ -166,7 +166,7 @@ public class LoginService {
             vo.setEnter(enterVo);
 
             httpService.logError(httpRequestLog, e);
-        } finally{
+        } finally {
             // set vo
             vo.setSession(loginDto.getSession());
             vo.setTime(loginDto.getTime());

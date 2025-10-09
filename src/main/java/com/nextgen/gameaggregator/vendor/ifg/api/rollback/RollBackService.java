@@ -64,7 +64,7 @@ public class RollBackService {
 
             // set balanceVo
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             balanceVo.setType("real");
 
@@ -109,7 +109,7 @@ public class RollBackService {
 
             // set balanceVo
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             balanceVo.setType("real");
 
