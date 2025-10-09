@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -54,6 +56,7 @@ public class KafkaConsumerService {
     private final GameSessionService gameSessionService;
     private final BetHistoryProducer betHistoryProducer;
     private final VendorFeatureDataService vendorFeatureService;
+    private final WalletRequestService walletRequestService;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -70,7 +73,8 @@ public class KafkaConsumerService {
                                 WalletService walletService,
                                 GameSessionService gameSessionService,
                                 BetHistoryProducer betHistoryProducer,
-                                VendorFeatureDataService vendorFeatureService) {
+                                VendorFeatureDataService vendorFeatureService,
+                                WalletRequestService walletRequestService) {
 
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -88,7 +92,16 @@ public class KafkaConsumerService {
         this.gameSessionService = gameSessionService;
         this.betHistoryProducer = betHistoryProducer;
         this.vendorFeatureService = vendorFeatureService;
+        this.walletRequestService = walletRequestService;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
+    }
+
+    public static Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 
     private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog, String operatorResultType) {
@@ -331,7 +344,6 @@ public class KafkaConsumerService {
         }
     }
 
-
     @KafkaListener(topics = KafkaConstant.TOPIC_REFUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeRefundProcess(String message) {
 
@@ -494,33 +506,34 @@ public class KafkaConsumerService {
 
     @KafkaListener(topics = KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void patchingSportUnsettledBetToRefundBet(String message) {
-        HttpRequestLog log = httpService.startReconDataPatchingLog();
-        String traceId = log.getId();
+        HttpRequestLog httpRequestLog = httpService.startReconDataPatchingLog();
+
         GeneralVo vo = new GeneralVo();
+        httpRequestLog.setRequestBody(message);
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
         try {
-            // set request body to show original kafka data
-            log.setRequestBody(message);
-            // convert to Object
-            EndRoundSettledBetForPatching endRoundSettledBetForPatching = parseMessage(message);
-            // validate vendorPlayerId or vendorPlayerUsername
-            validateBetData(endRoundSettledBetForPatching);
-            // generate gameSession by vendorPlayerId or vendorPlayerUsername
-            GameSession session = initGameSession(endRoundSettledBetForPatching);
+            SportRefundBetPatching sportRefundBetPatching = new ObjectMapper().readValue(message, SportRefundBetPatching.class);
 
-            // process Rollback or BetResult
-            if (endRoundSettledBetForPatching.isRefund()) {
-                processRollbackCase(endRoundSettledBetForPatching, session, log);
-            } else {
-                processSettleCase(traceId, endRoundSettledBetForPatching, session, log);
+            walletRequestService.updateByVendorUsername(walletRequest, sportRefundBetPatching.getVendorPlayerUsername());
+            walletRequest.setExternalTransactionId(sportRefundBetPatching.getExternalTransactionId());
+            walletRequest.setVendorBetId(sportRefundBetPatching.getVendorBetId());
+            if (sportRefundBetPatching.getVendorSettleTime() != null) {
+                walletRequest.setVendorSettleTime(sportRefundBetPatching.getVendorSettleTime());
             }
 
+            sportWalletService.refund(walletRequest);
+
             vo.setResponseCode(ResponseCode.SUCCESS);
-        } catch (Exception e) {
+        } catch (BetResultIdempotentViolationException exception) {
+            vo.setResponseCode(ResponseCode.SUCCESS);
+            this.logException(walletRequest, exception);
+        } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
-            httpService.logError(log, e);
+            this.logException(walletRequest, exception);
+            kafkaService.produceSportRefundPatchingDLQ(message);
         } finally {
-            httpService.end(log, vo);
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
         }
     }
 
@@ -617,5 +630,17 @@ public class KafkaConsumerService {
         dto.setResultTime(endRoundSettledBetForPatching.getResultTime());
         dto.setBetStatus(BetStatus.SETTLED);
         return dto;
+    }
+
+    public void logException(WalletRequest walletRequest, Exception exception) {
+        if (exception.getCause() != null) {
+            Throwable rootCause = getRootCause(exception.getCause());
+            walletRequest.setErrorMessage(rootCause.getClass().getSimpleName() + " - " + rootCause.getMessage());
+        } else if (exception.getMessage() != null) {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        } else {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName());
+        }
+
     }
 }
