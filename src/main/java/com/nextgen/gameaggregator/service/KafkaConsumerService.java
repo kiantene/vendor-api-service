@@ -511,16 +511,16 @@ public class KafkaConsumerService {
         GeneralVo vo = new GeneralVo();
         httpRequestLog.setRequestBody(message);
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        SportRefundBetPatching sportRefundBetPatching = new SportRefundBetPatching();
 
         try {
-            SportRefundBetPatching sportRefundBetPatching = new ObjectMapper().readValue(message, SportRefundBetPatching.class);
+            sportRefundBetPatching = new ObjectMapper().readValue(message, SportRefundBetPatching.class);
 
             walletRequestService.updateByVendorUsername(walletRequest, sportRefundBetPatching.getVendorPlayerUsername());
             walletRequest.setExternalTransactionId(sportRefundBetPatching.getExternalTransactionId());
             walletRequest.setVendorBetId(sportRefundBetPatching.getVendorBetId());
-            if (sportRefundBetPatching.getVendorSettleTime() != null) {
-                walletRequest.setVendorSettleTime(sportRefundBetPatching.getVendorSettleTime());
-            }
+            walletRequest.setRoundId(sportRefundBetPatching.getRoundId());
+            walletRequest.setVendorSettleTime(sportRefundBetPatching.getVendorSettleTime());
 
             sportWalletService.refund(walletRequest);
 
@@ -531,7 +531,8 @@ public class KafkaConsumerService {
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             this.logException(walletRequest, exception);
-            kafkaService.produceSportRefundPatchingDLQ(message);
+            sportRefundBetPatching.setErrorMessage(exception.getMessage());
+            kafkaService.produceSportRefundPatchingDLQ(sportRefundBetPatching);
         } finally {
             walletRequestService.end(walletRequest, httpRequestLog, vo);
         }

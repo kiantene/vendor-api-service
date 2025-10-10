@@ -383,11 +383,11 @@ public class KafkaService {
         }
     }
 
-    public void produceSportRefundPatchingDLQ(String message) {
+    public void produceSportRefundPatchingDLQ(SportRefundBetPatching sportRefundBetPatching) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET_DLQ, message);
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET_DLQ, new Gson().toJson(sportRefundBetPatching));
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("SportRefundPatchingDLQ: " + e.getMessage() + " -> vendorBetId = " + sportRefundBetPatching.getVendorBetId() + "& roundId = " + sportRefundBetPatching.getRoundId());
         }
     }
 }

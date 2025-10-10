@@ -9,5 +9,7 @@ public class SportRefundBetPatching {
     private String externalTransactionId;
     private String vendorBetId;
     private String vendorPlayerUsername;
+    private String roundId;
     private Long vendorSettleTime;
+    private String ErrorMessage;
 }
