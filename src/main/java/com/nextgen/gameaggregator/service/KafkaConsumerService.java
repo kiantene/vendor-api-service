@@ -531,7 +531,7 @@ public class KafkaConsumerService {
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             this.logException(walletRequest, exception);
-            sportRefundBetPatching.setErrorMessage(exception.getMessage());
+            sportRefundBetPatching.setErrorMessage(walletRequest.getErrorMessage());
             kafkaService.produceSportRefundPatchingDLQ(sportRefundBetPatching);
         } finally {
             walletRequestService.end(walletRequest, httpRequestLog, vo);
