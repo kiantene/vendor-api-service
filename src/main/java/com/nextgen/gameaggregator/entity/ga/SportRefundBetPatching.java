@@ -11,5 +11,5 @@ public class SportRefundBetPatching {
     private String vendorPlayerUsername;
     private String roundId;
     private Long vendorSettleTime;
-    private String ErrorMessage;
+    private String errorMessage;
 }
