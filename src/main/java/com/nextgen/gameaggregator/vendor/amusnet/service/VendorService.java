@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.amusnet.service;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -28,9 +27,7 @@ public class VendorService extends BaseVendorService {
     public void buildResponseVo(ResponseVo vo) {
         String voXml = "";
         try {
-            XmlMapper xmlMapper = new XmlMapper();
-            xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            voXml = xmlMapper.writeValueAsString(vo);
+            voXml = new XmlMapper().writeValueAsString(vo);
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
         }
