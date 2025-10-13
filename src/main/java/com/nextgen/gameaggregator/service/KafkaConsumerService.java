@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -54,6 +56,7 @@ public class KafkaConsumerService {
     private final GameSessionService gameSessionService;
     private final BetHistoryProducer betHistoryProducer;
     private final VendorFeatureDataService vendorFeatureService;
+    private final WalletRequestService walletRequestService;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -70,7 +73,8 @@ public class KafkaConsumerService {
                                 WalletService walletService,
                                 GameSessionService gameSessionService,
                                 BetHistoryProducer betHistoryProducer,
-                                VendorFeatureDataService vendorFeatureService) {
+                                VendorFeatureDataService vendorFeatureService,
+                                WalletRequestService walletRequestService) {
 
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -88,7 +92,16 @@ public class KafkaConsumerService {
         this.gameSessionService = gameSessionService;
         this.betHistoryProducer = betHistoryProducer;
         this.vendorFeatureService = vendorFeatureService;
+        this.walletRequestService = walletRequestService;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
+    }
+
+    public static Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 
     private void toSendOrNotToSend(String traceId, AgentPlayer agentPlayer, VendorPlayer vendorPlayer, GameSession gameSession, SettledBet settledBet, VendorCurrency vendorCurrency, EndRoundSettledBet endRoundSettledBet, HttpRequestLog httpRequestLog, String operatorResultType) {
@@ -331,7 +344,6 @@ public class KafkaConsumerService {
         }
     }
 
-
     @KafkaListener(topics = KafkaConstant.TOPIC_REFUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeRefundProcess(String message) {
 
@@ -492,6 +504,40 @@ public class KafkaConsumerService {
         }
     }
 
+    @KafkaListener(topics = KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void patchingSportUnsettledBetToRefundBet(String message) {
+        HttpRequestLog httpRequestLog = httpService.startReconDataPatchingLog();
+
+        GeneralVo vo = new GeneralVo();
+        httpRequestLog.setRequestBody(message);
+        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+        SportRefundBetPatching sportRefundBetPatching = new SportRefundBetPatching();
+
+        try {
+            sportRefundBetPatching = new ObjectMapper().readValue(message, SportRefundBetPatching.class);
+
+            walletRequestService.updateByVendorUsername(walletRequest, sportRefundBetPatching.getVendorPlayerUsername());
+            walletRequest.setExternalTransactionId(sportRefundBetPatching.getExternalTransactionId());
+            walletRequest.setVendorBetId(sportRefundBetPatching.getVendorBetId());
+            walletRequest.setRoundId(sportRefundBetPatching.getRoundId());
+            walletRequest.setVendorSettleTime(sportRefundBetPatching.getVendorSettleTime());
+
+            sportWalletService.refund(walletRequest);
+
+            vo.setResponseCode(ResponseCode.SUCCESS);
+        } catch (BetResultIdempotentViolationException exception) {
+            vo.setResponseCode(ResponseCode.SUCCESS);
+            this.logException(walletRequest, exception);
+        } catch (Exception exception) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            this.logException(walletRequest, exception);
+            sportRefundBetPatching.setErrorMessage(walletRequest.getErrorMessage());
+            kafkaService.produceSportRefundPatchingDLQ(sportRefundBetPatching);
+        } finally {
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
+        }
+    }
+
     private EndRoundSettledBetForPatching parseMessage(String message) throws IOException {
         return new ObjectMapper().readValue(message, EndRoundSettledBetForPatching.class);
     }
@@ -585,5 +631,17 @@ public class KafkaConsumerService {
         dto.setResultTime(endRoundSettledBetForPatching.getResultTime());
         dto.setBetStatus(BetStatus.SETTLED);
         return dto;
+    }
+
+    public void logException(WalletRequest walletRequest, Exception exception) {
+        if (exception.getCause() != null) {
+            Throwable rootCause = getRootCause(exception.getCause());
+            walletRequest.setErrorMessage(rootCause.getClass().getSimpleName() + " - " + rootCause.getMessage());
+        } else if (exception.getMessage() != null) {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        } else {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName());
+        }
+
     }
 }
