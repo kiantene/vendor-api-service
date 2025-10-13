@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.aglive.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -30,11 +28,12 @@ public class SettleService {
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
 
     @Autowired
     public SettleService(GameSessionService gameSessionService, WalletService walletService, AgentPlayerService agentPlayerService,
                          VendorGameService vendorGameService, VendorService vendorService, VendorLineService vendorLineService,
-                         HttpService httpService) {
+                         HttpService httpService, UnsettledBetCachingService unsettledBetCachingService) {
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.agentPlayerService = agentPlayerService;
@@ -42,6 +41,7 @@ public class SettleService {
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.httpService = httpService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, String traceId) {
@@ -58,15 +58,23 @@ public class SettleService {
             this.doValidation(commonSettleDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(commonSettleDto.getSettleDto().getSessionToken());
-
+            try {
+                gameSession = gameSessionService.verifyToken(commonSettleDto.getSettleDto().getSessionToken());
+            } catch (AuthenticationException authenticationException) {
+                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonSettleDto.getRoundId());
+                gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
+                gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonSettleDto, gameSession);
 
             ResultType resultType = vendorService.checkGameType(commonSettleDto.getSettleDto().getGameType(),
                     commonSettleDto.getWinAmount(),
                     commonSettleDto.getSettleDto().getFinish());
-            
+
             balance = walletService.processBetResult(traceId, gameSession, commonSettleDto, resultType, vendorService, httpRequestLog);
 
             // set vo
