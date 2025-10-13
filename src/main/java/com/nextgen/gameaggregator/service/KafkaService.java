@@ -311,7 +311,7 @@ public class KafkaService {
             if (betHistory.getGameSessionToken() == null) {
                 betHistory.setGameSessionToken("");
             }
-            
+
             // TODO : Will re-enable after the new game list import is deployed
             // if (productId == null || productCode == null) {
             //     Vendor vendor = vendorService.getById(betHistory.getVendorId());
@@ -380,6 +380,14 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error("Resettlement Date Changes: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+        }
+    }
+
+    public void produceSportRefundPatchingDLQ(SportRefundBetPatching sportRefundBetPatching) {
+        try {
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET_DLQ, new Gson().toJson(sportRefundBetPatching));
+        } catch (Exception e) {
+            log.error("SportRefundPatchingDLQ: " + e.getMessage() + " -> vendorBetId = " + sportRefundBetPatching.getVendorBetId() + "& roundId = " + sportRefundBetPatching.getRoundId());
         }
     }
 }
