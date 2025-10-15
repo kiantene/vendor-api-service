@@ -172,7 +172,8 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.win;
+        BigDecimal jackpotWin = (getJackpotWin() != null) ? getJackpotWin() : BigDecimal.ZERO;
+        return this.win.subtract(jackpotWin);
     }
 
     @Override
