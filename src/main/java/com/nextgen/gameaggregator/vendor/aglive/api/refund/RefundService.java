@@ -61,7 +61,10 @@ public class RefundService {
             // Verify session token
             try {
                 gameSession = gameSessionService.verifyToken(commonRefundDto.getRefundDto().getSessionToken());
-            } catch (AuthenticationException authenticationException) {
+                if (gameSession.getStatus() == 0) {
+                    throw new AuthenticationException();
+                }
+            } catch (AuthenticationException exception) {
                 UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonRefundDto.getRefundDto().getGameCode());
                 gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
                 gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());

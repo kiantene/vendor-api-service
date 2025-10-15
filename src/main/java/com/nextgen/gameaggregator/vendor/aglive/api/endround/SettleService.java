@@ -60,7 +60,10 @@ public class SettleService {
             // Verify session token
             try {
                 gameSession = gameSessionService.verifyToken(commonSettleDto.getSettleDto().getSessionToken());
-            } catch (AuthenticationException authenticationException) {
+                if (gameSession.getStatus() == 0) {
+                    throw new AuthenticationException();
+                }
+            } catch (AuthenticationException exception) {
                 UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonSettleDto.getRoundId());
                 gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
                 gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
