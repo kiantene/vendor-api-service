@@ -74,7 +74,7 @@ public class BonusAction {
             this.doVerification(bonusDto, gameSession, secretKey);
 
             Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckBonus(gameSession, bonusDto);
-            if( idempotentCheckAfterSettle == 1){
+            if (idempotentCheckAfterSettle == 1) {
                 throw new BetResultIdempotentViolationException();
             }
 
@@ -85,7 +85,7 @@ public class BonusAction {
 
             responseVo.setStatus(ResponseCodes.SUCCESS);
 
-        } catch (GameNotSupportedException  |
+        } catch (GameNotSupportedException |
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
@@ -105,11 +105,11 @@ public class BonusAction {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.ACCESS_DENIED);
             httpService.logError(httpRequestLog, e);
-        }catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.INVALID_USER);
             httpService.logError(httpRequestLog, e);
-        }catch (Exception e) {
+        } catch (Exception e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -141,7 +141,7 @@ public class BonusAction {
 
         // 2. Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(credentialKey,secretKey, InvalidSignatureException::new);
+        ValidationUtils.isEquals(credentialKey, secretKey, InvalidSignatureException::new);
 
         //Validate Prd_id
         String prdId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PRODUCT_ID);
@@ -154,7 +154,7 @@ public class BonusAction {
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         SettledBet settledBet;
-        Integer betCheck= 0;
+        Integer betCheck = 0;
 
         try {
 
@@ -169,7 +169,6 @@ public class BonusAction {
 
         return betCheck;
     }
-
 
 
 }
