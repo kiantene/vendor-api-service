@@ -128,6 +128,8 @@ public class VendorService extends BaseVendorService {
                 e instanceof DisabledGameException ||
                 e instanceof DisabledAgentPlayerException) {
             responseVo.setError(ResponseCode.GAME_DISABLED);
+        } else if (e instanceof InternalServerTimeoutRetryException) {
+            responseVo.setError(ResponseCode.TEMPORARY_ERROR);
         } else {
             responseVo.setError(ResponseCode.UNKNOWN_ERROR);
         }
