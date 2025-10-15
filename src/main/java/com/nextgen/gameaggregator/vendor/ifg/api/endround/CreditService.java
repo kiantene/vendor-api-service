@@ -76,13 +76,13 @@ public class CreditService {
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditServiceDto, gameSession);
-            
+
             ResultType resultType = vendorService.checkResult(creditServiceDto.getRoundWinDto().getWin(), creditServiceDto.getRoundWinDto().getFinished());
             balance = walletService.processBetResult(traceId, gameSession, creditServiceDto, resultType, vendorService, httpRequestLog);
 
             // set balanceVo
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
 
@@ -125,7 +125,7 @@ public class CreditService {
 
             // set balanceVo
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
 
