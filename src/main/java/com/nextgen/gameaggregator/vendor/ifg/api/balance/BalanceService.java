@@ -66,7 +66,7 @@ public class BalanceService {
             // set balanceVo
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             balanceVo.setType("real");
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
 
             // set getbalanceVo

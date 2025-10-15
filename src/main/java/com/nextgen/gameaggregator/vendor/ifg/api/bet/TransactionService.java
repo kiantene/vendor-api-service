@@ -79,7 +79,7 @@ public class TransactionService {
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);
-            
+
             if ("1".equals(transactionServiceDto.getRoundbet().getFinished())) {
                 resultType = vendorService.calculateResultType(transactionServiceDto.getBetAmount(), transactionServiceDto.getWinAmount(),
                         transactionServiceDto.getJackpotAmount(), true);
@@ -87,10 +87,10 @@ public class TransactionService {
             } else {
                 // Process Bet
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionServiceDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                balance = BigDecimal.valueOf(betEvent.getLastBalance().intValue());
+                balance = betEvent.getLastBalance();
             }
             // set balanceVo
-            balanceVo.setValue(String.valueOf(balance));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -122,7 +122,7 @@ public class TransactionService {
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // set balanceVo
-            balanceVo.setValue(String.valueOf(balance.intValue()));
+            balanceVo.setValue(String.valueOf(balance.toBigInteger()));
             balanceVo.setVersion(String.valueOf(System.currentTimeMillis()));
             balanceVo.setType("real");
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());

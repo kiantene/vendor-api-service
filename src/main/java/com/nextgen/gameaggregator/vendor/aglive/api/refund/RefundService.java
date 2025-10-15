@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -29,11 +30,12 @@ public class RefundService {
     private final VendorLineService vendorLineService;
     private final AgentPlayerService agentPlayerService;
     private final VendorGameService vendorGameService;
+    private final UnsettledBetCachingService unsettledBetCachingService;
 
     @Autowired
     public RefundService(GameSessionService gameSessionService, VendorLineService vendorLineService, WalletService walletService,
                          HttpService httpService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService,
-                         VendorService vendorService) {
+                         VendorService vendorService, UnsettledBetCachingService unsettledBetCachingService) {
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
@@ -41,6 +43,7 @@ public class RefundService {
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.vendorService = vendorService;
+        this.unsettledBetCachingService = unsettledBetCachingService;
     }
 
     public CommonVo refund(HttpRequestLog httpRequestLog, String traceId) {
@@ -56,7 +59,19 @@ public class RefundService {
             this.doValidation(commonRefundDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(commonRefundDto.getRefundDto().getSessionToken());
+            try {
+                gameSession = gameSessionService.verifyToken(commonRefundDto.getRefundDto().getSessionToken());
+                if (gameSession.getStatus() == 0) {
+                    throw new AuthenticationException();
+                }
+            } catch (AuthenticationException exception) {
+                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonRefundDto.getRefundDto().getGameCode());
+                gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
+                gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonRefundDto, gameSession);
