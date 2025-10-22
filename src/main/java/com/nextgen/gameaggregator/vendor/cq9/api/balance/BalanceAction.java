@@ -73,7 +73,7 @@ public class BalanceAction {
             // 2. Get vendor player details
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
             currencyId = vendorPlayer.getCurrencyId();
-            GameSession gameSession = gameService.getGameSessionByUsername(account, null);
+            GameSession gameSession = gameService.getGameSessionByUsername(account);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(vendorPlayer, wToken);

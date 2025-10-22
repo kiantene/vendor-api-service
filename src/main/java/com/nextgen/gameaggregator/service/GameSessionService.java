@@ -195,13 +195,7 @@ public class GameSessionService {
     @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")
     public GameSession getByVendorPlayerUsername(String username, String vendorGameCode) {
 
-        List<GameSession> gameSessionList;
-
-        if (vendorGameCode == null) {
-            gameSessionList = rawGameSessionRepository.findByVendorPlayerUsername(username);
-        } else {
-            gameSessionList = rawGameSessionRepository.findByVendorPlayerUsernameAndVendorGameCode(username, vendorGameCode);
-        }
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorPlayerUsernameAndVendorGameCode(username, vendorGameCode);
 
         if (gameSessionList.isEmpty()) {
             return null;

@@ -122,10 +122,15 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         txn.setUsername(round.getUsername());
         txn.setGameCode(round.getGameCode());
         txn.setCurrency(round.getCurrency());
+        txn.setRoundId(round.getRoundId());
         context.setVendorId(round.getVendorId());
         context.setVendorPlayerUsername(round.getUsername());
         context.setVendorGameCode(round.getGameCode());
         context.setVendorCurrency(round.getCurrency());
+        if (context.getRoundId() == null) {
+            context.setRoundId(round.getRoundId());
+        }
+
         enrich(context);
     }
 

@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.BetResultLogService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +31,6 @@ public class VendorService extends BaseVendorService {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
-    @Autowired
-    private BetResultLogService betResultLogService;
 
     public static String generateSHA256Hash(String input) throws InvalidEncryptionException {
         try {
@@ -104,15 +101,16 @@ public class VendorService extends BaseVendorService {
     public void settledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException {
 
-        Integer vendorId = gameSession.getVendorId();
+        Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         SettledBet settledBet = null;
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+        String id = SettledBet.generateId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
 
         try {
             // Add retry to find settled bet, because DNC request (debit & credit) and Query request very frequently
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(vendorBetId, roundId, vendorId, vendorPlayerId);
+            settledBet = settledBetService.getById(id);
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
@@ -128,8 +126,8 @@ public class VendorService extends BaseVendorService {
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
+            log.warn("habanero settled bet id: " + id + " cannot be found");
             //no action
         }
     }
-
 }

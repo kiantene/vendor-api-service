@@ -70,15 +70,10 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
     }
 
     @Override
-    public WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException {
+    public WalletRequest betCredit(WalletRequest walletRequest) throws InsufficientBalanceException, InternalServerException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException {
 
         try {
             walletRequest = walletBetCreditProcessor.process(walletRequest);
-
-        } catch (BetNotAllowedException | InternalServerException e) {
-            //before callToOperator or while generateSettleBet and failed
-            //remain operatorStatus and balance as 0.
-            throw e;
 
         } catch (InvalidOperatorResponseException e) {
             //within callToOperator and after operator response
@@ -86,10 +81,6 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
             this.createBetResultRetryLog(walletRequest);
             this.doForceSuccessParameters(walletRequest);
 
-            throw e;
-
-        } catch (Exception e) {
-            //could be anywhere, so set default operatorStatus and balanceAfter if walletRequest have no value for them
             throw e;
 
         } finally {

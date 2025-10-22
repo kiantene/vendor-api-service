@@ -5,10 +5,7 @@ import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
-import com.nextgen.gameaggregator.exception.BetNotAllowedException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.InternalServerException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
 import com.nextgen.gameaggregator.service.*;
 import org.springframework.stereotype.Service;
@@ -39,7 +36,7 @@ public class WalletBetCreditProcessor {
         this.betRefundLogService = betRefundLogService;
     }
 
-    public WalletRequest process(WalletRequest walletRequest) throws InternalServerException, BetNotAllowedException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
+    public WalletRequest process(WalletRequest walletRequest) throws InsufficientBalanceException, BetNotAllowedException, InternalServerException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         walletRequestService.initialise(walletRequest);
 
@@ -60,9 +57,9 @@ public class WalletBetCreditProcessor {
 
             walletRequest = this.generateSettledBet(walletTransaction, walletRequest);
             walletRequest = this.generateBetHistory(walletTransaction, walletRequest);
-            return walletRequest;
 
         }
+        return walletRequest;
     }
 
     public WalletRequest generateBetHistory(WalletTransaction walletTransaction, WalletRequest walletRequest) throws InternalServerException {

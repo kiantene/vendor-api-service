@@ -29,12 +29,17 @@ public class CreditAction {
     private final HttpService httpService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final GameSessionService gameSessionService;
 
     @Autowired
-    public CreditAction(HttpService httpService, WalletService walletService, VendorService vendorService) {
+    public CreditAction(HttpService httpService,
+                        WalletService walletService,
+                        VendorService vendorService,
+                        GameSessionService gameSessionService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping(path = EndPoints.CREDIT)
@@ -43,19 +48,27 @@ public class CreditAction {
 
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
+        GameSession gameSession;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
-
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
 
             // 2. Verify session token
-            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
-
+            try {
+                gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(creditDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(creditDto.getSid());
+            }
             this.doVerification(creditDto, gameSession);
 
             // 3.
