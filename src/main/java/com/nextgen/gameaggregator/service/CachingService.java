@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -114,5 +115,10 @@ public class CachingService {
 
     @CacheEvict(value = "TempSessionToken", key = "{#vendorPlayerUsername, #roundId}", cacheManager = "cacheManager")
     public void deleteTokenByRoundIdAndVendorPlayerUsernameToRedis(String vendorPlayerUsername, String roundId) {
+    }
+
+    @Cacheable(value = "RawBetIdempotentLog", key = "#id", cacheManager = "cacheManager", unless = "#result == null")
+    public Optional<RawBetIdempotentLog> cacheableRawBetIdempotentLogByIdToRedis(String id, Optional<RawBetIdempotentLog> rawBetIdempotentLog) {
+        return rawBetIdempotentLog;
     }
 }

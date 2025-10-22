@@ -29,15 +29,23 @@ public class CancelAction {
     private final VendorGameService vendorGameService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final GameSessionService gameSessionService;
 
     @Autowired
-    public CancelAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, WalletService walletService, VendorService vendorService) {
+    public CancelAction(HttpService httpService,
+                        VendorLineService vendorLineService,
+                        AgentPlayerService agentPlayerService,
+                        VendorGameService vendorGameService,
+                        WalletService walletService,
+                        VendorService vendorService,
+                        GameSessionService gameSessionService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorGameService = vendorGameService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.gameSessionService = gameSessionService;
     }
 
     @PostMapping(path = EndPoints.CANCEL)
@@ -46,7 +54,7 @@ public class CancelAction {
 
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
-
+        GameSession gameSession;
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -57,8 +65,16 @@ public class CancelAction {
             this.doValidation(cancelDto);
 
             // 2. Verify session token
-            GameSession gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
-
+            try {
+                gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(cancelDto.getGame().getDetails().getTable().getId(), gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(cancelDto.getUserId());
+                gameSessionService.updateByVendorGameCode(gameSession, cancelDto.getGame().getDetails().getTable().getId());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(cancelDto.getSid());
+            }
             this.doVerification(cancelDto, gameSession);
 
             // 3. Send refund to Operator

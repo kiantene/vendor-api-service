@@ -105,6 +105,10 @@ public class SettledBet extends BetInformation {
         return this.getVendorBetId() + '_' + this.getRoundId() + '_' + this.getVendorGameId() + '_' + this.getVendorPlayerId();
     }
 
+    public static String generateId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
+        return vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
+    }
+
     public void calculateResultType() {
         BigDecimal winAmount = Optional.ofNullable(this.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmount = Optional.ofNullable(this.getJackpotAmount()).orElse(BigDecimal.ZERO);

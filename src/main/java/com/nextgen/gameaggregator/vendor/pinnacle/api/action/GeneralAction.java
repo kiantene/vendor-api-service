@@ -67,7 +67,10 @@ public class GeneralAction {
     }
 
     @PostMapping(path = "/{agentCode}/wagering/usercode/{userCode}/request/{requestId}")
-    public ResponseVo handleApiCall(@PathVariable String agentCode, @PathVariable(value = "userCode") String vendorPlayerUsername, @PathVariable String requestId, HttpServletRequest request) {
+    public ResponseVo handleApiCall(@PathVariable String agentCode,
+                                    @PathVariable(value = "userCode") String vendorPlayerUsername,
+                                    @PathVariable String requestId,
+                                    HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
 
@@ -75,6 +78,8 @@ public class GeneralAction {
         ResponseVo responseVo = new ResponseVo();
         ResultVo resultVo = new ResultVo();
         CommonVo commonVo = new CommonVo();
+        boolean isDuplicatedRequest = false;
+        String idempotentKey = "";
 
         try {
             // Dto validation
@@ -88,7 +93,8 @@ public class GeneralAction {
 
             // Idempotent checking
             String externalTransactionId = action.getId().toString();
-            String idempotentKey = vendorPlayerUsername + "_" + externalTransactionId;
+            idempotentKey = vendorPlayerUsername + "_" + externalTransactionId;
+            //block Idempotent request
             betIdempotentLogService.idempotentCheck(idempotentKey);
 
             // Setup Response Vo
@@ -106,16 +112,25 @@ public class GeneralAction {
             }
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            walletRequest.setErrorMessage(insufficientBalanceException.toString());
+            this.logException(walletRequest, insufficientBalanceException);
             commonVo.setResponseCode(ResponseCode.INSUFFICIENT_FUND.code);
             commonVoList.add(commonVo);
 
+        } catch (DuplicateRequestException ex) {
+            this.logException(walletRequest, ex);
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+            commonVoList.add(commonVo);
+            isDuplicatedRequest = true;
+
         } catch (Exception exception) {
-            walletRequest.setErrorMessage(exception.toString());
+            this.logException(walletRequest, exception);
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
             commonVoList.add(commonVo);
 
         } finally {
+            if (isDuplicatedRequest == false) {
+                betIdempotentLogService.delete(idempotentKey);
+            }
             resultVo.setAvailableBalance(commonVoList.get(0).getBalance());
             resultVo.setActions(commonVoList);
             responseVo.setResult(resultVo);
@@ -154,5 +169,26 @@ public class GeneralAction {
             throw new InvalidRequestException(e.getValidation().values().stream().findFirst().orElse("Invalid Request Body"));
         }
     }
+
+    public static Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    public void logException(WalletRequest walletRequest, Exception exception) {
+        if (exception.getCause() != null) {
+            Throwable rootCause = getRootCause(exception.getCause());
+            walletRequest.setErrorMessage(rootCause.getClass().getSimpleName() + " - " + rootCause.getMessage());
+        } else if (exception.getMessage() != null) {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName() + " - " + exception.getMessage());
+        } else {
+            walletRequest.setErrorMessage(exception.getClass().getSimpleName());
+        }
+
+    }
+
 }
 

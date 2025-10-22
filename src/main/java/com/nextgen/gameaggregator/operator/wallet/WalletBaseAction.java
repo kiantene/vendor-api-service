@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 public abstract class WalletBaseAction {
 
     /*
@@ -65,7 +67,7 @@ public abstract class WalletBaseAction {
 
     public WalletRequest callToOperator(WalletRequest walletRequest, Object requestData)
             throws InsufficientBalanceException, InvalidOperatorResponseException, InternalServerException {
-
+        ResponseEntity<String> response = null;
         ValidationUtils.doValidation(requestData, InternalServerException::new);
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
@@ -81,7 +83,7 @@ public abstract class WalletBaseAction {
         walletRequest.setOperatorData(requestBody);
         walletRequest.setOperatorStart(System.currentTimeMillis());
 
-        ResponseEntity<String> response = WebClient.create(apiUrl).post()
+        response = WebClient.create(apiUrl).post()
                 .uri(this.endpoint)
                 .header(EndPoints.HEADER_API_KEY, walletRequest.getApiKey())
                 .header(EndPoints.HEADER_SIGNATURE, signature)
@@ -97,7 +99,7 @@ public abstract class WalletBaseAction {
                     return Mono.empty();
                 })
                 .block();
-
+            
         walletRequest.setOperatorEnd(System.currentTimeMillis());
 
         if (isTimeout.get()) {

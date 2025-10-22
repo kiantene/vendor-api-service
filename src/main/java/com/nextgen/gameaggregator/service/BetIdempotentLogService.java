@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetIdempotentLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +19,14 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class BetIdempotentLogService {
-    @Autowired
-    private RawBetIdempotentLogRepository rawBetIdempotentLogRepository;
+    private final RawBetIdempotentLogRepository rawBetIdempotentLogRepository;
+    private final CachingService cachingService;
+
+    public BetIdempotentLogService(RawBetIdempotentLogRepository rawBetIdempotentLogRepository,
+                                   CachingService cachingService) {
+        this.rawBetIdempotentLogRepository = rawBetIdempotentLogRepository;
+        this.cachingService = cachingService;
+    }
 
     public RawBetIdempotentLog create(BetResultData betResultData, BigDecimal balance, GameSession gameSession) {
         RawBetIdempotentLog entity = new RawBetIdempotentLog();
@@ -137,6 +143,7 @@ public class BetIdempotentLogService {
 
     public void idempotentCheck(String id) throws DuplicateRequestException {
         Optional<RawBetIdempotentLog> rawBetIdempotentLogOptional = rawBetIdempotentLogRepository.findById(id);
+        cachingService.cacheableRawBetIdempotentLogByIdToRedis(id, rawBetIdempotentLogOptional);
 
         if (rawBetIdempotentLogOptional.isPresent()) { // id is found, which means this request has been sent before
             throw new DuplicateRequestException(id);
@@ -147,5 +154,10 @@ public class BetIdempotentLogService {
         rawBetIdempotentLog.setId(id);
 
         rawBetIdempotentLogRepository.save(rawBetIdempotentLog);
+    }
+
+    @CacheEvict(value = "RawBetIdempotentLog", key = "#id", cacheManager = "cacheManager")
+    public void delete(String id) {
+        rawBetIdempotentLogRepository.deleteById(id);
     }
 }
