@@ -245,12 +245,16 @@ public class EndWagerAction {
 
             if (token == null) {
                 gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
-
+                if (gameSession == null) {
+                    throw new AuthenticationException("getLastGameSessionByVendorPlayerUsername Failed");
+                }
             } else {
                 gameSession = gameSessionService.verifyToken(token);
             }
         } catch (AuthenticationException e) {
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
             gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
+            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(traceId);
             gameSession.setVendorToken(traceId);

@@ -325,7 +325,7 @@ public class WalletService {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
 
-            BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData);
+            BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
 
             //Handle for WIN Scenario, CQ9
             if (resultType == ResultType.WIN) {
@@ -688,7 +688,7 @@ public class WalletService {
                     // record operator processing time
                     walletBetResultData.setBalance(unsettledBet.getBalance());
 
-                    BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData);
+                    BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
 
                     balanceVo = walletBetResultAction.call(
                             traceId,

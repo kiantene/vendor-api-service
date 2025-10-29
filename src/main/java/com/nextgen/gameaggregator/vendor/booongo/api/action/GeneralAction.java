@@ -60,7 +60,7 @@ public class GeneralAction {
         // Construct VO
         CommonVo vo = new CommonVo();
         ErrorVo error = new ErrorVo();
-        Integer httpStatus = HttpStatus.SC_OK; //default is 200 status
+        int httpStatus = HttpStatus.SC_OK; //default is 200 status
 
         try {
 
@@ -75,6 +75,7 @@ public class GeneralAction {
 
         } catch (InvalidRequestException |
                  JsonProcessingException e) {
+            httpService.logError(httpRequestLog, e);
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
         } finally {
@@ -82,7 +83,7 @@ public class GeneralAction {
         }
 
         //check the processed data included httpstatus or not
-        if(vo.getError() != null && vo.getError().getHttpStatus() != null){
+        if (vo.getError() != null && vo.getError().getHttpStatus() != null) {
             httpStatus = vo.getError().getHttpStatus();
             vo.getError().setHttpStatus(null);
         }
@@ -90,8 +91,8 @@ public class GeneralAction {
         return new ResponseEntity<>(vo, HttpStatusCode.valueOf(httpStatus));
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws JsonProcessingException {
-        CommonVo vo = new CommonVo();
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
+        CommonVo vo;
         switch (actionDto.getName().toLowerCase()) {
             case Actions.LOGIN:
                 vo = loginService.login(httpRequestLog, traceId);
@@ -102,9 +103,9 @@ public class GeneralAction {
             case Actions.TRANSACTION:
 
                 // check the condition to decide which bet process should be taken
-                if(actionDto.getArgs().getBonus() != null){
+                if (actionDto.getArgs().getBonus() != null) {
                     vo = freeSpinService.freespin(httpRequestLog, traceId);
-                }else{
+                } else {
                     vo = transactionService.transaction(httpRequestLog, traceId);
                 }
 
@@ -112,6 +113,8 @@ public class GeneralAction {
             case Actions.ROLLBACK:
                 vo = rollbackService.rollback(httpRequestLog, traceId);
                 break;
+            default:
+                throw new InvalidRequestException();
         }
         return vo;
     }

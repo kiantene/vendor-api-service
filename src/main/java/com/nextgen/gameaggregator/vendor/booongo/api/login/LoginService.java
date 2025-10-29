@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.login;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -74,7 +73,7 @@ public class LoginService {
             loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
 
             // check stg vendor user name(testing acc from vendor)
-            if(gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2kpq8zi") || gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2ksnosi")){
+            if (gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2kpq8zi") || gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2ksnosi")) {
                 loginPlayer.setIs_test(true); //if this param value is not same as previous login, it will cause unable to login game
             }
 
@@ -87,11 +86,12 @@ public class LoginService {
             vo.setBalance(balanceVo);
             vo.setTag("");
 
-        }catch (AuthenticationException e) {
+        } catch (AuthenticationException e) {
+            httpService.logError(httpRequestLog, e);
             error.setCode(ResponseCodes.INVALID_TOKEN);
             vo.setError(error);
-        }catch(InvalidRequestException e){
-
+        } catch (InvalidRequestException e) {
+            httpService.logError(httpRequestLog, e);
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
                         .entrySet()
@@ -106,23 +106,11 @@ public class LoginService {
 
             vo.setError(error);
 
-        } catch (DisabledAgentPlayerException |
-                 DisabledGameException |
-                 DisabledVendorLineException |
-                 InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException |
-                 JsonProcessingException |
-                 CredentialNotFoundException |
-                 GameNotSupportedException e) {
-            error.setCode(ResponseCodes.GAME_NOT_ALLOWED);
-            vo.setError(error);
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             error.setCode(ResponseCodes.GAME_NOT_ALLOWED);
             vo.setError(error);
-        }
-        finally{
+        } finally {
             vo.setUid(loginDto.getUid());
         }
 

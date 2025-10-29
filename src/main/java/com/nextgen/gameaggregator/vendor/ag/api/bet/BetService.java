@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ag.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.ag.constant.GameCategories;
 import com.nextgen.gameaggregator.vendor.ag.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ag.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.ag.service.VendorService;
@@ -65,6 +66,9 @@ public class BetService {
             // Verify session token
             gameSession = gameSessionService.verifyToken(commonDto.getRecordDto().getSessionToken());
 
+            //if casual game set vendorbetid
+            this.doSetVendorBetId(gameSession,commonDto);
+
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, gameSession);
 
@@ -106,6 +110,15 @@ public class BetService {
 
         }
         return vo;
+    }
+
+    // if is casual game then use transactonid as vendorbetid
+    private void doSetVendorBetId(GameSession gameSession,CommonDto commonDto)
+    {
+        if(gameSession.getGameCategoryId().equals(GameCategories.CASUAL_GAME))
+        {
+            commonDto.setVendorBetId(commonDto.getRecordDto().getTransactionID());
+        }
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {

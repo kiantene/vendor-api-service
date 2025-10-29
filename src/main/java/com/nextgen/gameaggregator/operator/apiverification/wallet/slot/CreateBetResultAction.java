@@ -59,7 +59,13 @@ public class CreateBetResultAction {
 
                 try {
                     //first check against settledBet couchbase collection
-                    SettledBet cbSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorId(), settledBet.getVendorPlayerId());
+                    String settledBetId = SettledBet.generateId(
+                            settledBet.getVendorBetId(),
+                            settledBet.getRoundId(),
+                            settledBet.getVendorGameId(),
+                            settledBet.getVendorPlayerId()
+                    );
+                    SettledBet cbSettledBet = settledBetService.getById(settledBetId);
 
                     //if record is found then throw BetResultIdempotentViolationException;
                     if (cbSettledBet != null) {

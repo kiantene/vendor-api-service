@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.service.data.AgentPayoutSettingDataService;
 import com.nextgen.gameaggregator.service.data.VendorFeatureDataService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,20 +22,20 @@ public class AgentMaxPayoutService {
     private final AgentPayoutSettingDataService payoutSettingsDataService;
     private final VendorFeatureDataService vendorFeatureDataService;
 
-    public BetInformation applyPayoutCap(BetInformation betInfo) {
+    public BetInformation applyPayoutCap(BetInformation betInfo, BigDecimal toVendorRate) {
 
         if (!vendorFeatureDataService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, betInfo.getVendorId())) {
             return betInfo;
         }
 
-        return getPayoutCapAmount(betInfo)
-                .filter(cap -> shouldApplyCap(betInfo, cap))
-                .map(cap -> applyCalculation(betInfo, cap))
+        return getPayoutCapAmount(betInfo, toVendorRate)
+                .filter(cap -> shouldApplyCap(betInfo, cap.amount()))
+                .map(cap -> applyCalculation(betInfo, cap.amount()))
                 .orElse(betInfo);
     }
 
-    private Optional<BigDecimal> getPayoutCapAmount(BetInformation betInfo) {
-        Optional<BigDecimal> empty = Optional.empty();
+    private Optional<TxnAmount> getPayoutCapAmount(BetInformation betInfo, BigDecimal toVendorRate) {
+        Optional<TxnAmount> empty = Optional.empty();
 
         BigDecimal winAmount = betInfo.getWinAmount();
         BigDecimal jackpotAmount = betInfo.getJackpotAmount();
@@ -46,7 +47,7 @@ public class AgentMaxPayoutService {
         Optional<Agent> agent = getAgent(betInfo.getAgentId());
         if (agent.isEmpty()) return empty;
 
-        BigDecimal capAmount = payoutSettingsDataService.getMaxPayoutAmount(
+        BigDecimal configCapAmount = payoutSettingsDataService.getMaxPayoutAmount(
                 agent.get().getMasterAgentId(),
                 agent.get().getId(),
                 betInfo.getVendorId(),
@@ -54,7 +55,9 @@ public class AgentMaxPayoutService {
                 betInfo.getCurrencyId()
         );
 
-        if (capAmount == null || capAmount.signum() <= 0) return empty;
+        if (configCapAmount == null || configCapAmount.signum() <= 0) return empty;
+
+        TxnAmount capAmount = TxnAmount.of(configCapAmount, toVendorRate);
 
         return Optional.of(capAmount);
     }

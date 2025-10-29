@@ -36,8 +36,7 @@ public class SettledBetService {
     BetIdempotentLogService betIdempotentLogService;
 
     @Caching(put = {
-            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
     })
     public SettledBet save(SettledBet settledBet, String rawData) {
 
@@ -56,8 +55,7 @@ public class SettledBetService {
     }
 
     @Caching(put = {
-            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
     })
     public SettledBet update(Integer operatorStatus, BigDecimal balance, SettledBet settledBet) {
         settledBet.setBalance(balance);
@@ -85,18 +83,6 @@ public class SettledBetService {
         SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (settledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("Cannot find vendor player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
-        }
-
-        return settledBet;
-    }
-
-    @Cacheable(value = "SettledBet", key = "{#vendorBetId, #roundId, #vendorId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
-
-        SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
-
-        if (settledBet == null) { // No matching bet record for the given round Id
-            throw new BetNotFoundException("getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId");
         }
 
         return settledBet;
@@ -133,7 +119,6 @@ public class SettledBetService {
             throws BetResultIdempotentViolationException, TransactionStillProcessingException,
             AmbiguousTimeoutException, UnambiguousTimeoutException {
 
-        Integer vendorId = gameSession.getVendorId();
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String vendorBetId = betResultData.getVendorBetId();
@@ -143,7 +128,8 @@ public class SettledBetService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+            String settledBetId = SettledBet.generateId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            settledBet = this.getById(settledBetId);
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();

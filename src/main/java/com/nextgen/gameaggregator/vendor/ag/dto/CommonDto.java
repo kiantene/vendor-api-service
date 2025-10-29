@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ag.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
@@ -20,6 +21,9 @@ public class CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "Record")
     private RecordDto recordDto;
 
+    @JsonIgnore
+    private String vendorBetId =null;
+
     @Override
     public String getExternalTransactionId() {
         return this.recordDto.getTransactionID();
@@ -27,6 +31,9 @@ public class CommonDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
+        if (vendorBetId != null) {
+            return vendorBetId;
+        }
         return this.recordDto.getBillNo();
     }
 

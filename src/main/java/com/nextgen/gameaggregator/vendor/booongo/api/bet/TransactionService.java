@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.bet;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -84,6 +83,7 @@ public class TransactionService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
         } catch (InsufficientBalanceException e) {
+            httpService.logError(httpRequestLog, e);
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
@@ -92,6 +92,7 @@ public class TransactionService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
         } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
             // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
@@ -99,6 +100,7 @@ public class TransactionService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
         } catch (InvalidOperatorResponseException e) {
 
+            httpService.logError(httpRequestLog, e);
             // check the status is insufficient code or not
             if (e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
@@ -113,21 +115,6 @@ public class TransactionService {
                 vo.setError(errorVo);
             }
 
-        } catch (DisabledVendorLineException |
-                 InvalidAgentApiCredentialException |
-                 InvalidPlayerException |
-                 CurrencyNotSupportedException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidRequestException |
-                 BetNotFoundException |
-                 GameNotSupportedException |
-                 JsonProcessingException |
-                 AuthenticationException |
-                 TransactionStillProcessingException |
-                 CredentialNotFoundException e) {
-            errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
-            vo.setError(errorVo);
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);

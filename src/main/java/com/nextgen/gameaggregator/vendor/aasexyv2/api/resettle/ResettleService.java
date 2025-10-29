@@ -136,7 +136,13 @@ public class ResettleService {
             this.doVerification(resettleTransactionsDto, gameSession);
 
             // Get settle bet to calculate adjustment amount
-            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(resettleTransactionsDto.getVendorBetId(), resettleTransactionsDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            String settledBetId = SettledBet.generateId(
+                    resettleTransactionsDto.getVendorBetId(),
+                    resettleTransactionsDto.getRoundId(),
+                    gameSession.getVendorGameId(),
+                    gameSession.getVendorPlayerId()
+            );
+            SettledBet settledBet = settledBetService.getById(settledBetId);
             resettleTransactionsDto.setAdjustmentAmount(resettleTransactionsDto.getWinAmount().subtract(settledBet.getWinAmount()));
 
             // Process Result

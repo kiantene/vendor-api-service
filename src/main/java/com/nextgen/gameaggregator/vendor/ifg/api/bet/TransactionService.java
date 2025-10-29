@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.ifg.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.ErrorVo;
 import org.springframework.stereotype.Service;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 
 import java.math.BigDecimal;
 
@@ -136,6 +137,30 @@ public class TransactionService {
             vo.setRoundbet(roundBetVo);
 
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException e) {
+
+            if (e.getOperatorStatus().equals(Status.SC_INSUFFICIENT_FUNDS.code)) {
+                // set errorVo
+                errorVo.setCode(ResponseCodes.NOT_ENOUGH_MONEY);
+                errorVo.setMsg(ResponseCodes.N_E_M);
+
+                // set roundBetVo
+                roundBetVo.setResult(ResponseCodes.RESULT_FAIL);
+
+            } else {
+                // set errorVo
+                errorVo.setCode(ResponseCodes.WL_ERROR);
+                errorVo.setMsg(ResponseCodes.WL_E);
+
+                // set roundBetVo
+                roundBetVo.setResult(ResponseCodes.RESULT_ERROR);
+
+            }
+            roundBetVo.setId(transactionServiceDto.getRoundbet().getId());
+            roundBetVo.setError(errorVo);
+            vo.setRoundbet(roundBetVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  VendorCurrencyNotSupportException |
@@ -144,7 +169,6 @@ public class TransactionService {
                  InvalidPlayerException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
-                 InvalidOperatorResponseException |
                  CouchbaseDataIntegrityException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
