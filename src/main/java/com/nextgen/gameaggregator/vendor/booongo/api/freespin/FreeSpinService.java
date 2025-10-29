@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.freespin;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -38,7 +37,7 @@ public class FreeSpinService {
     @Autowired
     private VendorService vendorService;
 
-    public CommonVo freespin(HttpRequestLog httpRequestLog, String traceId){
+    public CommonVo freespin(HttpRequestLog httpRequestLog, String traceId) {
         // Construct VO
         BalanceVo balanceVo = new BalanceVo();
         FreeSpinVo vo = new FreeSpinVo();
@@ -49,7 +48,7 @@ public class FreeSpinService {
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
         GameSession gameSession = new GameSession();
 
-        try{
+        try {
             // Retrieve request body in original string format
             freeSpinDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), FreeSpinDto.class);
 
@@ -69,7 +68,8 @@ public class FreeSpinService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-        }catch (InsufficientBalanceException e) {
+        } catch (InsufficientBalanceException e) {
+            httpService.logError(httpRequestLog, e);
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
@@ -77,17 +77,19 @@ public class FreeSpinService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch (BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
             // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-        }catch(InvalidOperatorResponseException e){
+        } catch (InvalidOperatorResponseException e) {
+            httpService.logError(httpRequestLog, e);
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
             // check the status is insufficient code or not
-            if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
+            if (e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
             }
 
@@ -96,27 +98,7 @@ public class FreeSpinService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch (DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                CurrencyNotSupportedException |
-                DisabledAgentPlayerException |
-                DisabledGameException |
-                InvalidRequestException |
-                BetNotFoundException |
-                GameNotSupportedException |
-                JsonProcessingException |
-                AuthenticationException |
-                TransactionStillProcessingException |
-                CredentialNotFoundException e) {
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-
-            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-
-            // Retrieve current wallet balance
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            vo.setError(errorVo);
-        }catch(Exception exception){
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
@@ -125,7 +107,7 @@ public class FreeSpinService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }finally{
+        } finally {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(freeSpinDto.getUid());
             vo.setBalance(balanceVo);
@@ -176,7 +158,7 @@ public class FreeSpinService {
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 
-    private ResultType getResultType(){
+    private ResultType getResultType() {
         // free bet game always in win status
         ResultType resultType = ResultType.BET_WIN; // Default value is win
 

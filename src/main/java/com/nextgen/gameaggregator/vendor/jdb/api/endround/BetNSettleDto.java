@@ -141,7 +141,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return win;
+        return win.subtract(this.getJackpotAmount());
     }
 
     @Override

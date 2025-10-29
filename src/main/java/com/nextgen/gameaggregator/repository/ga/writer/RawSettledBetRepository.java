@@ -14,7 +14,5 @@ import java.util.List;
 public interface RawSettledBetRepository extends CouchbaseRepository<SettledBet, String> {
     SettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
 
-    SettledBet findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId);
-
     List<SettledBet> findByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId);
 }

@@ -182,13 +182,21 @@ public class BetNSettleAction {
         }
     }
 
-    private void settledBetIdempotentCheck(String dtoTransactionId, String dtoRoundId, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws TransactionStillProcessingException, BetResultIdempotentViolationException, BetNotFoundException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
-        SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(
+    private void settledBetIdempotentCheck(String dtoTransactionId,
+                                           String dtoRoundId,
+                                           GameSession gameSession,
+                                           String traceId,
+                                           HttpRequestLog httpRequestLog) throws
+            TransactionStillProcessingException, BetResultIdempotentViolationException, BetNotFoundException,
+            InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, InvalidOperatorResponseException {
+
+        String settledBetId = SettledBet.generateId(
                 dtoTransactionId,
                 dtoRoundId,
-                gameSession.getVendorId(),
+                gameSession.getVendorGameId(),
                 gameSession.getVendorPlayerId()
         );
+        SettledBet settledBet = settledBetService.getById(settledBetId);
 
         if (settledBet != null) {
             Integer operatorStatus = settledBet.getOperatorStatus();

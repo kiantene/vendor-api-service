@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -54,7 +53,7 @@ public class RollbackService {
 
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
-        try{
+        try {
             // Retrieve request body in original string format
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
 
@@ -76,38 +75,22 @@ public class RollbackService {
 
             vo.setBalance(balanceVo);
 
-        } catch (InvalidAgentApiCredentialException |
-                 RecordNotFoundException |
-                 AuthenticationException |
-                 InvalidOperatorResponseException |
-                 JsonProcessingException |
-                 InvalidPlayerException |
-                 CurrencyNotSupportedException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidRequestException |
-                 DisabledVendorLineException |
-                 CredentialNotFoundException e) {
-
-            // vendor did not provide any error code, so return http status as 503
-            error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
-            vo.setError(error);
-        }catch(BetNotFoundException |
-               BetRefundIdempotentViolationException |
-               BetResultIdempotentViolationException e){
+        } catch (BetNotFoundException |
+                 BetRefundIdempotentViolationException |
+                 BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
             vo.setBalance(balanceVo);
-        }catch(Exception exception){
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             // vendor did not provide any error code, so return http status as 503
             error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(error);
-        }
-         finally{
+        } finally {
             vo.setUid(rollbackDto.getUid());
         }
 

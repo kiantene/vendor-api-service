@@ -16,4 +16,7 @@ public interface VendorPlayerAware {
     void setVendorLineId(Integer vendorLineId);
 
     void setCurrencyId(Integer currencyId);
+    Integer getAgentId();
+    Integer getVendorId();
+    String getAgentPlayerUsername();
 }

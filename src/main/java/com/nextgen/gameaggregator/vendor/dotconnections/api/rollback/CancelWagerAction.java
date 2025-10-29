@@ -3,9 +3,11 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.api.result.EndWagerDto;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
@@ -42,6 +44,8 @@ public class CancelWagerAction {
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -67,8 +71,8 @@ public class CancelWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
-
+            gameSession = this.getGameSession(traceId, dto);
+            
             // Verify data
             this.doVerification(dto, gameSession);
 
@@ -215,4 +219,21 @@ public class CancelWagerAction {
 
     }
 
+    private GameSession getGameSession(String traceId, CancelWagerDto dto) throws BetNotFoundException, InvalidPlayerException, VendorCurrencyNotSupportException, GameNotSupportedException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            if (gameSession == null) {
+                throw new AuthenticationException("getLastGameSessionByVendorPlayerUsername Failed");
+            }
+        } catch (AuthenticationException e) {
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+            gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
+            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
+    }
 }

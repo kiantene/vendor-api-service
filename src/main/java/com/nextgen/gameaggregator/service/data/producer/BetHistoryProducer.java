@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.service.CurrencyConversionService;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import com.nextgen.gameaggregator.service.data.model.TxnAmounts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +86,7 @@ public class BetHistoryProducer {
                     usernames
             );
 
-            produceBetHistoryUncap(betHistoryV3, settledBet);
+            produceBetHistoryUncap(betHistoryV3, settledBet, context);
         } else {
             produceBetHistoryBatch(context.txnList(), settledBet, context, usernames);
             // TODO: to finalise solution for uncap bet history
@@ -233,14 +234,16 @@ public class BetHistoryProducer {
         return betHistoryV3;
     }
 
-    private void produceBetHistoryUncap(BetHistoryV3 betHistoryV3, SettledBet settledBet) {
+    private void produceBetHistoryUncap(BetHistoryV3 betHistoryV3, SettledBet settledBet, BetHistoryPublishContext context) {
         if (settledBet.getUncapWinAmount() == null) return;
 
+        BigDecimal fromVendorRate = context.fromVendorRate();
+
         BetHistoryUncap betHistoryUncap = BetHistoryUncap.copyOf(betHistoryV3);
-        betHistoryUncap.setUncapWinAmount(settledBet.getUncapWinAmount());
-        betHistoryUncap.setUncapJackpotAmount(settledBet.getUncapJackpotAmount());
-        betHistoryUncap.setUncapWinLoss(settledBet.getUncapWinLoss());
-        betHistoryUncap.setUncapEffectiveTurnover(settledBet.getUncapEffectiveTurnover());
+        betHistoryUncap.setUncapWinAmount(TxnAmount.of(settledBet.getUncapWinAmount(), fromVendorRate).amount());
+        betHistoryUncap.setUncapJackpotAmount(TxnAmount.of(settledBet.getUncapJackpotAmount(), fromVendorRate).amount());
+        betHistoryUncap.setUncapWinLoss(TxnAmount.of(settledBet.getUncapWinLoss(), fromVendorRate).amount());
+        betHistoryUncap.setUncapEffectiveTurnover(TxnAmount.of(settledBet.getUncapEffectiveTurnover(), fromVendorRate).amount());
 
         kafkaService.produceBetHistoryUncap(betHistoryUncap);
     }

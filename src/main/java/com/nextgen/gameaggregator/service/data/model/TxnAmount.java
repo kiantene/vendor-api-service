@@ -26,7 +26,8 @@ public class TxnAmount {
         if (amount == null || rate == null || amount.signum() == 0) {
             return BigDecimal.ZERO;
         }
-        return amount.multiply(rate).stripTrailingZeros();
+        BigDecimal result = amount.multiply(rate).stripTrailingZeros();
+        return new BigDecimal(result.toPlainString());
     }
 
     protected BigDecimal safeSubtract(BigDecimal amount1, BigDecimal amount2) {

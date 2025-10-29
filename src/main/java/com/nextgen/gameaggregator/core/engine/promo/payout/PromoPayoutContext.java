@@ -35,6 +35,11 @@ public class PromoPayoutContext extends PayoutTransaction implements VendorPlaye
     private Currency currency = new Currency();
 
     @Override
+    public Integer getAgentId() {
+        return this.agent.id();
+    }
+
+    @Override
     public void setAgentId(Integer agentId) {
         this.agent.id(agentId);
     }
@@ -42,6 +47,11 @@ public class PromoPayoutContext extends PayoutTransaction implements VendorPlaye
     @Override
     public void setAgentPlayerId(Long agentPlayerId) {
         this.agent.playerId(agentPlayerId);
+    }
+
+    @Override
+    public String getAgentPlayerUsername() {
+        return this.agent.playerUsername();
     }
 
     @Override

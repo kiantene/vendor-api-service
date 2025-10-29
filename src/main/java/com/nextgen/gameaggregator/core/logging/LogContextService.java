@@ -1,15 +1,18 @@
 package com.nextgen.gameaggregator.core.logging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.service.KafkaService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LogContextService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaService kafkaService;
@@ -43,6 +46,17 @@ public class LogContextService {
             logContext.setApiResponse(response.getBody());
             logContext.setApiStatusCode(response.getStatusCode().value());
         }
+    }
+
+    public static void populateLogContext(LogContext logContext, VendorPlayerAware vendorPlayerAware) {
+        if (logContext == null || vendorPlayerAware == null) {
+            log.warn("populateLogContext failed: logcontext or vendorPlayerAware is null");
+            return;
+        }
+
+        logContext.setAgentId(vendorPlayerAware.getAgentId());
+        logContext.setVendorId(vendorPlayerAware.getVendorId());
+        logContext.setUsername(vendorPlayerAware.getAgentPlayerUsername());
     }
 
     // Backward compatible function

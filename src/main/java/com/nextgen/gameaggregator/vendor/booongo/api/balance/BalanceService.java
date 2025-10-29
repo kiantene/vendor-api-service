@@ -68,28 +68,12 @@ public class BalanceService {
 
             vo.setBalance(balanceVo);
 
-        }catch (InvalidAgentApiCredentialException |
-                 AuthenticationException |
-                 InvalidOperatorResponseException |
-                 JsonProcessingException |
-                 InvalidPlayerException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidRequestException |
-                 DisabledVendorLineException |
-                 CurrencyNotSupportedException |
-                 GameNotSupportedException |
-                 CredentialNotFoundException e) {
-
-            // vendor did not provide any error code, so using back general transaction error
-            error.setCode(ResponseCodes.OTHER_EXCEED);
-            vo.setError(error);
-        }catch(Exception exception){
+        } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
-        }finally{
+        } finally {
             vo.setUid(balanceDto.getUid());
         }
 

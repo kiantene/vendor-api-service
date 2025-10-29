@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -26,6 +27,9 @@ class BetContextEnricher extends BaseEnricher<BetContext> {
         if (context.getVendorBetId() == null) {
             context.setVendorBetId(context.getIdempotencyKey());
         }
+
+        // populateLogContext must be run in doEnrich so that context object will contain all required fields
+        LogContextService.populateLogContext(LogContextHolder.get(), context);
     }
 
     public void enrichByGameSession(BetContext context, GameSession gameSession) {

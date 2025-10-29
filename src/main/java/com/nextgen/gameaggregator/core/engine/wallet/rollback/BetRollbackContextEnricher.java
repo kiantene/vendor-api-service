@@ -39,6 +39,9 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         if (context.getTimestamp() == null) {
             context.setTimestamp(logContext.getStart());
         }
+
+        // populateLogContext must be run in doEnrich so that context object will contain all required fields
+        LogContextService.populateLogContext(logContext, context);
     }
 
     public void enrichByGameSession(BetRollbackContext context,
