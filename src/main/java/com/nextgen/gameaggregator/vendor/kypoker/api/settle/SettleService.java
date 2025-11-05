@@ -55,6 +55,7 @@ public class SettleService {
         this.walletTransactionService = walletTransactionService;
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
+
     public CommonVo settle(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp) {
 
         // Construct VO
@@ -84,7 +85,7 @@ public class SettleService {
             }
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
+            GameSession gameSession = verifyGameSessionToken(settleDto, traceId);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
@@ -157,14 +158,14 @@ public class SettleService {
             errorMessage = invalidRequestException.toString();
 
 
-        } catch (Exception e){
+        } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, e);
             errorMessage = e.toString();
 
         } finally {
 
-            if (!isRequestExists && settleDto!=null) {
+            if (!isRequestExists && settleDto != null) {
                 requestIdempotentLogService.delete(settleDto, settleDto.getAccount());
             }
 
@@ -172,10 +173,10 @@ public class SettleService {
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setD(d);
 
-            if (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code){
+            if (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
-            }else {
+            } else {
                 httpService.end(httpRequestLog, vo);
             }
         }
@@ -207,4 +208,22 @@ public class SettleService {
 
     }
 
+    private GameSession verifyGameSessionToken(SettleDto settleDto, String traceId) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(settleDto.getAccount());
+            if (gameSession == null) {
+                throw new AuthenticationException("token expired");
+            }
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(settleDto.getAccount());
+            gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(settleDto.getKindId()));
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(settleDto.getKindId()), gameSession);
+
+        return gameSession;
+    }
 }

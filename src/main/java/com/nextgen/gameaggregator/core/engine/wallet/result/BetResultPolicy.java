@@ -15,7 +15,7 @@ public class BetResultPolicy {
         // All rejection conditions first
 
         // Reject if round exists and is already ended
-        if (roundOpt.isPresent() && roundOpt.get().isEnded()) {
+        if (roundOpt.isPresent() && roundOpt.get().isEnded() && config.isSettledByRound()) {
             GameRound round = roundOpt.get();
             return BetResultDecision.reject(
                     round.getId() + " already ended",
