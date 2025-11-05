@@ -81,7 +81,10 @@ public class TransactionService {
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-
+        } catch (AuthenticationException e) {
+            httpService.logError(httpRequestLog, e);
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_LOGOUT);
+            vo.setError(errorVo);
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);

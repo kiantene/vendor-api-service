@@ -1,4 +1,5 @@
-FROM openjdk:18
+
+FROM eclipse-temurin:21-jdk
 
 COPY ./target/*.jar /ga_vendor/app.jar
 COPY ./game_aggregator-root-certificate.pem game_aggregator-root-certificate.pem

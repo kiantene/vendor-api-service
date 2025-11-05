@@ -376,7 +376,7 @@ public class WalletService {
 
             // send settled bet to kafka
             if (FeatureToggle.useRefactoredPublishBetHistory(settledBet.getVendorId())
-                || vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
+                    || vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
                 /**
                  * Feature toggle to use refactored logic, will affect vendors who are enabled for max payout as well
                  */
@@ -525,8 +525,8 @@ public class WalletService {
 
     private void processDefaultDataForSettledBet(BetInformation betInformation, SettledBet settledBet) {
 
-        Long vendorBetTime = (settledBet.getVendorBetTime() == null) ? System.currentTimeMillis() : settledBet.getVendorBetTime();
-        Long vendorSettleTime = (settledBet.getVendorSettleTime() == null) ? System.currentTimeMillis() : settledBet.getVendorSettleTime();
+        Long vendorBetTime = (settledBet.getVendorBetTime() == null || settledBet.getVendorBetTime() == 0) ? System.currentTimeMillis() : settledBet.getVendorBetTime();
+        Long vendorSettleTime = (settledBet.getVendorSettleTime() == null || settledBet.getVendorSettleTime() == 0) ? System.currentTimeMillis() : settledBet.getVendorSettleTime();
         Long resultTime = vendorSettleTime;
 
         settledBet.setVendorBetTime(vendorBetTime);
@@ -955,7 +955,7 @@ public class WalletService {
                     settledBet.setVendorSettleTime(vendorSettledTime);
                 }
 
-                if (settledBet.getVendorSettleTime() == null) {
+                if (settledBet.getVendorSettleTime() == null || settledBet.getVendorSettleTime() == 0) {
                     //if still null for vendorSettleTime, will use current system time as vendorSettleTime
                     settledBet.setVendorSettleTime(System.currentTimeMillis());
                 }

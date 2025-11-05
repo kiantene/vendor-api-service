@@ -58,9 +58,8 @@ public class CancelService {
         this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
-    public CommonVo cancel(String traceId, HttpRequestLog httpRequestLog, String decryptedParam,Long timeStamp)
-            throws AuthenticationException
-    {
+    public CommonVo cancel(String traceId, HttpRequestLog httpRequestLog, String decryptedParam, Long timeStamp)
+            throws AuthenticationException {
         // Construct VO
         CommonVo vo = new CommonVo();
         CancelDto cancelDto = null;
@@ -87,8 +86,7 @@ public class CancelService {
             }
 
             // 2. Verify session token
-            GameSession gameSession;
-            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelDto.getAccount()); //token check
+            GameSession gameSession = this.verifyGameSessionToken(cancelDto, traceId); //token check
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(cancelDto, gameSession);
@@ -97,18 +95,18 @@ public class CancelService {
 
             // 4. Send refund to Operator
             try {
-               walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
+                walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
             } catch (BetNotFoundException e) {
 
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(cancelDto.getGameNo(), cancelDto.getAccount());
-                this.dataMapper(walletRequest,cancelDto,gameSession);
+                this.dataMapper(walletRequest, cancelDto, gameSession);
 
-                if(walletTransaction == null) {
+                if (walletTransaction == null) {
                     throw new BetNotFoundException();
 
-                } else if((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)){
+                } else if ((Objects.equals(walletTransaction.getAction(), "credit") && walletTransaction.getOperatorStatus() == 1)) {
                     throw new BetResultIdempotentViolationException();
 
                 } else {
@@ -130,17 +128,17 @@ public class CancelService {
             d.setCode(ResponseCodes.BET_NOT_FOUND);
             httpService.logError(httpRequestLog, betNotFoundException);
 
-        } catch (BetResultIdempotentViolationException  duplicateRequestException) {
+        } catch (BetResultIdempotentViolationException duplicateRequestException) {
             d.setCode(ResponseCodes.DUPLICATE);
             httpService.logError(httpRequestLog, duplicateRequestException);
 
-        }  catch (Exception e){
+        } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, e);
 
         } finally {
 
-            if (!isRequestExists && cancelDto!=null) {
+            if (!isRequestExists && cancelDto != null) {
                 requestIdempotentLogService.delete(cancelDto, cancelDto.getAccount());
             }
 
@@ -178,8 +176,7 @@ public class CancelService {
 
     }
 
-    private void dataMapper (WalletRequest walletRequest, CancelDto cancelDto , GameSession gameSession)
-    {
+    private void dataMapper(WalletRequest walletRequest, CancelDto cancelDto, GameSession gameSession) {
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         walletRequest.setExternalTransactionId(cancelDto.getOrderId());
@@ -201,4 +198,22 @@ public class CancelService {
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
 
+    private GameSession verifyGameSessionToken(CancelDto cancelDto, String traceId) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelDto.getAccount());
+            if (gameSession == null) {
+                throw new AuthenticationException("token expired");
+            }
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(cancelDto.getAccount());
+            gameSessionService.updateByVendorGameCode(gameSession, String.valueOf(cancelDto.getKindId()));
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelDto.getKindId()), gameSession);
+
+        return gameSession;
+    }
 }

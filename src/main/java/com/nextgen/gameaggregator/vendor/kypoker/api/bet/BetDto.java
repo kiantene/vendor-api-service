@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -98,12 +101,12 @@ public class BetDto implements BetResultData, RequestIdempotency {
 
     @Override
     public Long getResultTime() {
-        return Long.valueOf(0);
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return Long.valueOf(0);
+        return this.timeStamp;
     }
 
     @Override

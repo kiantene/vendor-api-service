@@ -59,7 +59,7 @@ public class GameRoundService {
                         final String newTraceId = UUID.randomUUID().toString();
 
                         //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
-                        if (betRecord.getVendorSettleTime() == null) {
+                        if (betRecord.getVendorSettleTime() == null || betRecord.getVendorSettleTime() == 0) {
                             betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
                         }
 
@@ -133,7 +133,7 @@ public class GameRoundService {
                     final String newTraceId = UUID.randomUUID().toString();
 
                     //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
-                    if (betRecord.getVendorSettleTime() == null) {
+                    if (betRecord.getVendorSettleTime() == null || betRecord.getVendorSettleTime() == 0) {
                         betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
                     }
 
