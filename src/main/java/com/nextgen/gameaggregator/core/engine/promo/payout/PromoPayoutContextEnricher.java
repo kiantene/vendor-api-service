@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
-import com.nextgen.core.exception.EntityNotFoundException;
-import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.Vendor;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
@@ -40,23 +40,31 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
 
     @Override
     public void prepareContext(PromoPayoutContext context) {
+        context.setTransactionId(UuidUtil.newUuidV7StringRaw());
         if (context.getHttpRequestLog() == null) {
             context.setHttpRequestLog(LogContextService.toHttpRequestLog(LogContextHolder.get()));
         }
+
+        // if vendor player username is not set, then get the username from the first transaction in the list
+        if (context.getVendorPlayerUsername() == null && context.getPayoutTransactions() != null) {
+            context.setVendorPlayerUsername(context.getPayoutTransactions().get(0).getVendorPlayerUsername());
+        }
     }
 
+    @Override
     public void doEnrich(PromoPayoutContext context) {
-        this.populateAgent(context);
-        this.populateVendor(context);
-        this.populateCampaign(context);
         LogContext logContext = LogContextHolder.get();
-        logContext.setVendorId(context.getVendor().id());
-        logContext.setAgentId(context.getAgent().id());
-        logContext.setUsername(context.getAgent().playerUsername());
-
         if (context.getTraceId() == null) {
             context.setTraceId(logContext.getTraceId());
         }
+
+        this.populateAgent(context);
+        this.populateVendor(context);
+        this.populateCampaign(context);
+
+        logContext.setVendorId(context.getVendor().id());
+        logContext.setAgentId(context.getAgent().id());
+        logContext.setUsername(context.getAgent().playerUsername());
 
         if (context.getFromVendorRate() != null) {
             BigDecimal fromVendorRate = context.getFromVendorRate();
@@ -87,15 +95,11 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
     }
 
     private void populateCampaign(PromoPayoutContext context) {
-        if (Objects.isNull(context.getVendorCampaignCode())) {
-            return;
-        }
+        if (Objects.isNull(context.getVendorCampaignCode())) return;
 
-        try {
-            Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().id(), context.getCurrencyCode());
-            context.setCampaignUuid(campaign.getUuid());
-        } catch (EntityNotFoundException e) {
-            throw new InternalConfigurationException(e.getMessage());
-        }
+        Integer promoType = Optional.ofNullable(context.getPromoType()).map(type -> type.id).orElse(null);
+
+        Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().lineId(), promoType);
+        context.setCampaignUuid(campaign.getUuid());
     }
 }

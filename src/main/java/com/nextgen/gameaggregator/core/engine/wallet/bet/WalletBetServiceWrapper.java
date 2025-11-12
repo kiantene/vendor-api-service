@@ -1,5 +1,11 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import com.nextgen.core.exception.InvalidRequestException;
+import org.springframework.stereotype.Service;
+
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
@@ -17,11 +23,10 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +38,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final BetResultDataMapper betResultDataMapper;
     private final GameSessionDataService gameSessionDataService;
     private final GameTransactionService gameTransactionService;
+    private final GameRoundService gameRoundService;
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
@@ -55,6 +61,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
                     context.getIdempotencyKey(),
                     logContext.getStart()
             );
+
+            validateBetPolicy(context, txn);
 
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
@@ -112,6 +120,24 @@ public class WalletBetServiceWrapper implements WalletBetService {
         throw ex;
     }
 
+    /**
+     * Validates bet policy before processing the transaction
+     * Checks if multiple bets are allowed based on existing round state
+     */
+    private void validateBetPolicy(BetContext context, GameTransaction txn) {
+        if (context.getVendorPlayerUsername() == null) {
+            throw new InvalidRequestException("Username cannot be empty");
+        }
+
+        BetConfig config = state().getConfig();
+
+        String roundDocId = GameRound.of(txn.getClassName(), context.getVendorPlayerUsername(), context.getRoundId()).getId();
+        Optional<GameRound> roundOpt = gameRoundService.get(roundDocId);
+
+        BetDecision decision = BetPolicy.decide(roundOpt, config);
+        decision.throwIfRejected(context, config);
+    }
+
     private PlayerBalanceData processBetTransaction(
             BetContext context,
             GameSession gameSession,
@@ -124,6 +150,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
         enricher.enrichGameTransaction(txn, context);
         GameRound round = gameTransactionService.markSent(txn, buildAgentMeta(context, gameSession));
+
         BetEvent betEvent = walletService.processBet(
                 httpRequestLog.getId(),
                 gameSession,
@@ -132,7 +159,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 httpRequestLog
         );
         gameTransactionService.markSuccess(round, txn, betEvent.getLastBalance());
-
+        
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),
                 context.getVendorCurrency(),

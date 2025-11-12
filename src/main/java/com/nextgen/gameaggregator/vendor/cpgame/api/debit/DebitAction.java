@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.debit;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
@@ -34,6 +35,7 @@ public class DebitAction {
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public DebitAction(HttpService httpService,
@@ -42,7 +44,8 @@ public class DebitAction {
                        GameSessionService gameSessionService,
                        WalletService walletService,
                        VendorPlayerService vendorPlayerService,
-                       VendorService vendorService) {
+                       VendorService vendorService,
+                       RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
@@ -51,6 +54,7 @@ public class DebitAction {
         this.vendorPlayerService = vendorPlayerService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.UNSETTLED)
@@ -64,7 +68,9 @@ public class DebitAction {
         DataVo dataVo = new DataVo();
 
         BigDecimal balance = null;
-        DebitDto debitDto = null;
+        DebitDto debitDto = new DebitDto();
+        boolean isRequestExists = false;
+        VendorPlayer vendorPlayer = new VendorPlayer();
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -74,7 +80,15 @@ public class DebitAction {
             this.doValidation(debitDto);
 
             Long vendorPlayerId = (long) debitDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(debitDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(debitDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -124,7 +138,7 @@ public class DebitAction {
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
+            vo.setCodeMsg(ResponseCodes.RETRY_LATER);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
@@ -135,6 +149,9 @@ public class DebitAction {
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(debitDto, vendorPlayer.getUsername());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return vo;

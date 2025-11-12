@@ -42,6 +42,8 @@ public class GameRound {
     private String currency;
 
     @JsonProperty("lastBalance")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal lastBalance;
 
     @JsonProperty("betAmount")
@@ -65,6 +67,9 @@ public class GameRound {
     @JsonProperty("txnCount")
     private Integer txnCount;
 
+    @JsonProperty("betTxnCount")
+    private Integer betTxnCount;
+
     @JsonProperty("transactions")
     private List<RoundTxn> transactions;
 
@@ -76,6 +81,7 @@ public class GameRound {
 
     public GameRound() {
         this.txnCount = 1;
+        this.betTxnCount = 0;
         this.state = GameRoundState.UNSETTLED;
         this.betAmount = BigDecimal.ZERO;
         this.winAmount = BigDecimal.ZERO;
@@ -83,19 +89,20 @@ public class GameRound {
         this.isEnded = false;
     }
 
-    public GameRound(String className, String roundId) {
+    public GameRound(String className, String username, String roundId) {
         this();
         this.className = className;
+        this.username = username;
         this.roundId = roundId;
     }
 
-    public static GameRound of(String className, String roundId) {
-        return new GameRound(className, roundId);
+    public static GameRound of(String className, String username, String roundId) {
+        return new GameRound(className, username, roundId);
     }
 
     @JsonIgnore
     public String getId() {
-        return className + "::" + roundId;
+        return className + "::" + username + "::" + roundId;
     }
 
     @JsonIgnore
@@ -113,6 +120,12 @@ public class GameRound {
         return state == GameRoundState.REFUNDED;
     }
 
+    @JsonIgnore
+    public boolean hasMultipleBets() {
+        return betTxnCount != null && betTxnCount > 1;
+    }
+
+    @JsonIgnore
     public boolean isEnded() {
         return Boolean.TRUE.equals(isEnded);
     }

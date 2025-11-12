@@ -54,7 +54,9 @@ public class PGSoftPromoPayoutService {
         PromoPayoutContext promoPayoutContext = promoRequestMapper.toInternal(dto);
         httpRequestLog.setId(promoPayoutContext.getTraceId()); // promo payout will start sending traceId without hyphens
         promoPayoutContext.setHttpRequestLog(httpRequestLog);
-        PlayerBalanceData playerBalanceData = promoPayoutService.process(promoPayoutContext);
+        PlayerBalanceData playerBalanceData = promoPayoutService
+                .initialise(promoPayoutContext)
+                .process(promoPayoutContext);
         CashTransferInOutVo responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
         parentResponseVo.setData(responseVo);
 

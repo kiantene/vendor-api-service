@@ -82,6 +82,7 @@ public class CreditAction {
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
+            httpService.logError(httpRequestLog, e);
 
         } catch (JsonProcessingException |
                  InvalidRequestException |
@@ -89,26 +90,34 @@ public class CreditAction {
                  InvalidPlayerException |
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException |
-                 TransactionStillProcessingException e) {
+                 TransactionStillProcessingException |
+                 InternalServerTimeoutRetryException e) {
+            //retry error code
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledAgentPlayerException e) {
             responseVo.setResponseCode(ResponseCode.ACCOUNT_LOCKED);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.BET_DOES_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);

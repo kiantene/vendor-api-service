@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -85,7 +86,7 @@ public class BalanceAction {
             //set values
             balanceVo.setChannelId(balanceDto.getChannelId());
             balanceVo.setAccountId(balanceDto.getAccountId());
-            balanceVo.setBalance(balance);
+            balanceVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             balanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             balanceVo.setErrorCode(ResponseCodes.SUCCESS);
             balanceVo.setReturnTime(VendorService.returnTime());

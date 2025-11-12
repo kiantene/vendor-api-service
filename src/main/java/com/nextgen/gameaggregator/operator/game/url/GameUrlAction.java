@@ -163,10 +163,6 @@ public class GameUrlAction {
             httpService.logError(httpRequestLog, invalidSignatureException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
 
-        } catch (DuplicateRequestException duplicateRequestException) {
-            httpService.logError(httpRequestLog, duplicateRequestException);
-            responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
-
         } catch (InvalidCurrencyException invalidCurrencyException) {
             httpService.logError(httpRequestLog, invalidCurrencyException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
@@ -253,7 +249,7 @@ public class GameUrlAction {
 
     public GameLaunchDto doValidation(GameUrlDto dto, String apiKey, String signature, HttpRequestLog httpRequestLog)
             throws InvalidRequestException, AuthenticationException, InvalidSignatureException,
-            DuplicateRequestException, InvalidCurrencyException, CurrencyNotSupportedException, InvalidPlatformException, InvalidLanguageException {
+            InvalidCurrencyException, CurrencyNotSupportedException, InvalidPlatformException, InvalidLanguageException {
 
         String traceId = dto.getTraceId();
         String body = httpRequestLog.getRequestBody();
@@ -282,11 +278,6 @@ public class GameUrlAction {
         loggingService.logStart();
         validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
         loggingService.logProcessTime("gameUrl ｜ validationService.validateSignature", traceId);
-
-        // 4. Check if trace Id has been sent before
-        loggingService.logStart();
-        gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId()); // to change to requestIdempotentLog
-        loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkDuplicateRequest", traceId);
 
         // 5.1 Check if Currency exist
         Currency currency = currencyService.getByCode(dto.getCurrency());

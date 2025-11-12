@@ -31,7 +31,7 @@ public class PromoPayoutMapper {
                 .traceId(txn.getTraceId())
                 .username(context.getAgent().playerUsername()) // TODO: potential issue if txn username != context username
                 .transactionId(txn.getTransactionId())
-                .campaignId(Objects.requireNonNullElse(context.getCampaignUuid(), null))
+                .campaignId(context.getCampaignUuid())
                 .currency(context.getCurrencyCode())
                 .amount(txn.getPayout().amount())
                 .timestamp(txn.getVendorTransactionTime())

@@ -12,8 +12,6 @@ import java.util.List;
 @Scope("raw")
 @Collection("game_sessions")
 public interface RawGameSessionRepository extends CouchbaseRepository<GameSession, String> {
-    GameSession findByAgentIdAndTraceId(Integer agentId, String traceId);
-
     GameSession findByToken(String token);
 
     GameSession findByVendorToken(String vendorToken);

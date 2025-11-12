@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.rollback;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
@@ -33,18 +34,21 @@ public class RollbackAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final VendorPlayerService vendorPlayerService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
 
     @Autowired
     public RollbackAction(HttpService httpService, VendorLineService vendorLineService,
                           GameSessionService gameSessionService, WalletService walletService,
-                          VendorService vendorService, VendorPlayerService vendorPlayerService) {
+                          VendorService vendorService, VendorPlayerService vendorPlayerService,
+                          RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.ROLLBACK)
@@ -57,7 +61,9 @@ public class RollbackAction {
         ResponseVo vo = new ResponseVo();
 
         DataVo dataVo = new DataVo();
-        RollBackDto rollBackDto = null;
+        RollBackDto rollBackDto = new RollBackDto();
+        boolean isRequestExists = false;
+        VendorPlayer vendorPlayer = new VendorPlayer();
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8);
             rollBackDto = HttpService.convertQueryStringToDto(body, RollBackDto.class);
@@ -67,7 +73,15 @@ public class RollbackAction {
             this.doValidation(rollBackDto);
 
             Long vendorPlayerId = (long) rollBackDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(rollBackDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(rollBackDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -105,7 +119,7 @@ public class RollbackAction {
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
+            vo.setCodeMsg(ResponseCodes.RETRY_LATER);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
@@ -120,6 +134,9 @@ public class RollbackAction {
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(rollBackDto, vendorPlayer.getUsername());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return vo;

@@ -26,6 +26,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         try {
             guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
 
+            if (!hasPayout(context)) { // if no payout amount, then skip and return default value to vendor
+                return PlayerBalanceData.getDefault(
+                        context.getVendorPlayerUsername(),
+                        context.getVendorCurrency()
+                );
+            }
+
             enricher.enrich(context);
 
             PromoPayoutConfig config = state().getConfig();
@@ -66,5 +73,17 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private void cleanup() {
         guard.cleanup();
         PromoPayoutContextHolder.clear();
+    }
+
+    private boolean hasPayout(PromoPayoutContext context) {
+        if (context.getPayoutTransactions() == null || context.getPayoutTransactions().isEmpty()) {
+            return context.getVendorPayoutAmount() != null && context.getVendorPayoutAmount().signum() > 0;
+        }
+
+        return context.getPayoutTransactions()
+                .stream()
+                .anyMatch(transaction ->
+                transaction.getVendorPayoutAmount() != null && transaction.getVendorPayoutAmount().signum() > 0);
+
     }
 }

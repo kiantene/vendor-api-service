@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.core.filter;
 
+import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestParserService;
+import com.nextgen.gameaggregator.core.exception.mapper.*;
 import com.nextgen.gameaggregator.core.security.VendorSecurityAdapter;
 import com.nextgen.gameaggregator.core.security.VendorSecurityRegistry;
 import com.nextgen.gameaggregator.core.security.decrypter.VendorDecryptionService;
 import com.nextgen.gameaggregator.core.security.signature.VendorSignatureService;
+import com.nextgen.gameaggregator.core.util.ResponseUtil;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,6 +32,7 @@ public class VendorAuthFilter extends OncePerRequestFilter {
     private final VendorSecurityRegistry securityRegistry;
     private final VendorDecryptionService decryptionService;
     private final VendorSignatureService signatureService;
+    private final VendorExceptionMapperRegistry exceptionRegistry;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -37,15 +42,28 @@ public class VendorAuthFilter extends OncePerRequestFilter {
         Vendors vendor = resolveVendor(request);
         if (vendor == null) { chain.doFilter(request, response); return; }
 
-        VendorSecurityAdapter adapter = securityRegistry.get(vendor.getClassName());
+        String vendorClassName = vendor.getClassName();
+        VendorSecurityAdapter adapter = securityRegistry.get(vendorClassName);
         ResettableRequestWrapper wrapped =
                 (request instanceof ResettableRequestWrapper r) ? r : new ResettableRequestWrapper(request);
 
         String originalBody = wrapped.getCachedBody();
-        Map<String, String> parsedFields = parseBody(request, originalBody);
 
-        if (!handleDecryption(adapter, wrapped, response, parsedFields)) return;
-        if (!handleValidation(adapter, wrapped, response, parsedFields)) return;
+        VendorExceptionMapper mapper = exceptionRegistry.getMapper(vendorClassName);
+        if (mapper == null) {
+            throw new InternalConfigurationException("No exception mapper registered for vendor: " + vendorClassName);
+        }
+
+        try {
+            Map<String, String> parsedFields = parseBody(request, originalBody);
+
+            if (!handleDecryption(adapter, wrapped, response, parsedFields)) return;
+            if (!handleValidation(adapter, wrapped, response, parsedFields)) return;
+        } catch (InvalidRequestException ex) {
+            VendorErrorResponse err = mapper.onInvalidRequestError(ex);
+            ResponseUtil.writeErrorResponse(response, err.getBody(), err.getStatusCode().value());
+            return;
+        }
 
         chain.doFilter(wrapped, response);
     }

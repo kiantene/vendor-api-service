@@ -12,18 +12,20 @@
 
     <groupId>com.nextgen.game-aggregator</groupId>
     <artifactId>game-aggregator-vendor-api-service</artifactId>
-    <version>1.1.155</version>
+    <version>1.1.156</version>
     <name>game-aggregator-vendor-api-service</name>
     <description>game aggregator vendor api service</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2025-11-05T08:37:19Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-11-12T06:38:16Z</project.build.outputTimestamp>
         <spring-cloud.version>2022.0.1</spring-cloud.version>
         <maven.compiler.source>18</maven.compiler.source>
         <maven.compiler.target>18</maven.compiler.target>
         <java.version>18</java.version>
         <spring-doc.version>1.6.9</spring-doc.version>
+        <spring-data-couchbase.version>5.0.4</spring-data-couchbase.version>
+        <couchbase-java-client.version>3.5.0</couchbase-java-client.version>
         <sas-core.version>3.0.8</sas-core.version>
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jersey.version>2.34</jersey.version>
@@ -38,9 +40,9 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
-        <ga-core.version>1.0.32</ga-core.version>
+        <ga-core.version>1.0.38</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
-        <nextgen-core.version>1.0.34</nextgen-core.version>
+        <nextgen-core.version>1.0.39</nextgen-core.version>
     </properties>
 
     <dependencies>
@@ -114,12 +116,13 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-couchbase</artifactId>
+            <version>${spring-data-couchbase.version}</version>
         </dependency>
         <!-- Couchbase Native SDK -->
-       <dependency>
-           <groupId>com.couchbase.client</groupId>
-           <artifactId>java-client</artifactId>
-           <version>3.5.0</version>
+        <dependency>
+            <groupId>com.couchbase.client</groupId>
+            <artifactId>java-client</artifactId>
+            <version>${couchbase-java-client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

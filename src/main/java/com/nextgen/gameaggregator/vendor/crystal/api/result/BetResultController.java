@@ -34,6 +34,6 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
     public void configure(BetResultConfig config, BetResultRequest request) {
         config.betAndResult(false)
                 .returnSuccessOnDuplicate(true)
-                .setSettleType(SettleType.BET);
+                .setSettleType(SettleType.ROUND);
     }
 }

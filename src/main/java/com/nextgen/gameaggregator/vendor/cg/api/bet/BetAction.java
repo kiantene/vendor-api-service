@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -80,7 +81,7 @@ public class BetAction {
             //set values
             betVo.setChannelId(betDto.getChannelId());
             betVo.setAccountId(betDto.getAccountId());
-            betVo.setBalance(betEvent.getLastBalance());
+            betVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             betVo.setCurrency(betDto.getCurrency());
             betVo.setErrorCode(ResponseCodes.SUCCESS);
             betVo.setReturnTime(VendorService.returnTime());

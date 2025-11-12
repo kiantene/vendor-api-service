@@ -21,6 +21,8 @@ import java.util.Map;
 public class LogContext {
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
+    // Move to use nextgen-core log context
+    private final Map<String, Object> customFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     private String time;
     private String type;
     private String method;
@@ -135,6 +137,9 @@ public class LogContext {
     public void put(String key, Object value) {
         extraFields.put(key, value);
     }
+    public void putCustomField(String key, Object value) {
+        customFields.put(key, value);
+    }
     public void delete(String key) {
         extraFields.remove(key);
     }
@@ -190,6 +195,7 @@ public class LogContext {
             base.put("apiTimeTaken", apiTimeTaken);
             base.put("apiStatusCode", apiStatusCode);
             base.put("status", status);
+            base.putAll(customFields);
 
             // Exception
             base.put("exception", exception);

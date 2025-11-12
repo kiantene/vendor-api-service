@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -127,6 +128,10 @@ public class GameRoundRepository {
 
         if (d.isEnded()) {
             specs.add(MutateInSpec.upsert("isEnded", true));
+        }
+
+        if (d.txnType() != null && d.txnType() == TxnType.BET) {
+            specs.add(MutateInSpec.increment("betTxnCount", 1));
         }
 
         d.lastBalance().ifPresent(balance ->

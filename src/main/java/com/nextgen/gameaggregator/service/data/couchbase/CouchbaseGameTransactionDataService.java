@@ -52,6 +52,7 @@ public class CouchbaseGameTransactionDataService implements GameTransactionDataS
         updates.put("status", doc.getStatus().name());
         updates.put("state", doc.getState().name());
 
+        updateIfNotNull(updates, "gaBetId", doc.getGaBetId());
         updateIfNotNull(updates, "vendorBetId", doc.getVendorBetId());
         updateIfNotNull(updates, "roundId", doc.getRoundId());
         updateIfNotNull(updates, "betAmount", doc.getBetAmount());

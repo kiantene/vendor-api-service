@@ -9,7 +9,7 @@ public class BetDetailDto {
     private String parent;
     private String uid;
     private String lang;
-    private int gType;
+    private int mType;
     private String seqNo;
     private String historyId;
     private int showUid;

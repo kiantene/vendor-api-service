@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.canceldebit;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
@@ -32,11 +33,13 @@ public class CancelBetAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final VendorPlayerService vendorPlayerService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public CancelBetAction(HttpService httpService, VendorLineService vendorLineService,
                            GameSessionService gameSessionService, WalletService walletService,
-                           VendorService vendorService, VendorPlayerService vendorPlayerService) {
+                           VendorService vendorService, VendorPlayerService vendorPlayerService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
@@ -44,6 +47,7 @@ public class CancelBetAction {
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
@@ -57,7 +61,9 @@ public class CancelBetAction {
 
         DataVo dataVo = new DataVo();
 
-        CancelBetDto cancelbetDto = null;
+        CancelBetDto cancelbetDto = new CancelBetDto();
+        boolean isRequestExists = false;
+        VendorPlayer vendorPlayer = new VendorPlayer();
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -68,7 +74,15 @@ public class CancelBetAction {
             this.doValidation(cancelbetDto);
 
             Long vendorPlayerId = (long) cancelbetDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(cancelbetDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(cancelbetDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -105,7 +119,7 @@ public class CancelBetAction {
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
+            vo.setCodeMsg(ResponseCodes.RETRY_LATER);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
@@ -120,6 +134,9 @@ public class CancelBetAction {
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelbetDto, vendorPlayer.getUsername());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return vo;

@@ -29,23 +29,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
 
     @Override
     protected void doEnrich(BetResultContext context) {
-        context.setResultTime(LogContextHolder.get().getStart());
-
-        if (context.getVendorBetId() == null) {
-            context.setVendorBetId(context.getIdempotencyKey());
-        }
-
-        if (context.getBetAmount() == null) {
-            context.setBetAmount(BigDecimal.ZERO);
-        }
-
-        if (context.getIsFreeSpin() == null) {
-            context.setIsFreeSpin(0);
-        }
-
-        if (context.getVendorSettleTime() == null) {
-            context.setVendorSettleTime(context.getResultTime());
-        }
+        setDefaultIfEmpty(context);
 
         BetResultWrapperContext wrapperContext = BetResultContextHolder.getRequired();
         if (wrapperContext.getVendorService() == null) {
@@ -100,5 +84,25 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
             }
             return Mono.empty();
         });
+    }
+
+    private void setDefaultIfEmpty(BetResultContext context) {
+        context.setResultTime(LogContextHolder.get().getStart());
+
+        if (context.getVendorBetId() == null) {
+            context.setVendorBetId(context.getIdempotencyKey());
+        }
+
+        if (context.getBetAmount() == null) {
+            context.setBetAmount(BigDecimal.ZERO);
+        }
+
+        if (context.getIsFreeSpin() == null) {
+            context.setIsFreeSpin(0);
+        }
+
+        if (context.getVendorSettleTime() == null) {
+            context.setVendorSettleTime(context.getResultTime());
+        }
     }
 }

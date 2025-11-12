@@ -13,8 +13,8 @@ import com.nextgen.gameaggregator.core.entity.VendorCurrency;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -48,7 +48,6 @@ public class BetHistoryProducer {
     private final BetHistoryMapper betHistoryMapper;
     private final BetTxnToBetHistoryMapper betTxnToBetHistoryMapper;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
-    private record PlayerUsernames(String agentPlayer, String vendorPlayer) {}
 
     public void publish(BetHistoryV3 betHistory) {
         kafkaService.produceBetHistoryV3(betHistory);
@@ -110,7 +109,7 @@ public class BetHistoryProducer {
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
         GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
         Vendor vendor = vendorDataService.get(vendorId);
-        VendorCurrency vendorCurrency = vendorCurrencyService.getVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
+        VendorCurrency vendorCurrency = vendorCurrencyService.getByVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
 
         betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
 
@@ -323,5 +322,8 @@ public class BetHistoryProducer {
         betHistory.setGameCategoryCode(gameCategory.getCode());
 
         return betHistory;
+    }
+
+    private record PlayerUsernames(String agentPlayer, String vendorPlayer) {
     }
 }

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.constant;
 
 public class EndPoints {
+    public static final String CLASS_NAME = "facai";
 
     public static final Integer TIMEOUT = 8000;
 
@@ -16,5 +17,8 @@ public class EndPoints {
     public static final String GAME_URL = "/Login";
 
     public static final String BET_DETAIL_URL = "/GetPlayerReport";
+
+    public static final String PROMO_PAYOUT = "/promo/payout";
+
 
 }

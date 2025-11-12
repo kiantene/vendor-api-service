@@ -29,13 +29,13 @@ public class RollbackPolicy {
     }
 
     public static RollbackDecision decide(GameRound round, BetRollbackConfig config) {
-        if (round.isUnsettled()) {
-            return RollbackDecision.allow();
-        }
-
-        if (round.isRefunded()) {
-            return RollbackDecision.noop("Already refunded");
-        }
+//        if (round.isUnsettled()) {
+//            return RollbackDecision.allow();
+//        }
+//
+//        if (round.isRefunded()) {
+//            return RollbackDecision.noop("Already refunded");
+//        }
 
         if (round.isEnded() && !config.isAllowRollbackForSettledBet()) {
             return RollbackDecision.reject(round.getId() + " already ended", RoundAlreadyEndedException.class);

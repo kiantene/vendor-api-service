@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -16,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +33,18 @@ class BetResultProcessor {
     public PlayerBalanceData processResultTransaction(
             BetResultContext context,
             GameSession gameSession,
-            GameTransaction txn,
+            GameTransaction resultTxn,
             ResultType resultType,
             HttpRequestLog httpRequestLog,
             BetResultWrapperContext state) throws
             InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, MergedBetDataIntegrityException,
             InsufficientBalanceException, TransactionStillProcessingException,
-            BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
+            InvalidOperatorResponseException, InternalServerTimeoutRetryException,
+            com.nextgen.gameaggregator.exception.BetNotFoundException {
 
         BetResultConfig config = state.getConfig();
-        GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
+        GameRound round = gameTransactionService.markSent(resultTxn, AgentMeta.of(context, gameSession.getToken()));
 
         /**
          * If we receive result txn first before the bet txn arrives, we do not send the result to operator.
@@ -50,9 +55,12 @@ class BetResultProcessor {
 
         if (decision.isAllowed()) {
             // TODO: this logic is not implemented yet
-            gameTransactionService.markPending(txn);
+            gameTransactionService.markPending(resultTxn);
             return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
         }
+
+        // To settle the unsettled bet
+        doSettlement(config, context, round, resultTxn);
 
         if (config.isSettledByRound()) {
             // disable produce bet history in WalletService
@@ -67,11 +75,11 @@ class BetResultProcessor {
                 state.getVendorService(),
                 httpRequestLog
         );
-        txn.setGaBetId(httpRequestLog.getGaBetId());
-        GameRound updatedRound = gameTransactionService.markSuccess(round, txn, balance, context.isRoundEnded());
+        resultTxn.setGaBetId(httpRequestLog.getGaBetId());
+        GameRound updatedRound = gameTransactionService.markSuccess(round, resultTxn, balance, context.isRoundEnded());
 
         if (config.isSettledByRound() && context.isRoundEnded()) {
-            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, txn);
+            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn);
         }
 
         return new PlayerBalanceData(
@@ -92,9 +100,11 @@ class BetResultProcessor {
             InvalidAgentApiCredentialException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, MergedBetDataIntegrityException,
             InsufficientBalanceException, TransactionStillProcessingException,
-            BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
+            InvalidOperatorResponseException, InternalServerTimeoutRetryException,
+            com.nextgen.gameaggregator.exception.BetNotFoundException {
 
         GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
+
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -112,5 +122,42 @@ class BetResultProcessor {
                 balance,
                 httpRequestLog.getOperatorEnd()
         );
+    }
+
+    private void doSettlement(BetResultConfig config, BetResultContext context, GameRound round, GameTransaction resultTxn) {
+        if (config.isSettledByBet()) {
+            settleSpecificBet(round, resultTxn);
+        } else if (context.isRoundEnded()) {
+            settleAllUnsettledBets(round, resultTxn);
+        }
+    }
+
+    private void settleSpecificBet(GameRound round, GameTransaction resultTxn) {
+        var betTxn = findUnsettledBet(round, resultTxn.getVendorBetId())
+                .orElseThrow(() -> new BetNotFoundException(
+                        round.getId() + " : " + resultTxn.getVendorBetId() + " cannot find unsettled bet"));
+
+        gameTransactionService.markSettled(betTxn.getId(), resultTxn.getSettleTime());
+
+        if (betTxn.hasAliasTxn(round.getClassName())) {
+            gameTransactionService.markSettled(betTxn.getRollbackId(round.getClassName()), resultTxn.getSettleTime());
+        }
+    }
+
+    private void settleAllUnsettledBets(GameRound round, GameTransaction resultTxn) {
+        getUnsettledBets(round)
+                .forEach(t -> gameTransactionService.markSettled(t.getId(), resultTxn.getSettleTime()));
+    }
+
+    private Optional<RoundTxn> findUnsettledBet(GameRound round, String vendorBetId) {
+        return getUnsettledBets(round)
+                .filter(txn -> txn.getVendorBetId().equals(vendorBetId))
+                .findFirst();
+    }
+
+    private Stream<RoundTxn> getUnsettledBets(GameRound round) {
+        return round.getTransactions().stream()
+                .filter(RoundTxn::isUnsettled)
+                .filter(RoundTxn::isSuccessfulBet);
     }
 }

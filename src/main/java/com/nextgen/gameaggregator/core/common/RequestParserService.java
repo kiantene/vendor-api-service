@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.core.exception.InvalidRequestException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
@@ -43,8 +45,7 @@ public class RequestParserService {
         try {
             return flattenJsonToStringMap(rawBody);
         } catch (Exception e) {
-            // log warning if needed
-            return Map.of();
+            throw new InvalidRequestException(e.getMessage());
         }
     }
 
@@ -58,7 +59,7 @@ public class RequestParserService {
         }
     }
 
-    private Map<String, String> flattenJsonToStringMap(String rawBody) throws Exception {
+    private Map<String, String> flattenJsonToStringMap(String rawBody) throws JsonProcessingException {
         JsonNode root = objectMapper.readTree(rawBody);
         Map<String, String> flat = new LinkedHashMap<>();
         flattenNode("", root, flat);

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service.data.model;
 
 import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -8,6 +9,7 @@ import java.util.Optional;
 public record TxnDelta(
         String docId,                 // game round doc id
         int idx,                      // transactions[idx]
+        TxnType txnType,
         String gaBetId,
         Optional<BigDecimal> lastBalance,
         Optional<BigDecimal> betDelta,// +bet on SUCCESS, empty otherwise
@@ -22,6 +24,7 @@ public record TxnDelta(
 
     public static TxnDelta finalizeSuccess(String docId,
                                            int idx,
+                                           TxnType txnType,
                                            String gaBetId,
                                            BigDecimal lastBalance,
                                            BigDecimal betDelta,
@@ -33,6 +36,7 @@ public record TxnDelta(
         return new TxnDelta(
                 docId,
                 idx,
+                txnType,
                 gaBetId,
                 Optional.ofNullable(lastBalance),
                 Optional.ofNullable(betDelta),

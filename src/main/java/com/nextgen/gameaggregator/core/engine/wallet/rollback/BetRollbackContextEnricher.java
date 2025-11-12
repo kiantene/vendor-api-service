@@ -54,21 +54,21 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
         if (context.getVendorPlayerUsername() == null) {
             context.setVendorPlayerUsername(
                     round != null
-                    ? round.getUsername() : gameSession.getVendorPlayerUsername()
+                            ? round.getUsername() : gameSession.getVendorPlayerUsername()
             );
         }
 
         if (context.getVendorGameCode() == null) {
             context.setVendorGameCode(
                     round != null
-                    ? round.getGameCode() : gameSession.getVendorGameCode()
+                            ? round.getGameCode() : gameSession.getVendorGameCode()
             );
         }
 
         if (context.getVendorCurrency() == null) {
             context.setVendorCurrency(
                     round != null
-                    ? round.getCurrency() : gameSession.getVendorCurrencyCode()
+                            ? round.getCurrency() : gameSession.getVendorCurrencyCode()
             );
         }
 
@@ -143,6 +143,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
                                   GameTransaction betTxn) {
 
         enrichByGameRound(context, round, rollbackTxn);
+        rollbackTxn.setGaBetId(betTxn.getGaBetId());
 
         if (betTxn.getSettleTime() == null) {
             betTxn.setSettleTime(context.getTimestamp());

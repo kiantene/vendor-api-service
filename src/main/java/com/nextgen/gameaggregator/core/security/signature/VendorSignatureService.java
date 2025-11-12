@@ -33,7 +33,7 @@ public class VendorSignatureService {
             Map<String,String> additionalFields = result.additionalFields();
             if (!additionalFields.isEmpty()) {
                 request.enrichRequestFields(additionalFields);
-                additionalFields.forEach(logContextService::debug);
+                additionalFields.forEach(logContextService::log);
             }
 
             return result;

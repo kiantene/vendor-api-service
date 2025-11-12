@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -106,10 +107,17 @@ public class PointInOutService {
             DataVo pointInOutVo = new DataVo(pointInOutDto, balance);
             responseVo.setResult(pointInOutVo);
 
-        } catch (BetResultIdempotentViolationException | InvalidOperatorResponseException |
-                 TransactionStillProcessingException | BetNotFoundException e) {
+        } catch (BetResultIdempotentViolationException | TransactionStillProcessingException | BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCodeMsg(ResponseCode.ERROR_BLOCKED);
+        } catch (InvalidOperatorResponseException e) {
+            if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCodeMsg(ResponseCode.ERROR_OVERDRAFT);
+            } else {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCodeMsg(ResponseCode.ERROR_BLOCKED);
+            }
         } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
             responseVo.setResponseCodeMsg(ResponseCode.ERROR_OVERDRAFT);

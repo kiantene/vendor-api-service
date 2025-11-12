@@ -2,14 +2,15 @@ package com.nextgen.gameaggregator.core.common;
 
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
-import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
-import com.nextgen.gameaggregator.core.webclient.ClientApiRequest;
+import com.nextgen.gameaggregator.core.util.OperatorSignatureUtil;
+import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.validation.ConstraintViolation;
@@ -20,12 +21,16 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 @EnableConfigurationProperties(WalletServiceProperties.class)
 public class ClientRequestService {
+    public static final String HEADER_API_KEY = "X-API-Key";
+    public static final String HEADER_SIGNATURE = "X-Signature";
+
     private final Validator validator;
     private final AgentApiCredentialDataService credentialService;
     private final AgentDataService agentService;
@@ -43,12 +48,12 @@ public class ClientRequestService {
         this.props = props;
     }
 
-    public <T> ClientApiRequest<T> createClientApiRequest(String traceId,
-                                                          Integer agentId,
-                                                          String agentPlayerUsername,
-                                                          String path,
-                                                          T requestObject,
-                                                          Long transactionTime) {
+    public OperatorApiRequest createOperatorApiRequest(String traceId,
+                                                       Integer agentId,
+                                                       String agentPlayerUsername,
+                                                       String path,
+                                                       Object requestObject,
+                                                       Long transactionTime) {
         validateInputs(agentId, path, requestObject);
         validateRequestObject(requestObject);
 
@@ -60,16 +65,15 @@ public class ClientRequestService {
             baseUrl = props.getHost() + "/seamless";
         }
 
-        return ClientApiRequest.<T>builder()
+        return OperatorApiRequest.builder()
                 .traceId(traceId)
                 .agentId(agentId)
                 .agentPlayerUsername(agentPlayerUsername)
                 .method(HttpMethod.POST)
                 .baseUrl(baseUrl)
                 .path(path)
-                .requestObject(requestObject)
-                .apiKey(credential.getApiKey())
-                .apiSecret(credential.getApiSecret())
+                .body(requestObject)
+                .headers(getHeaders(credential, requestObject))
                 .transactionTime(transactionTime)
                 .build();
     }
@@ -92,6 +96,13 @@ public class ClientRequestService {
         response.setMessage(ResponseCodes.Status.SC_OK.description + " mock response");
         response.setData(playerBalanceData);
         return response;
+    }
+
+    private Map<String, String> getHeaders(AgentApiCredential credential, Object requestObject) {
+        return Map.of(
+                HEADER_API_KEY, credential.getApiKey(),
+                HEADER_SIGNATURE, OperatorSignatureUtil.sign(requestObject, credential.getApiSecret())
+        );
     }
 
     private void validateInputs(Integer agentId, String path, Object requestObject) {

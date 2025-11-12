@@ -27,9 +27,9 @@ public class VendorDecryptionService {
             DecryptionResult result = decrypter.doDecryption(request, parsedFields, request.getCachedBody());
             var injectedFields = result.injectedFields();
             if (injectedFields != null && !injectedFields.isEmpty()) {
-                result.injectedFields().forEach(logContextService::debug);
+                result.injectedFields().forEach(logContextService::log);
             }
-            logContextService.debug(KEY_DECRYPTED, result.decryptedText());
+            logContextService.log(KEY_DECRYPTED, result.decryptedText());
             return result;
         } catch (DecryptionException ex) {
             handleException(decrypter, request, response, ex);

@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 public class LoggingManager {
     private final LogContextService logContextService;
     private static final Integer THREAD_SIZE = 32;
-    private final ExecutorService asyncLogger = Executors.newFixedThreadPool(THREAD_SIZE);
+    private static final ExecutorService asyncLogger = Executors.newFixedThreadPool(THREAD_SIZE);
 
     public LogContext onRequestStart(HttpServletRequest request) {
         LogContext logContext = new LogContext();
@@ -57,6 +57,27 @@ public class LoggingManager {
         final String logJson = logContext.toJson();
         boolean hasException = logContext.getException() != null;
         LogContextHolder.clear();
+
+        asyncLogger.submit(() -> {
+            try {
+                if (hasException) {
+                    log.error(logJson);
+                } else {
+                    if (logContext.isGeneralLog()) {
+                        log.debug(logJson);
+                    } else {
+                        log.info(logJson);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to log asynchronously: ", e);
+            }
+        });
+    }
+
+    public static void printLog(LogContext logContext) {
+        final String logJson = logContext.toJson();
+        boolean hasException = logContext.getException() != null;
 
         asyncLogger.submit(() -> {
             try {

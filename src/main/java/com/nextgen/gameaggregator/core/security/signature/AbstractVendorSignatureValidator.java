@@ -47,7 +47,7 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
             vendorLineId = vendorPlayer.getVendorLineId();
 
             return vendorLineService.getCredentialValueByName(vendorLineId, credentialName);
-        } catch (CredentialNotFoundException ex) {
+        } catch (Exception ex) {
             throw new InternalConfigurationException("vendorLineId: " + vendorLineId + " : " + credentialName + " not found", ex);
         }
     }
