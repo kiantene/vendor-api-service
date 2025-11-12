@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
@@ -36,12 +37,14 @@ public class BetAction {
     private final GameSessionService gameSessionService;
     private final VendorPlayerService vendorPlayerService;
     private final WalletService walletService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public BetAction(VendorService vendorService, HttpService httpService,
                      VendorLineService vendorLineService, ValidationService validationService,
                      GameSessionService gameSessionService,
-                     VendorPlayerService vendorPlayerService, WalletService walletService) {
+                     VendorPlayerService vendorPlayerService, WalletService walletService,
+                     RequestIdempotentLogService requestIdempotentLogService) {
         this.vendorService = vendorService;
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
@@ -49,6 +52,7 @@ public class BetAction {
         this.vendorPlayerService = vendorPlayerService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -60,8 +64,10 @@ public class BetAction {
         ResponseVo vo = new ResponseVo();
 
         DataVo dataVo = new DataVo();
-        BetDto betDto = null;
+        BetDto betDto = new BetDto();
         GameSession gameSession = null;
+        boolean isRequestExists = false;
+        VendorPlayer vendorPlayer = new VendorPlayer();
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -72,7 +78,15 @@ public class BetAction {
             this.doValidation(betDto);
 
             Long vendorPlayerId = (long) betDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(betDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(betDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // using vendorPlayerId to find gameSession details
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
@@ -131,7 +145,7 @@ public class BetAction {
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
+            vo.setCodeMsg(ResponseCodes.RETRY_LATER);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
@@ -151,6 +165,9 @@ public class BetAction {
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, vendorPlayer.getUsername());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return vo;

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.core.engine.promo;
 
-import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.engine.promo.payout.*;
 import com.nextgen.gameaggregator.enums.PromoType;

@@ -1,16 +1,20 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
+import com.nextgen.core.api.ApiResult;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
-import com.nextgen.gameaggregator.core.engine.CoreEngineProcessor;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.core.logging.LoggingManager;
 import com.nextgen.gameaggregator.core.retry.RetryHelper;
-import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import com.nextgen.gameaggregator.core.retry.RetryPolicy;
 import com.nextgen.gameaggregator.core.retry.RetryQueueService;
-import com.nextgen.gameaggregator.core.webclient.*;
+import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
+import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
+import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
+import com.nextgen.gameaggregator.core.webclient.OperatorApiAdapter;
+import com.nextgen.gameaggregator.core.webclient.OperatorReactiveApiAdapter;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import com.nextgen.gameaggregator.service.data.producer.PromoPayoutHistoryProducer;
@@ -25,14 +29,14 @@ import java.util.function.Function;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutContext, ClientApiResponse> {
+public class PromoPayoutProcessor {
     private final PromoPayoutMapper mapper;
     private final ClientRequestService clientRequestService;
-    private final OperatorApiCaller operatorApiCaller;
+    private final OperatorApiAdapter operatorApiAdapter;
+    private final OperatorReactiveApiAdapter reactiveApiAdapter;
     private final PromoPayoutHistoryProducer producer;
     private final RetryQueueService retryQueueService;
 
-    @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
 
         producer.publish(context);
@@ -55,11 +59,16 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         if (transactions.isEmpty()) return Mono.empty();
 
         return Flux.fromIterable(transactions)
+                .filter(this::hasPayout) // only process for transactions that has payout > 0
                 .flatMap(tx -> {
                     tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
                     tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
+                    producer.publish(context, tx);
 
-                    return callToOperatorAsync(context, tx)
+                    LogContext logContext = LogContextHolder.get().copy(); // create copy for this transaction
+
+                    return callToOperatorAsync(context, tx, logContext)
+                            .doOnNext(balanceData -> LoggingManager.printLog(logContext))
                             .map(balanceData -> {
                                 TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
                                 return new PlayerBalanceData(
@@ -71,6 +80,10 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                             });
                 }, CONCURRENCY)
                 .then();
+    }
+
+    private boolean hasPayout(PayoutTransaction tx) {
+        return tx.getVendorPayoutAmount() != null && tx.getVendorPayoutAmount().signum() > 0;
     }
 
     private PlayerBalanceData callToOperator(PromoPayoutContext context) {
@@ -85,17 +98,10 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         }
 
         PromoPayoutDto requestDto = mapper.toPromoPayoutRequest(context);
-        var apiRequest = clientRequestService.createClientApiRequest(
-                context.getTraceId(),
-                agent.id(),
-                agent.playerUsername(),
-                EndPoints.PROMO_PAYOUT,
-                requestDto,
-                requestDto.getTimestamp()
-        );
+        OperatorApiRequest apiRequest = toApiRequest(context, requestDto);
 
         try {
-            ClientApiResult apiResult = operatorApiCaller.post(apiRequest, DefaultOperatorCallerLifeCycle.get());
+            ApiResult apiResult = operatorApiAdapter.execute(apiRequest);
             apiResult.throwIfError();
             ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
 
@@ -111,18 +117,10 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
         return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
     }
 
-    private Mono<PlayerBalanceData> callToOperatorAsync(PromoPayoutContext context, PayoutTransaction txn) {
-        PromoPayoutContext.Agent agent = context.getAgent();
+    private Mono<PlayerBalanceData> callToOperatorAsync(PromoPayoutContext context, PayoutTransaction txn, LogContext logContext) {
         PromoPayoutDto requestDto = mapper.toPromoPayoutRequest(context, txn);
 
-        var apiRequest = clientRequestService.createClientApiRequest(
-                context.getTraceId(),
-                agent.id(),
-                agent.playerUsername(),
-                EndPoints.PROMO_PAYOUT,
-                requestDto,
-                requestDto.getTimestamp()
-        );
+        OperatorApiRequest apiRequest = toApiRequest(context, requestDto);
 
         Function<Throwable, Mono<PlayerBalanceData>> handleErrorWithRetry = ex -> {
             if (RetryPolicy.shouldRetry(RetryOrigin.PROMO_PAYOUT, (Exception) ex)) {
@@ -138,9 +136,7 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
             ));
         };
 
-        LogContext logContext = LogContextHolder.get().copy(); // creates a copy from the original logContext
-
-        return operatorApiCaller.postAsync(apiRequest, new DefaultOperatorCallerLifeCycle(logContext))
+        return reactiveApiAdapter.execute(apiRequest, logContext)
                 .map(apiResult -> {
                     apiResult.throwIfError();
                     ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
@@ -151,11 +147,14 @@ public class PromoPayoutProcessor implements CoreEngineProcessor<PromoPayoutCont
                 .onErrorResume(handleErrorWithRetry);
     }
 
-    @Override
-    public void onSuccess(PromoPayoutContext context, ClientApiResponse result) {
-    }
-
-    @Override
-    public void onError(PromoPayoutContext context, ClientApiRequest<?> clientApiRequest, Exception ex) {
+    private OperatorApiRequest toApiRequest(PromoPayoutContext context, PromoPayoutDto dto) {
+        return clientRequestService.createOperatorApiRequest(
+                context.getTraceId(),
+                context.getAgent().id(),
+                context.getAgent().playerUsername(),
+                EndPoints.PROMO_PAYOUT,
+                dto,
+                dto.getTimestamp()
+        );
     }
 }

@@ -14,8 +14,8 @@ public class CampaignDataService {
         this.cache = cache;
     }
 
-    public Campaign get(String vendorCampaignCode, Integer vendorId, String currencyCode) {
-        return Optional.ofNullable(this.cache.getByVendorCampaignCodeAndVendorIdAndCurrencyCode(vendorCampaignCode, vendorId, currencyCode))
-                .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "vendorCampaignCodeAndVendorIdAndCurrencyCode", vendorCampaignCode, vendorId, currencyCode));
+    public Campaign get(String vendorCampaignCode, Integer vendorLineId, Integer promoType) {
+        return Optional.ofNullable(this.cache.getByVendorCampaignCodeAndVendorLineIdAndPromoType(vendorCampaignCode, vendorLineId, promoType))
+                .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "vendorCampaignCodeAndVendorLineIdAndPromoType", vendorCampaignCode, vendorLineId, promoType));
     }
 }

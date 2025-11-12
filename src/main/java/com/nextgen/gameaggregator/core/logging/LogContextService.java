@@ -24,6 +24,13 @@ public class LogContextService {
         logContext.put(key, value);
     }
 
+    public void log(String key, Object value) {
+        LogContext logContext = LogContextHolder.get();
+        if (logContext == null) return;
+
+        logContext.putCustomField(key, value);
+    }
+
     public void logStart(String url, Object body) {
         LogContext logContext = LogContextHolder.get();
         if (logContext == null) return;

@@ -23,6 +23,10 @@ public class BetResultRejectedException extends VendorCallbackException {
         return this.getCause() instanceof BetNotFoundException;
     }
 
+    public boolean isRoundAlreadyRefunded() {
+        return this.getCause() instanceof RoundAlreadyRefundedException;
+    }
+
     public boolean isBetAndResult() {
         if (config == null) return false;
 

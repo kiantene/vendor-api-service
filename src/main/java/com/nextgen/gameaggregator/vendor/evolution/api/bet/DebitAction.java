@@ -69,6 +69,7 @@ public class DebitAction {
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
+            httpService.logError(httpRequestLog, e);
 
         } catch (JsonProcessingException |
                  InvalidRequestException |
@@ -76,6 +77,7 @@ public class DebitAction {
                  InvalidPlayerException |
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException |
                  DisabledGameException |
@@ -83,18 +85,23 @@ public class DebitAction {
                  InvalidAgentApiCredentialException |
                  TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledAgentPlayerException e) {
             responseVo.setResponseCode(ResponseCode.ACCOUNT_LOCKED);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DuplicateExternalTransactionIdException e) {
             responseVo.setResponseCode(ResponseCode.FINAL_ERROR_ACTION_FAILED);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);

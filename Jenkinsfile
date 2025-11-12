@@ -122,21 +122,11 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+
+
+        stage('Build & Push Docker Image') {
             when {
                 environment name: 'TRIGGER_DOCKER_BUILD', value: 'true'
-            }
-
-            steps {
-                script {
-                    String branchTag = BRANCH_TAG
-                    docker.build("${AWS_ECR_URL}:${branchTag}", ' .')
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            when {
                 environment name: 'TRIGGER_DOCKER_PUSH', value: 'true'
             }
 
@@ -146,10 +136,16 @@ pipeline {
                         String branchName = BRANCH_NAME.tokenize('/')[0]
                         String branchTag = BRANCH_TAG
                         String dockerTag = getVersionTagbyPom(branchName)
-
                         sh("#!/bin/sh -e\n${ecrLogin()}")
+                        docker.build("${AWS_ECR_URL}:${branchTag}", ' .')
+                         // Get short commit hash
+                         def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+            
+
+
                         docker.image("${AWS_ECR_URL}:${branchTag}").push("${branchTag}")
                         docker.image("${AWS_ECR_URL}:${branchTag}").push("${dockerTag}")
+                        docker.image("${AWS_ECR_URL}:${branchTag}").push("${commitHash}")
                     }
                 }
             }

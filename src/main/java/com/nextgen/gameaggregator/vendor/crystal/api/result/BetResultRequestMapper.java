@@ -14,6 +14,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .vendorGameCode(request.getGameCode())
                 .vendorPlayerUsername(request.getPlayerId())
                 .winAmount(request.getAmount())
+                .roundEnded(true)
                 .build();
     }
 }

@@ -31,11 +31,8 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     @Override
     public void configure(BetRollbackConfig config, RollbackRequest request) {
 
-        config.rollbackType(
-                request.getTransactionOriginalId() != null
-                        ? RollbackType.BY_BET
-                        : RollbackType.BY_ROUND
-        ).returnSuccessOnDuplicate(true);
+        config.rollbackType(RollbackType.BY_ROUND).
+                returnSuccessOnDuplicate(true);
 
     }
 }

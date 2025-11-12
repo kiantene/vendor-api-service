@@ -187,6 +187,8 @@ public class CreditAction {
 
             // 4. Process Result / Rollback
             BigDecimal balance;
+            ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), true, creditTransactionsDto.getBetStatus());
+
             if (creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
                 RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
                 balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService, httpRequestLog);
@@ -196,7 +198,6 @@ public class CreditAction {
                     balance = this.getBalance(traceId, gameSession);
                 } else {
                     if (!requireDebit) {
-                        ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
                         balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
                     } else {
                         this.checkForDuplicateRequest(creditTransactionsDto);
@@ -207,7 +208,6 @@ public class CreditAction {
                 }
             } else {
                 if (!requireDebit) {
-                    ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
                     balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
                 } else {
                     this.checkForDuplicateRequest(creditTransactionsDto);
@@ -249,6 +249,7 @@ public class CreditAction {
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setDup(true);
+            httpService.logError(httpRequestLog, e);
         } catch (TransactionStillProcessingException e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Transaction Still Processing");
             httpService.logError(httpRequestLog, e);

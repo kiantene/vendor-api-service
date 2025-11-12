@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service.business;
 
+import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.*;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +38,10 @@ public class GameRoundService {
         if (doc == null) return Optional.empty();
 
         return Optional.of(doc.getPayload());
+    }
+
+    public GameRound getOrThrow(String id) {
+        return get(id).orElseThrow(() -> new RoundNotFoundException("GameRound not found: " + id));
     }
 
     public KvDoc<GameRound> getDoc(String id) {
@@ -101,6 +105,10 @@ public class GameRoundService {
         data.updateTxn(docId, idx, updates);
     }
 
+    public void updateRoundTxn(GameTransaction txn, GameRoundState state) {
+        data.updateTxn(txn.getRoundDocId(), txn.getIdx(), Map.of("state", state));
+    }
+
     private String getMeaningfulExceptionName(RuntimeException ex) {
         Throwable current = ex;
 
@@ -113,7 +121,7 @@ public class GameRoundService {
     }
 
     private GameRound buildRound(GameTransaction txn, AgentMeta agentMeta) {
-        GameRound round = GameRound.of(txn.getClassName(), txn.getRoundId());
+        GameRound round = GameRound.of(txn.getClassName(), txn.getUsername(), txn.getRoundId());
         round.setVendorId(txn.getVendorId());
         round.setUsername(txn.getUsername());
         round.setGameCode(txn.getGameCode());
@@ -145,6 +153,7 @@ public class GameRoundService {
         // Reflect in-memory changes on txn idx for further updates later
         txn.setIdx(txnCount);
         round.setTxnCount(txnCount + 1);
+
         if (round.getTransactions() != null) {
             round.getTransactions().add(roundTxn);
         }

@@ -25,6 +25,10 @@ class WalletBetResultValidator {
     private final BetValidator validator;
 
     public void validateRequestContext(BetResultContext context, BetResultConfig config) {
+        if (context.getVendorPlayerUsername() == null) {
+            throw new InvalidRequestException("Username cannot be empty");
+        }
+
         if (context.getWinAmount() == null || context.getWinAmount().signum() < 0) {
             throw new InvalidRequestException("Win amount cannot be empty or negative");
         }

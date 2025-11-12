@@ -103,8 +103,10 @@ public class DebitAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
+            httpService.logError(httpRequestLog, e);
         } catch (DuplicateExternalTransactionIdException e) {
             responseVo.setResponseCode(ResponseCode.FINAL_ERROR_ACTION_FAILED);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);

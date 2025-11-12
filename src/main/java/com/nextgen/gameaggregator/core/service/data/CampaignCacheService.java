@@ -4,6 +4,7 @@ import com.nextgen.core.cache.couchbase.CouchbaseCacheFactory;
 import com.nextgen.core.cache.couchbase.CouchbaseCacheService;
 import com.nextgen.gameaggregator.core.engine.promo.campaign.CampaignService;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -18,15 +19,20 @@ public class CampaignCacheService extends CouchbaseCacheService<Campaign> {
         this.repository = repository;
     }
 
+    @PostConstruct
+    public void init() {
+        this.enableLocalCache(true);
+    }
+
     @Override
     protected Map<String, Duration> getTtlMap() {
         return Map.of(
-                ttlKey("vendorCampaignCodeAndVendorIdAndCurrencyCode"), Duration.ofMinutes(120)
+                ttlKey("vendorCampaignCodeAndVendorLineIdAndPromoType"), Duration.ofMinutes(120)
         );
     }
 
-    public Campaign getByVendorCampaignCodeAndVendorIdAndCurrencyCode(String vendorCampaignCode, Integer vendorId, String currencyCode) {
-        String key = buildCacheKey("vendorCampaignCodeAndVendorIdAndCurrencyCode", vendorCampaignCode, vendorId, currencyCode);
-        return get(key, () -> repository.getCampaign(vendorCampaignCode, vendorId, currencyCode));
+    public Campaign getByVendorCampaignCodeAndVendorLineIdAndPromoType(String vendorCampaignCode, Integer vendorLineId, Integer promoType) {
+        String key = buildCacheKey("vendorCampaignCodeAndVendorLineIdAndPromoType", vendorCampaignCode, vendorLineId, promoType);
+        return get(key, () -> repository.getCampaign(vendorCampaignCode, vendorLineId, promoType));
     }
 }

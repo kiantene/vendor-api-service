@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cpgame.api.credit;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
@@ -34,12 +35,14 @@ public class CreditAction {
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final VendorPlayerService vendorPlayerService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
 
     @Autowired
     public CreditAction(VendorService vendorService, HttpService httpService,
                         VendorLineService vendorLineService, GameSessionService gameSessionService,
-                        WalletService walletService, VendorPlayerService vendorPlayerService) {
+                        WalletService walletService, VendorPlayerService vendorPlayerService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
 
         this.vendorService = vendorService;
         this.httpService = httpService;
@@ -47,6 +50,7 @@ public class CreditAction {
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorPlayerService = vendorPlayerService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.SETTLED)
@@ -58,7 +62,9 @@ public class CreditAction {
         ResponseVo vo = new ResponseVo();
 
         DataVo dataVo = new DataVo();
-        CreditDto creditDto = null;
+        CreditDto creditDto = new CreditDto();
+        boolean isRequestExists = false;
+        VendorPlayer vendorPlayer = new VendorPlayer();
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -68,7 +74,15 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             Long vendorPlayerId = (long) creditDto.getMessageDto().getSubUid();
-            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+            vendorPlayer = vendorPlayerService.getByVendorPlayerId(vendorPlayerId, null);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(creditDto, vendorPlayer.getUsername()) == null) {
+                requestIdempotentLogService.create(creditDto, vendorPlayer.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // using vendorPlayerId to find gameSession details
             GameSession gameSession;
@@ -122,7 +136,7 @@ public class CreditAction {
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.SYSTEM_BUSY);
+            vo.setCodeMsg(ResponseCodes.RETRY_LATER);
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
@@ -137,6 +151,9 @@ public class CreditAction {
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(creditDto, vendorPlayer.getUsername());
+            }
             httpService.end(httpRequestLog, vo);
         }
         return vo;

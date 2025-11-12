@@ -82,7 +82,7 @@ public abstract class BaseEnricher<T> {
             try {
                 Currency currency = currencyDataService.get(context.getCurrencyId());
 
-                VendorCurrency vendorCurrency = vendorCurrencyDataService.getVendorIdAndCurrencyId(
+                VendorCurrency vendorCurrency = vendorCurrencyDataService.getByVendorIdAndCurrencyId(
                         context.getVendorId(),
                         context.getCurrencyId()
                 );

@@ -28,9 +28,6 @@ public class GameTransaction extends RoundTxn {
     @JsonProperty("createdAt")
     private String createdAt;
 
-    @JsonProperty("state")
-    private GameRoundState state;
-
     @JsonProperty("className")
     private String className;
 
@@ -88,8 +85,8 @@ public class GameTransaction extends RoundTxn {
     private Long createdTs;
 
     public GameTransaction() {
+        super();
         this.status = TxnStatus.NEW;
-        this.state = GameRoundState.UNSETTLED;
     }
 
     public static GameTransaction of(TxnType type, String vendorClassName, String transactionId, long createdTimestamp) {
@@ -106,6 +103,9 @@ public class GameTransaction extends RoundTxn {
         this.type = type;
         this.className = className;
         this.transactionId = transactionId;
+        if (isRollback()) {
+            this.state = GameRoundState.PENDING;
+        }
     }
 
     public GameTransaction copy() {
@@ -143,26 +143,11 @@ public class GameTransaction extends RoundTxn {
 
     @JsonIgnore
     public String getRoundDocId() {
-        return className + "::" + roundId;
+        return className + "::" + username + "::" + roundId;
     }
 
     @JsonIgnore
     public String getRollbackId() {
         return className + "::" + TxnType.BET + "::" + vendorBetId;
-    }
-
-    @JsonIgnore
-    public boolean isSettled() {
-        return state == GameRoundState.SETTLED;
-    }
-
-    @JsonIgnore
-    public boolean isUnsettled() {
-        return state == GameRoundState.UNSETTLED;
-    }
-
-    @JsonIgnore
-    public boolean isRefunded() {
-        return state == GameRoundState.REFUNDED;
     }
 }

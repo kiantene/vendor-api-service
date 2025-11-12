@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.service.business;
 
 import com.couchbase.client.core.error.DocumentExistsException;
+import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
-import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
@@ -43,6 +43,10 @@ public class GameTransactionService {
         GameTransaction doc = txnDataService.findById(id);
 
         return doc != null ? Optional.of(doc) : Optional.empty();
+    }
+
+    public GameTransaction getOrThrow(String id) {
+        return get(id).orElseThrow(() -> new BetNotFoundException("GameTransaction not found: " + id));
     }
 
     public GameTransaction save(GameTransaction txn) {
@@ -86,12 +90,14 @@ public class GameTransactionService {
             GameTransaction betTxn = txn.copy();
             betTxn.setType(TxnType.BET);
             betTxn.setTransactionId(txn.getVendorBetId());
+            betTxn.setState(txn.getState());
             txnDataService.updateStatus(betTxn, balance, TxnStatus.SUCCESS);
         }
 
         TxnDelta delta = TxnDelta.finalizeSuccess(
                 txn.getRoundDocId(),
                 txn.getIdx(),
+                txn.getType(),
                 txn.getGaBetId(),
                 balance,
                 txn.getBetAmount(),
@@ -102,16 +108,7 @@ public class GameTransactionService {
                 Optional.ofNullable(isEnded).orElse(false)
         );
 
-        GameRound updatedRound = gameRoundService.applyTxnDelta(delta);
-
-        if (Boolean.TRUE.equals(isEnded)) {
-            updatedRound.getTransactions()
-                    .stream()
-                    .filter(RoundTxn::isSuccessfulBet)
-                    .forEach(t -> markSettled(t.getId(), txn.getSettleTime()));
-        }
-
-        return updatedRound;
+        return gameRoundService.applyTxnDelta(delta);
     }
 
     public void markError(GameTransaction txn, RuntimeException ex) {
@@ -135,14 +132,45 @@ public class GameTransactionService {
     }
 
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
-        rollbackTxn.setState(GameRoundState.SETTLED);
+        rollbackTxn.setState(GameRoundState.COMPLETED);
         txnDataService.updateStatus(rollbackTxn, balance, TxnStatus.SUCCESS);
+        gameRoundService.updateRoundTxn(rollbackTxn, GameRoundState.COMPLETED);
 
-        gameRoundService.updateRoundState(round.getId(), GameRoundState.REFUNDED);
+        /**
+         * to revisit this logic: to consider removing state at GameRound level and
+         * change GameRoundState to TxnState
+         */
+//        gameRoundService.updateRoundState(round.getId(), GameRoundState.REFUNDED);
+
+        // TODO: to deduct amounts from GameRound after rollback
+//        TxnDelta delta = TxnDelta.finalizeSuccess(
+//                betTxn.getRoundDocId(),
+//                betTxn.getIdx(),
+//                betTxn.getType(),
+//                betTxn.getGaBetId(),
+//                balance,
+//                betTxn.getBetAmount().negate(),
+//                betTxn.getWinAmount().negate(),
+//                betTxn.getJackpotAmount().negate(),
+//                betTxn.getDoneAt(),
+//                GameRoundState.SETTLED == betTxn.getState(),
+//                true
+//        );
+//
+//        gameRoundService.applyTxnDelta(delta);
     }
 
-    public void markRefunded(String txnDocId) {
-        txnDataService.updateToRefunded(txnDocId);
+    public void markRefunded(String docId) {
+        get(docId).ifPresent(this::markRefunded);
+    }
+
+    public void markRefunded(GameTransaction txn) {
+        if (!txn.isUnsettled()) {
+            throw new IllegalStateException("Txn is not unsettled");
+        }
+
+        txnDataService.updateToRefunded(txn.getId());
+        gameRoundService.updateRoundTxn(txn, GameRoundState.REFUNDED);
     }
 
     public void markSettled(String txnId, long settledTime) {
@@ -182,12 +210,9 @@ public class GameTransactionService {
     }
 
     private boolean shouldCreateAliasTxn(GameTransaction txn) {
-        // if the transaction type is bet and settle
-        boolean isBetNSettle = txn.isBetNResult();
+        // if vendor bet id is different from transaction id
+        boolean isVendorBetIdDifferent = !txn.getTransactionId().equals(txn.getVendorBetId());
 
-        // or if it is a bet txn and vendor bet id is different from transaction id
-        boolean isVendorBetIdDifferent = txn.isBet() && !txn.getTransactionId().equals(txn.getVendorBetId());
-
-        return isBetNSettle || isVendorBetIdDifferent;
+        return (txn.isBet() || txn.isBetNResult()) && isVendorBetIdDifferent;
     }
 }

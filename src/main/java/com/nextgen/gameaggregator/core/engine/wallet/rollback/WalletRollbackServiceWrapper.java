@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.wallet.balance.BalanceProcessor;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.RollbackNotAllowedException;
@@ -13,6 +14,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -42,6 +44,7 @@ public class WalletRollbackServiceWrapper {
     private final GameRoundService gameRoundService;
     private final SettledBetDataService settledBetDataService;
     private final RollbackDataMapper rollbackDataMapper;
+    private final BalanceProcessor balanceProcessor;
     private final BetRollbackProcessor processor;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
@@ -66,7 +69,7 @@ public class WalletRollbackServiceWrapper {
             return processRollback(context, txn);
 
         } catch (DuplicateRequestException ex) {
-            return handleDuplicateRequest(context, ex);
+            return handleDuplicateRequest(context, logContext, ex);
         } catch (Exception ex) {
             throw handleException(ex, context, txn);
         } finally {
@@ -133,13 +136,20 @@ public class WalletRollbackServiceWrapper {
         return processor.processBetRollback(context, txn, config);
     }
 
-    private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, DuplicateRequestException ex) {
+    private PlayerBalanceData handleDuplicateRequest(BetRollbackContext context, LogContext logContext, DuplicateRequestException ex) {
         GameTransaction txn = ex.getTransaction();
         if (state().getConfig().isReturnSuccessOnDuplicate() && txn.isSuccess()) {
-            return PlayerBalanceData.getDefault(
-                    context.getVendorPlayerUsername(),
-                    context.getVendorCurrency()
-            );
+            try {
+                GameRound round = gameRoundService.getOrThrow(txn.getRoundDocId());
+
+                return balanceProcessor.process(context.getTraceId(), round);
+            } catch (Exception exception) {
+                logContext.setException(exception);
+                return PlayerBalanceData.getDefault(
+                        context.getVendorPlayerUsername(),
+                        context.getVendorCurrency()
+                );
+            }
         }
         throw ex;
     }

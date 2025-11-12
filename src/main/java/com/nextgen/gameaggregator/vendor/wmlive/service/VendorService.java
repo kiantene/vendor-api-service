@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.wmlive.service;
 
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,7 +12,7 @@ import java.util.Objects;
 @Service
 public class VendorService extends BaseVendorService {
     public static Long convertDateTimeStringToTimestamp(String dateTimeString, String dateTimeFormat) {
-        ZoneId zoneId = Formats.GMT_MINUS_FOUR;
+        ZoneId zoneId = ZoneId.of("GMT+8");
         if (Objects.isNull(dateTimeString)) return System.currentTimeMillis();
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimeFormat);

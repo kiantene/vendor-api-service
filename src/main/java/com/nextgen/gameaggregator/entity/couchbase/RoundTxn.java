@@ -2,16 +2,18 @@ package com.nextgen.gameaggregator.entity.couchbase;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 public class RoundTxn {
     @JsonProperty("id")
     protected String id;
+
+    @JsonProperty("state")
+    protected GameRoundState state;
 
     @JsonProperty("type")
     protected TxnType type;
@@ -34,9 +36,14 @@ public class RoundTxn {
     @JsonProperty("doneAt")
     protected String doneAt;
 
+    public RoundTxn() {
+        this.state = GameRoundState.UNSETTLED;
+    }
+
     public static RoundTxn of(GameTransaction txn) {
         RoundTxn roundTxn = new RoundTxn();
         roundTxn.setId(txn.getId());
+        roundTxn.setState(txn.getState());
         roundTxn.setType(txn.getType());
         roundTxn.setGaBetId(txn.getGaBetId());
         roundTxn.setVendorBetId(txn.getVendorBetId());
@@ -46,6 +53,26 @@ public class RoundTxn {
         roundTxn.setDoneAt(txn.getDoneAt());
 
         return roundTxn;
+    }
+
+    @JsonIgnore
+    public String getRollbackId(String className) {
+        return className + "::" + TxnType.BET + "::" + vendorBetId;
+    }
+
+    @JsonIgnore
+    public boolean isSettled() {
+        return state == GameRoundState.SETTLED;
+    }
+
+    @JsonIgnore
+    public boolean isUnsettled() {
+        return state == GameRoundState.UNSETTLED;
+    }
+
+    @JsonIgnore
+    public boolean isRefunded() {
+        return state == GameRoundState.REFUNDED;
     }
 
     @JsonIgnore
@@ -79,6 +106,9 @@ public class RoundTxn {
     }
 
     @JsonIgnore
+    public boolean isRollback() { return type == TxnType.ROLLBACK; }
+
+    @JsonIgnore
     public boolean isSuccessfulBet() {
         return isBet() && isSuccess();
     }
@@ -86,5 +116,10 @@ public class RoundTxn {
     @JsonIgnore
     public boolean isSuccessfulBetOrResult() {
         return isSuccess() && (isBet() || isResult());
+    }
+
+    @JsonIgnore
+    public boolean hasAliasTxn(String className) {
+        return !id.equals(getRollbackId(className));
     }
 }

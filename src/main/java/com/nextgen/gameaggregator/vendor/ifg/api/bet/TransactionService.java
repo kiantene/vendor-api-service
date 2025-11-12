@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ifg.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.ifg.constant.RoundBetStatus;
 import com.nextgen.gameaggregator.vendor.ifg.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ifg.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.ifg.vo.CommonVo;
@@ -81,7 +82,7 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);
 
-            if ("1".equals(transactionServiceDto.getRoundbet().getFinished())) {
+            if (RoundBetStatus.FINISHED.code.equals(transactionServiceDto.getRoundbet().getFinished())) {
                 resultType = vendorService.calculateResultType(transactionServiceDto.getBetAmount(), transactionServiceDto.getWinAmount(),
                         transactionServiceDto.getJackpotAmount(), true);
                 balance = walletService.processBetResult(traceId, gameSession, transactionServiceDto, resultType, vendorService, httpRequestLog);
@@ -251,7 +252,9 @@ public class TransactionService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getRoundbet().getWlid(), InvalidPlayerException::new);
 
         // check existing round to avoid double deduct wallet balance in place bet
-        vendorService.verifySettledRound(gameSession.getVendorPlayerId(), dto.getRoundbet().getRoundnum().getId());
+        if (!RoundBetStatus.FINISHED.code.equals(dto.getRoundbet().getFinished())) {
+            vendorService.verifySettledRound(gameSession.getVendorPlayerId(), dto.getRoundbet().getRoundnum().getId());
+        }
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {

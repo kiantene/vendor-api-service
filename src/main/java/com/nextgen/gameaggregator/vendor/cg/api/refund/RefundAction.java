@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(EndPoints.PATH)
@@ -79,7 +80,7 @@ public class RefundAction {
             //set values
             refundVo.setChannelId(refundDto.getChannelId());
             refundVo.setAccountId(refundDto.getAccountId());
-            refundVo.setBalance(balance);
+            refundVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             refundVo.setCurrency(gameSession.getVendorCurrencyCode());
             refundVo.setErrorCode(ResponseCodes.SUCCESS);
             refundVo.setReturnTime(VendorService.returnTime());

@@ -30,6 +30,7 @@ public class ResponseCodes {
 
     public static final int BET_NOT_FOUND = 1118;
     public static final int INVALID_TRANSACTION = 1119;
+    public static final int RETRY_LATER = 1189;
 
     public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(SUCCESS, "Success");

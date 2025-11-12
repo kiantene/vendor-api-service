@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeParseException;
 
 @Slf4j
@@ -91,7 +92,7 @@ public class EndRoundAction {
             //set values
             endRoundVo.setChannelId(endRoundDto.getChannelId());
             endRoundVo.setAccountId(endRoundDto.getAccountId());
-            endRoundVo.setBalance(balance);
+            endRoundVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             endRoundVo.setCurrency(endRoundDto.getCurrency());
             endRoundVo.setErrorCode(ResponseCodes.SUCCESS);
             endRoundVo.setReturnTime(VendorService.returnTime());

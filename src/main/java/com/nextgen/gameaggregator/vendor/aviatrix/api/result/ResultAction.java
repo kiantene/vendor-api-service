@@ -68,7 +68,7 @@ public class ResultAction {
             this.doValidation(dto);
 
             //verify game session by player id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            GameSession gameSession = this.verifyGameSession(dto, traceId);
 
             //verify value
             this.doVerification(dto, gameSession);
@@ -88,10 +88,6 @@ public class ResultAction {
             responseVo.setCreatedAt(VendorService.returnTime());
             responseVo.setBalance(balance.setScale(2, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100)).toBigInteger());
 
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setMessage(ResponseCodes.PLAYER_NOT_FOUND);
-            responseVo.setHttpStatus(HttpStatus.NOT_FOUND);
-            httpService.logError(httpRequestLog, authenticationException);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).multiply(BigDecimal.valueOf(100)).toBigInteger());
             responseVo.setCreatedAt(VendorService.returnTime());
@@ -159,5 +155,20 @@ public class ResultAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         //check player id is same as session id
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
+    }
+
+    private GameSession verifyGameSession(ResultDto dto, String traceId) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.verifyToken(dto.getSessionToken());
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getProductId(), gameSession);
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(dto.getPlayerId());
+            gameSessionService.updateByVendorGameCode(gameSession, dto.getProductId());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

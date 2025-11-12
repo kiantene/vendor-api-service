@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.data.producer;
 
+import com.nextgen.gameaggregator.core.engine.promo.payout.PayoutTransaction;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -16,6 +17,39 @@ public class PromoPayoutHistoryProducer {
         PromoPayoutHistory promoPayoutHistory = buildPromoPayoutHistory(context);
 
         kafkaService.producePromoPayoutHistory(promoPayoutHistory);
+    }
+
+    public void publish(PromoPayoutContext context, PayoutTransaction transaction) {
+        PromoPayoutHistory promoPayoutHistory = buildPromoPayoutHistory(context, transaction);
+
+        kafkaService.producePromoPayoutHistory(promoPayoutHistory);
+    }
+
+    private PromoPayoutHistory buildPromoPayoutHistory(PromoPayoutContext context, PayoutTransaction transaction) {
+        return PromoPayoutHistory.builder()
+                .transactionId(transaction.getTransactionId())
+                .vendorTransactionId(transaction.getVendorTransactionId())
+                .campaignUuid(context.getCampaignUuid())
+                .agentPlayerId(context.getAgent().playerId())
+                .agentPlayerUsername(context.getAgent().playerUsername())
+                .vendorPlayerId(context.getVendor().playerId())
+                .vendorPlayerUsername(context.getVendorPlayerUsername())
+
+                .vendorId(context.getVendorId())
+                .vendorCode(context.getVendor().code())
+                .vendorLineId(context.getVendor().lineId())
+
+                .agentId(context.getAgent().id())
+                .masterAgentId(context.getAgent().masterAgentId())
+                .houseId(context.getAgent().houseId())
+
+                .currencyId(context.getCurrencyId())
+                .currencyCode(context.getCurrencyCode())
+                .payoutAmount(transaction.getPayout().amount())
+                .promoType(context.getPromoType().id)
+                .status(BetStatus.SETTLED.code)
+                .vendorTransactionTime(transaction.getVendorTransactionTime())
+                .build();
     }
 
     private PromoPayoutHistory buildPromoPayoutHistory(PromoPayoutContext context) {

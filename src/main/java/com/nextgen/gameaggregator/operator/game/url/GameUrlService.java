@@ -18,12 +18,9 @@ import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -33,7 +30,6 @@ public class GameUrlService {
     private final AgentProductService agentProductService;
     private final AgentVendorProxyService agentVendorProxyService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
-    private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
     private final VendorPlayerRepository vendorPlayerRepository;
     private final PlatformRepository platformRepository;
@@ -55,7 +51,6 @@ public class GameUrlService {
                           AgentProductServiceImpl agentProductService,
                           AgentVendorProxyService agentVendorProxyService,
                           AutowireCapableBeanFactory autowireCapableBeanFactory,
-                          RawGameSessionRepository rawGameSessionRepository,
                           AgentPlayerRepository agentPlayerRepository,
                           VendorPlayerRepository vendorPlayerRepository,
                           PlatformRepository platformRepository,
@@ -75,7 +70,6 @@ public class GameUrlService {
         this.agentProductService = agentProductService;
         this.agentVendorProxyService = agentVendorProxyService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
-        this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
         this.vendorPlayerRepository = vendorPlayerRepository;
         this.platformRepository = platformRepository;
@@ -216,13 +210,6 @@ public class GameUrlService {
 
         if (!isSupported) {
             throw new CurrencyNotSupportedException("AgentId: " + agentId + " CurrencyId: " + currencyId);
-        }
-    }
-
-    public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {
-        GameSession entity = rawGameSessionRepository.findByAgentIdAndTraceId(agentId, traceId);
-        if (entity != null) {
-            throw new DuplicateRequestException();
         }
     }
 

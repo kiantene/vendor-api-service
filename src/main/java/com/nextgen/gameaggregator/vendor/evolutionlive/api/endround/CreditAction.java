@@ -115,7 +115,9 @@ public class CreditAction {
                  DisabledGameException |
                  InvalidOperatorResponseException |
                  TransactionStillProcessingException |
-                 InvalidAgentApiCredentialException e) {
+                 InvalidAgentApiCredentialException |
+                 InternalServerTimeoutRetryException e) {
+            //retry error code
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {

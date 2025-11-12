@@ -43,7 +43,7 @@ public class BetDetailService implements BetDetailUrl {
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
 
         String[] parts = iBetDetailUrlInfo.getGameCode().split("_");
-        int gType = Integer.parseInt(parts[1]);
+        int mType = Integer.parseInt(parts[2]);
 
         BetDetailDto dto = new BetDetailDto();
         dto.setAction(Actions.BET_DETAIL_URL);
@@ -51,7 +51,7 @@ public class BetDetailService implements BetDetailUrl {
         dto.setParent(credentials.get(Credentials.PARENT));
         dto.setUid(iBetDetailUrlInfo.getVendorUsername());
         dto.setLang(vendorLanguageCode.getLanguageCode());
-        dto.setGType(gType);
+        dto.setMType(mType);
         long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
         if (iBetDetailUrlInfo.getVendorSettleTime() < dateChangeVendorBetId) {
             dto.setSeqNo(iBetDetailUrlInfo.getExternalRoundId());

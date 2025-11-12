@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine;
 
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,6 +25,15 @@ public class PlayerBalanceData {
                 currency,
                 BigDecimal.ZERO,
                 System.currentTimeMillis()
+        );
+    }
+
+    public PlayerBalanceData toVendorView(String username, String currency, BigDecimal toVendorRate) {
+        return new PlayerBalanceData(
+                username,
+                currency,
+                TxnAmount.of(balance, toVendorRate).amount(),
+                timestamp
         );
     }
 }

@@ -308,7 +308,7 @@ public class VendorService extends BaseVendorService {
                     responseVo.getData().setCurrency(gameSession.getVendorCurrencyCode());
                     responseVo.getData().getIncident().setMtcode(unsettledBet.getExternalTransactionId());
                     responseVo.getData().getIncident().setAmount(unsettledBet.getBetAmount().setScale(2, RoundingMode.DOWN));
-                    responseVo.getData().getIncident().setEventtime(unixTimestampToDateTime(unsettledBet.getVendorSettleTime()));
+                    responseVo.getData().getIncident().setEventtime(unixTimestampToDateTime(unsettledBet.getVendorBetTime()));
                     responseVo.setChannelId(dto.getChannelId());
                     responseVo.setErrorCode(com.nextgen.gameaggregator.vendor.cg.constant.ResponseCodes.SUCCESS);
                     responseVo.setReturnTime(returnTime());

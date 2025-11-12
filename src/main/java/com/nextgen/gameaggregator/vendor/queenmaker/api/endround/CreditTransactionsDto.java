@@ -108,18 +108,12 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        if (this.txtype.equals(Txtype.END_ROUND)) {
-            return this.ptxid;
-        }
-        return this.refptxid;
+        return this.ptxid;
     }
 
     @Override
     public String getVendorBetId() {
-        if (this.txtype.equals(Txtype.END_ROUND)) {
-            return this.ptxid;
-        }
-        return this.refptxid;
+        return this.ptxid;
     }
 
     @Override
@@ -154,7 +148,7 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return VendorService.convertToTimestamp(this.timestamp);
     }
 
     @Override
@@ -164,10 +158,7 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        if (this.isclosinground != null && this.isclosinground) {
-            VendorService.convertToTimestamp(this.timestamp);
-        }
-        return null;
+        return VendorService.convertToTimestamp(this.timestamp);
     }
 
     @Override
@@ -182,9 +173,6 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.isclosinground != null && this.isclosinground) {
-            return BetStatus.SETTLED;
-        }
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }
