@@ -49,19 +49,19 @@ public class VendorAuthFilter extends OncePerRequestFilter {
 
         String originalBody = wrapped.getCachedBody();
 
-        VendorExceptionMapper mapper = exceptionRegistry.getMapper(vendorClassName);
-        if (mapper == null) {
-            throw new InternalConfigurationException("No exception mapper registered for vendor: " + vendorClassName);
-        }
-
         try {
             Map<String, String> parsedFields = parseBody(request, originalBody);
 
             if (!handleDecryption(adapter, wrapped, response, parsedFields)) return;
             if (!handleValidation(adapter, wrapped, response, parsedFields)) return;
         } catch (InvalidRequestException ex) {
-            VendorErrorResponse err = mapper.onInvalidRequestError(ex);
-            ResponseUtil.writeErrorResponse(response, err.getBody(), err.getStatusCode().value());
+            VendorExceptionMapper mapper = exceptionRegistry.getMapper(vendorClassName);
+            if (mapper != null) {
+                VendorErrorResponse err = mapper.onInvalidRequestError(ex);
+                ResponseUtil.writeErrorResponse(response, err.getBody(), err.getStatusCode().value());
+            } else {
+                log.warn("No exception mapper registered for vendor: " + vendorClassName);
+            }
             return;
         }
 
