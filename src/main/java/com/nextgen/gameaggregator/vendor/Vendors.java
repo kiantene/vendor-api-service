@@ -15,7 +15,7 @@ public enum Vendors {
     FACHAI          (5,   null, "facai",         true),
     SPADEGAMING     (7,   null, "spadegaming",   false),
     JDB             (8,   null, "jdb",           false),
-    EZUGI           (24,  null, "ezugi",         true),
+    EZUGI           (24,  null, "ezugi",         false),
     CRYSTAL         (94,  null, "crystal",       true),
     AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
     VPLUS           (97,  null, "vplus",         true)
