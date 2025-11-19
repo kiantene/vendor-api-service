@@ -7,4 +7,6 @@ public class Endpoints {
     public static final String UPDATE_BALANCE = "/updatebalance";
     public static final String ROLLBACK = "/rollback";
     public static final Integer TIMEOUT = 10000;
+
+    public static final String CLASS_NAME = "mg";
 }

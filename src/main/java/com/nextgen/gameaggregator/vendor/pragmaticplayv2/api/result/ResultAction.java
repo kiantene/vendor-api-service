@@ -13,11 +13,12 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.PPPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 @Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
+@RequiredArgsConstructor
 public class ResultAction {
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
@@ -34,27 +36,13 @@ public class ResultAction {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
-
-    @Autowired
-    public ResultAction(HttpService httpService,
-                        GameSessionService gameSessionService,
-                        WalletService walletService,
-                        VendorLineService vendorLineService,
-                        VendorService vendorService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
-        this.httpService = httpService;
-        this.gameSessionService = gameSessionService;
-        this.walletService = walletService;
-        this.vendorLineService = vendorLineService;
-        this.vendorService = vendorService;
-        this.requestIdempotentLogService = requestIdempotentLogService;
-    }
+    private final PPPromoPayoutService promoPayoutService;
 
     public ResponseVo resultRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResultVo responseVo = new ResultVo();
         String traceId = httpRequestLog.getId();
-        GameSession gameSession = new GameSession();
+        GameSession gameSession;
         ResultDto dto = new ResultDto();
         boolean isRequestExists = false;
 
@@ -83,6 +71,11 @@ public class ResultAction {
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);
+            }
+
+            if (promoPayoutService.isPromoTransaction(dto.getBonusCode())) {
+                // TODO: need to add this to promo transaction history
+                return promoPayoutService.getDefaultResponseForResult(traceId, gameSession.getVendorCurrencyCode());
             }
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());

@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.exception.DuplicateBetException;
 import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.PlayerDisabledException;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -99,7 +100,7 @@ public class WalletExceptionTranslator {
          * The current InsufficientBalanceException is deprecated.
          * To catch and re-throw from the core library InsufficientBalanceException.
          */
-        else if (ex instanceof InsufficientBalanceException) {
+        else if (isInsufficientBalance(ex)) {
             translatedException = new com.nextgen.gameaggregator.core.exception.InsufficientBalanceException(context);
         }
 
@@ -185,5 +186,14 @@ public class WalletExceptionTranslator {
 
     private boolean isBetNotAllowedException(Exception ex) {
         return BET_NOT_ALLOWED_EXCEPTIONS.stream().anyMatch(clazz -> clazz.isInstance(ex));
+    }
+
+    private boolean isInsufficientBalance(Exception ex) {
+        return ex instanceof InsufficientBalanceException || isOperatorInsufficientBalance(ex);
+    }
+
+    private boolean isOperatorInsufficientBalance(Exception ex) {
+        return ex instanceof InvalidOperatorResponseException opEx &&
+                ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code.equals(opEx.getOperatorStatus());
     }
 }

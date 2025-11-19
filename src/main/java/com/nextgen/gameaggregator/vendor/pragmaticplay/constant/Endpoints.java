@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.constant;
 
 public class Endpoints {
-
+    public static final String CLASS_NAME = "pragmaticplay";
     public static final Integer TIMEOUT = 10000;
 
     public static final String PATH = "api/v1/pragmaticplay/";
@@ -15,8 +15,8 @@ public class Endpoints {
     public static final String RESULT = "result";
     public static final String REFUND = "refund";
     public static final String JACKPOT = "jackpotWin";
-    public static final String BONUS = "bonusWin";
-    public static final String PROMO = "promoWin";
+    public static final String BONUS = "/bonusWin";
+    public static final String PROMO = "/promoWin";
     public static final String END_ROUND = "endRound";
     public static final String ADJUSTMENT = "adjustment";
 }

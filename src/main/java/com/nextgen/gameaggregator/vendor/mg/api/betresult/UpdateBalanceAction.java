@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.mg.api.promo.PromoPayoutHandler;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 
+import static com.nextgen.gameaggregator.vendor.mg.constant.TxnType.CREDIT;
 import static com.nextgen.gameaggregator.vendor.mg.constant.TxnType.DEBIT;
 
 @RestController
@@ -42,6 +44,8 @@ public class UpdateBalanceAction {
     private ValidationService validationService;
     @Autowired
     private AutowireCapableBeanFactory autowireCapableBeanFactory;
+    @Autowired
+    private PromoPayoutHandler promoPayoutHandler;
 
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
@@ -69,7 +73,18 @@ public class UpdateBalanceAction {
             UpdateBalanceDto dto = HttpService.convertJsonToDto(body, UpdateBalanceDto.class);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
-            // Get GameSession by vendor player username
+
+            if (dto.getIsFreespin() == 1 && dto.getMetaData().getFreeGame().getOfferGuid() != null && dto.getTxnType() == CREDIT) {
+                updateBalanceVo = promoPayoutHandler.promo(dto).getBody();
+                long endTime = System.currentTimeMillis();
+                long responseTime = endTime - startTime;
+                headers.add(Headers.RESPONSE_TIMESTAMP, String.valueOf(responseTime));
+                // Add back the requestId to the response headers
+                headers.add(Headers.REQUEST_ID, request.getHeader(Headers.REQUEST_ID));
+                // Return ResponseEntity with UpdateBalanceDto object, headers, and HTTP status code
+                return new ResponseEntity<>(updateBalanceVo, headers, status);
+            }
+
             try {
                 gameSession = gameSessionService.verifyToken(dto.getExtOperatorToken());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getContentCode(), gameSession);

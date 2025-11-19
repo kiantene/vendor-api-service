@@ -8,4 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class WalletServiceProperties {
     private String host;
     private Long timeout;
+
+    public String getCallbackUrl() {
+        return host + "/seamless";
+    }
 }

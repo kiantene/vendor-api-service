@@ -11,11 +11,12 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.PPPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,24 +25,17 @@ import java.math.BigDecimal;
 
 @Component
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequiredArgsConstructor
 @Slf4j
 public class BetAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService vendorService;
-    @Autowired
-    private RequestIdempotentLogService requestIdempotentLogService;
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+    private final PPPromoPayoutService promoPayoutService;
 
     public ResponseVo betRequest(HttpServletRequest request) {
 
@@ -49,7 +43,7 @@ public class BetAction {
         BetVo responseVo = new BetVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
-        GameSession gameSession = new GameSession();
+        GameSession gameSession;
         boolean isRequestExists = false;
         BetDto dto = new BetDto();
 
@@ -73,13 +67,18 @@ public class BetAction {
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
+            if (promoPayoutService.isPromoTransaction(dto.getBonusCode())) {
+                // TODO: need to add this to promo transaction history
+                return promoPayoutService.getDefaultResponseForBet(traceId, vendorCurrencyCode);
+            }
+
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_LOSE, vendorService, httpRequestLog);
 
-            String transactionId = com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(traceId);
+            String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(balance);
@@ -92,7 +91,7 @@ public class BetAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             String betId = betResultIdempotentViolationException.getBetId();
-            responseVo.setTransactionId(com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService.getTransactionId(betId));
+            responseVo.setTransactionId(VendorService.getTransactionId(betId));
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(betResultIdempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);

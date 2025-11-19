@@ -42,7 +42,7 @@ class BetRollbackProcessor {
     private final RetryQueueService retryQueueService;
     private final LegacyCleanupService legacyCleanupService;
 
-    public PlayerBalanceData processBetRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
+    public PlayerBalanceData processRollbackByBet(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         // There is a possibility that the alias txn is not created yet if an error is encountered before markSent is called
         GameTransaction betTxn = gameTransactionService.getOrThrow(rollbackTxn.getRollbackId());
 
@@ -71,7 +71,7 @@ class BetRollbackProcessor {
         );
     }
 
-    public PlayerBalanceData processRoundRollback(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
+    public PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         GameRound round = gameRoundService.getOrThrow(rollbackTxn.getRoundDocId());
 
         RollbackDecision decision = RollbackPolicy.decide(round, config);

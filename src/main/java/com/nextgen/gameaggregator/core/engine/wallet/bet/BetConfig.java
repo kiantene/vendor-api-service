@@ -9,7 +9,7 @@ public class BetConfig {
 
     public BetConfig() {
         this.returnSuccessOnDuplicate = false;
-        this.allowMultipleBet = false;
+        this.allowMultipleBet = true;
     }
 
     public BetConfig returnSuccessOnDuplicate(boolean flag) {

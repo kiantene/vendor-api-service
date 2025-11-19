@@ -1,12 +1,13 @@
 package com.nextgen.gameaggregator.core.engine.game.authenticate;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
-import com.nextgen.gameaggregator.core.engine.wallet.balance.WalletBalanceServiceWrapper;
+import com.nextgen.gameaggregator.core.engine.wallet.balance.BalanceProcessor;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
     private static final String LOG_GROUP = "game";
     private static final String ACTION = "auth";
     private final GameSessionDataService gameSessionDataService;
-    private final WalletBalanceServiceWrapper walletService;
+    private final BalanceProcessor balanceProcessor;
     private final WalletExceptionTranslator walletExceptionTranslator;
 
     public PlayerBalanceData process() {
@@ -40,11 +41,12 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
             }
             // TODO: do we need to validate gameSession status? eg. session terminated
 
-            return walletService.getBalance(
-                    context.getVendorPlayerUsername(),
-                    context.getVendorCurrency(),
-                    gameSession,
-                    httpRequestLog
+            return balanceProcessor.process(
+                    logContext.getTraceId(),
+                    AgentMeta.ofGameSession(gameSession),
+                    gameSession.getVendorId(),
+                    gameSession.getVendorPlayerUsername(),
+                    gameSession.getVendorCurrencyCode()
             );
         } catch (Exception ex) {
             throw walletExceptionTranslator.translate(ex, context);
@@ -60,6 +62,9 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
         }
         if (context.getVendorCurrency() == null) {
             context.setVendorCurrency(gameSession.getVendorCurrencyCode());
+        }
+        if (context.getVendorGameCode() == null) {
+            context.setVendorGameCode(gameSession.getVendorGameCode());
         }
     }
 

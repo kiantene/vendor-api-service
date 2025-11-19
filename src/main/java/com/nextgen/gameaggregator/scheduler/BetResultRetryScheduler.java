@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -30,7 +29,7 @@ public class BetResultRetryScheduler {
         this.betResultRetryLogService = betResultRetryLogService;
     }
 
-    @Scheduled(fixedDelay = 5000, initialDelay = 5000)
+    //@Scheduled(fixedDelay = 5000, initialDelay = 5000)
     public void processBetResultRetryLog() {
 
         Long currentTime = System.currentTimeMillis() + 1;

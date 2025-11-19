@@ -8,13 +8,14 @@ import java.util.Map;
 //@formatter:off
 public enum Vendors {
     // Add vendor according to id in sequence
-    PRAGMATIC       (1,   null, "pragmaticplay", false),
+    PRAGMATIC       (1,   null, "pragmaticplay", true),
     PGSOFT          (2,   null, "pgsoft",        false),
     CQ9             (3,   null, "cq9",           false),
     JILI            (4,   null, "jili",          false),
     FACHAI          (5,   null, "facai",         true),
     SPADEGAMING     (7,   null, "spadegaming",   false),
-    JDB             (8,   null, "jdb",           false),
+    JDB             (8,   null, "jdb",           true),
+    MG              (17,  null, "mg",            false),
     EZUGI           (24,  null, "ezugi",         false),
     CRYSTAL         (94,  null, "crystal",       true),
     AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
