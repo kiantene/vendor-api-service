@@ -132,6 +132,11 @@ public class GameRoundService {
         round.setCreatedTs(txn.getCreatedTs());
         txn.setIdx(0);
 
+        // If the transaction is marked as VOID, set the round state to VOID
+        if (txn.getState() == GameRoundState.VOID) {
+            round.setState(GameRoundState.VOID);
+        }
+
         return round;
     }
 

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback;
 
 import com.nextgen.gameaggregator.core.exception.BetAlreadySettledException;
 import com.nextgen.gameaggregator.core.exception.RoundAlreadyEndedException;
+import com.nextgen.gameaggregator.core.exception.RoundAlreadyVoidException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.TxnStatus;
@@ -29,6 +30,13 @@ public class RollbackPolicy {
     }
 
     public static RollbackDecision decide(GameRound round, BetRollbackConfig config) {
+        // Reject if round exists and is already void
+        if (round.isVoid()) {
+            return RollbackDecision.reject(
+                    round.getId() + " already void",
+                    RoundAlreadyVoidException.class);
+        }
+
 //        if (round.isUnsettled()) {
 //            return RollbackDecision.allow();
 //        }

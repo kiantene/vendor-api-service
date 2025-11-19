@@ -9,8 +9,8 @@ import com.nextgen.gameaggregator.core.exception.InternalValidationException;
 import com.nextgen.gameaggregator.core.service.AgentApiCredentialDataService;
 import com.nextgen.gameaggregator.core.service.AgentDataService;
 import com.nextgen.gameaggregator.core.util.OperatorSignatureUtil;
-import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
+import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.validation.ConstraintViolation;
@@ -34,18 +34,18 @@ public class ClientRequestService {
     private final Validator validator;
     private final AgentApiCredentialDataService credentialService;
     private final AgentDataService agentService;
-    private final WalletServiceProperties props;
+    private final WalletServiceProperties transferWalletProps;
     @Value("${testing.stub-prefix:stub}")
     private String usernamePrefix;
 
     public ClientRequestService(Validator validator,
                                 AgentApiCredentialDataService credentialService,
                                 AgentDataService agentService,
-                                WalletServiceProperties props) {
+                                WalletServiceProperties transferWalletProps) {
         this.validator = validator;
         this.credentialService = credentialService;
         this.agentService = agentService;
-        this.props = props;
+        this.transferWalletProps = transferWalletProps;
     }
 
     public OperatorApiRequest createOperatorApiRequest(String traceId,
@@ -58,19 +58,13 @@ public class ClientRequestService {
         validateRequestObject(requestObject);
 
         AgentApiCredential credential = loadCredential(agentId);
-        Agent agent = agentService.get(agentId);
-
-        String baseUrl = credential.getCallbackUrl();
-        if (SeamlessType.SEAMLESS_TRANSFER.code.equals(agent.getSeamlessType())) {
-            baseUrl = props.getHost() + "/seamless";
-        }
 
         return OperatorApiRequest.builder()
                 .traceId(traceId)
                 .agentId(agentId)
                 .agentPlayerUsername(agentPlayerUsername)
                 .method(HttpMethod.POST)
-                .baseUrl(baseUrl)
+                .baseUrl(credential.getCallbackUrl())
                 .path(path)
                 .body(requestObject)
                 .headers(getHeaders(credential, requestObject))
@@ -135,6 +129,11 @@ public class ClientRequestService {
             throw new InternalConfigurationException(
                     String.format("No active credentials found for agent ID: %d", agentId)
             );
+        }
+
+        Agent agent = agentService.get(agentId);
+        if (SeamlessType.isSeamlessTransfer(agent.getSeamlessType())) {
+            credential.setCallbackUrl(transferWalletProps.getCallbackUrl());
         }
 
         // Validate required fields

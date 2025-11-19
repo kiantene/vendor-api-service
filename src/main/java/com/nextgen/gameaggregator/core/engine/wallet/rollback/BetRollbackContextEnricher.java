@@ -118,6 +118,7 @@ class BetRollbackContextEnricher extends BaseEnricher<BetRollbackContext> {
     public void enrichGameTransaction(GameTransaction txn, BetRollbackContext context) {
         txn.setVendorBetId(context.getVendorBetId());
         txn.setRoundId(context.getRoundId());
+        txn.setUsername(context.getVendorPlayerUsername());
     }
 
     public void enrichByGameRound(BetRollbackContext context, GameRound round, GameTransaction txn) {

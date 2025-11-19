@@ -9,6 +9,7 @@ public class Actions {
     public static final int BET = 9;
     public static final int SETTLE = 10;
     public static final int CANCEL_BET = 11;
+    public static final int PROMO_PAYOUT = 16;
 
     // GA to Vendor
     public static final int GAME_URL = 21;

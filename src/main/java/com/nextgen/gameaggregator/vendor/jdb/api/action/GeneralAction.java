@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
+import com.nextgen.gameaggregator.vendor.jdb.api.promo.JdbPromoPayoutHandler;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -58,9 +61,22 @@ public class GeneralAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private JdbPromoPayoutHandler promoPayoutHandler;
 
     @PostMapping(path = EndPoints.ACTION + "/{id}")
     public CommonVo action(HttpServletRequest request, @PathVariable String id) {
+
+        if (request instanceof ResettableRequestWrapper wrapped){
+            Map<String, String> enriched = wrapped.getEnrichedFields();
+            if (!enriched.isEmpty() && enriched.containsKey("action")){
+                int action = Integer.parseInt(enriched.get("action"));
+                if(Actions.PROMO_PAYOUT == action) {
+                    return promoPayoutHandler.handlePromo(enriched).getBody();
+                }
+            }
+        }
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 

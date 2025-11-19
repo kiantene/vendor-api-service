@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.bet;
 import java.util.Optional;
 
 import com.nextgen.gameaggregator.core.exception.MultipleBetNotAllowedException;
+import com.nextgen.gameaggregator.core.exception.RoundAlreadyVoidException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 
 public class BetPolicy {
@@ -18,6 +19,15 @@ public class BetPolicy {
      */
     public static BetDecision decide(Optional<GameRound> roundOpt, BetConfig config) {
         boolean isMultipleBet = isMultipleBet(roundOpt);
+
+        // Reject if round exists and is already void
+        if (roundOpt.isPresent() && roundOpt.get().isVoid()) {
+            GameRound round = roundOpt.get();
+            return BetDecision.reject(
+                    round.getId() + " already void",
+                    RoundAlreadyVoidException.class
+            );
+        }
 
         // TODO: Need further discussion on handling already ended rounds for bets (AviatorStudio)
         // Reject if round exists and is already ended

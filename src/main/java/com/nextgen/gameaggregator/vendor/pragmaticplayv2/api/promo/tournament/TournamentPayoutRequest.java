@@ -1,8 +1,6 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.promo;
+package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.promo.tournament;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -11,7 +9,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PromoDto implements BetResultData {
+public class TournamentPayoutRequest {
 
     // Hash code of the request
     @NotBlank
@@ -62,74 +60,4 @@ public class PromoDto implements BetResultData {
     @Size(min = 1, max = 32)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String reference;
-
-    @Override
-    public String getExternalTransactionId() {
-        return this.reference;
-    }
-
-    @Override
-    public String getVendorBetId() {
-        return this.reference;
-    }
-
-    @Override
-    public String getRoundId() {
-        return this.reference;
-    }
-
-    @Override
-    public String getGameId() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getBetAmount() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getWinAmount() {
-        return this.amount;
-    }
-
-    @Override
-    public BigDecimal getWinLoss() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover() {
-        return null;
-    }
-
-    @Override
-    public Long getVendorBetTime() {
-        return null;
-    }
-
-    @Override
-    public Long getResultTime() {
-        return this.timestamp;
-    }
-
-    @Override
-    public Long getVendorSettleTime() {
-        return this.timestamp;
-    }
-
-    @Override
-    public BigDecimal getJackpotAmount() {
-        return null;
-    }
-
-    @Override
-    public Integer getIsFreespin() {
-        return null;
-    }
-
-    @Override
-    public BetStatus getBetStatus() {
-        return null;
-    }
 }

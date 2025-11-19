@@ -42,7 +42,7 @@ public abstract class AbstractVendorDecrypter implements VendorDecrypter {
     protected VendorCredentialAccessor getCredentialAccessorByKeyValue(Integer vendorId, String key, String value) {
         try {
             // TODO: need to include vendorId, otherwise it may return more than 1 records
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(key, value);
+            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(key, value);
             return new VendorCredentialAccessor(vendorLineService.mapCredentialsByName(vendorLineId));
         } catch (CredentialNotFoundException ex) {
             throw new InternalConfigurationException(key + " not found", ex);

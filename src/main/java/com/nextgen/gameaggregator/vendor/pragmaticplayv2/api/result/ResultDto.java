@@ -67,6 +67,8 @@ public class ResultDto implements BetResultData {
     @Size(max = 12000)
     private String roundDetails;
 
+    private String bonusCode;
+
     // Token of the player from Authenticate response.
     @NotBlank
     @Size(max = 50)

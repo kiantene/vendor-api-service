@@ -12,6 +12,15 @@ public class BetResultPolicy {
     public static BetResultDecision decide(Optional<GameRound> roundOpt, BetResultConfig config) {
         // All rejection conditions first
 
+        // Reject if round exists and is already void
+        if (roundOpt.isPresent() && roundOpt.get().isVoid()) {
+            GameRound round = roundOpt.get();
+            return BetResultDecision.reject(
+                    round.getId() + " already void",
+                    RoundAlreadyVoidException.class
+            );
+        }
+
         // Reject if round exists and is already refunded
 //        if (roundOpt.isPresent() && roundOpt.get().isRefunded()) {
 //            GameRound round = roundOpt.get();

@@ -121,8 +121,13 @@ public class GameRound {
     }
 
     @JsonIgnore
+    public boolean isVoid() {
+        return state == GameRoundState.VOID;
+    }
+
+    @JsonIgnore
     public boolean hasMultipleBets() {
-        return betTxnCount != null && betTxnCount > 1;
+        return betTxnCount != null && betTxnCount >= 1;
     }
 
     @JsonIgnore

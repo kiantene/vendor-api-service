@@ -25,10 +25,8 @@ public class RoutingAction {
             "authenticate", com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate.AuthenticateAction.class,
             "balance", com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance.BalanceAction.class,
             "bet", com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet.BetAction.class,
-            "bonusWin", com.nextgen.gameaggregator.vendor.pragmaticplay.api.bonus.BonusAction.class,
             "endRound", com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround.EndRoundAction.class,
             "jackpotWin", com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot.JackpotAction.class,
-            "promoWin", com.nextgen.gameaggregator.vendor.pragmaticplay.api.promo.PromoAction.class,
             "refund", com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund.RefundAction.class,
             "result", com.nextgen.gameaggregator.vendor.pragmaticplay.api.result.ResultAction.class
     );
@@ -37,10 +35,8 @@ public class RoutingAction {
             "authenticate", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.authenticate.AuthenticateAction.class,
             "balance", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.balance.BalanceAction.class,
             "bet", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.bet.BetAction.class,
-            "bonusWin", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.bonus.BonusAction.class,
             "endRound", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.endround.EndRoundAction.class,
             "jackpotWin", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.jackpot.JackpotAction.class,
-            "promoWin", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.promo.PromoAction.class,
             "refund", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.refund.RefundAction.class,
             "result", com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.result.ResultAction.class
     );
