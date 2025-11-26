@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.game.launcher.crystal;
 
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class CrystalGameLauncher extends AbstractGameLaunchHandler<GameLaunchRequest, GameLaunchResponse> {
 
     public CrystalGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class, SigningStrategyType.HMAC_SHA256);
+        super(credentialUtils, EndPoints.CLASS_NAME, GameLaunchResponse.class, SigningStrategyType.HMAC_SHA256_HEX);
     }
 
     @Override

@@ -101,7 +101,7 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.totalWithdraw.compareTo(BigDecimal.ZERO) >= 0 ? this.totalWithdraw : BigDecimal.ZERO;
+        return this.money;
     }
 
     @Override

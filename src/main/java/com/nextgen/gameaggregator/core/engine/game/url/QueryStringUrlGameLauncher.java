@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import org.springframework.http.MediaType;
 

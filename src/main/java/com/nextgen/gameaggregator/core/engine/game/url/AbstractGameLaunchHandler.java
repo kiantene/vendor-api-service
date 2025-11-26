@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.core.engine.game.url;
 
+import com.nextgen.core.security.signature.SignatureStrategy;
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.core.webclient.ApiExecutor;
 import com.nextgen.core.webclient.HandlerResult;
 import com.nextgen.core.webclient.WebClientRequest;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
-import com.nextgen.gameaggregator.core.signature.SignatureStrategy;
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;

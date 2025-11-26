@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.game.launcher.inout;
 
+import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchHandler;
 import com.nextgen.gameaggregator.core.engine.game.url.QueryStringUrlGameLauncher;
-import com.nextgen.gameaggregator.core.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
@@ -17,7 +17,7 @@ import java.util.UUID;
 public class InoutGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
 
     protected InoutGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, EndPoints.CLASS_NAME, SigningStrategyType.HMAC_SHA256);
+        super(credentialUtils, EndPoints.CLASS_NAME, SigningStrategyType.HMAC_SHA256_HEX);
     }
 
     @Override

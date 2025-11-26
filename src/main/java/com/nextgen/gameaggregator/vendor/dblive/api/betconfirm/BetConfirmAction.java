@@ -79,22 +79,8 @@ public class BetConfirmAction {
 
             String vendorPlayerUsername = VendorService.extractVendorPlayerUsername(betParamsDto.getLoginName());
 
-            try {
-                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
-                if (gameSession == null) throw new AuthenticationException();
-                languageId = gameSession.getLanguageId();
-                platformId = gameSession.getPlatformId();
-                if (!gameSession.getVendorGameCode().equals(betParamsDto.getGameTypeId()))
-                    throw new AuthenticationException();
-            } catch (AuthenticationException e) {
-                gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
-                gameSessionService.updateByVendorGameCode(gameSession, betParamsDto.getGameTypeId());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setLanguageId(languageId);
-                gameSession.setPlatformId(platformId);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betParamsDto.getGameTypeId(), gameSession);
 
             //Verification
             doVerification(betConfirmDto, gameSession, vendorPlayerUsername);

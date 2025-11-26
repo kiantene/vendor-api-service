@@ -118,10 +118,6 @@ public class BetDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (super.getMessageDto().getBetInfo().getIsSettled() == 1) {
-            return BetStatus.SETTLED;
-        }
-        return BetStatus.UNSETTLED;
-
+        return BetStatus.SETTLED;
     }
 }

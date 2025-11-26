@@ -53,8 +53,10 @@ public class TimeoutBetReturnService {
             try {
                 // Get GameSession with username
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(timeoutBetReturnDto.getUser());
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(timeoutBetReturnDto.getGtype(), gameSession);
             } catch (AuthenticationException e) {
                 gameSession = gameSessionService.generateNewSessionToken(timeoutBetReturnDto.getUser()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGtype());
                 gameSessionService.updateByVendorCurrencyId(gameSession);
                 gameSession.setToken(traceId);
                 gameSession.setVendorToken(traceId);

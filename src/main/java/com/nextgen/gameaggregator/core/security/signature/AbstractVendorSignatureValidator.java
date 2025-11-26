@@ -1,13 +1,17 @@
 package com.nextgen.gameaggregator.core.security.signature;
 
+import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.security.signature.SignatureStrategy;
 import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
+import com.nextgen.gameaggregator.core.exception.PlayerNotFoundException;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,18 +21,33 @@ import java.util.Map;
 public abstract class AbstractVendorSignatureValidator implements VendorSignatureValidator {
     private final VendorPlayerDataService vendorPlayerDataService;
     private final VendorLineService vendorLineService;
+    private final GameSessionDataService gameSessionDataService;
     private final SignatureStrategy signatureStrategy;
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                               VendorLineService vendorLineService) {
-        this(vendorPlayerDataService, vendorLineService, null);
+                                            VendorLineService vendorLineService,
+                                            GameSessionDataService gameSessionDataService) {
+        this(vendorPlayerDataService, vendorLineService, gameSessionDataService, null);
     }
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                               VendorLineService vendorLineService,
-                                               SigningStrategyType strategyType) {
+                                            VendorLineService vendorLineService) {
+        this(vendorPlayerDataService, vendorLineService, null, null);
+    }
+
+    protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
+                                            VendorLineService vendorLineService,
+                                            SigningStrategyType strategyType) {
+        this(vendorPlayerDataService, vendorLineService, null, strategyType);
+    }
+
+    protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
+                                            VendorLineService vendorLineService,
+                                            GameSessionDataService gameSessionDataService,
+                                            SigningStrategyType strategyType) {
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.vendorLineService = vendorLineService;
+        this.gameSessionDataService = gameSessionDataService;
         this.signatureStrategy = (strategyType != null ? strategyType : SigningStrategyType.NO_OP).getStrategy();
     }
 
@@ -47,8 +66,12 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
             vendorLineId = vendorPlayer.getVendorLineId();
 
             return vendorLineService.getCredentialValueByName(vendorLineId, credentialName);
+
+        } catch (EntityNotFoundException ex) {
+            throw new SignatureValidationException("Player not found: " + username, new PlayerNotFoundException());
+
         } catch (Exception ex) {
-            throw new InternalConfigurationException("vendorLineId: " + vendorLineId + " : " + credentialName + " not found", ex);
+            throw new SignatureValidationException(ex.getMessage(), ex);
         }
     }
 
@@ -86,5 +109,20 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
         if (!expectedSignature.equals(sign(payload, secret))) {
             throw new SignatureValidationException("Signature does not match");
         }
+    }
+
+    // TODO: enhance to include VendorRequestContext
+    protected final GameSession getGameSessionByToken(String token) {
+        if (gameSessionDataService == null) {
+            throw new IllegalStateException("GameSessionDataService is not initialised, use constructor (VendorPlayerDataService, VendorLineService, GameSessionDataService)");
+        }
+        return gameSessionDataService.getByToken(token, null);
+    }
+
+    protected final GameSession getGameSessionByVendorToken(String vendorToken) {
+        if (gameSessionDataService == null) {
+            throw new IllegalStateException("GameSessionDataService is not initialised, use constructor (VendorPlayerDataService, VendorLineService, GameSessionDataService)");
+        }
+        return gameSessionDataService.getByVendorToken(vendorToken, null);
     }
 }

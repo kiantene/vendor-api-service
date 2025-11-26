@@ -162,6 +162,10 @@ public class CashTransferInOutDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
+        if (Boolean.TRUE.equals(this.isFeatureBuy)
+                && this.betAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return 1;
+        }
         return 0;
     }
 
