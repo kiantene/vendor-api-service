@@ -64,6 +64,7 @@ public class RollbackAction {
         RollBackDto rollBackDto = new RollBackDto();
         boolean isRequestExists = false;
         VendorPlayer vendorPlayer = new VendorPlayer();
+        GameSession gameSession = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), StandardCharsets.UTF_8);
             rollBackDto = HttpService.convertQueryStringToDto(body, RollBackDto.class);
@@ -84,7 +85,7 @@ public class RollbackAction {
             }
 
             // using vendorPlayerId to find gameSession details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollBackDto, gameSession, body);
@@ -123,7 +124,13 @@ public class RollbackAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            dataVo.setBalance(e.getBalance());
+            dataVo.setUpdatedMs(System.currentTimeMillis());
+            dataVo.setCurrency(gameSession.getVendorCurrencyCode());
+
+            vo.setData(dataVo);
 
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);

@@ -5,8 +5,6 @@ import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.entity.Currency;
 import com.nextgen.gameaggregator.core.entity.VendorCurrency;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.service.CurrencyDataService;
 import com.nextgen.gameaggregator.core.service.VendorCurrencyDataService;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;

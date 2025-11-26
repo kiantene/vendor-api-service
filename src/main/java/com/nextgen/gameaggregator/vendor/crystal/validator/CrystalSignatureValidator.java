@@ -19,7 +19,7 @@ import java.util.Map;
 @Component
 public class CrystalSignatureValidator extends AbstractVendorSignatureValidator {
     private static final String HEADER_AUTHORIZATION = "X-Signature";
-
+    
     protected CrystalSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
                                         VendorLineService vendorLineService) {
         super(vendorPlayerDataService, vendorLineService, SigningStrategyType.HMAC_SHA256_HEX);
@@ -32,6 +32,7 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
 
     @Override
     public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+
         String signatureHeader = extractAuthorizationHeader(request);
         String username = formFields.get("playerId");
         if (username == null || username.isBlank()) {
@@ -42,6 +43,28 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
         String compactJsonBody = rawBody.replaceAll("\\s+", "");
         checkSignature(signatureHeader, compactJsonBody, appSecret);
         return ValidationResult.success();
+}
+    
+    @Override
+    public VendorErrorResponse onInvalidSignature(SignatureValidationException exception) {
+        ErrorResponse response = ErrorResponse.builder()
+                .error(ErrorResponse.Error.of(ResponseCodes.INVALID_SIGNATURE))
+                .build();
+        return new VendorErrorResponse(ResponseCodes.INVALID_SIGNATURE.getHttpStatus(), response);
+    }
+    
+    @Override
+    public VendorErrorResponse onPlayerNotFound(SignatureValidationException exception) {
+        
+        ErrorResponse response = ErrorResponse.builder()
+                    .error(ErrorResponse.Error.of(ResponseCodes.PLAYER_NOT_FOUND))
+                    .build();
+        return new VendorErrorResponse(ResponseCodes.PLAYER_NOT_FOUND.getHttpStatus(), response);
+    }
+
+    @Override
+    public boolean useNewEvents() {
+        return true;
     }
 
     private String extractAuthorizationHeader(HttpServletRequest request) throws SignatureValidationException {
@@ -50,13 +73,5 @@ public class CrystalSignatureValidator extends AbstractVendorSignatureValidator 
             throw new SignatureValidationException("Missing Authorization header");
         }
         return signature;
-    }
-
-    @Override
-    public VendorErrorResponse onInvalidSignature(HttpServletRequest request) {
-        ErrorResponse response = ErrorResponse.builder()
-                .error(ErrorResponse.Error.of(ResponseCodes.INVALID_SIGNATURE))
-                .build();
-        return new VendorErrorResponse(ResponseCodes.INVALID_SIGNATURE.getHttpStatus(), response);
     }
 }

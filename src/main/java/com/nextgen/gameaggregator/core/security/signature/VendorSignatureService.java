@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.security.signature;
 
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
+import com.nextgen.gameaggregator.core.exception.PlayerNotFoundException;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
@@ -49,7 +50,18 @@ public class VendorSignatureService {
                                  SignatureValidationException ex) throws IOException {
 
         LogContextHolder.get().setException(ex);
-        VendorErrorResponse errorResponse = validator.onInvalidSignature(request);
+        VendorErrorResponse errorResponse = null;
+
+        if (ex.getCause() instanceof PlayerNotFoundException) {
+            errorResponse = validator.onPlayerNotFound(ex);
+        } else {
+            if (validator.useNewEvents()) {
+                errorResponse = validator.onInvalidSignature(ex);
+            } else {
+                errorResponse = validator.onInvalidSignature(request);
+            }
+        }
+
         if (errorResponse == null || errorResponse.getBody() == null) {
             errorResponse = ResponseUtil.createDefaultErrorResponse("no response from validator");
         }

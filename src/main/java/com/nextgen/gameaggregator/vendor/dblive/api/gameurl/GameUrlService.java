@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrlVo;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.vendor.dblive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dblive.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.dblive.constant.GameCodes;
 import com.nextgen.gameaggregator.vendor.dblive.service.VendorService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,7 +41,9 @@ public class GameUrlService extends BaseGameUrlService<DbLiveGameUrlVo> {
         gameUrlData.setDeviceType(Integer.parseInt(gameSession.getVendorPlatformCode()));
         gameUrlData.setLang(1);
         gameUrlData.setBackurl(gameSession.getLobbyUrl());
-        gameUrlData.setGameTypeId(Integer.parseInt(gameSession.getVendorGameCode()));
+        if (!GameCodes.LOBBY.getCode().equalsIgnoreCase(gameSession.getVendorGameCode())) {
+            gameUrlData.setGameTypeId(gameSession.getVendorGameCode());
+        }
         gameUrlData.setTimestamp(System.currentTimeMillis());
 
         //2.Encrypt Open GameUrl Data and return

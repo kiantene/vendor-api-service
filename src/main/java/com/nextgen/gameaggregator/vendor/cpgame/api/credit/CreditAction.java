@@ -65,6 +65,7 @@ public class CreditAction {
         CreditDto creditDto = new CreditDto();
         boolean isRequestExists = false;
         VendorPlayer vendorPlayer = new VendorPlayer();
+        GameSession gameSession = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -85,7 +86,6 @@ public class CreditAction {
             }
 
             // using vendorPlayerId to find gameSession details
-            GameSession gameSession;
             try {
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
@@ -140,7 +140,13 @@ public class CreditAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            dataVo.setBalance(e.getBalance());
+            dataVo.setUpdatedMs(System.currentTimeMillis());
+            dataVo.setCurrency(gameSession.getVendorCurrencyCode());
+
+            vo.setData(dataVo);
 
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);

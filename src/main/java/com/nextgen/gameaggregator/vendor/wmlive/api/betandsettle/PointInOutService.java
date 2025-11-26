@@ -64,6 +64,7 @@ public class PointInOutService {
             // Differentiate between point in and point out
             if (pointInOutDto.getCode().equals(BetType.POINTOUT)) {// If code is 2: 扣点 will process bet
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(pointInOutDto.getUser());
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(pointInOutDto.getGtype(), gameSession);
                 // validate vendor username, agent vendor line, player status, and game status
                 validationService.validateEligibleBet(gameSession, pointInOutDto.getUser());
                 //verify session
@@ -85,13 +86,14 @@ public class PointInOutService {
                 try {
                     //find game session
                     gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(pointInOutDto.getUser());
+                    vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(pointInOutDto.getGtype(), gameSession);
                 } catch (AuthenticationException authenticationException) {
                     //catch authentication error thrown and regenerate token
                     gameSession = gameSessionService.generateNewSessionToken(pointInOutDto.getUser());
                     gameSessionService.updateByVendorGameCode(gameSession, pointInOutDto.getGtype());
+                    gameSessionService.updateByVendorCurrencyId(gameSession);
                     gameSession.setToken(traceId);
                     gameSession.setVendorToken(traceId);
-
 
                 }
                 //verify session

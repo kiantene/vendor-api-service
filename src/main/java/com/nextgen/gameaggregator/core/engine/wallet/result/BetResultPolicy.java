@@ -30,14 +30,26 @@ public class BetResultPolicy {
 //            );
 //        }
 
+        // Reject if round exists and has a refunded txn (if enabled) - Crystal VAT (rollback by round)
+        // TODO: Not working if contains multiple refunded txns
+        if (roundOpt.isPresent() && config.isRejectResultIfRefunded()) {
+            GameRound round = roundOpt.get();
+            if (isRefunded(round)) {
+                return BetResultDecision.reject(
+                        round.getId() + " already refunded",
+                        RoundAlreadyRefundedException.class
+                );
+            }
+        }
+
         // Reject if round exists and is already ended
-//        if (roundOpt.isPresent() && roundOpt.get().isEnded() && config.isSettledByRound()) {
-//            GameRound round = roundOpt.get();
-//            return BetResultDecision.reject(
-//                    round.getId() + " already ended",
-//                    RoundAlreadyEndedException.class
-//            );
-//        }
+        if (shouldRejectEndedRound(config, roundOpt)) {
+            GameRound round = roundOpt.get();
+            return BetResultDecision.reject(
+                    round.getId() + " already ended",
+                    RoundAlreadyEndedException.class
+            );
+        }
 
         // Reject if round not found and result-before-bet is not allowed
         if (roundOpt.isEmpty() && !config.isBetAndResult() && !config.isAllowResultBeforeBet()) {
@@ -68,5 +80,16 @@ public class BetResultPolicy {
             return BetResultDecision.reject("Bet not found", BetNotFoundException.class);
         }
         return BetResultDecision.allow();
+    }
+
+    private static boolean shouldRejectEndedRound(BetResultConfig config, Optional<GameRound> roundOpt) {
+        if (config.isAllowResultWhenRoundHasEnded()) return false;
+        if (!config.isSettledByRound()) return false;
+        return roundOpt.map(GameRound::isEnded).orElse(false);
+    }
+
+    private static boolean isRefunded(GameRound round) {
+        return round.getTransactions().stream()
+                .anyMatch(txn -> txn.isRefunded() && txn.isBet() && txn.isSuccess());
     }
 }

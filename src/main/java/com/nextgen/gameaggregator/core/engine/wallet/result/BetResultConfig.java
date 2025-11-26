@@ -33,7 +33,9 @@ public class BetResultConfig {
     private SettleType settleType = SettleType.BET; // Default is settled by bet
     private ProcessingMode processingMode = ProcessingMode.SINGLE;
     private boolean allowResultBeforeBet = false;
+    private boolean allowResultWhenRoundHasEnded = true;
     private boolean returnSuccessOnDuplicate = false;
+    private boolean rejectResultIfRefunded = false;
 
     // Chaining methods
     public BetResultConfig betAndResult(boolean flag) {
@@ -61,8 +63,18 @@ public class BetResultConfig {
         return this;
     }
 
+    public BetResultConfig allowResultWhenRoundHasEnded(boolean flag) {
+        this.allowResultWhenRoundHasEnded = flag;
+        return this;
+    }
+
     public BetResultConfig returnSuccessOnDuplicate(boolean flag) {
         this.returnSuccessOnDuplicate = flag;
+        return this;
+    }
+
+    public BetResultConfig rejectResultIfRefunded(boolean flag) {
+        this.rejectResultIfRefunded = flag;
         return this;
     }
 

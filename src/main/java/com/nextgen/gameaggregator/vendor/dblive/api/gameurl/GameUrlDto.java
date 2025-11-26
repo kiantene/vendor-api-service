@@ -9,6 +9,6 @@ public class GameUrlDto {
     private int deviceType;
     private int lang;
     private String backurl;
-    private int gameTypeId;
+    private String gameTypeId;
     private long timestamp;
 }

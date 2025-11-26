@@ -71,6 +71,7 @@ public class DebitAction {
         DebitDto debitDto = new DebitDto();
         boolean isRequestExists = false;
         VendorPlayer vendorPlayer = new VendorPlayer();
+        GameSession gameSession = null;
         try {
             String body = URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8");
 
@@ -91,7 +92,7 @@ public class DebitAction {
             }
 
             // using vendorPlayerId to find gameSession details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
@@ -142,8 +143,13 @@ public class DebitAction {
 
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCodeMsg(ResponseCodes.INVALID_TRANSACTION);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
 
+            dataVo.setBalance(e.getBalance());
+            dataVo.setUpdatedMs(System.currentTimeMillis());
+            dataVo.setCurrency(gameSession.getVendorCurrencyCode());
+
+            vo.setData(dataVo);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.UNKNOWN_ERROR);
