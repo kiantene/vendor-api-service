@@ -30,8 +30,6 @@ public class SettleDto extends BetSettleRefundDto implements BetResultData {
     @Size(min = 1, max = 50)
     @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}[+-]\\d{2}:\\d{2}")
     private String settleTime;
-    @NotNull
-    private Boolean hitJackpot;
 
     @Override
     public String getExternalTransactionId() {
@@ -102,10 +100,6 @@ public class SettleDto extends BetSettleRefundDto implements BetResultData {
     public BetStatus getBetStatus() {
 
         BetStatus betStatus = BetStatus.SETTLED;
-
-//        if(this.getHitJackpot()){
-//            betStatus = BetStatus.UNSETTLED;
-//        }
 
         return betStatus;
     }
