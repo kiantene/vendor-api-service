@@ -59,7 +59,7 @@ public class SettleAction {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getPlayerId(), settleDto.getGameId());
+            GameSession gameSession = this.getGameSession(settleDto, traceId);
 
             this.doVerification(settleDto, gameSession, apHash, body);
 
@@ -68,10 +68,6 @@ public class SettleAction {
 
             vo.setTimestamp(VendorService.getTimestamp());
             vo.setBalance(balance);
-
-        } catch (AuthenticationException e) {
-            vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
-            httpService.logError(httpRequestLog, e);
 
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
@@ -142,5 +138,20 @@ public class SettleAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
 
+    }
+
+    private GameSession getGameSession(SettleDto settleDto, String traceId) throws InvalidPlayerException,
+            GameNotSupportedException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getPlayerId(), settleDto.getGameId());
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(settleDto.getPlayerId());
+            gameSessionService.updateByVendorGameCode(gameSession, settleDto.getGameCode());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

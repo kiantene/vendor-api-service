@@ -47,7 +47,7 @@ public class WinDataDto implements BetResultData {
     @Size(max = 256)
     private String roundId;
 
-    private MetaDataDto metadata;
+    private MetaDataDto metaData;
 
     private DeviceType deviceType;
 
@@ -101,10 +101,10 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        if (getMetadata() == null) {
+        if (getMetaData() == null) {
             return amount;
         }
-        return (getMetadata().getProgressive().getType().equals("jackpot")) ? BigDecimal.ZERO : amount;
+        return (getMetaData().getProgressive().getType().equals("jackpot")) ? BigDecimal.ZERO : amount;
     }
 
     @Override
@@ -141,15 +141,15 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        if (getMetadata() == null) {
+        if (getMetaData() == null) {
             return BigDecimal.ZERO;
         }
-        return (getMetadata().getProgressive().getType().equals("jackpot")) ? amount : BigDecimal.ZERO;
+        return (getMetaData().getProgressive().getType().equals("jackpot")) ? amount : BigDecimal.ZERO;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return (getMetadata() != null && Boolean.TRUE.equals(getMetadata().getIsFreeGame())) ? 1 : 0;
+        return (getMetaData() != null && Boolean.TRUE.equals(getMetaData().getIsFreeGame())) ? 1 : 0;
     }
 
     @Override

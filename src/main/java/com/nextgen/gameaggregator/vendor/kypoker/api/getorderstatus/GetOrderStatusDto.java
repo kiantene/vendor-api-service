@@ -13,7 +13,6 @@ public class GetOrderStatusDto {
     private String s;
 
     @NotBlank
-    @Size(min = 1, max = 36)
     private String orderId;
 
     @NotBlank

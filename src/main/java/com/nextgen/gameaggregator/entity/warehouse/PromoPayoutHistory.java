@@ -42,6 +42,9 @@ public class PromoPayoutHistory {
     @JsonProperty("vendor_line_id")
     private Integer vendorLineId;
 
+    @JsonProperty("vendor_campaign_name")
+    private String vendorCampaignName;
+
     @JsonProperty("agent_id")
     private Integer agentId;
 

@@ -92,6 +92,12 @@ public class SettledBetService {
         return rawSettledBetRepository.findById(id).orElseThrow(BetNotFoundException::new);
     }
 
+    //Temporary built for ambslot, could be replaced other class file level for unsettledBet endpoint check is bet settled.
+    @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
+    public SettledBet getById(String id, String externalTransactionId, Long vendorPlayerId) {
+        return rawSettledBetRepository.findById(id).orElse(null);
+    }
+
     @Recover
     public SettledBet recoverData(BetNotFoundException ex) {
         // Handle recovery logic here, such as returning a default value or logging the error

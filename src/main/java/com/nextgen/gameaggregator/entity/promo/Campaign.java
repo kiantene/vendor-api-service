@@ -8,4 +8,5 @@ import lombok.Data;
 public class Campaign {
     private String uuid;
     private Integer status;
+    private String campaignName;
 }

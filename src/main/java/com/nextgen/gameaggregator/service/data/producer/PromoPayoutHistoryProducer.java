@@ -34,6 +34,7 @@ public class PromoPayoutHistoryProducer {
                 .agentPlayerUsername(context.getAgent().playerUsername())
                 .vendorPlayerId(context.getVendor().playerId())
                 .vendorPlayerUsername(context.getVendorPlayerUsername())
+                .vendorCampaignName(context.getVendorCampaignName())
 
                 .vendorId(context.getVendorId())
                 .vendorCode(context.getVendor().code())
@@ -61,6 +62,7 @@ public class PromoPayoutHistoryProducer {
                 .agentPlayerUsername(context.getAgent().playerUsername())
                 .vendorPlayerId(context.getVendor().playerId())
                 .vendorPlayerUsername(context.getVendorPlayerUsername())
+                .vendorCampaignName(context.getVendorCampaignName())
 
                 .vendorId(context.getVendorId())
                 .vendorCode(context.getVendor().code())
