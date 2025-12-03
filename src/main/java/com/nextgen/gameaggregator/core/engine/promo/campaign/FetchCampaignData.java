@@ -8,5 +8,6 @@ import lombok.Getter;
 public class FetchCampaignData {
     private String uuid;
     private Integer status;
+    private String campaignName;
     private Long completedAt;
 }

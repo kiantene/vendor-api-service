@@ -49,7 +49,6 @@ public class RefundBetAction {
 
         ResponseVo vo = new ResponseVo();
         String traceId = httpRequestLog.getId();
-        GameSession gameSession = new GameSession();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -62,16 +61,7 @@ public class RefundBetAction {
             this.doValidation(refundBetDto);
 
             // 2. Verify session token
-            try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(refundBetDto.getPlayerId(), refundBetDto.getGameCode());
-
-            } catch (AuthenticationException e) {
-                gameSession = gameSessionService.generateNewSessionToken(refundBetDto.getPlayerId());
-                gameSessionService.updateByVendorGameCode(gameSession, refundBetDto.getGameCode());
-                gameSessionService.updateByVendorCurrencyId(gameSession);
-                gameSession.setToken(traceId);
-                gameSession.setVendorToken(traceId);
-            }
+            GameSession gameSession = this.getGameSession(refundBetDto, traceId);
 
             // 3. get Bet History for checking
             this.doVerification(refundBetDto, gameSession, apHash, body);
@@ -148,4 +138,20 @@ public class RefundBetAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
 
     }
+
+    private GameSession getGameSession(RefundBetDto refundBetDto, String traceId) throws InvalidPlayerException,
+            GameNotSupportedException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(refundBetDto.getPlayerId(), refundBetDto.getGameCode());
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(refundBetDto.getPlayerId());
+            gameSessionService.updateByVendorGameCode(gameSession, refundBetDto.getGameCode());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
+    }
+
 }

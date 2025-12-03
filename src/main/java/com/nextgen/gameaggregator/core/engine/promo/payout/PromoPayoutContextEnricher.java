@@ -101,5 +101,6 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
 
         Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().lineId(), promoType);
         context.setCampaignUuid(campaign.getUuid());
+        context.setVendorCampaignName(campaign.getCampaignName());
     }
 }

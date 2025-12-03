@@ -12,6 +12,7 @@ public class FetchCampaignResponseMapper {
             return Campaign.builder()
                     .uuid(response.getData().getUuid())
                     .status(response.getData().getStatus())
+                    .campaignName(response.getData().getCampaignName())
                     .build();
         }
 

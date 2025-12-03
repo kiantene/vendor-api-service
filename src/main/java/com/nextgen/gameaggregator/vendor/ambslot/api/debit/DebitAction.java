@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.ambslot.api.debit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -43,6 +44,7 @@ public class DebitAction {
 
     private final VendorService vendorService;
 
+    private final SettledBetService settledBetService;
 
     @Autowired
     public DebitAction(HttpService httpService,
@@ -50,13 +52,15 @@ public class DebitAction {
                        GameSessionService gameSessionService,
                        WalletService walletService,
                        ValidationService validationService,
-                       VendorService vendorService) {
+                       VendorService vendorService,
+                       SettledBetService settledBetService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
+        this.settledBetService = settledBetService;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -180,7 +184,25 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto, GameSession gameSession, String signature, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String signature, String body) throws
+            InvalidPlayerException,
+            AuthenticationException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException,
+            CredentialNotFoundException,
+            InvalidRequestException,
+            InvalidSignatureException,
+            JsonProcessingException,
+            InvalidCredentialsException,
+            BetResultIdempotentViolationException,
+            TransactionStillProcessingException {
+
+        // Verify settled bet has not been processed before (idempotency check)
+        this.settledBetIdempotentCheck(gameSession, dto.getVendorBetId(), dto.getRoundId(), dto.getExternalTransactionId());
+
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUsername());
 
@@ -201,5 +223,20 @@ public class DebitAction {
         // Verify header value
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
         VendorService.validateSignature(signature, body, secret);
+    }
+
+    private void settledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId, String externalTransactionId)
+            throws BetResultIdempotentViolationException {
+
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        SettledBet settledBet;
+        String id = SettledBet.generateId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+
+        settledBet = settledBetService.getById(id, externalTransactionId, vendorPlayerId);
+
+        if (settledBet != null) { // duplicate request found in settled_bet
+            throw new BetResultIdempotentViolationException("id: " + id);
+        }
     }
 }

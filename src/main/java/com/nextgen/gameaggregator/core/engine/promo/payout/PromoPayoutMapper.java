@@ -2,8 +2,6 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
 @Component
 public class PromoPayoutMapper {
     public PromoPayoutDto toPromoPayoutRequest(PromoPayoutContext context) {

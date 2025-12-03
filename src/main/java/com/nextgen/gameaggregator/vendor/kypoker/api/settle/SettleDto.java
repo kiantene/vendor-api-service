@@ -25,7 +25,6 @@ public class SettleDto implements BetResultData, RequestIdempotency {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 50)
     private String orderId;
 
     @NotBlank

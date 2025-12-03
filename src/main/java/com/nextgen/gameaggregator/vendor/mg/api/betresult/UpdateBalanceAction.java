@@ -74,7 +74,8 @@ public class UpdateBalanceAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            if (dto.getIsFreespin() == 1 && dto.getMetaData().getFreeGame().getOfferGuid() != null && dto.getTxnType() == CREDIT) {
+            if (dto.getIsFreespin() == 1 && dto.getMetaData().getFreeGame() != null &&
+                    dto.getMetaData().getFreeGame().getOfferGuid() != null && dto.getTxnType() == CREDIT) {
                 updateBalanceVo = promoPayoutHandler.promo(dto).getBody();
                 long endTime = System.currentTimeMillis();
                 long responseTime = endTime - startTime;

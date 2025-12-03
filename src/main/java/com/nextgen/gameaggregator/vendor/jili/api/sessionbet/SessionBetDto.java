@@ -118,12 +118,15 @@ public class SessionBetDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
+        return getVendorSettleTime();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
+        if (this.type == Formats.SESSION_BET_TYPE_SETTLE) {
+            return DateTimeConversionUtils.normalizeToMilliseconds(getWagersTime().longValueExact());
+        }
+        return null;
     }
 
     @Override
