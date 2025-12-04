@@ -93,6 +93,7 @@ public class GameRound {
         this();
         this.className = className;
         this.username = username;
+        this.username = username;
         this.roundId = roundId;
     }
 

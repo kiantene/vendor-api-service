@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.ezugi.constant;
 
 public class EndPoints {
+    public static final String CLASS_NAME = "ezugi";
     // Vendor Path
-    public static final String PATH = "api/v1/ezugi";
+    public static final String PATH = "api/v1/" + CLASS_NAME;
     // authentication API
     public static final String AUTHENTICATION = "/authentication";
     // debit API

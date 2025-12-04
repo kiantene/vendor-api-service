@@ -46,7 +46,7 @@ public class DebitAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = EndPoints.DEBIT)
+    @PostMapping(path = EndPoints.DEBIT + "/v2")
     public CommonVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
