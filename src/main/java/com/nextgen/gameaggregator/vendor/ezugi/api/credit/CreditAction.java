@@ -49,7 +49,7 @@ public class CreditAction extends CommonDto {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = EndPoints.CREDIT)
+    @PostMapping(path = EndPoints.CREDIT + "/v2")
     public CommonVo credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();

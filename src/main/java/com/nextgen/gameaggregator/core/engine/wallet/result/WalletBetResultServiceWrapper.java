@@ -1,5 +1,11 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+import org.springframework.stereotype.Service;
+
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.exception.translator.WalletExceptionTranslator;
@@ -14,14 +20,11 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.FrameworkMigrationService;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class WalletBetResultServiceWrapper {
     private final GameRoundService gameRoundService;
     private final WalletBetResultValidator validator;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final FrameworkMigrationService frameworkMigrationService;
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
@@ -57,6 +61,11 @@ public class WalletBetResultServiceWrapper {
 
             String roundDocId = GameRound.of(className, context.getVendorPlayerUsername(), context.getRoundId()).getId();
             Optional<GameRound> roundOpt = gameRoundService.get(roundDocId);
+
+            // For migration vendors, create fallback GameRound if needed
+            if (frameworkMigrationService.isFallbackRequired(roundOpt, className, config)) {
+                roundOpt = frameworkMigrationService.createBetTransaction(context, className);
+            }
 
             BetResultDecision decision = BetResultPolicy.decide(roundOpt, config);
             decision.throwIfRejected(context, config);

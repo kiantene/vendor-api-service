@@ -45,7 +45,7 @@ public class AuthenticationAction {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
-    @PostMapping(path = EndPoints.AUTHENTICATION)
+    @PostMapping(path = EndPoints.AUTHENTICATION + "/v2")
     public CommonVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();

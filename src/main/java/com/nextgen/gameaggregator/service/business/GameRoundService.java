@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -131,7 +132,7 @@ public class GameRoundService {
         round.setCreatedAt(txn.getCreatedAt());
         round.setCreatedTs(txn.getCreatedTs());
         txn.setIdx(0);
-
+    
         // If the transaction is marked as VOID, set the round state to VOID
         if (txn.getState() == GameRoundState.VOID) {
             round.setState(GameRoundState.VOID);

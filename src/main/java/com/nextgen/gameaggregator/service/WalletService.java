@@ -214,7 +214,7 @@ public class WalletService {
 
     private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
-            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException, MergedBetDataIntegrityException {
+            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
         String rawData = httpRequestLog.getRequestBody();
         String roundId = betResultData.getRoundId();

@@ -42,7 +42,7 @@ public class RollbackAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @PostMapping(path = EndPoints.ROLLBACK)
+    @PostMapping(path = EndPoints.ROLLBACK + "/v2")
     public CommonVo rollback(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
