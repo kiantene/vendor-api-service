@@ -4,12 +4,13 @@ import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.security.signature.SigningStrategyType;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.security.signature.ValidationResult;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.core.security.signature.AbstractVendorSignatureValidator;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.Vendors;
-import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,12 +23,12 @@ import java.util.Map;
 @Component
 public class EzugiSignatureValidator extends AbstractVendorSignatureValidator {
     private static final String HEADER_HASH = "hash";
-    private static final String OPERATOR_ID = "operatorId";
     private static final String HASH_KEY = "hashKey";
 
     protected EzugiSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                      VendorLineService vendorLineService) {
-        super(vendorPlayerDataService, vendorLineService, SigningStrategyType.HMAC_SHA256_BASE64);
+                                      VendorLineService vendorLineService,
+                                      GameSessionDataService gameSessionDataService) {
+        super(vendorPlayerDataService, vendorLineService, gameSessionDataService, SigningStrategyType.HMAC_SHA256_BASE64);
     }
 
     @Override
@@ -37,8 +38,14 @@ public class EzugiSignatureValidator extends AbstractVendorSignatureValidator {
 
     @Override
     public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+        String token = formFields.get("token");
+        if (token == null) {
+            throw new SignatureValidationException("Missing token in request");
+        }
+
+        Integer vendorLineId = getVendorLineIdByToken(token);
         String hash = extractHash(request);
-        String secret = getSecretKey(formFields);
+        String secret = getSecretKey(vendorLineId);
         checkSignature(hash, rawBody, secret);
         return ValidationResult.success();
     }
@@ -57,12 +64,20 @@ public class EzugiSignatureValidator extends AbstractVendorSignatureValidator {
         return auth;
     }
 
-    private String getSecretKey(Map<String, String> formFields) {
-        String operatorId = formFields.get(OPERATOR_ID);
-        VendorCredentialAccessor credentialsMap = getCredentialAccessorByKeyValue(24, Credentials.OPERATOR_ID, operatorId);
+    private String getSecretKey(Integer vendorLineId) {
+        VendorCredentialAccessor credentialsMap = getCredentialAccessorByVendorLineId(vendorLineId);
         if (credentialsMap == null) {
-            throw new SignatureValidationException("Vendor credentials not found for operatorId: " + operatorId);
+            throw new SignatureValidationException("Vendor credentials not found for vendorLineId: " + vendorLineId);
         }
         return credentialsMap.getValue(HASH_KEY);
+    }
+
+    private Integer getVendorLineIdByToken(String token) {
+        try {
+            GameSession gameSession = getGameSessionByToken(token);
+            return gameSession.getVendorLineId();
+        } catch (Exception ex) {
+            throw new SignatureValidationException("Unable to retrieve vendor line ID by token: " + token, ex);
+        }
     }
 }
