@@ -85,6 +85,10 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
         }
     }
 
+    protected VendorCredentialAccessor getCredentialAccessorByVendorLineId(Integer vendorLineId) {
+        return new VendorCredentialAccessor(vendorLineService.mapCredentialsByName(vendorLineId));
+    }
+
     @Override
     public boolean shouldValidate(HttpServletRequest request, String endpoint) {
         return true;
