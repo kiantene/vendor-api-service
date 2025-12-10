@@ -13,11 +13,10 @@ public class UsersDto {
 
     @NotBlank(message = "authtoken cannot be empty")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid authtoken Format")
-    @Size(min = 1, max = 2000, message = "Invalid authtoken Size")
+    @Size(min = 1, max = 255, message = "Invalid authtoken Size")
     private String authtoken;
 
     @NotBlank(message = "userid cannot be empty")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid userid Format")
     @Size(min = 1, max = 50, message = "Invalid userid Size")
     private String userid;
 
@@ -29,8 +28,7 @@ public class UsersDto {
     private String lang; // Optional
 
     @NotBlank(message = "cur cannot be empty")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid cur Format")
-    @Size(min = 3, max = 8, message = "Invalid cur Size")
+    @Size(min = 3, max = 5, message = "Invalid cur Size")
     private String cur;
 
     private String walletcode; // Optional

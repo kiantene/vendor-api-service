@@ -74,6 +74,8 @@ public class ConfirmBetAction {
             walletRequest.setErrorMessage(e.getMessage());
 
         } finally {
+            //after process, vendor bet id will set as newest for logging purpose.
+            walletRequest.setVendorBetId(walletRequest.getNewVendorBetId());
             walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         }

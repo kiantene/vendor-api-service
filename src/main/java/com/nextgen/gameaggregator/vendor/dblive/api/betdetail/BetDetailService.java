@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.dblive.api.betdetails;
+package com.nextgen.gameaggregator.vendor.dblive.api.betdetail;
 
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
