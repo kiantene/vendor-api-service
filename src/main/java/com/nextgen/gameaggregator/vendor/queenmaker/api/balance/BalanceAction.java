@@ -101,7 +101,7 @@ public class BalanceAction {
             InvalidRequestException,
             CredentialNotFoundException,
             InvalidVendorLineException,
-            InvalidCurrencyException {
+            InvalidCurrencyException, AuthenticationException {
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -119,7 +119,7 @@ public class BalanceAction {
         Optional.ofNullable(CLIENT_SECRET).orElseThrow(CredentialNotFoundException::new);
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
-
+        
         // 5. Validate Vendor Currency Code
         ValidationUtils.isEquals(usersDto.getCur(), gameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
     }

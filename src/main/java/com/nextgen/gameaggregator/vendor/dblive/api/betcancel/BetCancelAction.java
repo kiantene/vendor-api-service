@@ -97,8 +97,8 @@ public class BetCancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidRequestException |
-                 TransactionStillProcessingException |
-                 JsonProcessingException | JsonSyntaxException e) {
+                 JsonProcessingException |
+                 JsonSyntaxException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {

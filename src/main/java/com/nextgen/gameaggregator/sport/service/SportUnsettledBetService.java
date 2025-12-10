@@ -96,6 +96,16 @@ public class SportUnsettledBetService {
         return sportUnsettledBet;
     }
 
+    public SportUnsettledBet findByVendorPlayerUsernameAndVendorBetIdOrById(String vendorPlayerUsername, String vendorBetId) {
+        SportUnsettledBet sportUnsettledBet;
+        try {
+            sportUnsettledBet = this.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        } catch (BetNotFoundException betNotFoundException) {
+            sportUnsettledBet = this.getById(vendorPlayerUsername + '_' + vendorBetId).orElse(null);
+        }
+        return sportUnsettledBet;
+    }
+
 //    public SportUnsettledBet idempotentCheck(String vendorPlayerUsername, String roundId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
 //        String mergeId = vendorPlayerUsername + '_' + roundId;
 //        SportUnsettledBet sportUnsettledBet = null;

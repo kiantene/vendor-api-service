@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum ResponseCodes {
     INVALID_OR_EXPIRED_TOKEN(10, "Invalid or expired token"),
+    INVALID_PLAYER(10, "Invalid Player"),
     INVALID_TOKEN_SCOPE(19, "Invalid token scope"),
     USER_BLOCKED(20, "User blocked"),
     INVALID_CREDENTIAL(30, "Invalid Credential"),

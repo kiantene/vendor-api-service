@@ -43,7 +43,7 @@ public class BetDetailService implements BetDetailUrl {
         formData.set("cert", cert);
         formData.set("agentId", agentId);
         formData.set("userId", iBetDetailUrlInfo.getVendorUsername());
-        formData.set("platformTxId", iBetDetailUrlInfo.getTransactionId());
+        formData.set("platformTxId", iBetDetailUrlInfo.getExternalTransactionId());
         formData.set("platform", "SEXYBCRT");
         formData.set("roundId", iBetDetailUrlInfo.getExternalRoundId());
 

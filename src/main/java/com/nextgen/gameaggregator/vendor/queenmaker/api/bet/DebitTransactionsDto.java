@@ -18,12 +18,12 @@ import java.util.List;
 public class DebitTransactionsDto implements BetResultData {
 
     @NotBlank(message = "userid cannot be empty")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid userid Format")
     @Size(min = 1, max = 50, message = "Invalid userid Size")
     private String userid;
 
+    @NotBlank(message = "authtoken cannot be empty")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid authtoken Format")
-    @Size(min = 1, max = 256, message = "Invalid authtoken Size")
+    @Size(min = 1, max = 255, message = "Invalid authtoken Size")
     private String authtoken;
 
     @NotBlank
@@ -37,12 +37,12 @@ public class DebitTransactionsDto implements BetResultData {
     private BigDecimal amt;
 
     @NotBlank(message = "cur cannot be empty")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid cur Format")
-    @Size(min = 3, max = 8, message = "Invalid cur Size")
+    @Size(min = 3, max = 5, message = "Invalid cur Size")
     private String cur;
 
     private String ipaddress; // optional
 
+    @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 36)
     private String ptxid;
@@ -55,6 +55,7 @@ public class DebitTransactionsDto implements BetResultData {
     @Range(min = 0)
     private Integer txtype;
 
+    @NotBlank
     @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}", message = "Invalid timestamp Format")
     @Size(min = 1, max = 36, message = "Invalid timestamp Size")
     private String timestamp;
@@ -70,7 +71,6 @@ public class DebitTransactionsDto implements BetResultData {
     private String gpcode;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid gamecode Format")
     @Size(min = 1, max = 50, message = "Invalid gamecode Size")
     private String gamecode;
 

@@ -82,8 +82,7 @@ public class SportRefundProcessor {
         Integer unsettleResettleNum = 0;
 
         // idempotentCheck
-        SportUnsettledBet sportUnsettledBet = sportUnsettledBetService.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
-
+        SportUnsettledBet sportUnsettledBet = sportUnsettledBetService.findByVendorPlayerUsernameAndVendorBetIdOrById(vendorPlayerUsername, vendorBetId);
         try {
             try {
                 //idempotent checking on couchbase sport_settled_bet collection
@@ -185,7 +184,7 @@ public class SportRefundProcessor {
         betHistory.setWinAmount(newWinAmount);
         betHistory.setWinLoss(newWinLoss);
         betHistory.setEffectiveTurnover(newEffectiveTurnover);
-        
+
         kafkaService.produceBetHistoryV3(betHistory, null, null, null, agentPlayerUsername, vendorPlayerUsername, fromVendorRate);
     }
 

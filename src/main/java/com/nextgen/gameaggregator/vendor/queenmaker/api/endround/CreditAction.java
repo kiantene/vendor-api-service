@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
@@ -42,6 +43,7 @@ public class CreditAction {
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
     private final VendorGameService vendorGameService;
+    private final CreditSlotService creditSlotService;
 
     public CreditAction(
             HttpService httpService,
@@ -52,7 +54,7 @@ public class CreditAction {
             VendorService vendorService,
             WalletRequestService walletRequestService,
             OperatorWalletService operatorWalletService,
-            VendorGameService vendorGameService) {
+            VendorGameService vendorGameService, CreditSlotService creditSlotService) {
 
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
@@ -63,6 +65,7 @@ public class CreditAction {
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
         this.vendorGameService = vendorGameService;
+        this.creditSlotService = creditSlotService;
     }
 
     @PostMapping(path = EndPoints.WALLET_CREDIT)
@@ -87,14 +90,20 @@ public class CreditAction {
             // 2. Validate and Verified each UserDto inside balanceDto
             List<TransactionsVo> transactionsList = new ArrayList<>();
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
-                TransactionsVo transactionsVo = processData(transaction, clientId, clientSecret, request);
+                TransactionsVo transactionsVo = processData(transaction,
+                        clientId,
+                        clientSecret,
+                        request,
+                        body);
                 transactionsList.add(transactionsVo);
             }
             creditVo.setTransactions(transactionsList);
 
         } catch (InvalidRequestException e) {
-            creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
-            httpService.logError(httpRequestLog, e);
+            creditVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT,
+                    "Invalid Request");
+            httpService.logError(httpRequestLog,
+                    e);
         } catch (JsonProcessingException e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
             httpService.logError(httpRequestLog, e);
@@ -142,6 +151,12 @@ public class CreditAction {
             throw new InvalidRequestException();
         }
 
+        // 4. Validate Debit Transaction is exist, except txtype 590 (End Round)
+        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+            vendorService.verifyExistDebitTransaction(gameSession.getVendorId(),
+                    gameSession.getVendorPlayerId(),
+                    creditTransactionsDto.getRefptxid());
+        }
     }
 
     private void dataMapper(WalletRequest walletRequest, CreditTransactionsDto dto, GameSession gameSession) {
@@ -163,8 +178,12 @@ public class CreditAction {
         walletRequest.setVendorSettleTime(dto.getVendorSettleTime());
     }
 
-    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, HttpServletRequest request) {
+    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId,
+                                       String clientSecret,
+                                       HttpServletRequest request,
+                                       String body) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        httpRequestLog.setRequestBody(String.valueOf(creditTransactionsDto));
         WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
         String traceId = httpRequestLog.getId();
         TransactionsVo transactionsVo = new TransactionsVo();
@@ -174,13 +193,40 @@ public class CreditAction {
         try {
             // 1. Validate each user data
             this.doValidation(creditTransactionsDto);
+            //set individual request body
+            httpRequestLog.setRequestBody(JsonUtils.toJson(creditTransactionsDto));
 
             // 2. Verify session token
-            String vendorGameCode = VendorService.mergeGameCode(creditTransactionsDto.getGpcode(), creditTransactionsDto.getGamecode());
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditTransactionsDto.getUserid());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            String vendorGameCode = VendorService.mergeGameCode(creditTransactionsDto.getGpcode(),
+                    creditTransactionsDto.getGamecode());
+
+            try {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditTransactionsDto.getUserid());
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode,
+                        gameSession);
+            } catch (AuthenticationException e) {
+                gameSession = gameSessionService.generateNewSessionToken(creditTransactionsDto.getUserid());
+                gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
+
             VendorGame vendorGame = vendorGameService.getByVendorGameId(gameSession.getVendorGameId());
             requireDebit = vendorGame.getRequireDebit();
+
+            if (gameSession.getGameCategoryId().equals(1)) {
+
+                TransactionsVo slotResult = creditSlotService.slotBet(httpRequestLog,
+                        clientId,
+                        clientSecret,
+                        traceId,
+                        body,
+                        gameSession);
+                transactionsVo = slotResult;
+                return slotResult;
+
+            }
 
             // 3. Verify Credential and Currency
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);
@@ -211,7 +257,9 @@ public class CreditAction {
                     balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
                 } else {
                     this.checkForDuplicateRequest(creditTransactionsDto);
-                    this.dataMapper(walletRequest, creditTransactionsDto, gameSession);
+                    this.dataMapper(walletRequest,
+                            creditTransactionsDto,
+                            gameSession);
                     walletRequest = operatorWalletService.betCredit(walletRequest);
                     balance = walletRequest.getBalanceAfter();
                 }
@@ -223,9 +271,10 @@ public class CreditAction {
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
             transactionsVo.setDup(false);
 
-        } catch (AuthenticationException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
-            httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INVALID_PLAYER);
+            httpService.logError(httpRequestLog,
+                    e);
         } catch (CurrencyNotSupportedException e) {
             transactionsVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
             httpService.logError(httpRequestLog, e);
