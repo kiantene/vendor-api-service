@@ -53,7 +53,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         if (context.getCurrencyCode() == null) {
             context.setCurrencyCode(gameSession.getCurrencyCode());
         }
-
+        
         enrich(context);
 
         if (config.isSettledByBet() && context.getRoundEnded() == null) {

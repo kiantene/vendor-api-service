@@ -42,7 +42,7 @@ public class WalletBetResultServiceWrapper {
     private final FrameworkMigrationService frameworkMigrationService;
 
     public PlayerBalanceData process() {
-        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        LogContext logContext = LogContextHolder.get();
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         String className = logContext.getVendorClassName();
         BetResultContext context = state().getBetResultContext();
@@ -126,6 +126,8 @@ public class WalletBetResultServiceWrapper {
     }
 
     public WalletBetResultServiceWrapper initialise(BetResultContext context) {
+        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        context.setVendorClassName(logContext.getVendorClassName());
         BetResultWrapperContext state = new BetResultWrapperContext(context);
         BetResultContextHolder.set(state);
         return this;
