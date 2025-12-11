@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ class BetResultProcessor {
     private final BetHistoryProducer betHistoryProducer;
     private final GameTransactionService gameTransactionService;
     private final WalletService walletService;
+    private final BetResultLifeCycleRegistry lifeCycleRegistry;
 
     public PlayerBalanceData processResultTransaction(
             BetResultContext context,
@@ -65,6 +67,17 @@ class BetResultProcessor {
         if (config.isSettledByRound()) {
             // disable produce bet history in WalletService
             httpRequestLog.setBetHistoryProduceDisabled(true);
+        }
+        
+        /**
+         * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
+         * The handler is retrieved from the registry based on the transaction's vendor class name.
+         */
+        String vendorClassName = context.getVendorClassName();
+        BetResultLifeCycle handler = lifeCycleRegistry.getHandler(vendorClassName);
+
+        if (handler != null) {
+            handler.onBeforeSend(gameSession, context);
         }
 
         BigDecimal balance = walletService.processBetResult(
