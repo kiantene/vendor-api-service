@@ -28,7 +28,6 @@ public class UsersDto {
     private String lang; // Optional
 
     @NotBlank(message = "cur cannot be empty")
-    @Size(min = 3, max = 5, message = "Invalid cur Size")
     private String cur;
 
     private String walletcode; // Optional
