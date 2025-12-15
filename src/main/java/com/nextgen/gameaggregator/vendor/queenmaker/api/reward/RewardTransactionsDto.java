@@ -23,8 +23,6 @@ public class RewardTransactionsDto implements BetResultData {
     @Digits(integer = 12, fraction = 6, message = "Invalid amt Format")
     private BigDecimal amt;
     @NotBlank(message = "cur cannot be empty")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid cur Format")
-    @Size(min = 3, max = 8, message = "Invalid cur Size")
     private String cur;
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid ptxid Format")
     @Size(min = 1, max = 36, message = "Invalid ptxid Size")
