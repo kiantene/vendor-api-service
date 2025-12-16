@@ -73,12 +73,12 @@ class BetResultProcessor {
          * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
          * The handler is retrieved from the registry based on the transaction's vendor class name.
          */
-        String vendorClassName = context.getVendorClassName();
-        BetResultLifeCycle handler = lifeCycleRegistry.getHandler(vendorClassName);
+        // String vendorClassName = context.getVendorClassName();
+        // BetResultLifeCycle handler = lifeCycleRegistry.getHandler(vendorClassName);
 
-        if (handler != null) {
-            handler.onBeforeSend(gameSession, context);
-        }
+        // if (handler != null) {
+        //     handler.onBeforeSend(gameSession, context);
+        // }
 
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
