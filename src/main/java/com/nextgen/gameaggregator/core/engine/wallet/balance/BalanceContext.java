@@ -9,4 +9,10 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
 public class BalanceContext extends VendorRequestContext {
+
+    /**
+     * populated by enrichByGameSession in WalletBalanceServiceWrapper
+     */
+    private String playerIp;
+    private Long vendorPlayerId;
 }

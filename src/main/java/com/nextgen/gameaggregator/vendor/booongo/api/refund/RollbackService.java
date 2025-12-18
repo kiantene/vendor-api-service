@@ -61,7 +61,7 @@ public class RollbackService {
             this.doValidation(rollbackDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            gameSession = this.getGameSession(rollbackDto, traceId);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession);
@@ -143,5 +143,28 @@ public class RollbackService {
         }
 
         return balance;
+    }
+
+    private GameSession getGameSession(RollbackDto rollbackDto, String traceId) throws InvalidPlayerException,
+            GameNotSupportedException, VendorCurrencyNotSupportException, AuthenticationException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+        } catch (AuthenticationException authenticationException) {
+            if ((rollbackDto.getArgs() != null &&
+                    rollbackDto.getArgs().getPlayer() != null &&
+                    rollbackDto.getArgs().getPlayer().getId() != null) &&
+                    rollbackDto.getGame_id() != null) {
+                String vendorPlayerUsername = rollbackDto.getArgs().getPlayer().getId();
+                gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+                gameSessionService.updateByVendorGameCode(gameSession, rollbackDto.getGame_id());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            } else {
+                throw new AuthenticationException();
+            }
+        }
+        return gameSession;
     }
 }

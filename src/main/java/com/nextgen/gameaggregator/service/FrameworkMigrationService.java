@@ -31,6 +31,8 @@ public class FrameworkMigrationService {
     private final GameRoundService gameRoundService;
     private final GameSessionDataService gameSessionDataService;
     private final DuplicateRequestGuard guard;
+
+    private static final int AVIATOR_STUDIO_VENDOR_ID = 96;
      
     public boolean isFallbackRequired(Optional<GameRound> roundOpt, String className, BetResultConfig config) {
         return roundOpt.isEmpty() 
@@ -44,9 +46,8 @@ public class FrameworkMigrationService {
         if (vendor == null) {
             return false;
         }
-        
-        int aviatorStudio = Vendors.AVIATOR_STUDIO.getId();
-        return vendor.getId() < aviatorStudio;
+
+        return vendor.getId() < AVIATOR_STUDIO_VENDOR_ID;
     }
     
     private Vendors findVendorByClassName(String className) {

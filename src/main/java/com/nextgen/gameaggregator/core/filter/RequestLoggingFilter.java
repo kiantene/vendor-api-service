@@ -5,6 +5,8 @@ import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
 import com.nextgen.gameaggregator.core.util.ResponseUtil;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfig;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +25,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class RequestLoggingFilter extends OncePerRequestFilter {
     private final LoggingManager loggingManager;
+    private final VendorConfigService vendorConfigService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -30,13 +33,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         LogContext logContext = loggingManager.onRequestStart(request);
-        Vendors vendor = Vendors.fromRequestURI(request.getRequestURI());
         ResettableRequestWrapper wrappedRequest = new ResettableRequestWrapper(request);
         ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
-        if (vendor != null) {
-            request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendor.getClassName());
-            logContext.setVendorClassName(vendor.getClassName());
+        var configOpt = vendorConfigService.getConfigByRequestURI(request.getRequestURI());
+        if (configOpt.isPresent()) {
+            VendorConfig vendorConfig = configOpt.get();
+            request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorConfig.getVendorClassName());
+            logContext.setVendorClassName(vendorConfig.getVendorClassName());
         }
 
         try {

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.core.filter;
 
-import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
 import com.nextgen.gameaggregator.core.common.RequestParserService;
@@ -12,7 +11,8 @@ import com.nextgen.gameaggregator.core.security.VendorSecurityRegistry;
 import com.nextgen.gameaggregator.core.security.decrypter.VendorDecryptionService;
 import com.nextgen.gameaggregator.core.security.signature.VendorSignatureService;
 import com.nextgen.gameaggregator.core.util.ResponseUtil;
-import com.nextgen.gameaggregator.vendor.Vendors;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfig;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,16 +35,23 @@ public class VendorAuthFilter extends OncePerRequestFilter {
     private final VendorDecryptionService decryptionService;
     private final VendorSignatureService signatureService;
     private final VendorExceptionMapperRegistry exceptionRegistry;
+    private final VendorConfigService vendorConfigService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
 
-        Vendors vendor = resolveVendor(request);
-        if (vendor == null) { chain.doFilter(request, response); return; }
+        var configOpt = vendorConfigService.getConfigByRequestURI(request.getRequestURI());
 
-        String vendorClassName = vendor.getClassName();
+        if (configOpt.isEmpty() || !configOpt.get().isNewFramework()) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        VendorConfig vendorConfig = configOpt.get();
+
+        String vendorClassName = vendorConfig.getVendorClassName();
         VendorSecurityAdapter adapter = securityRegistry.get(vendorClassName);
         ResettableRequestWrapper wrapped =
                 (request instanceof ResettableRequestWrapper r) ? r : new ResettableRequestWrapper(request);
@@ -68,11 +75,6 @@ public class VendorAuthFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(wrapped, response);
-    }
-
-    private Vendors resolveVendor(HttpServletRequest request) {
-        Vendors v = Vendors.fromRequestURI(request.getRequestURI());
-        return (v == null || !v.isNewFramework()) ? null : v;
     }
 
     private Map<String, String> parseBody(HttpServletRequest request, String body) {

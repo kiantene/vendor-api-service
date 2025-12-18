@@ -166,14 +166,6 @@ public class RollInAction {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
             errorMessage = dateTimeParseException.toString();
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-
-            CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(walletRequest.getBalanceAfter());
-            commonVo.setCurrency(walletRequest.getCurrencyCode());
-            responseVo.setData(commonVo);
-            errorMessage = invalidOperatorResponseException.toString();
-
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             errorMessage = exception.toString();

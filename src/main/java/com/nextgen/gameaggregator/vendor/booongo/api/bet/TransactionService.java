@@ -60,7 +60,7 @@ public class TransactionService {
             transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+            gameSession = this.getGameSession(transactionDto, traceId);
             vendorPlayerUsername = gameSession.getVendorPlayerUsername();
 
             // Validate request parameters from vendor (Non-database related)
@@ -190,5 +190,33 @@ public class TransactionService {
         //Verify received brand is same with credential
         String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
+    }
+
+    private GameSession getGameSession(TransactionDto transactionDto, String traceId) throws
+            AuthenticationException,
+            InvalidPlayerException,
+            GameNotSupportedException,
+            VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+        } catch (AuthenticationException authenticationException) {
+
+            if ((transactionDto.getArgs() != null &&
+                    transactionDto.getArgs().getPlayer() != null &&
+                    transactionDto.getArgs().getPlayer().getId() != null) &&
+                    transactionDto.getArgs().getWin() != null &&
+                    transactionDto.getGame_id() != null) {
+                String vendorPlayerUsername = transactionDto.getArgs().getPlayer().getId();
+                gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+                gameSessionService.updateByVendorGameCode(gameSession, transactionDto.getGame_id());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            } else {
+                throw new AuthenticationException();
+            }
+        }
+        return gameSession;
     }
 }

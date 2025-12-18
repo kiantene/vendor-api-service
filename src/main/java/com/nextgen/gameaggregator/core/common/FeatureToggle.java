@@ -9,6 +9,8 @@ public class FeatureToggle {
             Vendors.EZUGI.getId()
     );
 
+    private static final int AVIATOR_STUDIO_VENDOR_ID = 96;
+
     private FeatureToggle() {}
 
     public static boolean useRefactoredPublishBetHistory(Integer vendorId) {
@@ -16,7 +18,7 @@ public class FeatureToggle {
 
         if (refactoredBetHistoryList.contains(vendorId)) return true;
 
-        int fromVendorOnwards = Vendors.AVIATOR_STUDIO.getId();
+        int fromVendorOnwards = AVIATOR_STUDIO_VENDOR_ID;
 
         return Vendors.isNewFramework(vendorId) && vendorId > fromVendorOnwards;
     }
