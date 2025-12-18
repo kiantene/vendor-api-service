@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.vendor.Vendors;
+import com.nextgen.gameaggregator.vendor.aviatorstudio.config.AviatorStudioConfig;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.JwtUtil;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class AviatorStudioGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
 
     protected AviatorStudioGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, Vendors.AVIATOR_STUDIO.getClassName());
+        super(credentialUtils, AviatorStudioConfig.CLASS_NAME);
     }
 
     @Override

@@ -10,7 +10,7 @@ public interface OperatorWalletService {
 
     WalletRequest betDebit(WalletRequest walletRequest) throws InvalidRequestException, VendorCurrencyNotSupportException, BetNotAllowedException, InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException;
 
-    WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException;
+    WalletRequest betCredit(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, BetNotAllowedException, BetResultIdempotentViolationException;
 
     WalletRequest debitRefundByExternalTransactionId(WalletRequest walletRequest) throws InternalServerException, InsufficientBalanceException, InvalidOperatorResponseException, BetNotFoundException, BetNotAllowedException;
 }

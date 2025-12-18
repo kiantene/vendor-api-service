@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.exception.OperatorNetworkException;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -42,6 +43,7 @@ public class WalletBetAction {
     private final AgentApiCredentialService agentApiCredentialService;
     private final AuthenticationService authenticationService;
     private final VendorService vendorService;
+    private final VendorConfigService vendorConfigService;
     private final CurrencyConversionService currencyConversionService;
     private final LogContextService logContextService;
     private final Set<Integer> vendorsWithTwoPointFiveSecondTimeout;
@@ -57,12 +59,14 @@ public class WalletBetAction {
                            AgentApiCredentialService agentApiCredentialService,
                            AuthenticationService authenticationService,
                            VendorService vendorService,
+                           VendorConfigService vendorConfigService,
                            CurrencyConversionService currencyConversionService,
                            LogContextService logContextService) {
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
         this.authenticationService = authenticationService;
         this.vendorService = vendorService;
+        this.vendorConfigService = vendorConfigService;
         this.currencyConversionService = currencyConversionService;
         this.logContextService = logContextService;
         this.vendorsWithTwoPointFiveSecondTimeout = new HashSet<>();
@@ -267,8 +271,12 @@ public class WalletBetAction {
         Integer vendorId = gameSession.getVendorId();
         if (vendorId != null && Vendors.isNewFramework(vendorId)) {
             Vendors vendor = Vendors.fromId(vendorId);
-            timeout = vendor.getTimeoutMillis() - TIMEOUT_BUFFER;
+            if (vendorConfigService.exists(vendor.getClassName())) {
+                timeout = vendorConfigService.getTimeoutInMillis(vendor.getClassName());
+            } else {
+                timeout = vendor.getTimeoutMillis();
+            }
         }
-        return timeout;
+        return timeout - TIMEOUT_BUFFER;
     }
 }

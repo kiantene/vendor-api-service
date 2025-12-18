@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.RoomCode;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -100,6 +101,10 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BigDecimal getWinAmount() {
+        //only use for debit/credit scenario
+        if (this.roomMode == RoomCode.MATCHING.code) {
+            return this.validBet.add(this.totalWithdraw);
+        }
         return this.money;
     }
 

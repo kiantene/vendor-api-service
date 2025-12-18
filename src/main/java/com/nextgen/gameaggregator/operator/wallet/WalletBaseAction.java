@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -41,6 +42,18 @@ public abstract class WalletBaseAction {
     protected String requestType;
     protected String endpoint;
     protected Integer timeout;
+
+    public static String getStackTrace(Exception exception) {
+        final String NEWLINE = "\r\n";
+        log.error(exception.toString());
+        StringBuilder stackTrace = new StringBuilder();
+        stackTrace.append("Exception: ").append(exception).append(NEWLINE + NEWLINE);
+        StackTraceElement[] stackTraceElements = exception.getStackTrace();
+        for (StackTraceElement stackTraceElement : stackTraceElements) {
+            stackTrace.append(stackTraceElement).append(NEWLINE);
+        }
+        return stackTrace.toString();
+    }
 
     private String toJson(Object requestData) throws InternalServerException {
         String json;
@@ -93,13 +106,17 @@ public abstract class WalletBaseAction {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, clientResponse -> Mono.empty())
                 .toEntity(String.class)
+                .retry(3)
                 .timeout(Duration.ofMillis(this.timeout))
-                .onErrorResume(TimeoutException.class, e -> {
+                .onErrorResume(e -> e instanceof TimeoutException || e instanceof WebClientRequestException, e -> {
+                    // timeout, web client connection error
                     isTimeout.set(true);
+                    walletRequest.setErrorMessage(e.toString());
+                    walletRequest.setRootCause(getStackTrace((Exception) e));
                     return Mono.empty();
                 })
                 .block();
-            
+
         walletRequest.setOperatorEnd(System.currentTimeMillis());
 
         if (isTimeout.get()) {

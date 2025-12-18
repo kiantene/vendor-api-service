@@ -57,6 +57,12 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
         if (context.getVendorCurrency() == null) {
             context.setVendorCurrency(gameSession.getVendorCurrencyCode());
         }
+        if (context.getPlayerIp() == null) {
+            context.setPlayerIp(gameSession.getIpAddress());
+        }
+        if (context.getVendorPlayerId() == null) {
+            context.setVendorPlayerId(gameSession.getVendorPlayerId());
+        }
     }
 
     public PlayerBalanceData getBalance(

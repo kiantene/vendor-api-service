@@ -30,7 +30,7 @@ public class VendorService extends BaseVendorService {
     private boolean rejectSettleAfterRollback = true;
 
     @Autowired
-    public VendorService(WalletRequestService walletRequestService){
+    public VendorService(WalletRequestService walletRequestService) {
         this.walletRequestService = walletRequestService;
 
     }
@@ -53,18 +53,18 @@ public class VendorService extends BaseVendorService {
 
             // URL encoding
             return base64;
-        }catch (Exception exception) {
+        } catch (Exception exception) {
             throw new InvalidEncryptionException();
         }
     }
 
-    public static String AESDecrypt(String value,String key,boolean isDecodeURL) throws InvalidDecryptionException {
+    public static String AESDecrypt(String value, String key, boolean isDecodeURL) throws InvalidDecryptionException {
         try {
             byte[] raw = key.getBytes("UTF-8");
             SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-            if(isDecodeURL)	value = URLDecoder.decode(value, "UTF-8");
+            if (isDecodeURL) value = URLDecoder.decode(value, "UTF-8");
             byte[] encrypted1 = Base64.decode(value);// 先用base64解密
             byte[] original = cipher.doFinal(encrypted1);
             String originalString = new String(original, "UTF-8");
@@ -113,7 +113,7 @@ public class VendorService extends BaseVendorService {
         return resultType;
     }
 
-    public void dataDebitMapper(WalletRequest walletRequest, BetDto betDto , GameSession gameSession) {
+    public void dataDebitMapper(WalletRequest walletRequest, BetDto betDto, GameSession gameSession) {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setExternalTransactionId(betDto.getOrderId());
@@ -141,9 +141,9 @@ public class VendorService extends BaseVendorService {
         walletRequest.setTakeAll(0);
         walletRequest.setTransferAmount(settleDto.getMoney());
         walletRequest.setBetAmount(settleDto.getValidBet());
-        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getTotalWithdraw(), settleDto.getJackpotAmount(),
+        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(),
                 false);
-        walletRequest.setWinAmount(settleDto.getTotalWithdraw().compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : settleDto.getTotalWithdraw());
+        walletRequest.setWinAmount(settleDto.getWinAmount());
         walletRequest.setEffectiveTurnover(settleDto.getValidBet());
         walletRequest.setJackpotAmount(BigDecimal.ZERO);
         walletRequest.setResultType(resultType.code);

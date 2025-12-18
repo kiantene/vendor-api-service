@@ -64,6 +64,7 @@ public class WalletRequest {
     private String traceId;
     private String requestBody;
     private String errorMessage;
+    private String rootCause;
     private Integer status;
     // Operator Info
     private String requestType;

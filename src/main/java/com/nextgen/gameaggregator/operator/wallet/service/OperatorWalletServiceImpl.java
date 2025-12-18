@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.operator.wallet.betcredit.WalletBetCreditProce
 import com.nextgen.gameaggregator.operator.wallet.betdebit.WalletBetDebitProcessor;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletBetDebitRefundProcessor;
 import com.nextgen.gameaggregator.service.*;
+import jodd.util.StringUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -70,7 +71,7 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
     }
 
     @Override
-    public WalletRequest betCredit(WalletRequest walletRequest) throws InsufficientBalanceException, InternalServerException, InvalidOperatorResponseException, BetNotAllowedException, BetResultIdempotentViolationException {
+    public WalletRequest betCredit(WalletRequest walletRequest) throws InsufficientBalanceException, InternalServerException, BetNotAllowedException, BetResultIdempotentViolationException {
 
         try {
             walletRequest = walletBetCreditProcessor.process(walletRequest);
@@ -78,11 +79,11 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
         } catch (InvalidOperatorResponseException e) {
             //within callToOperator and after operator response
             walletRequest.setOperatorResponseStatus(ResponseCodes.Status.checkCodeStatus(e.getOperatorStatus()));
+            if (StringUtil.isBlank(walletRequest.getErrorMessage())) {
+                walletRequest.setErrorMessage(e.toString());
+            }
             this.createBetResultRetryLog(walletRequest);
             this.doForceSuccessParameters(walletRequest);
-
-            throw e;
-
         } finally {
             //if status is not 1, and operatorData is not null, which mean operator process request failed
             walletRequest.setBetEnd(System.currentTimeMillis());
