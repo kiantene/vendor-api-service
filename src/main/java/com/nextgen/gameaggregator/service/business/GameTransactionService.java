@@ -165,9 +165,6 @@ public class GameTransactionService {
     }
 
     public void markRefunded(GameTransaction txn) {
-        if (!txn.isUnsettled()) {
-            throw new IllegalStateException("Txn is not unsettled");
-        }
 
         txnDataService.updateToRefunded(txn.getId());
         gameRoundService.updateRoundTxn(txn, GameRoundState.REFUNDED);

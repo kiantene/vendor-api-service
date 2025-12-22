@@ -1,13 +1,15 @@
 package com.nextgen.gameaggregator.core.common;
 
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.mapping.VendorRequestMapper;
 import com.nextgen.gameaggregator.core.mapping.VendorResponseMapper;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class AbstractProcessorController<Q, R, C> {
+public abstract class AbstractProcessorController<Q, R, C extends VendorRequestContext> {
     protected final VendorRequestMapper<C, Q> requestMapper;
     protected final VendorResponseMapper<C, R> responseMapper;
 
@@ -22,6 +24,8 @@ public abstract class AbstractProcessorController<Q, R, C> {
                                BiConsumer<C, R> postProcessHook) {
 
         C context = mapToInternal(request);
+
+        context.setVendorClassName(LogContextHolder.getVendorClassName());
 
         if (preProcessHook != null) preProcessHook.accept(context);
 
