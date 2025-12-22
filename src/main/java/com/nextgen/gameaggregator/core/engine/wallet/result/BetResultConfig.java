@@ -36,6 +36,7 @@ public class BetResultConfig {
     private boolean allowResultWhenRoundHasEnded = true;
     private boolean returnSuccessOnDuplicate = false;
     private boolean rejectResultIfRefunded = false;
+    private boolean publishBetHistoryOnRoundEnded = true;
 
     // Chaining methods
     public BetResultConfig betAndResult(boolean flag) {
@@ -75,6 +76,11 @@ public class BetResultConfig {
 
     public BetResultConfig rejectResultIfRefunded(boolean flag) {
         this.rejectResultIfRefunded = flag;
+        return this;
+    }
+
+    public BetResultConfig publishBetHistoryOnRoundEnded(boolean flag) {
+        this.publishBetHistoryOnRoundEnded = flag;
         return this;
     }
 

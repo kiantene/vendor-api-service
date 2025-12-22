@@ -30,6 +30,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .effectiveTurnover(betAmount)
                 .vendorSettleTime(request.getTimestamp())
                 .vendorSessionToken(request.getToken())
+                .roundEnded(request.isEndRound())
                 .build();
 
         List<BetTransaction> betTransactions = BetTransactionMapper.mapToBetTransactions(request);

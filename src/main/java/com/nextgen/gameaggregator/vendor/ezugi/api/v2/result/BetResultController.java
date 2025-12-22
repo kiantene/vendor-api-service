@@ -41,6 +41,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         
         config.betAndResult(false)
                 .settleType(SettleType.BET)
+                .publishBetHistoryOnRoundEnded(request.isEndRound())
                 .processingMode(mode);
     }
 

@@ -35,6 +35,7 @@ public class VendorService extends BaseVendorService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(userName);
+            this.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
         } catch (AuthenticationException authenticationException) {
             gameSession = gameSessionService.generateNewSessionToken(userName);
             gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);

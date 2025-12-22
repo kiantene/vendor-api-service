@@ -64,11 +64,6 @@ class BetResultProcessor {
         // To settle the unsettled bet
         doSettlement(config, context, round, resultTxn);
 
-        if (config.isSettledByRound()) {
-            // disable produce bet history in WalletService
-            httpRequestLog.setBetHistoryProduceDisabled(true);
-        }
-        
         /**
          * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
          * The handler is retrieved from the registry based on the transaction's vendor class name.
@@ -79,6 +74,11 @@ class BetResultProcessor {
         // if (handler != null) {
         //     handler.onBeforeSend(gameSession, context);
         // }
+
+        if (config.isSettledByRound() || !config.isPublishBetHistoryOnRoundEnded()) {
+            // disable produce bet history in WalletService
+            httpRequestLog.setBetHistoryProduceDisabled(true);
+        }
 
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
