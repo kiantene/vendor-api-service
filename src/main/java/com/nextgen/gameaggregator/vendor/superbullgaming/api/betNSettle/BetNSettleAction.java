@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.superbullgaming.api.promo.SBGPromoPayoutHandler;
 import com.nextgen.gameaggregator.vendor.superbullgaming.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.superbullgaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.superbullgaming.service.VendorService;
@@ -35,6 +36,8 @@ public class BetNSettleAction {
     private VendorService vendorService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private SBGPromoPayoutHandler promoPayoutHandler;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
     public CommonVo betResult(HttpServletRequest request) {
@@ -72,6 +75,11 @@ public class BetNSettleAction {
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
+
+            // call promo service here
+            if (promoPayoutHandler.isPromoPayout(dto)){
+                return promoPayoutHandler.process(dto);
+            }
 
             // 5. Send win result to Operator
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
