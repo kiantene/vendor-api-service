@@ -74,6 +74,12 @@ public class BetNSettleDto implements BetResultData {
 
     private String ip;
 
+    private String promoCode;
+
+    private Integer promoType;
+
+    private String traceId;
+
     @Override
     public String getExternalTransactionId() {
         return this.betId;
