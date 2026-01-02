@@ -129,4 +129,8 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
         }
         return gameSessionDataService.getByVendorToken(vendorToken, null);
     }
+
+    protected final VendorPlayer getVendorPlayerByUsername(String username) {
+        return vendorPlayerDataService.getByUsername(username);
+    }
 }

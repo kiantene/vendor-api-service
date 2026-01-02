@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.ezugi.validator;
 
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.core.security.signature.SigningStrategyType;
+import com.nextgen.gameaggregator.core.entity.VendorPlayer;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.security.signature.ValidationResult;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
@@ -38,12 +39,16 @@ public class EzugiSignatureValidator extends AbstractVendorSignatureValidator {
 
     @Override
     public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+        String username = formFields.get("uid");
         String token = formFields.get("token");
-        if (token == null) {
-            throw new SignatureValidationException("Missing token in request");
+        Integer vendorLineId = null;
+        
+        if (username == null) {
+            vendorLineId = getVendorLineIdByToken(token);
+        } else {
+            vendorLineId = getVendorLineIdByusername(username);
         }
-
-        Integer vendorLineId = getVendorLineIdByToken(token);
+        
         String hash = extractHash(request);
         String secret = getSecretKey(vendorLineId);
         checkSignature(hash, rawBody, secret);
@@ -70,6 +75,15 @@ public class EzugiSignatureValidator extends AbstractVendorSignatureValidator {
             throw new SignatureValidationException("Vendor credentials not found for vendorLineId: " + vendorLineId);
         }
         return credentialsMap.getValue(HASH_KEY);
+    }
+
+    private Integer getVendorLineIdByusername(String username) {
+        try {
+            VendorPlayer vendorPlayer = getVendorPlayerByUsername(username);
+            return vendorPlayer.getVendorLineId();
+        } catch (Exception ex) {
+            throw new SignatureValidationException("Unable to retrieve vendor line ID by username: " + username, ex);
+        }
     }
 
     private Integer getVendorLineIdByToken(String token) {

@@ -5,10 +5,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.VendorBetType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Component
 final class BetTransactionMapper {
@@ -23,9 +20,13 @@ final class BetTransactionMapper {
         List<BetResultRequest.Bet> bets = gds.getBetsList();
         if (bets == null || bets.isEmpty()) return Collections.emptyList();
 
+        List<BetResultRequest.Bet> finalBets = new ArrayList<>(bets);
+        
+        applyCommissionIfExists(finalBets, gds.getBetAmount(), gds.getCommission());
+
         Map<String, BigDecimal> winningBets = gds.getWinningBets();
 
-        return bets.stream()
+        return finalBets.stream()
                 .filter(Objects::nonNull)
                 .map(b -> toBetTransaction(b, winningBets, req))
                 .toList();
@@ -58,5 +59,21 @@ final class BetTransactionMapper {
 
     private static BigDecimal safe(BigDecimal v) {
         return v == null ? ZERO : v;
+    }
+
+    private static void applyCommissionIfExists(List<BetResultRequest.Bet> finalBets, 
+                                                BigDecimal totalBetAmount, 
+                                                Integer commission) {
+        if (commission != null && commission > 0) {
+            BigDecimal commissionAmount = safe(totalBetAmount)
+                    .multiply(BigDecimal.valueOf(commission))
+                    .divide(BigDecimal.valueOf(100));
+
+            BetResultRequest.Bet commissionBet = new BetResultRequest.Bet();
+            commissionBet.setBetName("commission"); 
+            commissionBet.setBetAmount(commissionAmount);
+
+            finalBets.add(commissionBet);
+        }
     }
 }
