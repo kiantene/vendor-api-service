@@ -161,6 +161,9 @@ public class BetResultRequest {
 
         @JsonProperty("SeatId")
         private String seatId;
+
+        @JsonProperty("commission")
+        private Integer commission;
     }
 
     // @Data

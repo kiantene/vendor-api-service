@@ -42,6 +42,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletBetValidator walletBetValidator;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final BetLifeCycleRegistry lifeCycleRegistry;
 
     @Override
     public PlayerBalanceData process() {
@@ -53,6 +54,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         GameTransaction txn = null;
+        String vendorClassName = logContext.getVendorClassName();
 
         try {
             txn = guard.ensureNotDuplicate(
@@ -67,6 +69,17 @@ public class WalletBetServiceWrapper implements WalletBetService {
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
             enricher.enrichByGameSession(context, gameSession);
+
+            /**
+             * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
+             * The handler is retrieved from the registry based on the transaction's vendor class name.
+             * Do it before business validation so that any updates to the game session can be considered.
+             */
+            BetLifeCycle handler = lifeCycleRegistry.getHandler(vendorClassName);
+
+            if (handler != null) {
+                handler.onBeforeSend(gameSession, context);
+            }
 
             walletBetValidator.validateBusinessState(gameSession, context);
 
