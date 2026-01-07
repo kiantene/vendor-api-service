@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.*;
-import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -254,15 +253,18 @@ public class BetHistoryProducer {
 
         if (betTransactions == null || betTransactions.isEmpty()) return;
 
-        betTransactions
-                .forEach(betTxn -> {
-                    BetHistory betHistory = betTxnToBetHistoryMapper.mapValues(
-                            buildBetHistory(settledBet, context),
-                            betTxn
-                    );
-                    betHistory.setVendorBetTime(settledBet.getVendorBetTime());
-                    produceBetHistory(betHistory, context, usernames);
-                });
+        betTransactions.forEach(betTxn -> {
+            BetHistory baseHistory = buildBetHistory(settledBet, context);
+            BetHistory betHistory = betTxnToBetHistoryMapper.mapValues(baseHistory, betTxn);
+            
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(
+                    betHistory,
+                    context.fromVendorRate()
+            );
+
+            betHistory.setVendorBetTime(settledBet.getVendorBetTime());
+            produceBetHistory(betHistory, context, usernames);
+        });
     }
 
     // TODO: refactor

@@ -12,7 +12,7 @@ public class PromoResponseMapper implements VendorResponseMapper<PromoPayoutCont
         CashTransferInOutVo vo = new CashTransferInOutVo();
         vo.setCurrencyCode(context.getVendorCurrency());
         vo.setBalanceAmount(balanceData.getBalance());
-        vo.setUpdatedTime(balanceData.getTimestamp());
+        vo.setUpdatedTime(context.getVendorTransactionTime());
         return vo;
     }
 }

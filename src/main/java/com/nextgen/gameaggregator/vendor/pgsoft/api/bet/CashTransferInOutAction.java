@@ -8,10 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.Platforms;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.*;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.PGSoftPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
@@ -82,15 +79,15 @@ public class CashTransferInOutAction {
         try {
             dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
 
-            // TODO : catch new exception and error mapping to vendor
-            if (promoPayoutService.isPromoPayout(dto)) {
-                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
-            }
-
             vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            // TODO : catch new exception and error mapping to vendor
+            if (promoPayoutService.isPromoPayout(dto)) {
+                return promoPayoutService.doPromoPayout(dto, httpRequestLog);
+            }
 
             // request idempotent checking.
             if (requestIdempotentLogService.checkExists(dto, dto.getPlayerName()) == null) {
@@ -117,94 +114,86 @@ public class CashTransferInOutAction {
             parentResponseVo.setData(responseVo);
             responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(vendorCurrencyCode);
-            responseVo.setUpdatedTime(dto.getVendorSettleTime());
+            responseVo.setUpdatedTime(dto.getUpdatedTime());
+            if (dto.getRealTransferAmount() != null) {
+                responseVo.setRealTransferAmount(dto.getRealTransferAmount());
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
+            parentResponseVo.setError(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             parentResponseVo.setData(responseVo);
-            responseVo.setUpdatedTime(betResultIdempotentViolationException.getVendorSettleTime());
+            responseVo.setUpdatedTime(dto.getUpdatedTime());
             responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
             responseVo.setCurrencyCode(vendorCurrencyCode);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException | CredentialNotFoundException |
                  InvalidSignatureException invalidRequestException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (GameTerminatedException | AuthenticationException gameException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             httpService.logError(httpRequestLog, gameException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+            parentResponseVo.setError(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setData(null);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
+            parentResponseVo.setError(ResponseCodes.BET_FAILED);
             httpService.logError(httpRequestLog, currencyNotSupportedException);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            parentResponseVo.setErrorCode(ResponseCodes.NO_BET_EXISTS);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
+        } catch (BetNotFoundException | BetNotAllowedException betNotFoundException) {
+            parentResponseVo.setError(ResponseCodes.NO_BET_EXISTS);
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-                parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
-                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+                parentResponseVo.setError(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
                 parentResponseVo.setData(null);
 
             } else {
-                parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
-                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+                parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
 
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
+        } catch (IllegalArgumentException illegalArgumentException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REAL_TRANSFER_AMOUNT);
+            httpService.logError(httpRequestLog, illegalArgumentException);
+
         } catch (InvalidPlayerException invalidPlayerException) {
-            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
+            parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidAgentApiCredentialException | DisabledVendorLineException invalidAgentApiCredentialException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            parentResponseVo.setError(ResponseCodes.INVALID_OPERATOR);
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+            parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
         } catch (GameNotSupportedException | DisabledGameException gameNotSupportedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (BetFailedException betFailedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED_3073);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED_3073));
+            parentResponseVo.setError(ResponseCodes.BET_FAILED_3073);
             httpService.logError(httpRequestLog, betFailedException);
 
         } catch (Exception exception) {
-            parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+            parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
@@ -243,7 +232,12 @@ public class CashTransferInOutAction {
         return gameSession;
     }
 
-    private void doValidation(CashTransferInOutDto dto) throws InvalidRequestException, InvalidPlayerException, BetFailedException {
+    private void doValidation(CashTransferInOutDto dto) throws
+            InvalidRequestException,
+            InvalidPlayerException,
+            BetNotAllowedException,
+            BetFailedException,
+            IllegalArgumentException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
@@ -252,6 +246,14 @@ public class CashTransferInOutAction {
         // Vendor Acceptance Test for AMB PGS
         if (dto.getWinAmount().subtract(dto.getBetAmount()).compareTo(dto.getTransferAmount()) != 0) {
             throw new BetFailedException();
+        }
+
+        //GA-12228 VAT Test,validate real transfer amount
+        this.validateRealTransferAmount(dto.getTransferAmount(), dto.getRealTransferAmount(), dto.getCurrencyCode());
+
+        //GA-12228: Disallow transaction type 400 from betting
+        if (dto.getTransactionId().contains("-400-")) {
+            throw new BetFailedException("Transaction type 400 is not allowed");
         }
     }
 
@@ -293,6 +295,21 @@ public class CashTransferInOutAction {
         String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
+
+    }
+
+    private void validateRealTransferAmount(BigDecimal transferAmount, BigDecimal realTransferAmount, String currencyCode) throws IllegalArgumentException {
+
+        // Check if the currency uses thousand-rate conversion
+        if (CurrencyThousandRate.isThousandRate(currencyCode)) {
+            transferAmount = transferAmount.multiply(BigDecimal.valueOf(1000));
+        }
+
+        // Compare the expected transfer amount with the real transfer amount
+        if (realTransferAmount.compareTo(transferAmount) != 0) {
+            // Throw an exception if the amounts do not match
+            throw new IllegalArgumentException("Invalid real_transfer_amount: " + realTransferAmount);
+        }
 
     }
 }

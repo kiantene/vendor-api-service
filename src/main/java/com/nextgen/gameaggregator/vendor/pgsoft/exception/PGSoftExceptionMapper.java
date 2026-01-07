@@ -98,10 +98,9 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper {
         return getErrorResponse(ResponseCodes.OPERATION_FAILED);
     }
 
-    private VendorErrorResponse getErrorResponse(Integer responseCode) {
+    private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
         ResponseVo<CashTransferInOutVo> responseVo = new ResponseVo<>();
-        responseVo.setErrorCode(responseCode);
-        responseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode));
+        responseVo.setError(responseCodes);
         return new VendorErrorResponse(HttpStatus.OK, responseVo);
     }
 }

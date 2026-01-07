@@ -77,47 +77,38 @@ public class VerifySessionAction {
             // 5. Validate request operatorToken and secretKey
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
 
-
             // Fill VO required values
             VerifySessionVo responseVo = new VerifySessionVo();
             parentResponseVo.setData(responseVo);
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
 
-
         } catch (InvalidRequestException invalidRequestException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            parentResponseVo.setError(ResponseCodes.INVALID_OPERATOR);
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (GameTerminatedException | AuthenticationException gameException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             httpService.logError(httpRequestLog, gameException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, credentialNotFoundException);
 
-        }  catch (NoAvailableLineException noAvailableLineException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+        } catch (NoAvailableLineException noAvailableLineException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, noAvailableLineException);
 
         } catch (Exception exception) { // any other exception encountered
-            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+            parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
 
         } finally {

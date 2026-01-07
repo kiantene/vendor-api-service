@@ -760,7 +760,9 @@ public class WalletService {
                 walletBetResultData = unsettledBet;
 
                 try {
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
+                    BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
+                    
+                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, cappedBetResult, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balanceVo.getData().getBalance());

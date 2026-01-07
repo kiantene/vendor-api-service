@@ -19,7 +19,9 @@ public enum Vendors {
     EZUGI           (24,  null, "ezugi",         true),
     CRYSTAL         (94,  null, "crystal",       true),
     AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
-    VPLUS           (97,  null, "vplus",         true)
+    VPLUS           (97,  null, "vplus",         true),
+    GPKEVOLUTION    (106, null, "gpkv2",         true),
+    ENDORPHINA      (117, null, "endorphina",    true)
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds

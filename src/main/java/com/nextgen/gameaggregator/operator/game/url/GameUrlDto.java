@@ -23,10 +23,9 @@ public class GameUrlDto {
     // Only alphanumeric allowed
     private String username;
 
-    @NotBlank(message = "min 3 and max 50 alphanumeric")
-    @Size(min = 3, max = 50, message = "min 3 and max 50 alphanumeric")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "min 3 and max 50 alphanumeric")
-    // Only alphanumeric allowed
+    @NotBlank(message = "gameCode cannot be blank")
+    @Size(min = 3, max = 50, message = "gameCode must be between 3 and 50 characters")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_AT_REGEX, message = "gameCode must be alphanumeric and may include '-', '_', or '@'")
     private String gameCode;
 
     @NotBlank(message = "2 alphanumeric")

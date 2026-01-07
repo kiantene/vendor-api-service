@@ -25,6 +25,7 @@ public class ValidationUtils {
     public static final String ALPHANUMERIC_DASH_REGEX = "^[a-zA-Z0-9_-]+$";
     public static final String UUID_REGEX = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
     public static final String ALPHANUMERIC_BRACKET_REGEX = "^[a-zA-Z0-9()]+$";
+    public static final String ALPHANUMERIC_DASH_AT_REGEX = "^[a-zA-Z0-9@_-]+$";
     //public static final String URL_REGEX=  "\\bhttps?://[\\w+.-]+(?:/[\\w+.-]+)*";
     //public static final String URL_REGEX= "^((http|https):\\/\\/.)[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)$";
     public static final String URL_REGEX = "^(http|https)://(([a-zA-Z0-9_-]+\\.)+[a-zA-Z]{2,}|(\\d{1,3}\\.){3}\\d{1,3})(:[0-9]+)?(/.*)?$";

@@ -11,4 +11,5 @@ public class GameUrlDto {
     private String backurl;
     private String gameTypeId;
     private long timestamp;
+    private String playerLanguageV2;
 }
