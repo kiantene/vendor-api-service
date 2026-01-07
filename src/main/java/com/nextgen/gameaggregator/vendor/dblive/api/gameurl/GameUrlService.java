@@ -45,6 +45,8 @@ public class GameUrlService extends BaseGameUrlService<DbLiveGameUrlVo> {
             gameUrlData.setGameTypeId(gameSession.getVendorGameCode());
         }
         gameUrlData.setTimestamp(System.currentTimeMillis());
+        //GA-12908 adding language selection feature.
+        gameUrlData.setPlayerLanguageV2(gameSession.getVendorLanguageCode());
 
         //2.Encrypt Open GameUrl Data and return
         return encryptApiRequest(gameUrlData, credentials);

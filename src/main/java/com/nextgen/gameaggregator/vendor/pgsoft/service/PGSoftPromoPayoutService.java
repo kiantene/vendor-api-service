@@ -57,7 +57,10 @@ public class PGSoftPromoPayoutService {
         PlayerBalanceData playerBalanceData = promoPayoutService
                 .initialise(promoPayoutContext)
                 .process(promoPayoutContext);
+
         CashTransferInOutVo responseVo = promoResponseMapper.toVendor(promoPayoutContext, playerBalanceData);
+        responseVo.setRealTransferAmount(dto.getRealTransferAmount());
+
         parentResponseVo.setData(responseVo);
 
         return ResponseEntity.ok(parentResponseVo);

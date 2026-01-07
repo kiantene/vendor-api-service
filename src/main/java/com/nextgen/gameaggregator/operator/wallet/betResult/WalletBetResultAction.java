@@ -45,8 +45,7 @@ public class WalletBetResultAction {
     private final HttpService httpService;
     private final LogContextService logContextService;
     private final Set<Integer> forceSuccessResultTypeList;
-    private final Set<Integer> betWinVendorList;
-    private final Set<Integer> betLoseVendorList;
+    private final Set<Integer> zeroBetForceSuccessResultTypeList;
     private final Set<Integer> skipVendorList;
     private final AgentApiVersionService agentApiVersionService;
 
@@ -69,15 +68,13 @@ public class WalletBetResultAction {
         this.logContextService = logContextService;
         this.agentApiVersionService = agentApiVersionService;
         this.forceSuccessResultTypeList = new HashSet<>();
-        this.betWinVendorList = new HashSet<>();
-        this.betLoseVendorList = new HashSet<>();
+        this.zeroBetForceSuccessResultTypeList = new HashSet<>();
 
         this.forceSuccessResultTypeList.add(ResultType.WIN.code);
         this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
         this.forceSuccessResultTypeList.add(ResultType.END.code);
-
-        this.betWinVendorList.addAll(Set.of(32, 55, 7, 19, 48, 61, 47, 69, 74, 75, 1, 86, 17, 18, 10));
-        this.betLoseVendorList.addAll(Set.of(7, 19, 48, 61, 47, 69, 74, 75, 86, 17, 18, 10));
+        this.zeroBetForceSuccessResultTypeList.add(ResultType.BET_WIN.code);
+        this.zeroBetForceSuccessResultTypeList.add(ResultType.BET_LOSE.code);
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
@@ -215,35 +212,24 @@ public class WalletBetResultAction {
             logContextService.logEnd(apiResponse);
             if (isError) {
                 setEnd(httpRequestLog);
-                boolean shouldForceSuccess = false;
 
-                if (this.forceSuccessResultTypeList.contains(resultType.code)) {
-                    // WIN, LOSE, END resultType will be force success.
-                    shouldForceSuccess = true;
+                //allow (win/lose/end result type to force success.) / (bet_win and bet_lose result type and bet amount 0 to force success.)
+                boolean isForceSuccessAllowed =
+                        forceSuccessResultTypeList.contains(resultType.code)
+                                || (zeroBetForceSuccessResultTypeList.contains(resultType.code)
+                                && BigDecimal.ZERO.equals(betInformation.getBetAmount()));
 
-                } else if ((this.betWinVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_WIN.code))
-                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
-                    // BET_WIN resultType will be force success, but only apply to certain vendors
-                    shouldForceSuccess = true;
-
-                } else if ((this.betLoseVendorList.contains(gameSession.getVendorId()) && resultType.code.equals(ResultType.BET_LOSE.code))
-                        && betInformation.getBetAmount().equals(BigDecimal.ZERO)) {
-                    // BET_WIN resultType will be force success, but only apply to certain vendors
-                    shouldForceSuccess = true;
-
-                } else {
-                    // normal BET_WIN and BET_LOSE should not be force success
+                if (!isForceSuccessAllowed) {
                     throw new InvalidOperatorResponseException(operatorStatus.code);
                 }
 
-                if (shouldForceSuccess) {
-                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
 
-                    if (httpRequestLog != null) {
-                        httpService.logError(httpRequestLog, new InvalidOperatorResponseException(operatorStatus.description));
-                        betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
-                    }
+                if (httpRequestLog != null) {
+                    httpService.logError(httpRequestLog, new InvalidOperatorResponseException(operatorStatus.description));
+                    betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
                 }
+
             }
         }
         return responseVo;

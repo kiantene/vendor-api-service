@@ -9,8 +9,10 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.service.BetResultRetryLogService;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,8 @@ public class SportsBaseAction {
 
     protected String endpoint;
     protected String requestType;
+    @Autowired
+    private BetResultRetryLogService betResultRetryLogService;
 
     public WalletBalanceVo callToOperator(WalletRequest walletRequest, Object dto)
             throws InvalidOperatorResponseException {
@@ -38,7 +42,8 @@ public class SportsBaseAction {
         final String signature = this.generateSignature(dto, walletRequest.getApiSecret());
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         Long operatorEndTime = null;
-
+        InvalidOperatorResponseException generatedException = null;
+        WalletBalanceVo walletBalanceVo = null;
         try {
             walletRequest.setOperatorEndpoint(apiUrl + this.endpoint);
             walletRequest.setOperatorData(new ObjectMapper().writeValueAsString(dto));
@@ -63,27 +68,36 @@ public class SportsBaseAction {
 
             operatorEndTime = System.currentTimeMillis();
 
-            WalletBalanceVo walletBalanceVo = this.validateResponse(response, isTimeout, walletRequest);
+            walletBalanceVo = this.validateResponse(response, isTimeout, walletRequest);
 
             walletRequest.setOperatorResponseStatus(walletBalanceVo.getStatus());
 
-            return walletBalanceVo;
-
         } catch (JsonSyntaxException jsonSyntaxException) { // map to InvalidOperatorResponseException
             walletRequest.setErrorMessage(jsonSyntaxException.getMessage());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            generatedException = new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException exception) {
             walletRequest.setErrorMessage(exception.getMessage());
-            throw exception; // re-throw to caller
+            generatedException = exception; // re-throw to caller
 
         } catch (Exception exception) {
             walletRequest.setErrorMessage(exception.getMessage());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            generatedException = new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
 
         } finally {
             walletRequest.setOperatorEnd(operatorEndTime);
+
+            if (generatedException != null) {
+                if (isForceSuccessEndpoint()) {
+                    walletBalanceVo = this.processForceSuccess(walletRequest);
+                    betResultRetryLogService.create(walletRequest.getOperatorData(), walletRequest.getVendorId(), walletRequest.getAgentId(), walletRequest.getBetId(), walletRequest.getRoundId(), walletRequest.getTraceId(), this.endpoint);
+                } else {
+                    // if hit error and not force success, then throw back generated exception
+                    throw generatedException;
+                }
+            }
         }
+        return walletBalanceVo;
     }
 
     private WalletBalanceVo validateResponse(ResponseEntity<String> response, AtomicBoolean isTimeout, WalletRequest walletRequest)
@@ -141,5 +155,31 @@ public class SportsBaseAction {
     private String generateSignature(Object payload, String apiSecret) {
         String jsonPayload = new Gson().toJson(payload);
         return ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
+    }
+
+    private boolean isForceSuccessEndpoint() {
+        return EndPoints.SPORT_SETTLE.equals(this.endpoint)
+                || EndPoints.SPORT_REFUND.equals(this.endpoint)
+                || EndPoints.SPORT_CANCEL_BET.equals(this.endpoint)
+                || EndPoints.SPORT_RESETTLE.equals(this.endpoint);
+    }
+
+    public WalletBalanceVo processForceSuccess(WalletRequest walletRequest) {
+
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+        BigDecimal balance = (walletRequest.getBalanceAfter() == null) ? BigDecimal.ZERO : walletRequest.getBalanceAfter();
+
+        data.setBalance(balance);
+        data.setUsername(walletRequest.getOperatorUsername());
+        data.setCurrency(walletRequest.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
+
+        responseVo.setTraceId(walletRequest.getTraceId());
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
+
+        return responseVo;
     }
 }

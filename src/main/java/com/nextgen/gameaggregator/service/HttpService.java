@@ -4,7 +4,7 @@ import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
+import com.nextgen.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -125,7 +125,7 @@ public class HttpService {
         String[] fields = queryString.split("&");
 
         for (String field : fields) {
-            String[] kv = field.split("=");
+            String[] kv = field.split("=", 2);
             if (kv.length == 2) {
                 Object currentValue = queryParameterMap.get(kv[0]);
                 if (currentValue == null) {
@@ -300,7 +300,7 @@ public class HttpService {
 
             THREAD_POOL.submit(() -> {
                 try {
-                    String jsonResponseVo = new Gson().toJson(responseVo);
+                    String jsonResponseVo = JsonUtils.toJson(responseVo);
                     if (requestLog.isResponseLogged()) {
                         if (requestLog.isOperatorEndpoint()) {
                             requestLog.setOperatorResponse(jsonResponseVo);

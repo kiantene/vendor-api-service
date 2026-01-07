@@ -58,9 +58,9 @@ public class VendorService extends BaseVendorService {
 
     public void checkRealTransferAmount(GameSession gameSession, CashTransferInOutDto dto) throws VendorCurrencyNotSupportException, BetFailedException {
         VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndVendorCurrencyCode(gameSession.getVendorId(), gameSession.getVendorCurrencyCode());
-        if (dto.getReal_transfer_amount() != null) {
+        if (dto.getRealTransferAmount() != null) {
             BigDecimal convertedWinLossAmount = dto.getWinAmount().subtract(dto.getBetAmount()).multiply(vendorCurrency.getFromVendorRate());
-            if (convertedWinLossAmount.compareTo(dto.getReal_transfer_amount()) != 0) {
+            if (convertedWinLossAmount.compareTo(dto.getRealTransferAmount()) != 0) {
                 throw new BetFailedException();
             }
         }
