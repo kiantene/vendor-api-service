@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetActionLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
@@ -293,6 +294,8 @@ public class HttpService {
     }
 
     public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        BetResultContextHolder.clear();
+
         if (!enableHttpRequestLog) return;
 
         if (requestLog != null && responseVo != null) {
