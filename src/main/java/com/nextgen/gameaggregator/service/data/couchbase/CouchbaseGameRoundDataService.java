@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service.data.couchbase;
 
 import com.couchbase.client.core.error.CasMismatchException;
+import com.couchbase.client.core.error.DocumentExistsException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
@@ -8,12 +9,15 @@ import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.repository.couchbase.GameRoundRepository;
 import com.nextgen.gameaggregator.service.data.GameRoundDataService;
 import com.nextgen.gameaggregator.service.data.model.TxnDelta;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
+@Slf4j
 public class CouchbaseGameRoundDataService implements GameRoundDataService {
     private final GameRoundRepository repo;
 
@@ -30,6 +34,22 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     @Override
     public void insert(GameRound round) {
         repo.insert(round);
+    }
+
+    @Override
+    public Optional<KvDoc<GameRound>> insertOrGet(GameRound round) {
+        try {
+            insert(round);
+            return Optional.empty();
+        } catch (DocumentExistsException e) {
+            String docId = round.getId();
+            log.error("Round Document already exists: " + docId, e);
+            return repo.findById(docId)
+                    .or(() -> {
+                        // Invariant violation — insert says it exists, but get cannot find it
+                        throw new IllegalStateException("DocumentExistsException but GameRound not found: " + docId, e);
+                    });
+        }
     }
 
     @Override

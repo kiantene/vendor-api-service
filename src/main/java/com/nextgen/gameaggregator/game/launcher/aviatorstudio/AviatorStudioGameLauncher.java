@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
-import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.config.AviatorStudioConfig;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.aviatorstudio.util.EncryptUtil;

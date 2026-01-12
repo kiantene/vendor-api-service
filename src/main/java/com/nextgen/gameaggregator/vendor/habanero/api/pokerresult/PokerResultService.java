@@ -1,12 +1,15 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.pokerresult;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundInfoDto;
@@ -33,8 +36,6 @@ public class PokerResultService {
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
 
     public TransferVo result(FundInfoDto fundInfoDto, FundTransferRequestDto fundTransferRequestDto, TransferVo responseVo, String gameId, GameSession gameSession, HttpServletRequest request) throws
             InvalidAgentApiCredentialException,
@@ -68,6 +69,11 @@ public class PokerResultService {
             PokerResultDto resultDto = new ModelMapper().map(fundInfoDto, PokerResultDto.class);
             resultDto.setRoundId(fundTransferRequestDto.getGameInstanceId());
             resultDto.setGameId(gameId);
+
+            BetResultContextHolder.initialise()
+                    .configure(config -> config.setSettleType(SettleType.ROUND));
+            BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+            betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(resultDto.getBetStatus().code));
 
             //process bet result data (settle or unsettle)
             ResultType resultType = vendorService.calculateResultType(resultDto.getBetAmount(), resultDto.getWinAmount(), resultDto.getJackpotAmount(), true);

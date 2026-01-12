@@ -45,7 +45,7 @@ public class AuthAction {
         this.agentPlayerService = agentPlayerService;
     }
 
-    @PostMapping(path = Endpoints.AUTHENTICATE)
+//    @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);

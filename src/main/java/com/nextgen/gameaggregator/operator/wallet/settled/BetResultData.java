@@ -31,6 +31,11 @@ public interface BetResultData {
     /**
      * Logic for new framework to support backward compatibility
      */
-    default boolean isNewFramework() { return false; }
-    default String getGaBetId() { return null; }
+    default boolean isNewFramework() {
+        return false;
+    }
+
+    default String getGaBetId() {
+        return null;
+    }
 }

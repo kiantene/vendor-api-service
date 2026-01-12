@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
@@ -17,7 +18,7 @@ import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
-import com.nextgen.gameaggregator.vendor.Vendors;
+//import com.nextgen.gameaggregator.vendor.Vendors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,8 @@ public class FrameworkMigrationService {
     private final UnsettledBetService unsettledBetService;
     private final GameRoundService gameRoundService;
     private final GameSessionDataService gameSessionDataService;
+    private final VendorConfigService vendorConfigService;
     private final DuplicateRequestGuard guard;
-
-    private static final int AVIATOR_STUDIO_VENDOR_ID = 96;
      
     public boolean isFallbackRequired(Optional<GameRound> roundOpt, String className, BetResultConfig config) {
         return roundOpt.isEmpty() 
@@ -42,21 +42,7 @@ public class FrameworkMigrationService {
     }
     
     public boolean isMigrationVendor(String className) {
-        Vendors vendor = findVendorByClassName(className);
-        if (vendor == null) {
-            return false;
-        }
-
-        return vendor.getId() < AVIATOR_STUDIO_VENDOR_ID;
-    }
-    
-    private Vendors findVendorByClassName(String className) {
-        for (Vendors vendor : Vendors.values()) {
-            if (vendor.getClassName().equals(className)) {
-                return vendor;
-            }
-        }
-        return null;
+        return vendorConfigService.isMigrationVendor(className);
     }
 
     public Optional<GameRound> createBetTransaction(
@@ -65,10 +51,10 @@ public class FrameworkMigrationService {
         GameSession gameSession = gameSessionDataService.getOrCreate(context);
 
         UnsettledBet unsettledBet = unsettledBetService.getUnsettledBetByRoundId(
-            context.getVendorBetId(), 
-            context.getRoundId(),
-            gameSession.getVendorGameId(), 
-            gameSession.getVendorPlayerId()
+                context.getVendorBetId(),
+                context.getRoundId(),
+                gameSession.getVendorGameId(),
+                gameSession.getVendorPlayerId()
         );
 
         GameTransaction txn = guard.ensureNotDuplicate(

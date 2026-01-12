@@ -25,6 +25,7 @@ public class KafkaConstant {
     public static final String TOPIC_BET_RESULT_DLQ = "topic_bet_result_dlq_v2";
     public static final String TOPIC_API_REQUEST_LOG = "api_request_log_v1";
     public static final String TOPIC_TRANSFER_WALLET_REQUEST_LOG = "transfer_wallet_request_log_v1";
+    public static final String TOPIC_BET_TRANSACTION_HISTORY = "topic_bet_transaction_history";
 
     public static final String TOPIC_BET_HISTORY_DELAY_SETTLEMENT = "topic_bet_history_delay_settlement";
     public static final String TOPIC_BET_TRANSACTION_LOG = "topic_bet_transaction_log_v1";
@@ -33,6 +34,8 @@ public class KafkaConstant {
     public static final String TOPIC_RECON_FOR_UNSETTLED_BET = "topic_recon_for_unsettled_bet";
     public static final String TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET = "topic_patching_sport_unsettled_bet_to_refund_bet";
     public static final String TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET_DLQ = "topic_patching_sport_unsettled_bet_to_refund_bet_DLQ";
+
+    public static final String TOPIC_PROCESS_ROUND_ENDED = "topic_process_round_ended";
 
 
 }

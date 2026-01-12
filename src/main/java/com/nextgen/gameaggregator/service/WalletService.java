@@ -521,6 +521,8 @@ public class WalletService {
         }
         //else settle by bet, which no need to run endRoundAsync.
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
+
+        gameRoundService.publishRoundEnded(settledBet.getRoundId(), gameSession);
     }
 
     private void processDefaultDataForSettledBet(BetInformation betInformation, SettledBet settledBet) {

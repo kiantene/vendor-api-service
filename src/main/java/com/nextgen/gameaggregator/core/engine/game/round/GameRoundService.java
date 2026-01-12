@@ -2,14 +2,18 @@ package com.nextgen.gameaggregator.core.engine.game.round;
 
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.constant.WalletServiceConstant;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.LoggingService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.service.data.producer.GameRoundProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,13 +31,45 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class GameRoundService {
+    private final AgentApiVersionService agentApiVersionService;
     private final EndRoundProcessor endRoundProcessor;
     private final UnsettledBetService unsettledBetService;
     private final LoggingService loggingService;
     private final ThreadPoolTaskScheduler taskScheduler;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final GameRoundProducer gameRoundProducer;
+
     @Value("${endround-process.retry-interval-in-seconds:5}")
     private long retryIntervalInSecondsValue;
+
+    /**
+     * Handles a round-ended signal and publishes a RoundEnded notification only when allowed.
+     */
+    public void publishRoundEnded(String roundId, GameSession gameSession) {
+        if (!isRoundEndedPublishAllowed(gameSession)) {
+            return;
+        }
+
+        SettleType settleType = BetResultContextHolder.getConfig().getSettleType();
+        GameRoundEndedEvent event = GameRoundEndedEvent.ofGameSession(gameSession, roundId);
+        gameRoundProducer.publishRoundEnded(event, settleType.name());
+        BetResultContextHolder.clear();
+    }
+
+    private boolean isRoundEndedPublishAllowed(GameSession gameSession) {
+        if (!BetResultContextHolder.isInitialized()) {
+            return false;
+        }
+
+        SettleType settleType = BetResultContextHolder.getConfig().getSettleType();
+        if (settleType == null) {
+            return false;
+        }
+
+        // only api version 3 will run below logic
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(gameSession.getAgentId());
+        return agentApiVersion != null && agentApiVersion == 3;
+    }
 
     public void notifyEndRoundAsync(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         String settledBetRoundId = settledBet.getRoundId();

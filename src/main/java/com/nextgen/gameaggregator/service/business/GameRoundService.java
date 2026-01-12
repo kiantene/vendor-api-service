@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.business;
 
+import com.couchbase.client.core.error.DocumentExistsException;
 import com.nextgen.gameaggregator.core.exception.RoundNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.*;
 import com.nextgen.gameaggregator.enums.GameRoundState;
@@ -56,8 +57,12 @@ public class GameRoundService {
         // New round document
         if (kvDoc == null) {
             GameRound newRound = buildRound(txn, agentMeta);
-            data.insert(newRound);
-            return newRound;
+            Optional<KvDoc<GameRound>> existingRound = data.insertOrGet(newRound);
+            if (existingRound.isPresent()) {
+                kvDoc = existingRound.get();
+            } else {
+                return newRound;
+            }
         }
 
         return addNewTxnToRound(kvDoc, txn);

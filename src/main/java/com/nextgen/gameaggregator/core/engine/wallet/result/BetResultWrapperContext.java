@@ -13,4 +13,8 @@ public class BetResultWrapperContext {
         this.betResultContext = context;
         this.config = new BetResultConfig();
     }
+
+    public static BetResultWrapperContext empty() {
+        return new BetResultWrapperContext(BetResultContext.builder().build());
+    }
 }
