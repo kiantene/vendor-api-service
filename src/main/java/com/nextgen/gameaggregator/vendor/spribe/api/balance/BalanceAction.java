@@ -45,7 +45,7 @@ public class BalanceAction {
         this.agentPlayerService = agentPlayerService;
     }
 
-    @PostMapping(path = Endpoints.INFO)
+//    @PostMapping(path = Endpoints.INFO)
     public ResponseVo authenticate(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);

@@ -11,7 +11,7 @@ import com.nextgen.gameaggregator.core.security.VendorSecurityRegistry;
 import com.nextgen.gameaggregator.core.security.decrypter.VendorDecryptionService;
 import com.nextgen.gameaggregator.core.security.signature.VendorSignatureService;
 import com.nextgen.gameaggregator.core.util.ResponseUtil;
-import com.nextgen.gameaggregator.core.vendor.config.VendorConfig;
+import com.nextgen.gameaggregator.core.vendor.config.VendorIntegrationConfig;
 import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -49,7 +49,7 @@ public class VendorAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        VendorConfig vendorConfig = configOpt.get();
+        VendorIntegrationConfig vendorConfig = configOpt.get();
 
         String vendorClassName = vendorConfig.getVendorClassName();
         VendorSecurityAdapter adapter = securityRegistry.get(vendorClassName);

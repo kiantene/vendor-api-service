@@ -390,4 +390,19 @@ public class KafkaService {
             log.error("SportRefundPatchingDLQ: " + e.getMessage() + " -> vendorBetId = " + sportRefundBetPatching.getVendorBetId() + "& roundId = " + sportRefundBetPatching.getRoundId());
         }
     }
+
+    public void produceBetTransactionHistory(BetTransactionHistory betTransactionHistory) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(betTransactionHistory);
+
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_TRANSACTION_HISTORY, betTransactionHistory.getVendorPlayerUsername(), json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending TransactionHistory to Kafka: ", throwable);
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + " : " + betTransactionHistory.toString());
+        }
+    }
 }

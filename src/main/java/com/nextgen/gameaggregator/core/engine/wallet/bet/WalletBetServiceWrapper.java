@@ -4,6 +4,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import com.nextgen.core.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
+import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -43,6 +45,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final BetLifeCycleRegistry lifeCycleRegistry;
+    private final VendorConfigService vendorConfigService;
+    private final BetTransactionHistoryProducer betTransactionHistoryProducer;
 
     @Override
     public PlayerBalanceData process() {
@@ -51,7 +55,7 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
     @Override
     public PlayerBalanceData process(BetContext context) {
-        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        LogContext logContext = LogContextHolder.get();
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         GameTransaction txn = null;
         String vendorClassName = logContext.getVendorClassName();
@@ -100,6 +104,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
 
     @Override
     public WalletBetService initialise(BetContext context) {
+        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        context.setVendorClassName(logContext.getVendorClassName());
         BetWrapperContext state = new BetWrapperContext(context);
         BetContextHolder.set(state);
         return this;
@@ -172,7 +178,12 @@ public class WalletBetServiceWrapper implements WalletBetService {
                 httpRequestLog
         );
         gameTransactionService.markSuccess(round, txn, betEvent.getLastBalance());
-        
+
+        // Send Kafka Message For Transaction History
+        if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
+            betTransactionHistoryProducer.publishTransactionHistoryForBet(context, round, txn);
+        }
+
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),
                 context.getVendorCurrency(),

@@ -7,13 +7,12 @@ import org.springframework.stereotype.Component;
 public class AviatorStudioConfig extends AbstractVendorConfig {
     public static final String CLASS_NAME = "aviatorstudio";
 
-    @Override
-    public String getVendorClassName() {
-        return CLASS_NAME;
+    public AviatorStudioConfig() {
+        super(CLASS_NAME);
     }
 
     @Override
-    public int getTimeoutInMillis() {
-        return 2000;
+    protected void overrideDefaults() {
+        setTimeoutInMillis(2000);
     }
 }

@@ -135,10 +135,14 @@ public class GameTransaction extends RoundTxn {
         return copy;
     }
 
+    public static String createDocId(String className, TxnType type, String transactionId) {
+        return className + "::" + type + "::" + transactionId;
+    }
+
     @Override
     @JsonIgnore
     public String getId() {
-        return className + "::" + type + "::" + transactionId;
+        return createDocId(className, type, transactionId);
     }
 
     @JsonIgnore

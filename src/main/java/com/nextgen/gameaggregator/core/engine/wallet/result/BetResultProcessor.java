@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
@@ -13,6 +14,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,6 +32,8 @@ class BetResultProcessor {
     private final BetHistoryProducer betHistoryProducer;
     private final GameTransactionService gameTransactionService;
     private final WalletService walletService;
+    private final VendorConfigService vendorConfigService;
+    private final BetTransactionHistoryProducer betTransactionHistoryProducer;
     private final BetResultLifeCycleRegistry lifeCycleRegistry;
 
     public PlayerBalanceData processResultTransaction(
@@ -80,6 +84,11 @@ class BetResultProcessor {
             httpRequestLog.setBetHistoryProduceDisabled(true);
         }
 
+        // Send Transaction Historu to Kafka
+        if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
+            betTransactionHistoryProducer.publishTransactionHistoryForResult(context, round, resultTxn);
+        }
+
         BigDecimal balance = walletService.processBetResult(
                 httpRequestLog.getId(),
                 gameSession,
@@ -128,6 +137,11 @@ class BetResultProcessor {
         );
         txn.setGaBetId(httpRequestLog.getGaBetId());
         gameTransactionService.markSuccess(round, txn, balance, context.isRoundEnded());
+
+        // Send Kafka
+        if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
+            betTransactionHistoryProducer.publishTransactionHistoryForBetAndResult(context, round, txn);
+        }
 
         return new PlayerBalanceData(
                 context.getVendorPlayerUsername(),

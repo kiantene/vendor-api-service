@@ -55,7 +55,7 @@ public class WalletRollbackServiceWrapper {
     private final GameTransactionService gameTransactionService;
 
     public PlayerBalanceData process() {
-        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        LogContext logContext = LogContextHolder.get();
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
         BetRollbackContext context = state().getBetRollbackContext();
         GameTransaction txn = null;
@@ -112,6 +112,8 @@ public class WalletRollbackServiceWrapper {
     }
 
     public WalletRollbackServiceWrapper initialise(BetRollbackContext context) {
+        LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        context.setVendorClassName(logContext.getVendorClassName());
         BetRollbackWrapperContext state = new BetRollbackWrapperContext(context);
         BetRollbackContextHolder.set(state);
         return this;

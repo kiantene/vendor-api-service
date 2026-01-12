@@ -5,9 +5,8 @@ import com.nextgen.gameaggregator.core.common.RequestAttributes;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LoggingManager;
 import com.nextgen.gameaggregator.core.util.ResponseUtil;
-import com.nextgen.gameaggregator.core.vendor.config.VendorConfig;
+import com.nextgen.gameaggregator.core.vendor.config.VendorIntegrationConfig;
 import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
-import com.nextgen.gameaggregator.vendor.Vendors;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +37,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         var configOpt = vendorConfigService.getConfigByRequestURI(request.getRequestURI());
         if (configOpt.isPresent()) {
-            VendorConfig vendorConfig = configOpt.get();
+            VendorIntegrationConfig vendorConfig = configOpt.get();
             request.setAttribute(RequestAttributes.VENDOR_CLASS_NAME, vendorConfig.getVendorClassName());
             logContext.setVendorClassName(vendorConfig.getVendorClassName());
         }

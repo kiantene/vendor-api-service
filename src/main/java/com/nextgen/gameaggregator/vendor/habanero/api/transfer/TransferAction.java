@@ -94,7 +94,6 @@ public class TransferAction {
                 responseVo.setDebitNCreditMessage();
             }
 
-
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(transferDto);
 
@@ -119,7 +118,7 @@ public class TransferAction {
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(transferDto, gameSession);
-
+            
             //handle transfer action
             if (transferDto.getFundTransferRequestDto().getIsRefund()) {
                 //handle refund condition

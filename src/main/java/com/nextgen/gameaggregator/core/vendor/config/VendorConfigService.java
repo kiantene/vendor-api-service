@@ -1,21 +1,29 @@
 package com.nextgen.gameaggregator.core.vendor.config;
 
+import com.nextgen.gameaggregator.core.vendor.routing.VendorCallbackRouteResolver;
+import com.nextgen.gameaggregator.core.entity.VendorConfig;
+import com.nextgen.gameaggregator.core.registry.VendorConfigExtension;
+import com.nextgen.gameaggregator.core.registry.VendorConfigRegistry;
+import com.nextgen.gameaggregator.core.service.AbstractVendorConfigService;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
-public class VendorConfigService {
+public class VendorConfigService extends AbstractVendorConfigService {
+    private static final String CALLBACK_PREFIX_V1 = "/api/v1/";
 
-    private final VendorConfigRegistry registry;
     private final HashMap<String, Boolean> vendorEnumMap; // backward compatibility
 
     public VendorConfigService(VendorConfigRegistry registry) {
-        this.registry = registry;
+        super(registry);
         this.vendorEnumMap = new HashMap<>();
 
         for (Vendors v : Vendors.values()) {
@@ -25,19 +33,11 @@ public class VendorConfigService {
         }
     }
 
-    public boolean exists(String className) {
-        return registry.exists(className);
-    }
-
-    public VendorConfig getConfig(String className) {
-        return registry.get(className);
-    }
-
-    public Optional<VendorConfig> getConfigByRequestURI(String requestURI) {
-        Optional<VendorConfig> vendorConfig = registry.getByRequestURI(requestURI);
+    public Optional<VendorIntegrationConfig> getConfigByRequestURI(String requestURI) {
+        Optional<VendorConfigExtension> vendorConfig = getRegistry().getByRequestURI(requestURI, CALLBACK_PREFIX_V1);
 
         if (vendorConfig.isPresent()) {
-            return vendorConfig;
+            return vendorConfig.map(VendorIntegrationConfig.class::cast);
         }
 
         // for backward compatibility
@@ -47,7 +47,7 @@ public class VendorConfigService {
             return Optional.empty();
         }
 
-        return Optional.of(new VendorConfig() {
+        return Optional.of(new VendorIntegrationConfig() {
             @Override
             public int getTimeoutInMillis() {
                 return vendor.getTimeoutMillis();
@@ -69,6 +69,21 @@ public class VendorConfigService {
             }
 
             @Override
+            public boolean isCallbackRoutingEnabled() {
+                return false;
+            }
+
+            @Override
+            public Optional<VendorCallbackRouteResolver> callbackRouteResolver() {
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean isMigrationVendor() {
+                return false;
+            }
+
+            @Override
             public String getVendorClassName() {
                 return vendor.getClassName();
             }
@@ -76,22 +91,57 @@ public class VendorConfigService {
     }
 
     public int getTimeoutInMillis(String className) {
-        Optional<VendorConfig> configOpt = Optional.of(getConfig(className));
-
-        return configOpt.map(VendorConfig::getTimeoutInMillis).orElse(AbstractVendorConfig.DEFAULT_TIMEOUT);
+        return getVendorIntegrationConfig(className)
+                .map(VendorIntegrationConfig::getTimeoutInMillis)
+                .orElse(AbstractVendorConfig.DEFAULT_TIMEOUT);
     }
 
     public boolean isNewFramework(String className) {
-        Optional<VendorConfig> configOpt = Optional.of(getConfig(className));
-
         // if vendor config handler exists, get value from handler
         // otherwise get from Vendors enum as backward-compatibility
-        return configOpt.map(VendorConfig::isNewFramework).orElseGet(() -> this.vendorEnumMap.getOrDefault(className, false));
+        return getVendorIntegrationConfig(className)
+                .map(VendorIntegrationConfig::isNewFramework)
+                .orElseGet(() -> this.vendorEnumMap.getOrDefault(className, false));
+    }
+
+    public boolean isTransactionHistoryEnabled(String className) {
+        Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
+
+        return config.isPresent() && config.get().isTransactionHistoryEnabled();
     }
 
     public boolean isWalletServiceLegacyEnabled(String className) {
-        VendorConfig config = getConfig(className);
+        Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
 
-        return config != null && config.isWalletServiceLegacyEnabled();
+        return config.isPresent() && config.get().isWalletServiceLegacyEnabled();
+    }
+
+    public Optional<VendorIntegrationConfig> getVendorIntegrationConfig(String className) {
+        VendorConfigExtension config = getConfig(className);
+        if (config == null) {
+            return Optional.empty();
+        } else {
+            return Optional.of(config).map(VendorIntegrationConfig.class::cast);
+        }
+    }
+
+    public void updateVendorConfigInRegistry(Map<String, VendorConfig> map) {
+        map.forEach((key, value) -> {
+            if (exists(key)) {
+                getConfig(key).updateFromDB(value);
+            }
+        });
+    }
+
+    public boolean isCallbackRoutingEnabled(String className) {
+        Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
+
+        return config.isPresent() && config.get().isCallbackRoutingEnabled();
+    }
+
+    public boolean isMigrationVendor(String className) {
+        Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
+
+        return config.isPresent() && config.get().isMigrationVendor();
     }
 }
