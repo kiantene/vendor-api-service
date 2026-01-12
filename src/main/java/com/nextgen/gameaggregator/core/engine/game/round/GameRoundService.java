@@ -53,6 +53,7 @@ public class GameRoundService {
         SettleType settleType = BetResultContextHolder.getConfig().getSettleType();
         GameRoundEndedEvent event = GameRoundEndedEvent.ofGameSession(gameSession, roundId);
         gameRoundProducer.publishRoundEnded(event, settleType.name());
+
         BetResultContextHolder.clear();
     }
 
