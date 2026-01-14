@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.exception.handler;
 import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InternalServerException;
+import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
@@ -78,6 +79,9 @@ public final class ExceptionHandlerRegistry {
 
         handlers.put(InvalidOperatorResponseException.class,
                 mapper -> ex -> mapper.onInternalError(new InternalServerException(ex.getMessage(), ex)));
+
+        handlers.put(InvalidRequestException.class,
+                mapper -> ex -> mapper.onInvalidRequestError(new InvalidRequestException(ex.getMessage())));
     }
 
     private static void registerSystemExceptions(Map<Class<? extends Exception>, Function<VendorExceptionMapper, Function<Exception, VendorErrorResponse>>> handlers) {
