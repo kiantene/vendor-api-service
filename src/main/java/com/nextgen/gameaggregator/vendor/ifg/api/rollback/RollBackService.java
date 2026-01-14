@@ -54,7 +54,7 @@ public class RollBackService {
             this.doValidation(rollBackServiceDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(rollBackServiceDto.getRefund().getGuid());
+            gameSession = this.getGameSession(traceId, rollBackServiceDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollBackServiceDto, gameSession);
@@ -168,9 +168,6 @@ public class RollBackService {
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // Verify token status is active
-        vendorService.verifyTokenStatus(gameSession.getStatus());
-
         // Verify player username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getRefund().getWlid(), InvalidPlayerException::new);
 
@@ -192,5 +189,28 @@ public class RollBackService {
         }
 
         return balance;
+    }
+
+    private GameSession getGameSession(String traceId, RollBackServiceDto rollBackServiceDto)
+            throws GameNotSupportedException,
+            InvalidPlayerException,
+            VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            // Verify session token
+            gameSession = gameSessionService.verifyVendorToken(rollBackServiceDto.getRefund().getGuid());
+            //GA-12785: If the vendor does not provide a game code, use the existing game code.
+            if (rollBackServiceDto.getRefund().getStorno().getGameid() != null) {
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(
+                        rollBackServiceDto.getRefund().getStorno().getGameid(), gameSession);
+            }
+        } catch (AuthenticationException authenticationException) {
+            gameSession = gameSessionService.generateNewSessionToken(rollBackServiceDto.getRefund().getWlid());
+            gameSessionService.updateByVendorGameCode(gameSession, rollBackServiceDto.getRefund().getStorno().getGameid());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

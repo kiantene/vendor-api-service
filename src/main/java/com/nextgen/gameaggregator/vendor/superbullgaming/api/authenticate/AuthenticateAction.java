@@ -59,38 +59,26 @@ public class AuthenticateAction {
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setTimestamp(System.currentTimeMillis());
+            
+            } catch (JsonProcessingException | InvalidRequestException e) {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (JsonProcessingException jsonProcessingException) {
-            httpService.logError(httpRequestLog, jsonProcessingException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            } catch (DisabledVendorLineException | DisabledAgentPlayerException e) {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
 
-        } catch (InvalidRequestException invalidRequestException) {
-            httpService.logError(httpRequestLog, invalidRequestException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            } catch (DisabledGameException e) {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
 
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            httpService.logError(httpRequestLog, disabledVendorLineException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            } catch (AuthenticationException | CredentialNotFoundException e) {
+                httpService.logError(httpRequestLog, e);
+                responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            httpService.logError(httpRequestLog, disabledAgentPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (DisabledGameException disabledGameException) {
-            httpService.logError(httpRequestLog, disabledGameException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (AuthenticationException playerNotFoundException) {
-            httpService.logError(httpRequestLog, playerNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            httpService.logError(httpRequestLog, credentialNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (Exception exception) { // any other exception encountered
-            httpService.logError(httpRequestLog, exception);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            } catch (Exception exception) { // any other exception encountered
+                httpService.logError(httpRequestLog, exception);
+                responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);

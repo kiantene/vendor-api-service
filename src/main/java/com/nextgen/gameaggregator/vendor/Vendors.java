@@ -21,7 +21,8 @@ public enum Vendors {
     AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
     VPLUS           (97,  null, "vplus",         true),
     GPKEVOLUTION    (106, null, "gpkv2",         true),
-    ENDORPHINA      (117, null, "endorphina",    true)
+    ENDORPHINA      (117, null, "endorphina",    true),
+    LUCKY365        (130, null, "lucky365",       true)
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds

@@ -21,10 +21,10 @@ public class BalanceService {
     private final HttpService httpService;
 
     public BalanceService(
-                          WalletService walletService,
-                          ValidationService validationService,
-                          GameSessionService gameSessionService,
-                          HttpService httpService) {
+            WalletService walletService,
+            ValidationService validationService,
+            GameSessionService gameSessionService,
+            HttpService httpService) {
 
         this.walletService = walletService;
         this.validationService = validationService;
@@ -62,16 +62,16 @@ public class BalanceService {
             vo.setS(ResponseCodes.GET_BALANCE);
             vo.setD(d);
 
-        } catch(InvalidPlayerException invalidPlayerException){
+        } catch (InvalidPlayerException invalidPlayerException) {
             d.setCode(ResponseCodes.INVALID_USER);
 
-        } catch(InvalidRequestException invalidRequestException){
+        } catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
 
-        } catch(AuthenticationException authenticationException){
+        } catch (AuthenticationException authenticationException) {
             d.setCode(ResponseCodes.INVALID_AUTHENTICATION);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
 
         } finally {
@@ -94,12 +94,11 @@ public class BalanceService {
             DisabledVendorLineException,
             DisabledGameException,
             AuthenticationException,
-            InvalidRequestException
-    {
+            InvalidRequestException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getAccount());
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount());
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency());
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency());
 
     }
 }

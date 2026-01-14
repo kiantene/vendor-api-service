@@ -51,11 +51,22 @@ public class SettleService {
         GameSession gameSession = new GameSession();
         BigDecimal balance;
 
+
         try {
             CommonSettleDto commonSettleDto = xmlMapper.readValue(httpRequestLog.getRequestBody(), CommonSettleDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(commonSettleDto);
+
+            // GA-12845: Add regenerate token logic. Requires vendor game code.
+            // Vendor request does not provide it.
+            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonSettleDto.getRoundId());
+            // GA-12845: aglive bet not found test case failed,should hit bet not found exception.
+            if (unsettledBet == null) {
+                throw new BetNotFoundException();
+            }
+            //unsettle bet only have Game Id.
+            VendorGame vendorGame = vendorGameService.getByVendorGameId(unsettledBet.getVendorGameId());
 
             // Verify session token
             try {
@@ -63,8 +74,8 @@ public class SettleService {
                 if (gameSession.getStatus() == 0) {
                     throw new AuthenticationException();
                 }
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGame.getVendorGameCode(), gameSession);
             } catch (AuthenticationException exception) {
-                UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(commonSettleDto.getRoundId());
                 gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
                 gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
                 gameSessionService.updateByVendorCurrencyId(gameSession);

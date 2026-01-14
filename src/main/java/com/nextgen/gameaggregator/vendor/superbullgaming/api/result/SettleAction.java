@@ -92,62 +92,70 @@ public class SettleAction {
 
         } catch (JsonProcessingException jsonProcessingException) {
             httpService.logError(httpRequestLog, jsonProcessingException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (BetNotFoundException betNotFoundException) {
             httpService.logError(httpRequestLog, betNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_FOUND);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.BET_FAILED);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             httpService.logError(httpRequestLog, insufficientBalanceException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.PLAYERS_OPERATION_IN_PROGRESS);
 
         } catch (InvalidRequestException invalidRequestException) {
             httpService.logError(httpRequestLog, invalidRequestException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             httpService.logError(httpRequestLog, invalidPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_PLAYER);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             httpService.logError(httpRequestLog, credentialNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             httpService.logError(httpRequestLog, invalidSignatureException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             httpService.logError(httpRequestLog, disabledVendorLineException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (DisabledGameException disabledGameException) {
             httpService.logError(httpRequestLog, disabledGameException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+            responseVo.setResponseCode(ResponseCode.PLAYERS_OPERATION_IN_PROGRESS);
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
             httpService.logError(httpRequestLog, exception);
 
         } finally {

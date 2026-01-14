@@ -107,4 +107,5 @@ public class CreditServiceDto implements BetResultData {
             return BetStatus.SETTLED;
         }
     }
+
 }

@@ -60,9 +60,8 @@ public class LoginService {
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            // replace this token value by using guid value(vendor does not return our game session)
-            gameSessionService.regenerateGameSessionToken(gameSession, loginDto.getEnter().getGuid());
+            //replace vendor token provide by vendor.
+            gameSessionService.regenerateVendorToken(gameSession, loginDto.getEnter().getGuid());
 
             // set userVo
             userVo.setType("real");

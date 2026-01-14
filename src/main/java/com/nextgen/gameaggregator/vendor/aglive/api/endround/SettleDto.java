@@ -21,8 +21,6 @@ public class SettleDto {
     private String sessionToken;
 
     @NotBlank
-    @Size(max = 5)
-    @Pattern(regexp = "^[a-zA-Z]{1,5}$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 
@@ -37,7 +35,6 @@ public class SettleDto {
     private BigDecimal validBetAmount;
 
     @NotBlank
-    @Size(max = 50)
     @JacksonXmlProperty(localName = "playname")
     private String playName;
 
@@ -52,7 +49,6 @@ public class SettleDto {
     private String transactionID;
 
     @NotBlank
-    @Size(max = 50)
     @JacksonXmlProperty(localName = "gameCode")
     private String gameCode;
 
@@ -61,9 +57,6 @@ public class SettleDto {
     @JacksonXmlProperty(localName = "gametype")
     private String gameType;
 
-
-    @NotBlank
-    @Size(max = 50)
     @JacksonXmlProperty(localName = "transactionType")
     private String transactionType;
 

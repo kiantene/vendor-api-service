@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.superbullgaming.api.betNSettle;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 
 import java.math.BigDecimal;
 
@@ -38,6 +40,8 @@ public class BetNSettleAction {
     private VendorLineService vendorLineService;
     @Autowired
     private SBGPromoPayoutHandler promoPayoutHandler;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
     public CommonVo betResult(HttpServletRequest request) {
@@ -47,16 +51,25 @@ public class BetNSettleAction {
         String username = "";
         String vendorCurrencyCode = "";
         GameSession gameSession = null;
+        BetNSettleDto dto = new BetNSettleDto();
+        boolean isRequestExists = false;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetNSettleDto dto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
+            dto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
             username = dto.getUsername();
             vendorCurrencyCode = dto.getCurrency();
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            if (requestIdempotentLogService.checkExists(dto, dto.getUsername()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 3. Verify session token
             try { //this check only verify if it's null, not status = 0
@@ -103,55 +116,73 @@ public class BetNSettleAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             httpService.logError(httpRequestLog, invalidRequestException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             httpService.logError(httpRequestLog, credentialNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             httpService.logError(httpRequestLog, invalidPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_PLAYER);
 
         } catch (AuthenticationException authenticationException) {
             httpService.logError(httpRequestLog, authenticationException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(Status.SC_INSUFFICIENT_FUNDS.code)) {
+                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            } else {   
+                responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+            }
 
         } catch (InvalidSignatureException invalidSignatureException) {
             httpService.logError(httpRequestLog, invalidSignatureException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
-        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-            httpService.logError(httpRequestLog, InvalidAgentApiCredentialException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (BetNotFoundException betNotFoundException) {
             httpService.logError(httpRequestLog, betNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_FOUND);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             httpService.logError(httpRequestLog, disabledVendorLineException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (DisabledGameException disabledGameException) {
             httpService.logError(httpRequestLog, disabledGameException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
+            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+            responseVo.setResponseCode(ResponseCode.PLAYERS_OPERATION_IN_PROGRESS);
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
             httpService.logError(httpRequestLog, exception);
+
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUsername());
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 

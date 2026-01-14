@@ -7,8 +7,8 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
-import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yeebet.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +49,10 @@ public class GameUrlService implements GameUrl {
         formData.add("appid", credentials.get(Credentials.game_app_id));
         formData.add("clienttype", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
-        formData.add("gid", game_code);
+        // if game not lobby will set to gid param
+        if (!game_code.equalsIgnoreCase("LOBBY")) {
+            formData.add("gid", game_code);
+        }
         formData.add("iscreate", "1");
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("returnurl", gameSession.getLobbyUrl());

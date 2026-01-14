@@ -48,4 +48,13 @@ public class RoundWinDto {
     @JacksonXmlProperty(localName = "roundnum")
     @NotNull
     private RoundNumDto roundNumDto;
+
+    @JacksonXmlProperty(localName = "game")
+    private GameDTO gameDto;
+
+    @Data
+    public static class GameDTO {
+        @JacksonXmlProperty(isAttribute = true)
+        private String name;
+    }
 }

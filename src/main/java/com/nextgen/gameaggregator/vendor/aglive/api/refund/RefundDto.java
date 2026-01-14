@@ -17,15 +17,13 @@ public class RefundDto {
 
 
     @NotBlank
-    @Size(max=255)
+    @Size(max = 255)
     @JacksonXmlProperty(localName = "sessionToken")
     private String sessionToken;
 
     @NotBlank
-    @Size(max=5)
-    @Pattern(regexp = "^[a-zA-Z]{1,5}$")
     @JacksonXmlProperty(localName = "currency")
-    private String currency ;
+    private String currency;
 
     @NotNull
     @Digits(integer = 20, fraction = 8)
@@ -33,22 +31,22 @@ public class RefundDto {
     private BigDecimal value;
 
     @NotBlank
-    @Size(max=50)
     @JacksonXmlProperty(localName = "playname")
     private String playName;
 
     @NotBlank
-    @Size(max=255)
+    @Size(max = 255)
     @JacksonXmlProperty(localName = "transactionID")
     private String transactionID;
 
     @NotBlank
-    @Size(max=50)
     @JacksonXmlProperty(localName = "gameCode")
     private String gameCode;
 
-    @NotBlank
-    @Size(max=50)
     @JacksonXmlProperty(localName = "transactionType")
     private String transactionType;
+
+    @NotBlank
+    @JacksonXmlProperty(localName = "tableCode")
+    private String tableCode;
 }
