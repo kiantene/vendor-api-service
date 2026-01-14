@@ -69,35 +69,35 @@ public class BalanceAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (JsonProcessingException jsonProcessingException) {
             httpService.logError(httpRequestLog, jsonProcessingException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
             httpService.logError(httpRequestLog, authenticationException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             httpService.logError(httpRequestLog, disabledVendorLineException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
 
         } catch (DisabledGameException disabledGameException) {
             httpService.logError(httpRequestLog, disabledGameException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
         
         } catch (CredentialNotFoundException credentialNotFoundException) {
             httpService.logError(httpRequestLog, credentialNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);

@@ -77,7 +77,7 @@ public class TransactionService {
             }
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(transactionServiceDto.getRoundbet().getGuid());
+            gameSession = gameSessionService.verifyVendorToken(transactionServiceDto.getRoundbet().getGuid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionServiceDto, gameSession);

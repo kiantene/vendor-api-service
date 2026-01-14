@@ -56,6 +56,7 @@ public class BetService {
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(commonBetDto.getBetDto().getSessionToken());
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(commonBetDto.getBetDto().getTableCode(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonBetDto, gameSession);
@@ -86,7 +87,7 @@ public class BetService {
 
             vo.setSuccessResponse(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             httpService.logError(httpRequestLog, e);
-            
+
         } catch (AuthenticationException | InvalidPlayerException | CurrencyNotSupportedException |
                  VendorCurrencyNotSupportException e) {
 

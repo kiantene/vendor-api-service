@@ -16,9 +16,6 @@ public class ResponseVo implements HttpResponse {
     private String data;
     private String signature;
 
-    @JsonIgnore
-    private ResponseCodes responseCode;
-
     public ResponseVo() {
         this.setResponseCode(ResponseCodes.SUCCESS);
     }
@@ -38,6 +35,6 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return this.responseCode != ResponseCodes.SUCCESS;
+        return !this.code.equals(ResponseCodes.SUCCESS.code);
     }
 }

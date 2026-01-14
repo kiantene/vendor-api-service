@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.superbullgaming.constant.Endpoints;
@@ -75,56 +76,48 @@ public class BetAction {
             responseVo.setCurrency(dto.getCurrency());
             responseVo.setTimestamp(System.currentTimeMillis());
 
-        } catch (JsonProcessingException jsonProcessingException) {
-            httpService.logError(httpRequestLog, jsonProcessingException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (JsonProcessingException | InvalidRequestException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (AuthenticationException | InvalidSignatureException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            httpService.logError(httpRequestLog, insufficientBalanceException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (InvalidPlayerException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_PLAYER);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (DisabledAgentPlayerException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
+
+        } catch (DisabledGameException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
+
+        } catch (CredentialNotFoundException | InvalidAgentApiCredentialException | DisabledVendorLineException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+
+         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(Status.SC_INSUFFICIENT_FUNDS.code)) {
+                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            } else {   
+                responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+            }
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (InsufficientBalanceException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (InvalidRequestException invalidRequestException) {
-            httpService.logError(httpRequestLog, invalidRequestException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (InvalidPlayerException invalidPlayerException) {
-            httpService.logError(httpRequestLog, invalidPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            httpService.logError(httpRequestLog, credentialNotFoundException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (InvalidSignatureException invalidSignatureException) {
-            httpService.logError(httpRequestLog, invalidSignatureException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            httpService.logError(httpRequestLog, disabledAgentPlayerException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            httpService.logError(httpRequestLog, disabledVendorLineException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (DisabledGameException disabledGameException) {
-            httpService.logError(httpRequestLog, disabledGameException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (TransactionStillProcessingException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.PLAYERS_OPERATION_IN_PROGRESS);
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
             httpService.logError(httpRequestLog, exception);
 
         } finally {

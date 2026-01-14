@@ -22,13 +22,13 @@ public class SBGExceptionMapper implements VendorExceptionMapper {
     // applicable for promo payout
     @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
-        return getErrorResponse();
+        return getErrorResponse(ResponseCode.OPERATION_FAILED);
     }
 
     // applicable for promo payout
     @Override
     public VendorErrorResponse onInternalConfigurationError(InternalConfigurationException ex) {
-        return getErrorResponse();
+        return getErrorResponse(ResponseCode.OPERATION_FAILED);
     }
 
 
@@ -59,7 +59,7 @@ public class SBGExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        return getErrorResponse();
+        return getErrorResponse(ResponseCode.OPERATION_FAILED);
     }
 
     @Override
@@ -74,13 +74,13 @@ public class SBGExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onInvalidRequestError(InvalidRequestException ex) {
-        return getErrorResponse();
+        return getErrorResponse(ResponseCode.INVALID_REQUEST);
     }
 
 
-    private VendorErrorResponse getErrorResponse() {
+    private VendorErrorResponse getErrorResponse(ResponseCode responseCode) {
         CommonVo response = new CommonVo();
-        response.setResponseCode(ResponseCode.ERROR);
+        response.setResponseCode(responseCode);
         return new VendorErrorResponse(response);
     }
 }

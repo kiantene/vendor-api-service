@@ -71,8 +71,9 @@ public class CreditService {
                 isRequestExists = true;
                 throw new TransactionStillProcessingException();
             }
+
             // Verify session token
-            gameSession = gameSessionService.verifyToken(creditServiceDto.getRoundWinDto().getGuid());
+            gameSession = this.getGameSession(traceId, creditServiceDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditServiceDto, gameSession);
@@ -191,9 +192,6 @@ public class CreditService {
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        // Verify token status is active
-        vendorService.verifyTokenStatus(gameSession.getStatus());
-
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getRoundWinDto().getWlid(), InvalidPlayerException::new);
     }
 
@@ -208,5 +206,30 @@ public class CreditService {
         }
 
         return balance;
+    }
+
+    private GameSession getGameSession(String traceId, CreditServiceDto creditServiceDto)
+            throws GameNotSupportedException,
+            InvalidPlayerException,
+            VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            // Verify session token
+            gameSession = gameSessionService.verifyVendorToken(creditServiceDto.getRoundWinDto().getGuid());
+            //GA-12785: If the vendor does not provide a game code, use the existing game code.
+            if (creditServiceDto.getRoundWinDto().getGameDto() != null &&
+                    creditServiceDto.getRoundWinDto().getGameDto().getName() != null) {
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(
+                        creditServiceDto.getRoundWinDto().getGameDto().getName(),
+                        gameSession);
+            }
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(creditServiceDto.getRoundWinDto().getWlid());
+            gameSessionService.updateByVendorGameCode(gameSession, creditServiceDto.getRoundWinDto().getGameDto().getName());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

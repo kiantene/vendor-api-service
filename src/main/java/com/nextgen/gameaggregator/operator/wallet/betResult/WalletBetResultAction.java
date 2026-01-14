@@ -217,7 +217,7 @@ public class WalletBetResultAction {
                 boolean isForceSuccessAllowed =
                         forceSuccessResultTypeList.contains(resultType.code)
                                 || (zeroBetForceSuccessResultTypeList.contains(resultType.code)
-                                && BigDecimal.ZERO.equals(betInformation.getBetAmount()));
+                                && betInformation.getBetAmount().compareTo(BigDecimal.ZERO) == 0);
 
                 if (!isForceSuccessAllowed) {
                     throw new InvalidOperatorResponseException(operatorStatus.code);

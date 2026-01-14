@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.vendor.superbullgaming.api.cancelbetnsettle;
 
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -34,72 +38,92 @@ public class CancelBetNSettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = Endpoints.CANCEL_BET_N_SETTLE)
     public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
+        CancelBetNSettleDto dto = new CancelBetNSettleDto();
+        boolean isRequestExists = false;
 
-        // Block cancel settled bet (GA-4217)
-        responseVo.setResponseCode(ResponseCode.REFUSED_CANCEL);
+        try {
+            // 1. Retrieve request body in original string format and convert into dto
+            String body = httpRequestLog.getRequestBody();
+            dto = HttpService.convertJsonToDto(body, CancelBetNSettleDto.class);
 
-        // try {
-        //     // 1. Retrieve request body in original string format and convert into dto
-        //     String body = httpRequestLog.getRequestBody();
-        //     CancelBetNSettleDto dto = HttpService.convertJsonToDto(body, CancelBetNSettleDto.class);
+            // 2. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
-        //     // 2. Validate request parameters (Non-database calls)
-        //     this.doValidation(dto);
+            if (requestIdempotentLogService.checkExists(dto, dto.getUsername()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
-        //     // 3. Verify session token
-        //     GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // 3. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-        //     // 4. Verify remaining parameters (Verify against database values)
-        //     this.doVerification(httpRequestLog, dto, gameSession);
+            // 4. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-        //     // 5. Process rollback
-        //     BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            // 5. Process rollback
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
-        //     // 6. Set response data
-        //     responseVo.setResponseCode(ResponseCode.SUCCESS);
-        //     responseVo.setBalance(balance);
-        //     responseVo.setUsername(dto.getUsername());
-        //     responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-        //     responseVo.setTimestamp(System.currentTimeMillis());
+            // 6. Set response data
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setBalance(balance);
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
-        // } catch (JsonProcessingException jsonProcessingException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        // } catch (AuthenticationException authenticationException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
 
-        // } catch (RecordNotFoundException recordNotFoundException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (RecordNotFoundException recordNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_FOUND);
 
-        // } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        // } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-        //     httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        // } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        // } catch (BetNotFoundException betNotFoundException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_FOUND);
         
-        // } catch (CredentialNotFoundException credentialNotFoundException) {
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+            
+        } catch (InvalidPlayerException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_PLAYER);
 
-        // } catch (Exception exception) { // any other exception encountered
-        //     httpService.logError(httpRequestLog, exception);
-        //     responseVo.setResponseCode(ResponseCode.ERROR);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+            responseVo.setResponseCode(ResponseCode.PLAYERS_OPERATION_IN_PROGRESS);
 
-        // } finally {
-        //     httpService.end(httpRequestLog, responseVo);
-        // }
+        } catch (Exception exception) { // any other exception encountered
+            httpService.logError(httpRequestLog, exception);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+
+        } finally {
+            // first request (not request exist) will delete log after process finish.
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUsername());
+            }
+            httpService.end(httpRequestLog, responseVo);
+        }
 
         return responseVo;
 

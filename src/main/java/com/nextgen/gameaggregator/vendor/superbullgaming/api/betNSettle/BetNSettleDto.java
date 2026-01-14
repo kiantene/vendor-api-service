@@ -151,7 +151,7 @@ public class BetNSettleDto implements BetResultData {
     }
 
     @Override
-    public boolean getShouldSettleByBet()  {
+    public boolean getShouldSettleByBet() {
         return true;
     }
 }
