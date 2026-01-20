@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
+import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class BalanceProcessor {
     private final OperatorApiAdapter operatorApiAdapter;
     private final CurrencyDataService currencyDataService;
     private final VendorCurrencyDataService vendorCurrencyDataService;
+    private final AgentApiVersionService agentApiVersionService;
 
     public PlayerBalanceData process(String traceId, GameRound gameRound) {
         return process(
@@ -70,11 +72,16 @@ public class BalanceProcessor {
 
     private WalletBalanceDto mapToClientRequest(String traceId, AgentMeta agentMeta) {
         WalletBalanceDto dto = new WalletBalanceDto();
+        Integer version = agentApiVersionService.getAgentApiVersion(agentMeta.getAgentId());
 
         dto.setTraceId(traceId);
         dto.setUsername(agentMeta.getUsername());
         dto.setCurrency(agentMeta.getCurrency());
         dto.setToken(agentMeta.getSession());
+
+        if (version == 3) {
+            dto.setGameCode(agentMeta.getGameCode());
+        }
 
         return dto;
     }
