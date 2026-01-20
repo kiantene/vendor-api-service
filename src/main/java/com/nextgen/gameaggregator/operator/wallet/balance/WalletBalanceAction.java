@@ -35,6 +35,7 @@ public class WalletBalanceAction {
     private final ConnectionProvider operatorApiConnectionProvider;
     private final MeterRegistry meterRegistry;
     private final LogContextService logContextService;
+    private final AgentApiVersionService agentApiVersionService;
 
     public WalletBalanceAction(RequestService requestService,
                                AgentApiCredentialService agentApiCredentialService,
@@ -43,7 +44,7 @@ public class WalletBalanceAction {
                                CurrencyConversionService currencyConversionService,
                                ConnectionProvider operatorApiConnectionProvider,
                                MeterRegistry meterRegistry,
-                               LogContextService logContextService) {
+                               LogContextService logContextService, AgentApiVersionService agentApiVersionService) {
 
         this.requestService = requestService;
         this.agentApiCredentialService = agentApiCredentialService;
@@ -53,6 +54,7 @@ public class WalletBalanceAction {
         this.operatorApiConnectionProvider = operatorApiConnectionProvider;
         this.meterRegistry = meterRegistry;
         this.logContextService = logContextService;
+        this.agentApiVersionService = agentApiVersionService;
     }
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -61,10 +63,12 @@ public class WalletBalanceAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
+        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(agentId);
+
         VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
-        WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
+        WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession, agentApiVersion);
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -172,13 +176,16 @@ public class WalletBalanceAction {
         );
     }
 
-    private WalletBalanceDto newWalletBalanceDto(String traceId, GameSession
-            gameSession) {
+    private WalletBalanceDto newWalletBalanceDto(String traceId, GameSession gameSession, Integer agentApiVersion) {
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
         walletBalanceDto.setTraceId(traceId);
         walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
         walletBalanceDto.setToken(gameSession.getToken());
+
+        if (agentApiVersion == 3) {
+            walletBalanceDto.setGameCode(gameSession.getGameCode());
+        }
 
         return walletBalanceDto;
     }
