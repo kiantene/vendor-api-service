@@ -36,7 +36,6 @@ public class RewardDtoKIV extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal amount;
 
     //Optional

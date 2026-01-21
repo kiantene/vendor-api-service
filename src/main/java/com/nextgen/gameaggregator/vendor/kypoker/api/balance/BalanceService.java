@@ -45,7 +45,7 @@ public class BalanceService {
             this.doValidation(balanceDto, traceId);
 
             // 2. Get vendor player details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getAccount());
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(balanceDto.getAccount());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);

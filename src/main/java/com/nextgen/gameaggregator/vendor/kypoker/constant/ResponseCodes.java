@@ -22,5 +22,6 @@ public class ResponseCodes {
     public static final Integer INVALID_ACTION = 8;
     public static final Integer INVALID_USER = 2;
     public static final Integer INVALID_AUTHENTICATION = 10;
+    public static final Integer STATUS_BET_NOT_FOUND = 4;
 
 }

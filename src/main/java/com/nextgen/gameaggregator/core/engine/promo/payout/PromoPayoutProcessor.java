@@ -105,7 +105,11 @@ public class PromoPayoutProcessor {
             apiResult.throwIfError();
             ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
 
-            return response.getData();
+            if (response.getData() != null) {
+                return response.getData();
+            }
+            return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
+
         } catch (Exception ex) {
             if (RetryPolicy.shouldRetry(RetryOrigin.PROMO_PAYOUT, ex)) {
                 retryQueueService

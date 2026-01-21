@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.kypoker.api.getorderstatus;
 
-import com.nextgen.gameaggregator.core.WalletRequest;
-import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
@@ -12,52 +10,37 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.kypoker.constant.*;
 
 @Service
 public class GetOrderStatusService {
 
-    private final WalletRequestService walletRequestService;
     private final UnsettledBetService unsettledBetService;
-    private final VendorLineService vendorLineService;
     private final SettledBetService settleBetService;
     private final WalletTransactionService walletTransactionService;
-    private final VendorPlayerService vendorPlayerService;
-    private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
 
 
-    public GetOrderStatusService(WalletRequestService walletRequestService,
-                                 UnsettledBetService unsettledBetService,
-                                 VendorLineService vendorLineService,
+    public GetOrderStatusService(UnsettledBetService unsettledBetService,
                                  SettledBetService settleBetService,
                                  WalletTransactionService walletTransactionService,
-                                 VendorPlayerService vendorPlayerService,
-                                 ValidationService validationService,
                                  GameSessionService gameSessionService,
                                  HttpService httpService) {
 
-        this.walletRequestService = walletRequestService;
         this.unsettledBetService = unsettledBetService;
-        this.vendorLineService = vendorLineService;
         this.settleBetService = settleBetService;
         this.walletTransactionService = walletTransactionService;
-        this.vendorPlayerService = vendorPlayerService;
-        this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
     }
 
-    public CommonVo getOrderStatus(String actionDto,HttpRequestLog httpRequestLog, String decryptedParam) {
+    public CommonVo getOrderStatus(HttpRequestLog httpRequestLog, String decryptedParam) {
         // Construct VO
         CommonVo vo = new CommonVo();
-        WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
-        VendorPlayer vendorPlayer = null;
-        Integer vendorId = 0;
         String externalTransactionId = null;
         ResponseObjectDto d = new ResponseObjectDto();
-        GameSession gameSession;
+        GameSession gameSession = null;
+        String traceId = httpRequestLog.getId();
 
         try {
 
@@ -65,40 +48,36 @@ public class GetOrderStatusService {
 
             doValidation(getOrderStatusDto);
 
-            GetOrderStatusAgentDto getOrderStatusAgentDto = HttpService.convertQueryStringToDtoUrlDecode(actionDto, GetOrderStatusAgentDto.class);
-
-            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(getOrderStatusDto.getAccount()); //token check
+            gameSession = this.verifyGameSessionToken(getOrderStatusDto.getAccount(), traceId); //token check
 
             this.doVerification(getOrderStatusDto, gameSession);
 
             externalTransactionId = getOrderStatusDto.getOrderId();
 
-            vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(getOrderStatusDto.getAccount());
-
-            vendorId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_ID,getOrderStatusAgentDto.getAgent());
-
-            unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, getOrderStatusDto.getOrderId());
+            unsettledBetService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), getOrderStatusDto.getOrderId());
 
             d.setCode(ResponseCodes.STATUS_PROCESSING);
 
-        } catch (BetNotFoundException e){
+        } catch (BetNotFoundException e) {
             try {
-                settleBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayer.getId(),externalTransactionId);
+                settleBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), externalTransactionId);
                 d.setCode(ResponseCodes.SUCCESS);
                 d.setStatus(ResponseCodes.STATUS_SUCCESS);
 
             } catch (BetNotFoundException ex) {
 
-                    WalletTransaction walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(vendorId,externalTransactionId);
+                WalletTransaction walletTransaction = walletTransactionService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), externalTransactionId);
 
-                    if (walletTransaction == null){
-                        d.setCode(ResponseCodes.INTERNAL_ERROR);
-                        d.setStatus(ResponseCodes.STATUS_FAILED);
-                        httpService.logError(httpRequestLog, e);
-                    }
-
+                //GA-12953 order status bet not found should response failed to vendor, to trigger vendor resend credit endpoint
+                //remap to status bet not found
+                if (walletTransaction == null) {
+                    d.setCode(ResponseCodes.BET_NOT_FOUND);
+                    d.setStatus(ResponseCodes.STATUS_BET_NOT_FOUND);
+                    httpService.logError(httpRequestLog, e);
+                } else {
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setStatus(ResponseCodes.STATUS_SUCCESS);
+                }
 
             }
 
@@ -106,16 +85,16 @@ public class GetOrderStatusService {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (Exception e){
+        } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             d.setStatus(ResponseCodes.STATUS_FAILED);
             httpService.logError(httpRequestLog, e);
 
-        }finally {
+        } finally {
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setS(ResponseCodes.GET_ORDER_STATUS);
             vo.setD(d);
-            walletRequestService.end(walletRequest, httpRequestLog, vo);
+            httpService.end(httpRequestLog, vo);
 
         }
 
@@ -128,18 +107,28 @@ public class GetOrderStatusService {
     }
 
     private void doVerification(GetOrderStatusDto dto, GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidPlayerException,
-            AuthenticationException,
             InvalidRequestException {
-
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getAccount());
 
         // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidRequestException::new);
 
+    }
+
+    private GameSession verifyGameSessionToken(String vendorPlayerUsername, String traceId) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            if (gameSession == null) {
+                throw new AuthenticationException("token expired");
+            }
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
+            //no need game code.
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        //no regenerate game code logic.
+        return gameSession;
     }
 }

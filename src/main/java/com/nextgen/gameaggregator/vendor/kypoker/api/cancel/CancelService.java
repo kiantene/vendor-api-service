@@ -27,7 +27,6 @@ import java.util.Objects;
 public class CancelService {
 
     private final WalletService walletService;
-    private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final HttpService httpService;
@@ -38,7 +37,6 @@ public class CancelService {
 
     public CancelService(
             WalletService walletService,
-            ValidationService validationService,
             GameSessionService gameSessionService,
             VendorService vendorService,
             HttpService httpService,
@@ -48,7 +46,6 @@ public class CancelService {
             RequestIdempotentLogService requestIdempotentLogService) {
 
         this.walletService = walletService;
-        this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
         this.httpService = httpService;
@@ -157,15 +154,7 @@ public class CancelService {
     }
 
     private void doVerification(CancelDto dto, GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidPlayerException,
-            AuthenticationException,
             InvalidRequestException {
-
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getAccount());
 
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");

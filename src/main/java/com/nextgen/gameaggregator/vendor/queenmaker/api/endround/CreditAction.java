@@ -5,10 +5,14 @@ import com.nextgen.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -244,6 +248,11 @@ public class CreditAction {
                     balance = this.getBalance(traceId, gameSession);
                 } else {
                     if (!requireDebit) {
+                        BetResultContextHolder.initialise()
+                                .configure(config -> config.setSettleType(SettleType.ROUND));
+                        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(creditTransactionsDto.getBetStatus().code));
+
                         balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
                     } else {
                         this.checkForDuplicateRequest(creditTransactionsDto);
@@ -254,6 +263,11 @@ public class CreditAction {
                 }
             } else {
                 if (!requireDebit) {
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(creditTransactionsDto.getBetStatus().code));
+                    
                     balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
                 } else {
                     this.checkForDuplicateRequest(creditTransactionsDto);

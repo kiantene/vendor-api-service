@@ -24,7 +24,6 @@ import java.math.BigDecimal;
 @Service
 public class SettleService {
     private final WalletService walletService;
-    private final ValidationService validationService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
     private final OperatorWalletService operatorWalletService;
@@ -36,7 +35,6 @@ public class SettleService {
 
     public SettleService(
             WalletService walletService,
-            ValidationService validationService,
             GameSessionService gameSessionService,
             VendorService vendorService,
             OperatorWalletService operatorWalletService,
@@ -46,7 +44,6 @@ public class SettleService {
             RequestIdempotentLogService requestIdempotentLogService) {
 
         this.walletService = walletService;
-        this.validationService = validationService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
         this.operatorWalletService = operatorWalletService;
@@ -189,15 +186,7 @@ public class SettleService {
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidPlayerException,
-            AuthenticationException,
             InvalidRequestException {
-
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getAccount());
 
         // Verify vendor gameCode, currency and platform
         String[] parts = gameSession.getVendorGameCode().split("_");

@@ -2,10 +2,14 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -195,6 +199,12 @@ public class CreditSlotService {
                         creditSlotTransactionsDto.getJackpotAmount(),
                         true,
                         creditSlotTransactionsDto.getBetStatus());
+
+                BetResultContextHolder.initialise()
+                        .configure(config -> config.setSettleType(SettleType.ROUND));
+                BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(creditSlotTransactionsDto.getBetStatus().code));
+
                 balance = walletService.processBetResult(traceId,
                         gameSession,
                         creditSlotTransactionsDto,
