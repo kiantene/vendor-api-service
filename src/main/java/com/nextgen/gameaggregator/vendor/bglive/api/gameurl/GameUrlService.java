@@ -71,6 +71,7 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
         params.put("sn", snCode);
         params.put("loginId", gameSession.getVendorPlayerUsername());
         params.put("digest", digest);
+        params.put("locale", gameSession.getVendorLanguageCode());
 
         Map<String, Object> formLoginData = new HashMap<>();
         formLoginData.put("id", uuid);

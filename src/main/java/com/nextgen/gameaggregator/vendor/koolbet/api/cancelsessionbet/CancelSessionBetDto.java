@@ -34,12 +34,10 @@ public class CancelSessionBetDto implements RollbackData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 20, fraction = 2)
     private BigDecimal winloseAmount;
 
     @NotNull

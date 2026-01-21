@@ -79,17 +79,17 @@ public class GeneralAction {
             String decryptedBody = VendorService.AESDecrypt(commonDto.getParam(), aesKey, true);
 
             //Check for decryption error
-            if(decryptedBody == null){
+            if (decryptedBody == null) {
                 throw new InvalidRequestException();
             }
 
             //Adding logging readability on open serach
-            httpRequestLog.setRequestBody( "Raw Param : " + body + " Decrypted Param : " + decryptedBody);
+            httpRequestLog.setRequestBody("Raw Param : " + body + " Decrypted Param : " + decryptedBody);
 
             //Md5 Hashing
-            String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent()+commonDto.getTimestamp()+md5Key);
+            String encryptedMd5 = VendorService.MD5Encrypt(commonDto.getAgent() + commonDto.getTimestamp() + md5Key);
 
-            doVerification(commonDto,encryptedMd5);
+            doVerification(commonDto, encryptedMd5);
 
             ActionDto actionDto = HttpService.convertQueryStringToDto(decryptedBody, ActionDto.class);
 
@@ -101,10 +101,10 @@ public class GeneralAction {
 
             vo.setM(EndPoints.API_ENDPOINT);
 
-            vo = this.actionHandling(body, traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
+            vo = this.actionHandling(traceId, httpRequestLog, actionDto, decryptedBody, Long.valueOf(commonDto.getTimestamp()));
 
             //Catch stray error from action services
-            if (vo==null){
+            if (vo == null) {
                 throw new InvalidRequestException();
 
             }
@@ -119,7 +119,7 @@ public class GeneralAction {
             d.setCode(ResponseCodes.INVALID_CREDENTIAL);
             vo.setD(d);
 
-        } catch(InvalidDecryptionException invalidDecryptionException){
+        } catch (InvalidDecryptionException invalidDecryptionException) {
             vo = new CommonVo();
             d.setCode(ResponseCodes.INVALID_DECRYPTION);
             vo.setD(d);
@@ -128,20 +128,19 @@ public class GeneralAction {
             vo = new CommonVo();
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             vo.setD(d);
-        }
-        finally {
+        } finally {
             vo.setM(EndPoints.API_ENDPOINT);
 
         }
         return vo;
     }
 
-    private void doVerification(CommonDto dto,String encryptedMd5)
+    private void doVerification(CommonDto dto, String encryptedMd5)
             throws InvalidRequestException {
         ValidationUtils.isEquals(dto.getKey(), encryptedMd5);
     }
 
-    private CommonVo actionHandling(String body, String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
+    private CommonVo actionHandling(String traceId, HttpRequestLog httpRequestLog, ActionDto actionDto, String decryptedString, Long timeStamp)
             throws AuthenticationException, InvalidRequestException {
         CommonVo vo = new CommonVo();
 
@@ -160,7 +159,7 @@ public class GeneralAction {
                 vo = cancelService.cancel(traceId, httpRequestLog, decryptedString, timeStamp);
                 break;
             case Actions.GET_ORDER_STATUS:
-                vo = getOrderStatusService.getOrderStatus(body, httpRequestLog, decryptedString);
+                vo = getOrderStatusService.getOrderStatus(httpRequestLog, decryptedString);
                 break;
             default:
                 ResponseObjectDto d = new ResponseObjectDto();
