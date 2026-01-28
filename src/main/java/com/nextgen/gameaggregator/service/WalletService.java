@@ -366,64 +366,70 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balanceVo.getData().getBalance());
 
-            loggingService.logStart();
-            // settledBet is modified via applyPayoutCap through walletBetResultData
-            settledBetService.save(settledBet, rawData);
-            loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
-
-            // remap settleBet info before insert into kafka if needed, default will be no changes
-            settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
-
-            // send settled bet to kafka
-            if (FeatureToggle.useRefactoredPublishBetHistory(settledBet.getVendorId())
-                    || vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
-                /**
-                 * Feature toggle to use refactored logic, will affect vendors who are enabled for max payout as well
-                 */
-                doPublishBetHistory(settledBet, vendorService, gameSession, fromVendorConversionRate, httpRequestLog);
-            } else {
-                /**
-                 * @deprecated below logic to be removed, use doPublishBetHistory as the refactored version
-                 */
-                BetHistory betHistory = new BetHistory(settledBet);
-
+            try {
                 loggingService.logStart();
-                if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                // settledBet is modified via applyPayoutCap through walletBetResultData
+                settledBetService.save(settledBet, rawData);
+                loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
+
+                // remap settleBet info before insert into kafka if needed, default will be no changes
+                settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
+
+                // send settled bet to kafka
+                if (FeatureToggle.useRefactoredPublishBetHistory(settledBet.getVendorId())
+                        || vendorFeatureService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, settledBet.getVendorId())) {
                     /**
-                     * Exclude bet history produce logic if vendor is running on new framework
-                     * @see {@link com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper}
+                     * Feature toggle to use refactored logic, will affect vendors who are enabled for max payout as well
                      */
-                    if (!httpRequestLog.isBetHistoryProduceDisabled()) {
-                        kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
-                                gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
-                    }
+                    doPublishBetHistory(settledBet, vendorService, gameSession, fromVendorConversionRate, httpRequestLog);
                 } else {
-                    // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                    kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    /**
+                     * @deprecated below logic to be removed, use doPublishBetHistory as the refactored version
+                     */
+                    BetHistory betHistory = new BetHistory(settledBet);
+
+                    loggingService.logStart();
+                    if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                        /**
+                         * Exclude bet history produce logic if vendor is running on new framework
+                         * @see {@link com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper}
+                         */
+                        if (!httpRequestLog.isBetHistoryProduceDisabled()) {
+                            kafkaService.produceBetHistoryV3(betHistory, gameSession.getProductCode(), gameSession.getProductId(), gameSession.getProductGameId(),
+                                    gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                        }
+                    } else {
+                        // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                        kafkaService.producePreprocessingBetHistory(betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), fromVendorConversionRate);
+                    }
+                    loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
                 }
-                loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
-            }
 
-            // will insert bet info record to this topic for MG
-            if (settledBet.getVendorId().equals(17)) {
-                kafkaService.produceBetTransactionLog(settledBet, betResultData, gameSession.getVendorPlayerUsername());
-            }
+                // will insert bet info record to this topic for MG
+                if (settledBet.getVendorId().equals(17)) {
+                    kafkaService.produceBetTransactionLog(settledBet, betResultData, gameSession.getVendorPlayerUsername());
+                }
 
-            // delete unsettle bet only for vendors that will insert unsettle bet
-            if (resultType == ResultType.WIN || resultType == ResultType.LOSE || resultType == ResultType.END) {
+                // delete unsettle bet only for vendors that will insert unsettle bet
+                if (resultType == ResultType.WIN || resultType == ResultType.LOSE || resultType == ResultType.END) {
+                    loggingService.logStart();
+                    unsettledBetService.delete(unsettledBet);
+                    loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.delete", traceId);
+                }
+
                 loggingService.logStart();
-                unsettledBetService.delete(unsettledBet);
-                loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.delete", traceId);
-            }
+                betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
+                loggingService.logProcessTime("doSettledBetResult ｜ betIdempotentLogService.create", traceId);
 
-            loggingService.logStart();
-            betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
-            loggingService.logProcessTime("doSettledBetResult ｜ betIdempotentLogService.create", traceId);
-
-            if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
-                loggingService.logStart();
-                updateCachingSettledBet = settledBetService.update(operatorStatusSuccess, balanceVo.getData().getBalance(), updateCachingSettledBet);
-                loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.update", traceId);
+                if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
+                    loggingService.logStart();
+                    updateCachingSettledBet = settledBetService.update(operatorStatusSuccess, balanceVo.getData().getBalance(), updateCachingSettledBet);
+                    loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.update", traceId);
+                }
+            } catch (AmbiguousTimeoutException ambiguousTimeoutException) {
+                //any exceptions encounter during upsert to couchbase will only send to dlq topic to record down
+                //then it will not throw any errors to class file, it should consider as success
+                kafkaService.produceSettledBetDlq(settledBet);
             }
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {

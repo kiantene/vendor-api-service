@@ -391,6 +391,16 @@ public class KafkaService {
         }
     }
 
+    public void produceSettledBetDlq(SettledBet settledBet) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_SETTLED_BET_DLQ, settledBet.getRoundId(), settledBet);
+
+        } catch (Exception e) {
+            log.error("produceSettledBetDlq failed : " + e.getMessage() + " -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
     public void produceBetTransactionHistory(BetTransactionHistory betTransactionHistory) {
         try {
             String json = OBJECT_MAPPER.writeValueAsString(betTransactionHistory);

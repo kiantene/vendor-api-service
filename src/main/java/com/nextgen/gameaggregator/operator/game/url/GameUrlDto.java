@@ -11,9 +11,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameUrlDto {
 
-    @NotBlank(message = "UUID format only")
-    @Size(min = 36, max = 36, message = "UUID format only")
-    @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
+    @NotBlank(message = "traceId cannot be blank")
     private String traceId;
 
 
