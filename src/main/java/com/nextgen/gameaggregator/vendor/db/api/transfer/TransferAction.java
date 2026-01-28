@@ -92,7 +92,10 @@ public class TransferAction {
 
             // using vendor player username to find gameSession details
             try {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(transferDto.getMemberId());
+                if (gameSession == null) {
+                    throw new AuthenticationException();
+                }
                 gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(transferDto.getGameId(), gameSession);
             } catch (AuthenticationException authenticationException) {
                 //add regenerate token on settle only
@@ -131,9 +134,17 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_GAME_ID);
 
-        } catch (InsufficientBalanceException e) {
+        } catch (InsufficientBalanceException | AuthenticationException e) {
+            //GA-13007 remap authentication exception to response 10002 code to vendor.
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+
+        } catch (BetResultIdempotentViolationException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setResponseCode(ResponseCodes.SUCCESS);
+            transferDataVo.setBalance(e.getBalance().toBigInteger());
+            transferDataVo.setTradeType(transferDto.getTradeType());
+            transferDataVo.setTradeAmount(transferDto.getTradeAmount().toBigInteger());
 
         } catch (BetNotFoundException e) {
             httpService.logError(httpRequestLog, e);
@@ -144,7 +155,7 @@ public class TransferAction {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
 
-        } catch (InvalidSignatureException | AuthenticationException exception) {
+        } catch (InvalidSignatureException exception) {
             httpService.logError(httpRequestLog, exception);
             vo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
 

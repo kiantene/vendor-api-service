@@ -1,9 +1,13 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -109,7 +113,15 @@ public class CashTransferInOutAction {
             // 4. Process full bet data
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
 
-            // 5. check is settledBet is exists
+            // 5. Is End Round then set config to send topic round ended info
+            if (dto.isEndRound() == 1) {
+                BetResultContextHolder.initialise()
+                        .configure(config -> config.setSettleType(SettleType.ROUND));
+                BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(dto.getBetStatus().code));
+            }
+
+            // 6. check is settledBet is exists
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
             parentResponseVo.setData(responseVo);
             responseVo.setBalanceAmount(balance);

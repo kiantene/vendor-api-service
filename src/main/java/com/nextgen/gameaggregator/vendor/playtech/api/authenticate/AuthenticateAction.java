@@ -73,7 +73,7 @@ public class AuthenticateAction {
             authenticateVo.setUsername(commonDto.getUserName());
             authenticateVo.setPermanentExternalToken(commonDto.getExternalToken());
             authenticateVo.setCountryCode(countryCode);
-            authenticateVo.setCurrencyCode(gameSession.getCurrencyCode());
+            authenticateVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
 
         } catch (InvalidPlayerException e) {
             authenticateVo.setError(ErrorVo.from(ResponseCodes.ERR_PLAYER_NOT_FOUND));

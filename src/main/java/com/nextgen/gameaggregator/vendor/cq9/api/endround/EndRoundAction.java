@@ -2,8 +2,12 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -96,6 +100,12 @@ public class EndRoundAction {
             // 6. Process result settle data
             ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
             ProcessEndRoundDto processEndRoundDto = convertEndRoundDtoToProcessEndRoundDto(endRoundDto);
+
+            BetResultContextHolder.initialise()
+                    .configure(config -> config.setSettleType(SettleType.ROUND));
+            BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+            betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(processEndRoundDto.getBetStatus().code));
+
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, processEndRoundDto, resultType, vendorService, httpRequestLog);
 
             // Construct VO data

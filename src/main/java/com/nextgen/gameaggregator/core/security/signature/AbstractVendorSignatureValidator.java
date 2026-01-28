@@ -59,6 +59,11 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
         return getCredentialValueByUsername(username, credentialName);
     }
 
+    protected String getCredentialValueByToken(String token, String credentialName) {
+        GameSession gameSession = getGameSessionByToken(token);
+        return getCredentialValueByUsername(gameSession.getVendorPlayerUsername(), credentialName);
+    }
+
     protected String getCredentialValueByUsername(String username, String credentialName) {
         Integer vendorLineId = null;
         try {

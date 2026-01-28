@@ -35,7 +35,6 @@ public class KafkaConstant {
     public static final String TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET = "topic_patching_sport_unsettled_bet_to_refund_bet";
     public static final String TOPIC_PATCHING_SPORT_UNSETTLED_BET_TO_REFUND_BET_DLQ = "topic_patching_sport_unsettled_bet_to_refund_bet_DLQ";
 
+    public static final String TOPIC_SETTLED_BET_DLQ = "topic_settled_bet_dlq";
     public static final String TOPIC_PROCESS_ROUND_ENDED = "topic_process_round_ended";
-
-
 }
