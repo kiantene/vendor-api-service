@@ -40,7 +40,7 @@
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
-        <ga-core.version>1.0.41</ga-core.version>
+        <ga-core.version>1.0.42.1-SNAPSHOT</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
         <nextgen-core.version>1.0.44</nextgen-core.version>
     </properties>
