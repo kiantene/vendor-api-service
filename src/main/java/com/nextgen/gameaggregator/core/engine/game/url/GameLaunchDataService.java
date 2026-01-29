@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.core.engine.game.url;
 
 import com.nextgen.gameaggregator.core.entity.GameSubcategory;
 import com.nextgen.gameaggregator.core.entity.VendorGame;
-import com.nextgen.gameaggregator.core.service.GameSubcategoryCacheService;
-import com.nextgen.gameaggregator.core.service.VendorGameCacheService;
+import com.nextgen.gameaggregator.core.service.GameSubcategoryDataService;
+import com.nextgen.gameaggregator.core.service.VendorGameDataService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class GameLaunchDataService {
 
-    private final VendorGameCacheService vendorGameCacheService;
-    private final GameSubcategoryCacheService gameSubcategoryCacheService;
+    private final VendorGameDataService vendorGameDataService;
+    private final GameSubcategoryDataService gameSubcategoryDataService;
 
     public String getBackfacingGameSubcategoryByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
-        VendorGame vendorGame = vendorGameCacheService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+        VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
 
-        GameSubcategory subcategory = gameSubcategoryCacheService.getById(vendorGame.getBackfacingGameSubCategoryId());
+        GameSubcategory subcategory = gameSubcategoryDataService.get(vendorGame.getBackfacingGameSubCategoryId());
 
         return subcategory == null ? "" : subcategory.getName();
     }
