@@ -19,7 +19,7 @@ public class FaChaiExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        return getErrorResponse(ResponseCodes.UNEXPECTED_ERROR); // TODO: change to duplicate transaction id 205?
+        return getErrorResponse(ResponseCodes.SUCCESS);
     }
 
     @Override

@@ -3,10 +3,13 @@ package com.nextgen.gameaggregator.vendor.facai.api.promo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PayoutTransaction;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContextMapper;
 import com.nextgen.gameaggregator.enums.PromoType;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoPayoutRequest> {
@@ -15,7 +18,6 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
     @Override
     public PromoPayoutContext toInternal(PromoPayoutRequest vendorRequest) {
         PromoPayoutContext context = PromoPayoutContext.builder()
-                .idempotencyKey(vendorRequest.getSign())
                 .vendorCurrency(vendorRequest.getCurrency())
                 .promoType(PromoType.FREE_ROUND)
                 .build();
@@ -25,9 +27,16 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
         context.setPayoutTransactions(payoutTransactions);
         context.setVendorTransactionTime(list.getTimestamp());
 
-        if (!payoutTransactions.isEmpty()) {
-            context.setVendorCampaignCode(payoutTransactions.get(0).getVendorCampaignCode());
+        if (payoutTransactions.size() != 1) {
+            if (payoutTransactions.isEmpty()) {
+                return context;
+            }
+            throw new InvalidRequestException("expected exactly 1 payout transaction, but got " + payoutTransactions.size());
         }
+
+        PayoutTransaction tx = payoutTransactions.get(0);
+        context.setVendorCampaignCode(tx.getVendorCampaignCode());
+        context.setIdempotencyKey(tx.getVendorTransactionId());
 
         return context;
     }
@@ -39,4 +48,5 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
             throw new InvalidRequestException("cannot deserialize list: " + json);
         }
     }
+
 }

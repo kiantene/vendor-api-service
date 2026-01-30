@@ -23,11 +23,7 @@ public class FreeRoundPayoutRequest {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String userId;
 
-
-    // Id of the round.
-    @NotBlank
-    @Size(max = 100)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    // Id of the round. (optional)
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
