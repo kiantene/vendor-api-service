@@ -11,9 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -113,7 +111,7 @@ public class VendorConfigService extends AbstractVendorConfigService {
     public boolean isWalletServiceLegacyEnabled(String className) {
         Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
 
-        return config.isPresent() && config.get().isWalletServiceLegacyEnabled();
+        return !config.isPresent() || config.get().isWalletServiceLegacyEnabled();
     }
 
     public Optional<VendorIntegrationConfig> getVendorIntegrationConfig(String className) {

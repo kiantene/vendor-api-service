@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -73,7 +77,7 @@ public class SessionBetAction {
                 gameSession.setToken(sessionBetDto.getToken());
                 gameSession.setVendorToken(sessionBetDto.getToken());
             }
-            
+
             // 3. Verify request parameters
             this.doVerification(sessionBetDto, gameSession);
 
@@ -88,6 +92,11 @@ public class SessionBetAction {
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
                     // Get result type
                     ResultType resultType = this.getResultType(sessionBetDto);
+
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(sessionBetDto.getBetStatus().code));
 
                     // Process bet
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, resultType, vendorService, httpRequestLog);

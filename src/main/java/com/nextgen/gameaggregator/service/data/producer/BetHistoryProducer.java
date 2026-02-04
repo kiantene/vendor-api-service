@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.core.entity.VendorCurrency;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
@@ -100,17 +101,19 @@ public class BetHistoryProducer {
         publish(betHistory);
     }
 
-    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
+    /**
+     *
+     * @param betResultContext
+     * @param round
+     * @param resultTxn Final/Current Result Transaction
+     * @param betTxn First Successful Bet Transaction
+     */
+    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction resultTxn, RoundTxn betTxn) {
         BetHistoryContext context = BetHistoryContext.of(betResultContext);
-        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
+        // GaBetId to use First Successful Bet GA Bet Id
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, betTxn.getGaBetId(), resultTxn.getTransactionId());
 
-        Integer vendorId = context.getVendorId();
-        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
-        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
-        Vendor vendor = vendorDataService.get(vendorId);
-        VendorCurrency vendorCurrency = vendorCurrencyService.getByVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
-
-        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
 
         TxnAmounts txnAmounts = TxnAmounts.of(round, vendorCurrency.getFromVendorRate());
 
@@ -118,9 +121,9 @@ public class BetHistoryProducer {
                 betHistory,
                 round,
                 txnAmounts,
-                txn.getVendorBetId(),
-                txn.getBetTime(),
-                txn.getSettleTime()
+                betTxn.getVendorBetId(), // To return First Successful Bet ID
+                resultTxn.getBetTime(), // To return First Successful Bet Time
+                resultTxn.getSettleTime()
         );
 
         publish(betHistory);
@@ -156,6 +159,57 @@ public class BetHistoryProducer {
         }
 
         publish(betHistory);
+    }
+
+    public void publishBetHistoryForResult(BetResultContext betResultContext, GameRound round, GameTransaction betTxn, GameTransaction resultTxn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, betTxn.getGaBetId(), resultTxn.getTransactionId());
+
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
+
+        TxnAmounts txnAmounts = TxnAmounts.of(betTxn, resultTxn, vendorCurrency.getFromVendorRate());
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                betTxn.getVendorBetId(),
+                betTxn.getBetTime(),
+                resultTxn.getSettleTime()
+        );
+
+        publish(betHistory);
+    }
+
+    public void publishBetHistoryForBetAndResult(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
+
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
+
+        TxnAmounts txnAmounts = TxnAmounts.of(txn, vendorCurrency.getFromVendorRate());
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                txn.getVendorBetId(),
+                txn.getBetTime(),
+                txn.getSettleTime()
+        );
+
+        publish(betHistory);
+    }
+
+    private VendorCurrency mapReferenceFields(GameRound round, BetHistoryContext context, BetHistoryV3 betHistory) {
+        Integer vendorId = context.getVendorId();
+        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
+        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
+        Vendor vendor = vendorDataService.get(vendorId);
+        VendorCurrency vendorCurrency = vendorCurrencyService.getByVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
+
+        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+        return vendorCurrency;
     }
 
     private PlayerUsernames getUsernamesIfNull(BetHistoryPublishContext context,

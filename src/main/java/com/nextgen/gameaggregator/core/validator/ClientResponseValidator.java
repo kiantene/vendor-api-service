@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,9 @@ public class ClientResponseValidator {
         }
 
         // TODO: check eligible statuses
+        if (ResponseCodes.Status.isInsufficientFunds(response.getStatus())) {
+            throw new InsufficientBalanceException(context, "Insufficient Balance");
+        }
 
         PlayerBalanceData data = response.getData();
         if (data == null) {

@@ -28,6 +28,17 @@ public class PlayerBalanceData {
         );
     }
 
+    public static PlayerBalanceData getDefaultWithBalance(String username, String currency, BigDecimal balance) {
+        currency = Optional.ofNullable(currency).orElse("");
+
+        return new PlayerBalanceData(
+                username,
+                currency,
+                balance,
+                System.currentTimeMillis()
+        );
+    }
+
     public PlayerBalanceData toVendorView(String username, String currency, BigDecimal toVendorRate) {
         return new PlayerBalanceData(
                 username,

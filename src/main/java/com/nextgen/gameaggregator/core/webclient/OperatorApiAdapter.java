@@ -4,11 +4,19 @@ import com.nextgen.core.api.ApiResult;
 import com.nextgen.core.api.BlockingApiAdapter;
 import com.nextgen.gameaggregator.core.common.ClientRequestService;
 import com.nextgen.gameaggregator.core.common.OperatorLoggingApiAdapterLifecycle;
+import com.nextgen.gameaggregator.core.common.OperatorRequestObject;
+import com.nextgen.gameaggregator.core.context.VendorAwareContext;
+import com.nextgen.gameaggregator.core.engine.operator.OperatorApiContext;
+import com.nextgen.gameaggregator.core.engine.operator.OperatorScenario;
+import com.nextgen.gameaggregator.core.vendor.config.VendorIntegrationConfig;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultDto;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class OperatorApiAdapter extends BlockingApiAdapter<OperatorApiRequest, ApiResult> {

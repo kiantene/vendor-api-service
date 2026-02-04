@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -70,6 +74,14 @@ public class BetAction {
             // 3. Process bet data
             // 4. Process win data
             ResultType resultType = getResultType(betDto);
+
+            if (betDto.getBetStatus().equals(BetStatus.SETTLED)) {
+                BetResultContextHolder.initialise()
+                        .configure(config -> config.setSettleType(SettleType.ROUND));
+                BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+            }
+
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
 
             betVo.setUsername(vendorPlayerUsername);

@@ -69,6 +69,10 @@ public class ResponseCodes {
             return status;
         }
 
+        public static boolean isInsufficientFunds(String status) {
+            return status.equals(SC_INSUFFICIENT_FUNDS.name());
+        }
+
     }
 
 }

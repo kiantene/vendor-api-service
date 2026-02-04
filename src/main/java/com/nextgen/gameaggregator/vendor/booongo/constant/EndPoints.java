@@ -7,4 +7,6 @@ public class EndPoints {
 
     // API url call from vendor
     public static final String ACTION = "/action";
+    public static final String LOBBY_PAGE = "/lobby.html";
+    public static final String GAME_PAGE = "/game.html";
 }

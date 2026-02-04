@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
-
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 
@@ -27,4 +26,5 @@ public class WalletBetResultDto {
     private String gameCode;
     private Long betTime;
     private Long settledTime;
+
 }

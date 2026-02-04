@@ -21,7 +21,7 @@ public abstract class AbstractVendorConfig implements VendorIntegrationConfig {
      */
     private int timeoutInMillis = DEFAULT_TIMEOUT;
     private boolean transactionHistoryEnabled = false;
-    private boolean walletServiceLegacyEnabled = false;
+    private boolean walletServiceLegacyEnabled = true;
     private boolean callbackRoutingEnabled = false;
 
     /**
