@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
@@ -37,7 +38,10 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         }
 
         // populateLogContext must be run in doEnrich so that context object will contain all required fields
-        LogContextService.populateLogContext(LogContextHolder.get(), context);
+        LogContext logContext = LogContextHolder.get();
+        LogContextService.populateLogContext(logContext, context);
+
+        context.setTraceId(logContext.getTraceId());
     }
 
     public void enrichByGameSession(BetResultContext context, GameSession gameSession, BetResultConfig config) {

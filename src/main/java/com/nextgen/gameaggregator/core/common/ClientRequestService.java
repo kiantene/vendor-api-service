@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.core.common;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.context.OperatorRequestContext;
+import com.nextgen.gameaggregator.core.engine.operator.OperatorScenario;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.core.exception.InternalValidationException;
@@ -69,6 +71,28 @@ public class ClientRequestService {
                 .body(requestObject)
                 .headers(getHeaders(credential, requestObject))
                 .transactionTime(transactionTime)
+                .build();
+    }
+
+    public OperatorApiRequest createOperatorApiRequest(OperatorRequestContext<OperatorRequestObject, OperatorScenario> context) {
+        Integer agentId = context.round().getAgentMeta().getAgentId();
+
+        validateInputs(agentId, context.endpoint(), context.request());
+        validateRequestObject(context.request());
+
+        AgentApiCredential credential = loadCredential(agentId);
+
+        return OperatorApiRequest.builder()
+                .traceId(context.request().getTraceId())
+                .agentId(agentId)
+                .agentPlayerUsername(context.request().getUsername())
+                .method(HttpMethod.POST)
+                .baseUrl(credential.getCallbackUrl())
+                .path(context.endpoint())
+                .body(context.request())
+                .headers(getHeaders(credential, context.request()))
+                .transactionTime(context.request().getTimestamp())
+                .timeout(context.timeoutInMillis())
                 .build();
     }
 

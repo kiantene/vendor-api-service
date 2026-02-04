@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
@@ -39,6 +36,7 @@ public class CancelBetAction {
     private final VendorLineService vendorLineService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final TempIdempotencyService tempIdempotencyService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancelbet(HttpServletRequest request) {
@@ -52,6 +50,7 @@ public class CancelBetAction {
         // using for check the operatorStatus of transaction through the couchbase
         SettledBet settledBet = null;
         GameSession gameSession;
+        String idempotencyKey = null;
 
         try {
             //Retrieve request body in original string format
@@ -73,6 +72,7 @@ public class CancelBetAction {
 
             //map decrypted data(string json) into cancelBetDto
             CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
+            idempotencyKey = cancelbetDto.getRollbackId();
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(cancelbetDto);
@@ -93,7 +93,10 @@ public class CancelBetAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+
+            boolean isMaxCount = tempIdempotencyService.isIdempotencyMaxCount(idempotencyKey);
+            commonVo.setErrorResponseCode((isMaxCount)?ResponseCodes.TRANSACTION_NOT_EXIST:ResponseCodes.UNEXPECTED_ERROR);
+
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (RecordNotFoundException recordNotFoundException) {

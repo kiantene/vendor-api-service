@@ -150,6 +150,7 @@ public class RollbackService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(rollbackDto.getGame_id(), gameSession);
         } catch (AuthenticationException authenticationException) {
             if ((rollbackDto.getArgs() != null &&
                     rollbackDto.getArgs().getPlayer() != null &&

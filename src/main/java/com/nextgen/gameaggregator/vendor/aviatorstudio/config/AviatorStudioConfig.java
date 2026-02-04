@@ -14,5 +14,7 @@ public class AviatorStudioConfig extends AbstractVendorConfig {
     @Override
     protected void overrideDefaults() {
         setTimeoutInMillis(2000);
+//        setWalletServiceLegacyEnabled(false);
     }
+
 }

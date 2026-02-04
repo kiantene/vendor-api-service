@@ -39,6 +39,24 @@ public class TxnAmounts extends TxnAmount {
         );
     }
 
+    public static TxnAmounts of(GameTransaction betTxn, GameTransaction resultTxn, BigDecimal fromVendorRate) {
+        return new TxnAmounts(
+                betTxn.getBetAmount(),
+                resultTxn.getWinAmount(),
+                resultTxn.getJackpotAmount(),
+                fromVendorRate
+        );
+    }
+
+    public static TxnAmounts of(GameRound round, GameTransaction resultTxn, BigDecimal fromVendorRate) {
+        return new TxnAmounts(
+                round.getBetAmount(),
+                round.getWinAmount().add(resultTxn.getWinAmount()),
+                round.getJackpotAmount().add(resultTxn.getJackpotAmount() == null ? BigDecimal.ZERO : round.getJackpotAmount()),
+                fromVendorRate
+        );
+    }
+
     public BigDecimal getBet() {
         return safeMultiply(bet, denominationRate);  // 1,000,000 × 0.001 = 1,000
     }

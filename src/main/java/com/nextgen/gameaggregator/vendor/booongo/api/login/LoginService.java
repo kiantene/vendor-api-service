@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
@@ -34,6 +35,8 @@ public class LoginService {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo login(HttpRequestLog httpRequestLog, String traceId) {
 
@@ -55,6 +58,7 @@ public class LoginService {
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(loginDto.getGame_id(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(loginDto, gameSession);

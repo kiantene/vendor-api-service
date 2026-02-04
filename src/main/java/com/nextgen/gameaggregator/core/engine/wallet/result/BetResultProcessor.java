@@ -1,7 +1,12 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.gameaggregator.core.context.OperatorRequestContext;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.operator.*;
+import com.nextgen.gameaggregator.core.engine.operator.wallet.result.*;
+import com.nextgen.gameaggregator.core.engine.wallet.BetResultDataMapper;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.core.service.WalletLegacyService;
 import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -10,6 +15,7 @@ import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
@@ -35,6 +41,12 @@ class BetResultProcessor {
     private final VendorConfigService vendorConfigService;
     private final BetTransactionHistoryProducer betTransactionHistoryProducer;
     private final BetResultLifeCycleRegistry lifeCycleRegistry;
+    private final WalletLegacyService walletLegacyService;
+    private final OperatorApiService operatorApiService;
+    private final SettleByBetOperatorBetRequestMapper settleByBetOperatorBetRequestMapper;
+    private final SettleByRoundOperatorBetResultRequestMapper settleByRoundOperatorBetResultRequestMapper;
+    private final BetAndResultOperatorBetResultRequestMapper betAndResultOperatorBetResultRequestMapper;
+    private final BetResultOperatorWalletAdapter betResultOperatorWalletAdapter;
 
     public PlayerBalanceData processResultTransaction(
             BetResultContext context,
@@ -65,8 +77,65 @@ class BetResultProcessor {
             return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
         }
 
+        Optional<RoundTxn> betTxn = onBeforeSendResult(context, gameSession, resultTxn, httpRequestLog, config, round);
+
+        GameTransaction betFullTxn = null;
+        PlayerBalanceData balanceData = null;
+        if (vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {// || config.isSettledByRound()) {
+
+            balanceData = walletLegacyService.processResult(httpRequestLog, gameSession, state, resultType, resultTxn);
+
+            resultTxn.setGaBetId(httpRequestLog.getGaBetId());
+        } else {
+            /**
+             * Bet Txn is Always Present for SettleByBet if not BetNotFoundException would have been thrown earlier
+             */
+            betFullTxn = gameTransactionService.getOrThrow(betTxn.get().getId());
+            if (config.isSettledByRound()) {
+                if (context.isRoundEnded()) {
+                    SettleByRoundScenario scenario = new SettleByRoundScenario(resultType, betFullTxn);
+
+                    OperatorBetResultRequest operatorRequest =
+                            settleByRoundOperatorBetResultRequestMapper.toOperatorRequest(
+                                    OperatorApiContext.of(context, round, resultTxn),
+                                    scenario
+                            );
+
+                    // Will Send 1 Final Result to Operator when Round is Ended
+                    balanceData = callToOperator(context, round, resultTxn, operatorRequest, scenario);
+                } else {
+                    // Return LastKnown Balance from GameRound? Or should we do GetBalance from Operator?
+                    balanceData = PlayerBalanceData.getDefaultWithBalance(context.getVendorPlayerUsername(), context.getVendorCurrency(), round.getLastBalance());
+                }
+            } else {
+                SettleByBetScenario scenario = new SettleByBetScenario(resultType, betFullTxn);
+
+                OperatorBetResultRequest operatorRequest = settleByBetOperatorBetRequestMapper.toOperatorRequest(
+                        OperatorApiContext.of(context, round, resultTxn),
+                        scenario
+                );
+
+                balanceData = callToOperator(context, round, resultTxn, operatorRequest, scenario);
+            }
+
+            resultTxn.setGaBetId(betFullTxn.getGaBetId());
+        }
+
+        onAfterSendResult(context, resultTxn, betFullTxn, round, balanceData, config);
+
+        return balanceData;
+    }
+
+    private Optional<RoundTxn> onBeforeSendResult(
+            BetResultContext context,
+            GameSession gameSession,
+            GameTransaction resultTxn,
+            HttpRequestLog httpRequestLog,
+            BetResultConfig config,
+            GameRound round) {
+
         // To settle the unsettled bet
-        doSettlement(config, context, round, resultTxn);
+        Optional<RoundTxn> betTxn = doSettlement(config, context, round, resultTxn);
 
         /**
          * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
@@ -89,27 +158,31 @@ class BetResultProcessor {
             betTransactionHistoryProducer.publishTransactionHistoryForResult(context, round, resultTxn);
         }
 
-        BigDecimal balance = walletService.processBetResult(
-                httpRequestLog.getId(),
-                gameSession,
-                betResultDataMapper.toBetResultData(context),
-                resultType,
-                state.getVendorService(),
-                httpRequestLog
-        );
-        resultTxn.setGaBetId(httpRequestLog.getGaBetId());
-        GameRound updatedRound = gameTransactionService.markSuccess(round, resultTxn, balance, context.isRoundEnded());
+        return betTxn;
+    }
+
+    private void onAfterSendResult(BetResultContext context, GameTransaction resultTxn, GameTransaction betFullTxn, GameRound round, PlayerBalanceData balanceData, BetResultConfig config) {
+        GameRound updatedRound = gameTransactionService.markSuccess(round, resultTxn, balanceData.getBalance(), context.isRoundEnded());
 
         if (config.isSettledByRound() && context.isRoundEnded()) {
-            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn);
-        }
+            /**
+             * TODO: Remove the Null Check when Wallet Legacy is Removed
+             * betFullTxn == null for Wallet Legacy
+             */
+            RoundTxn betTxn = null;
+            if (betFullTxn == null) {
+                betTxn = findFirstValidBet(round);
+            }
 
-        return new PlayerBalanceData(
-                context.getVendorPlayerUsername(),
-                context.getVendorCurrency(),
-                balance,
-                httpRequestLog.getOperatorEnd()
-        );
+            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn == null ? betTxn : betFullTxn);
+
+        } else if (config.isSettledByBet() && betFullTxn != null) {
+            /**
+             * TODO: Remove the Null Check when Wallet Legacy is Removed
+             * betFullTxn == null for Wallet Legacy
+             */
+            betHistoryProducer.publishBetHistoryForResult(context, round, betFullTxn, resultTxn);
+        }
     }
 
     public PlayerBalanceData processBetAndResultTransaction(
@@ -125,41 +198,77 @@ class BetResultProcessor {
             InvalidOperatorResponseException, InternalServerTimeoutRetryException,
             com.nextgen.gameaggregator.exception.BetNotFoundException {
 
-        GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
+        GameRound round = onBeforeSendBetAndResult(context, gameSession, txn);
 
-        BigDecimal balance = walletService.processBetResult(
-                httpRequestLog.getId(),
-                gameSession,
-                betResultDataMapper.toBetResultData(context),
-                resultType,
-                state.getVendorService(),
-                httpRequestLog
-        );
-        txn.setGaBetId(httpRequestLog.getGaBetId());
-        gameTransactionService.markSuccess(round, txn, balance, context.isRoundEnded());
+        // TODO: Verify when we migrate an existing BetAndResult Vendor
+        if (vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
+            BigDecimal balance = walletService.processBetResult(
+                    httpRequestLog.getId(),
+                    gameSession,
+                    betResultDataMapper.toBetResultData(context),
+                    resultType,
+                    state.getVendorService(),
+                    httpRequestLog
+            );
+            txn.setGaBetId(httpRequestLog.getGaBetId());
+            gameTransactionService.markSuccess(round, txn, balance, context.isRoundEnded());
+
+            return new PlayerBalanceData(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency(),
+                    balance,
+                    httpRequestLog.getOperatorEnd()
+            );
+        } else {
+            BetAndResultScenario scenario = new BetAndResultScenario(resultType);
+
+            OperatorBetResultRequest operatorRequest = betAndResultOperatorBetResultRequestMapper.toOperatorRequest(
+                    OperatorApiContext.of(context, round, txn),
+                    new BetAndResultScenario(resultType)
+            );
+
+            PlayerBalanceData balanceData = callToOperator(context, round, txn, operatorRequest, scenario);
+
+            onAfterSendBetAndResult(context, txn, round, balanceData);
+
+            return balanceData;
+        }
+    }
+
+    private GameRound onBeforeSendBetAndResult(BetResultContext context, GameSession gameSession, GameTransaction txn) {
+        GameRound round = gameTransactionService.markSent(txn, AgentMeta.of(context, gameSession.getToken()));
+        return round;
+    }
+
+    private void onAfterSendBetAndResult(BetResultContext context, GameTransaction txn, GameRound round, PlayerBalanceData balanceData) {
+        gameTransactionService.markSuccess(round, txn, balanceData.getBalance(), context.isRoundEnded());
+
+        // Legacy Wallet Service would have already send the Bet History
+        if (!vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
+            betHistoryProducer.publishBetHistoryForBetAndResult(context, round, txn);
+        }
 
         // Send Kafka
         if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
             betTransactionHistoryProducer.publishTransactionHistoryForBetAndResult(context, round, txn);
         }
-
-        return new PlayerBalanceData(
-                context.getVendorPlayerUsername(),
-                context.getVendorCurrency(),
-                balance,
-                httpRequestLog.getOperatorEnd()
-        );
     }
 
-    private void doSettlement(BetResultConfig config, BetResultContext context, GameRound round, GameTransaction resultTxn) {
+    private Optional<RoundTxn> doSettlement(BetResultConfig config, BetResultContext context, GameRound round, GameTransaction resultTxn) {
         if (config.isSettledByBet()) {
-            settleSpecificBet(round, resultTxn);
+            return Optional.of(settleSpecificBet(round, resultTxn));
         } else if (context.isRoundEnded()) {
             settleAllUnsettledBets(round, resultTxn);
         }
+
+        if (config.isSettledByRound()) {
+            return Optional.of(findFirstValidBet(round));
+        } else {
+            return Optional.empty();
+        }
     }
 
-    private void settleSpecificBet(GameRound round, GameTransaction resultTxn) {
+    private RoundTxn settleSpecificBet(GameRound round, GameTransaction resultTxn) {
         var betTxn = findUnsettledBet(round, resultTxn.getVendorBetId())
                 .orElseThrow(() -> new BetNotFoundException(
                         round.getId() + " : " + resultTxn.getVendorBetId() + " cannot find unsettled bet"));
@@ -169,6 +278,8 @@ class BetResultProcessor {
         if (betTxn.hasAliasTxn(round.getClassName())) {
             gameTransactionService.markSettled(betTxn.getRollbackId(round.getClassName()), resultTxn.getSettleTime());
         }
+
+        return betTxn;
     }
 
     private void settleAllUnsettledBets(GameRound round, GameTransaction resultTxn) {
@@ -186,5 +297,34 @@ class BetResultProcessor {
         return round.getTransactions().stream()
                 .filter(RoundTxn::isUnsettled)
                 .filter(RoundTxn::isSuccessfulBet);
+    }
+
+    private RoundTxn findFirstValidBet(GameRound round) {
+        return round.getTransactions().stream()
+                .filter(RoundTxn::isSuccessfulBet)
+                .filter(t -> !t.isRefunded())
+                .findFirst()
+                .orElseThrow(() -> new BetNotFoundException(
+                        round.getId() + " cannot find valid bet"));
+    }
+
+    private PlayerBalanceData callToOperator(BetResultContext context, GameRound round, GameTransaction txn, OperatorBetResultRequest operatorRequest, OperatorScenario scenario) {
+        PlayerBalanceData balanceData = operatorApiService.execute(
+                betResultOperatorWalletAdapter,
+                new OperatorRequestContext<>(
+                        operatorRequest,
+                        vendorConfigService.getTimeoutInMillis(context.getVendorClassName()),
+                        EndPoints.WALLET_BET_RESULT,
+                        round,
+                        txn,
+                        scenario),
+                context
+        );
+
+        return balanceData.toVendorView(
+                round.getUsername(),
+                round.getCurrency(),
+                context.getToVendorRate()
+        );
     }
 }

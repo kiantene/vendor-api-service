@@ -81,7 +81,7 @@ public class TransactionService {
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | DisabledGameException e) {
             httpService.logError(httpRequestLog, e);
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_LOGOUT);
             vo.setError(errorVo);
@@ -200,6 +200,7 @@ public class TransactionService {
         GameSession gameSession;
         try {
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(transactionDto.getGame_id(), gameSession);
         } catch (AuthenticationException authenticationException) {
 
             if ((transactionDto.getArgs() != null &&
