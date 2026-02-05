@@ -122,7 +122,7 @@ public class CachingService {
         return rawBetIdempotentLog;
     }
 
-    @Cacheable(value = "TempIdempotency", key = "#tempIdempotency.idempotencyKey", cacheManager = "cacheManager", unless = "#result == null")
+    @Cacheable(value = "TempIdempotency", key = "#key", cacheManager = "cacheManager", unless = "#result == null")
     public TempIdempotency get(String key) {
         return null;
     }
@@ -132,6 +132,6 @@ public class CachingService {
         return tempIdempotency;
     }
 
-    @CacheEvict(value = "TempIdempotency", key = "#tempIdempotency.idempotencyKey", cacheManager = "cacheManager")
+    @CacheEvict(value = "TempIdempotency", key = "#key", cacheManager = "cacheManager")
     public void evict(String key) {}
 }

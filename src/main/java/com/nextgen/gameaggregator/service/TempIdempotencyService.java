@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class TempIdempotencyService {
 
-    private static final int MAX_COUNT = 3;
+    private static final int MAX_COUNT = 2;
     private final CachingService cachingService;
 
     public TempIdempotencyService(CachingService cachingService) {
