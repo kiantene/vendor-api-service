@@ -14,7 +14,7 @@ public class EndPoints {
     public static final String CANCEL_BET = "/cancelbet";
 
     // API url call to vendor
-    public static final String GAME_URL = "/Login";
+    public static final String GAME_URL = "/LoginHtml";
 
     public static final String BET_DETAIL_URL = "/GetPlayerReport";
 
