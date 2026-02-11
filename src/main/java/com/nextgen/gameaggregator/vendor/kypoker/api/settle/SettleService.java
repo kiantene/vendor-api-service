@@ -66,7 +66,7 @@ public class SettleService {
         Boolean isRequestExists = false;
 
         try {
-            // Convert original request body into dto
+            // Convert the original request body into dto
             settleDto = HttpService.convertQueryStringToDtoUrlDecode(decryptedParam, SettleDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
@@ -110,12 +110,16 @@ public class SettleService {
                 case MATCHING:
                 case FISHING:
                     walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(
-                            settleDto.getGameNo(), settleDto.getAccount());
+                            settleDto.getGameNo(), settleDto.getAccount()
+                    );
 
                     if (walletTransaction != null) {
                         WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-                        vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession);
+                        BigDecimal debitAmount = walletTransaction.getTransferAmount();
+
+                        vendorService.dataCreditMapper(currentWalletRequest, settleDto, gameSession, debitAmount);
                         walletRequest = operatorWalletService.betCredit(currentWalletRequest);
+
                         d.setMoney(walletRequest.getBalanceAfter());
 
                     } else {

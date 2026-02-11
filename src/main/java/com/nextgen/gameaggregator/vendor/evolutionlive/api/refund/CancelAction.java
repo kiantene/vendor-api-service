@@ -125,7 +125,7 @@ public class CancelAction {
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
             if (!isRequestExists) {

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.wallet.balance.BalanceProcessor;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -18,6 +19,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private final DuplicateRequestGuard guard;
     private final PromoPayoutContextEnricher enricher;
     private final PromoPayoutProcessor processor;
+    private final BalanceProcessor balanceProcessor;
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
@@ -26,14 +28,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         try {
             guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
 
-            if (!hasPayout(context)) { // if no payout amount, then skip and return default value to vendor
-                return PlayerBalanceData.getDefault(
-                        context.getVendorPlayerUsername(),
-                        context.getVendorCurrency()
-                );
-            }
-
             enricher.enrich(context);
+
+            if (!hasPayout(context)) {
+                // if no payout amount, return player balance to vendor
+                // if get balance failed, return default zero balance
+                return balanceProcessor.process(logContext.getTraceId(), context);
+            }
 
             PromoPayoutConfig config = state().getConfig();
 
