@@ -39,6 +39,11 @@ public class GameRoundService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final GameRoundProducer gameRoundProducer;
 
+    // to exclude vendors not using unsettled bets (eg. PGSoft)
+    private final List<Integer> asyncEndRoundVendorExclusionList = List.of(
+            2 // PGSoft
+    );
+
     @Value("${endround-process.retry-interval-in-seconds:5}")
     private long retryIntervalInSecondsValue;
 
@@ -75,6 +80,10 @@ public class GameRoundService {
     public void notifyEndRoundAsync(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         String settledBetRoundId = settledBet.getRoundId();
         Integer settledBetVendorId = settledBet.getVendorId();
+
+        if (asyncEndRoundVendorExclusionList.contains(gameSession.getVendorId())) {
+            return;
+        }
 
         loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 1", settledBetVendorId, settledBetRoundId, settledBet);
         taskScheduler.schedule(() -> {

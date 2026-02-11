@@ -104,9 +104,6 @@ public class CreditAction {
             responseVo.setStatus(ResponseCodes.SUCCESS);
 
         } catch (GameNotSupportedException |
-                 DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
                  InvalidAgentApiCredentialException |
                  BetNotFoundException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -148,26 +145,14 @@ public class CreditAction {
 
     private void doVerification(CreditDto creditDto, GameSession gameSession, String secretKey)
             throws
-            AuthenticationException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            GameNotSupportedException,
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidRequestException,
             InvalidSignatureException {
 
-        //Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorGameCode()), String.valueOf(creditDto.getGameId()), GameNotSupportedException::new);
-
         //Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(credentialKey, secretKey, InvalidSignatureException::new);
-
-        //Verify UserId
-        String vendorToken = String.valueOf(creditDto.getUserId());
-        ValidationUtils.isEquals(vendorToken, gameSession.getVendorToken(), InvalidPlayerException::new);
 
         //Validate Prd_id
         String prdId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PRODUCT_ID);
@@ -202,13 +187,15 @@ public class CreditAction {
         try {
             gameSession = gameSessionService.verifyToken(creditDto.getSid());
             creditDto.setGameCategory(gameSession.getGameCategoryId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            if (creditDto.getGameId() != null) {
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            }
 
         } catch (AuthenticationException authenticationException) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(creditDto.getRoundId());
+            if (unsettledBet == null) throw new BetNotFoundException();
             gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
-            creditDto.setGameCategory(unsettledBet.getGameCategoryId());
-            gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(newToken);
             gameSession.setVendorToken(newToken);

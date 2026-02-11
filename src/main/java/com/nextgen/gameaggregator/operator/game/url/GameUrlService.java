@@ -129,7 +129,9 @@ public class GameUrlService {
                         .build();
 
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
-                gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
+
+                String gameUrl = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameLaunchContext.getGameUrl());
+                gameUrlData.setGameUrl(gameUrl);
                 httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
 
                 boolean shouldReplaceWithVendorToken = !gameLaunchContext.getVendorToken().equals(gameSession.getToken());

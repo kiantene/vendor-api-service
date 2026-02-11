@@ -12,4 +12,9 @@ public class VendorService extends BaseVendorService {
     public Integer operatorTimeoutTiming() {
         return 2500;
     }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
+    }
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.inout.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -128,7 +129,8 @@ public class VendorService extends BaseVendorService {
                 e instanceof DisabledGameException ||
                 e instanceof DisabledAgentPlayerException) {
             responseVo.setError(ResponseCode.GAME_DISABLED);
-        } else if (e instanceof InternalServerTimeoutRetryException) {
+        } else if (e instanceof InternalServerTimeoutRetryException ||
+                e instanceof AmbiguousTimeoutException) {
             responseVo.setError(ResponseCode.TEMPORARY_ERROR);
         } else {
             responseVo.setError(ResponseCode.UNKNOWN_ERROR);

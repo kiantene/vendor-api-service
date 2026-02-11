@@ -1,17 +1,21 @@
 package com.nextgen.gameaggregator.core.engine.wallet.balance;
 
 import com.nextgen.core.api.ApiResult;
+import com.nextgen.gameaggregator.core.context.VendorRequestContext;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.entity.Currency;
 import com.nextgen.gameaggregator.core.entity.VendorCurrency;
+import com.nextgen.gameaggregator.core.exception.GameSessionExpiredException;
 import com.nextgen.gameaggregator.core.exception.OperatorApiException;
 import com.nextgen.gameaggregator.core.service.CurrencyDataService;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.VendorCurrencyDataService;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiAdapter;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ public class BalanceProcessor {
     private final CurrencyDataService currencyDataService;
     private final VendorCurrencyDataService vendorCurrencyDataService;
     private final AgentApiVersionService agentApiVersionService;
+    private final GameSessionDataService gameSessionDataService;
 
     public PlayerBalanceData process(String traceId, GameRound gameRound) {
         return process(
@@ -53,6 +58,22 @@ public class BalanceProcessor {
                 vendorCurrencyCode,
                 toVendorRate
         );
+    }
+
+    public PlayerBalanceData process(String traceId, VendorRequestContext context) {
+        try {
+            GameSession gameSession = gameSessionDataService.getByVendorPlayerUsername(context.getVendorPlayerUsername(), context);
+            return process(traceId,
+                    AgentMeta.ofGameSession(gameSession),
+                    gameSession.getVendorId(),
+                    gameSession.getVendorPlayerUsername(),
+                    gameSession.getVendorCurrencyCode()
+            );
+        } catch (GameSessionExpiredException ex) {
+            return PlayerBalanceData.getDefault(
+                    context.getVendorPlayerUsername(),
+                    context.getVendorCurrency());
+        }
     }
 
     private PlayerBalanceData callToOperator(String traceId, AgentMeta agentMeta) {
