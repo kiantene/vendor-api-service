@@ -99,7 +99,7 @@ public class BetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
@@ -133,11 +133,11 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
-        } catch (DisabledVendorLineException disabledVendorLineException) {
+        } catch (DisabledVendorLineException | DisabledGameException betNotAllowedException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpService.logError(httpRequestLog, disabledVendorLineException);
+            httpService.logError(httpRequestLog, betNotAllowedException);
 
-        } catch (DisabledGameException | GameNotSupportedException disabledGameException) {
+        } catch (GameNotSupportedException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
             httpService.logError(httpRequestLog, disabledGameException);
 

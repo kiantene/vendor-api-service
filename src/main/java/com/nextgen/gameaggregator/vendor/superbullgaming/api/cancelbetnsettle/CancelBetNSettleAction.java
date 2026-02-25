@@ -64,8 +64,17 @@ public class CancelBetNSettleAction {
                 throw new TransactionStillProcessingException();
             }
 
-            // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // 3. Verify session token (Regen Token if do not exist)
+            GameSession gameSession;
+            try { //this check only verify if it's null, not status = 0
+                gameSession = gameSessionService.verifyToken(dto.getToken());
+            } catch (AuthenticationException authenticationException) { //if session expired
+                gameSession = gameSessionService.generateNewSessionToken(dto.getUsername()); //generate new token
+                gameSessionService.updateByVendorGameCode(gameSession, dto.getGameCode());
+                gameSessionService.updateByVendorCurrencyId(gameSession);
+                gameSession.setToken(traceId);
+                gameSession.setVendorToken(traceId);
+            }
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -136,9 +145,8 @@ public class CancelBetNSettleAction {
 
     private void doVerification(HttpRequestLog request, CancelBetNSettleDto dto, GameSession gameSession)
             throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+            AuthenticationException {
 
-        validationService.validateEligibleBet(gameSession, dto.getUsername());
         // Verify operator ID
         ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }

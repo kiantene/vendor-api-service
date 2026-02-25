@@ -2,8 +2,12 @@ package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -112,8 +116,15 @@ public class UpdateBalanceAction {
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-//                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
+                    //this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
                     ResultType resultType = preProcessWinDto(winDataDto, gameSession);
+                    // if completed true then send round ended info
+                    if (winDataDto.getCompleted()) {
+                        BetResultContextHolder.initialise()
+                                .configure(config -> config.setSettleType(SettleType.ROUND));
+                        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(winDataDto.getBetStatus().code));
+                    }
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
@@ -126,7 +137,8 @@ public class UpdateBalanceAction {
             updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 
@@ -198,7 +210,6 @@ public class UpdateBalanceAction {
     }
 
     private ResultType preProcessWinDto(WinDataDto dto, GameSession gameSession) {
-        
         //only for live casino calculation
         if (gameSession.getGameCategoryId() == 5) {
             ResultType resultType = dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : dto.getCompleted() ? ResultType.END : ResultType.BET_LOSE;

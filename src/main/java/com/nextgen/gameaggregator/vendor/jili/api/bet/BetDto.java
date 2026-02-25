@@ -135,4 +135,14 @@ public class BetDto implements BetResultData {
         return BetStatus.SETTLED;
     }
 
+    /**
+     * GA-13304 - added capability to skip notify endround process
+     * Default behaviour: true means the game contains multiple unsettled bets
+     * and will notify end round
+     */
+    private boolean multipleUnsettledBets = true;
+    @Override
+    public boolean hasMultipleUnsettledBets() {
+        return multipleUnsettledBets;
+    }
 }

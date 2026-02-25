@@ -14,7 +14,7 @@ import java.util.List;
 public interface RawGameSessionRepository extends CouchbaseRepository<GameSession, String> {
     GameSession findByToken(String token);
 
-    GameSession findByVendorToken(String vendorToken);
+    List<GameSession> findByVendorToken(String vendorToken);
 
     GameSession findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(String vendorPlayerUsername);
 

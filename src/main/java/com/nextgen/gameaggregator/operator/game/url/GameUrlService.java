@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.core.engine.game.url.*;
+import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchService;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLauncherRegistry;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
@@ -136,6 +139,8 @@ public class GameUrlService {
 
                 boolean shouldReplaceWithVendorToken = !gameLaunchContext.getVendorToken().equals(gameSession.getToken());
                 if (shouldReplaceWithVendorToken) {
+                    // TODO : maybe need remove old game session
+                    //  if have repeated VendorToken from vendor side.
                     gameSessionService.regenerateVendorToken(gameSession, gameLaunchContext.getVendorToken());
                 }
 

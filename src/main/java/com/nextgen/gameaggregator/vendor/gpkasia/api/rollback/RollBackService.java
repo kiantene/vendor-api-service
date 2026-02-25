@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -30,29 +31,32 @@ public class RollBackService {
     private final WalletService walletService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public RollBackService(GameSessionService gameSessionService,
                            VendorLineService vendorLineService,
                            WalletService walletService,
                            HttpService httpService,
-                           VendorService vendorService) {
+                           VendorService vendorService,
+                           RequestIdempotentLogService requestIdempotentLogService) {
         this.gameSessionService = gameSessionService;
-
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.httpService = httpService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
         RollBackDto rollBackDto = new RollBackDto();
         CommonVo vo = new CommonVo();
         RollBackDataVo dataVo = new RollBackDataVo();
+        boolean isRequestExists = false;
 
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
 
-        GameSession gameSession = null;
+        GameSession gameSession;
 
         try {
             // Retrieve request body in original string format
@@ -60,6 +64,14 @@ public class RollBackService {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollBackDto);
+
+            // request Idempotent checking
+            if (requestIdempotentLogService.checkExists(rollBackDto, rollBackDto.getUser()) == null) {
+                requestIdempotentLogService.create(rollBackDto, rollBackDto.getUser());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
@@ -115,6 +127,10 @@ public class RollBackService {
             // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(rollBackDto, rollBackDto.getUser());
+            }
         }
 
         return vo;

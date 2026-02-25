@@ -52,7 +52,7 @@ public class TxnAmounts extends TxnAmount {
         return new TxnAmounts(
                 round.getBetAmount(),
                 round.getWinAmount().add(resultTxn.getWinAmount()),
-                round.getJackpotAmount().add(resultTxn.getJackpotAmount() == null ? BigDecimal.ZERO : round.getJackpotAmount()),
+                round.getJackpotAmount().add(resultTxn.getJackpotAmount() == null ? BigDecimal.ZERO : resultTxn.getJackpotAmount()),
                 fromVendorRate
         );
     }

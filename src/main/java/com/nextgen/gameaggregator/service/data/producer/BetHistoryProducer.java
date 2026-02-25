@@ -108,7 +108,7 @@ public class BetHistoryProducer {
      * @param resultTxn Final/Current Result Transaction
      * @param betTxn First Successful Bet Transaction
      */
-    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction resultTxn, RoundTxn betTxn) {
+    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction resultTxn, GameTransaction betTxn) {
         BetHistoryContext context = BetHistoryContext.of(betResultContext);
         // GaBetId to use First Successful Bet GA Bet Id
         BetHistoryV3 betHistory = betHistoryMapper.initialise(context, betTxn.getGaBetId(), resultTxn.getTransactionId());
@@ -122,7 +122,7 @@ public class BetHistoryProducer {
                 round,
                 txnAmounts,
                 betTxn.getVendorBetId(), // To return First Successful Bet ID
-                resultTxn.getBetTime(), // To return First Successful Bet Time
+                betTxn.getBetTime(), // To return First Successful Bet Time
                 resultTxn.getSettleTime()
         );
 
