@@ -80,6 +80,7 @@ public class BetAction {
                         .configure(config -> config.setSettleType(SettleType.ROUND));
                 BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
                 betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+                betDto.setMultipleUnsettledBets(false);
             }
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);

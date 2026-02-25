@@ -169,12 +169,12 @@ class BetResultProcessor {
              * TODO: Remove the Null Check when Wallet Legacy is Removed
              * betFullTxn == null for Wallet Legacy
              */
-            RoundTxn betTxn = null;
             if (betFullTxn == null) {
-                betTxn = findFirstValidBet(round);
+                RoundTxn betTxn = findFirstValidBet(round);
+                betFullTxn = gameTransactionService.getOrThrow(betTxn.getId());
             }
 
-            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn == null ? betTxn : betFullTxn);
+            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn);
 
         } else if (config.isSettledByBet() && betFullTxn != null) {
             /**

@@ -515,14 +515,20 @@ public class WalletService {
             // Get the list of vendors from ENV for retry vendor
             List<Integer> vendorList = EnvUtils.getVendorListFromEnv(this.retryVendorList);
 
-            // Check if the vendor is eligible to process the end round
-            if (vendorList.contains(settledBet.getVendorId())) {
-                loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-                gameRoundService.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
+            boolean shouldNotifyEndRound = betResultData.hasMultipleUnsettledBets();
+            if (shouldNotifyEndRound) {
+                /**
+                 * GA-13304 - enhancement to allow skipping of endround process, configured at class file level
+                 */
+                // Check if the vendor is eligible to process the end round
+                if (vendorList.contains(settledBet.getVendorId())) {
+                    loggingService.logDataFlowByVendor("Before executeRetryEndRound without taskScheduler", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                    gameRoundService.executeRetryEndRound(settledBet, vendorService, gameSession, traceId, this.retryMaxAttempts + 1);
 
-            } else {
-                loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-                gameRoundService.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
+                } else {
+                    loggingService.logDataFlowByVendor("Before notifyEndRoundAsync", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                    gameRoundService.notifyEndRoundAsync(settledBet, vendorService, gameSession, traceId);
+                }
             }
         }
         //else settle by bet, which no need to run endRoundAsync.

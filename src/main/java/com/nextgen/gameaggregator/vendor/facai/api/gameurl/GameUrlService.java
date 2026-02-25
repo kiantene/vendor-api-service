@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.service.S3Service;
+import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
@@ -28,6 +29,8 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
     @Autowired
     private S3Service s3Service;
+    @Autowired
+    private VendorService vendorService;
 
     private static final String AGENT_CODE = "AgentCode";
     private static final String CURRENCY = "Currency";
@@ -47,6 +50,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
             throws InvalidVendorLineException, InvalidFormatException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        //check IP is private or public.
 
         //map request param and convert to json string
         Map<String, Object> loginParam = new HashMap<>();
@@ -54,7 +58,11 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         loginParam.put("GameID", gameSession.getVendorGameCode());
         loginParam.put("LanguageID", gameSession.getVendorLanguageCode());
         loginParam.put("JackpotStatus", GameType.ENABLE_JACKPOT);
-        loginParam.put("ClientIP", gameSession.getIpAddress());
+        loginParam.put("ClientIP",
+                vendorService.isNotPublicIp(gameSession.getIpAddress())
+                        ? vendorService.getPublicIp()
+                        : gameSession.getIpAddress()
+        );
         String jsonParamString = "";
         try {
             ObjectMapper objectMapper = new ObjectMapper();

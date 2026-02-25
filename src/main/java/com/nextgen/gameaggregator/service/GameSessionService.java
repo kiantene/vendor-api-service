@@ -69,11 +69,13 @@ public class GameSessionService {
 
     @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
     public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
-
-        GameSession session = rawGameSessionRepository.findByVendorToken(vendorToken);
-        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
-
-        return session;
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorToken(vendorToken);
+        if (gameSessionList.isEmpty()) {
+            throw new AuthenticationException();
+        }
+        return gameSessionList.stream()
+                .max(Comparator.comparingLong(GameSession::getCreateTime))
+                .get();
     }
 
     @Caching(put = {
