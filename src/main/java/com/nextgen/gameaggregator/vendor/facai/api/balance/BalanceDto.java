@@ -11,13 +11,9 @@ import jakarta.validation.constraints.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto {
     @NotBlank(message = ResponseCodes.PLAYER_NOT_FOUND)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PLAYER_NOT_FOUND)
-    @Size(min = 2, max = 30, message = ResponseCodes.PLAYER_NOT_FOUND)
     public String MemberAccount;
 
     @NotBlank(message = ResponseCodes.CURRENCY_MISSING)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.CURRENCY_MISSING)
-    @Size(min = 3, max = 4, message = ResponseCodes.CURRENCY_MISSING)
     public String Currency;
 
     @PositiveOrZero(message = ResponseCodes.PARAM_CONTAIN_ERROR)
