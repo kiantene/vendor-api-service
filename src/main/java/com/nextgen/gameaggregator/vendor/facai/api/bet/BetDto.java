@@ -19,26 +19,18 @@ import java.math.BigDecimal;
 public class BetDto implements BetResultData {
 
     @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
-    @Size(min = 1, max = 24, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("RecordID")
     public String recordID;
 
     @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
-    @Size(min = 1, max = 24, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("BankID")
     public String bankID;
 
     @NotBlank(message = ResponseCodes.PLAYER_NOT_FOUND)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PLAYER_NOT_FOUND)
-    @Size(min = 2, max = 30, message = ResponseCodes.PLAYER_NOT_FOUND)
     @JsonProperty("MemberAccount")
     public String memberAccount;
 
     @NotBlank(message = ResponseCodes.CURRENCY_MISSING)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.CURRENCY_MISSING)
-    @Size(min = 3, max = 4, message = ResponseCodes.CURRENCY_MISSING)
     @JsonProperty("Currency")
     public String currency;
 
