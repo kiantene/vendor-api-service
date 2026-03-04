@@ -161,6 +161,14 @@ public class BetService {
                     betDto.setSettledByBet(true);
                 }
 
+                // if finished true then send round ended info
+                if (betDto.getFinished().equals("1")) {
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+                }
+
                 if (betDto.getIstips().equals(BetType.TIPS)) {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);

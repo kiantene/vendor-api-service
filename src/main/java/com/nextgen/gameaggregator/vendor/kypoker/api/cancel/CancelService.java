@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.kypoker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.kypoker.constant.RoomCode;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.kypoker.vo.ResponseObjectDto;
 import com.nextgen.gameaggregator.vendor.kypoker.service.VendorService;
@@ -61,7 +62,8 @@ public class CancelService {
         CommonVo vo = new CommonVo();
         CancelDto cancelDto = null;
         WalletTransaction walletTransaction;
-        WalletRequest walletRequest;
+        WalletRequest walletRequest = null;
+        boolean debitCreditLog = false;
         ResponseObjectDto d = new ResponseObjectDto();
         Boolean isRequestExists = false;
 
@@ -71,7 +73,6 @@ public class CancelService {
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelDto);
-
 
             // request idempotent checking.
             if (requestIdempotentLogService.checkExists(cancelDto, cancelDto.getAccount()) == null) {
@@ -107,6 +108,7 @@ public class CancelService {
                     throw new BetResultIdempotentViolationException();
 
                 } else {
+                    debitCreditLog = true;
                     operatorWalletService.betCredit(walletRequest);
                     vo.setM(EndPoints.API_ENDPOINT);
                     vo.setS(ResponseCodes.CANCEL);
@@ -142,7 +144,12 @@ public class CancelService {
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setS(ResponseCodes.CANCEL);
             vo.setD(d);
-            httpService.end(httpRequestLog, vo);
+
+            if (debitCreditLog) {
+                walletRequestService.end(walletRequest, httpRequestLog, vo);
+            } else {
+                httpService.end(httpRequestLog, vo);
+            }
 
         }
         return vo;

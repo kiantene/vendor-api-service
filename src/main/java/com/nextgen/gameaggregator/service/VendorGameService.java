@@ -78,4 +78,9 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")
+    public VendorGame getByVendorGameIdIgnoreStatus(Integer vendorGameId) throws GameNotSupportedException {
+        return vendorGameRepository.findById(vendorGameId).orElseThrow(GameNotSupportedException::new);
+
+    }
 }

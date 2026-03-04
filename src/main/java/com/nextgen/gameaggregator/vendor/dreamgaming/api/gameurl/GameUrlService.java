@@ -95,6 +95,7 @@ public class GameUrlService extends BaseGameUrlService<DGGameUrlVo> {
 
         DGGameUrlVo responseVo = new Gson().fromJson(apiResponse2.getBody(), DGGameUrlVo.class);
         responseVo.setTableId(gameSession.getVendorGameCode());
+        responseVo.setBackUrl(gameSession.getLobbyUrl());
 
         httpRequestLog.setUrl(responseVo.getGameUrl());
 
