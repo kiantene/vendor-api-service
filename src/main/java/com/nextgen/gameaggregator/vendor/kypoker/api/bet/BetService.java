@@ -40,9 +40,9 @@ public class BetService {
             VendorService vendorService,
             OperatorWalletService operatorWalletService,
             WalletRequestService walletRequestService,
-            HttpService httpService, 
+            HttpService httpService,
             RequestIdempotentLogService requestIdempotentLogService) {
-        
+
         this.walletService = walletService;
         this.validationService = validationService;
         this.gameSessionService = gameSessionService;
@@ -85,7 +85,7 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(betDto.getAccount());
 
-            if(gameSession == null){
+            if (gameSession == null) {
                 throw new InvalidPlayerException();
             }
 
@@ -115,11 +115,9 @@ public class BetService {
                 case MATCHING:
                 case FISHING:
                     // Credit Debit flow
-                    walletRequest = WalletRequestService.init(httpRequestLog);
-                    WalletRequest currentWalletRequest = new WalletRequest(walletRequest);
-                    vendorService.dataDebitMapper(currentWalletRequest, betDto, gameSession);
+                    vendorService.dataDebitMapper(walletRequest, betDto, gameSession);
 
-                    walletRequest = operatorWalletService.betDebit(currentWalletRequest);
+                    walletRequest = operatorWalletService.betDebit(walletRequest);
 
                     d.setCode(ResponseCodes.SUCCESS);
                     d.setAccount(gameSession.getVendorPlayerUsername());
@@ -136,7 +134,7 @@ public class BetService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             errorMessage = insufficientBalanceException.toString();
 
-        }  catch (InvalidOperatorResponseException insufficientBalanceException) {
+        } catch (InvalidOperatorResponseException insufficientBalanceException) {
 
             if (insufficientBalanceException.getOperatorStatus() == 11) {
                 d.setCode(ResponseCodes.INSUFFICIENT_FUNDS);
@@ -154,27 +152,27 @@ public class BetService {
             httpService.logError(httpRequestLog, duplicateRequestException);
             errorMessage = duplicateRequestException.toString();
 
-        }  catch (InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException invalidRequestException) {
             d.setCode(ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
             errorMessage = invalidRequestException.toString();
 
-        } catch (Exception e){
+        } catch (Exception e) {
             d.setCode(ResponseCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, e);
             errorMessage = e.toString();
 
-        }finally {
+        } finally {
 
-            if (!isRequestExists && betDto!=null) {
+            if (!isRequestExists && betDto != null) {
                 requestIdempotentLogService.delete(betDto, betDto.getAccount());
             }
-            
+
             vo.setM(EndPoints.API_ENDPOINT);
             vo.setS(ResponseCodes.GET_BET);
             vo.setD(d);
 
-            if (roomMode != null && (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code) ) {
+            if (roomMode != null && (roomMode == RoomCode.MATCHING.code || roomMode == RoomCode.FISHING.code)) {
                 walletRequest.setErrorMessage(errorMessage);
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
             } else {

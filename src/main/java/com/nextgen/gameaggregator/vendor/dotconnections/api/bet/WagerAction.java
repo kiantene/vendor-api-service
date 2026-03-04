@@ -71,6 +71,8 @@ public class WagerAction {
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
+            //GA-13072 add regenerate game code,using the actual vendor game code instead.
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // Verify data
             this.doVerification(dto, gameSession);
@@ -238,7 +240,6 @@ public class WagerAction {
 
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
     }
 
     private void checkBetRefundLog(GameSession gameSession, WagerDto dto) throws DuplicateBetRecordException {

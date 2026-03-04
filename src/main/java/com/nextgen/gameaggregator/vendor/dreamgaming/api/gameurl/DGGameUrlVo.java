@@ -16,8 +16,26 @@ public class DGGameUrlVo implements GameUrlVo {
 
     private String tableId; // use for map game url
 
+    //GA-13216: redirect to site lobby URL
+    private String backUrl;
+    private String backType;
+
     @Override
     public String getGameUrl() {
-        return list != null && !list.isEmpty() ? list.get(0) + "&tableId=" + tableId : null;
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+
+        StringBuilder url = new StringBuilder(list.get(0));
+
+        if (tableId != null && !tableId.isBlank()) {
+            url.append("&tableId=").append(tableId);
+        }
+
+        if (backUrl != null && !backUrl.isBlank()) {
+            url.append("&backUrl=").append(backUrl);
+        }
+
+        return url.toString();
     }
 }

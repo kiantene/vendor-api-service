@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -130,7 +131,7 @@ public class VendorService extends BaseVendorService {
                 e instanceof DisabledAgentPlayerException) {
             responseVo.setError(ResponseCode.GAME_DISABLED);
         } else if (e instanceof InternalServerTimeoutRetryException ||
-                e instanceof AmbiguousTimeoutException) {
+                e instanceof AmbiguousTimeoutException || e instanceof ExhaustedRetryException) {
             responseVo.setError(ResponseCode.TEMPORARY_ERROR);
         } else {
             responseVo.setError(ResponseCode.UNKNOWN_ERROR);

@@ -18,9 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -77,7 +74,7 @@ public class SettledBetService {
         return settledBet;
     }
 
-    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
+    //@Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
     @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
     public SettledBet getByVendorPlayerIdAndExternalTransactionIdWithRetry(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
         SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionIdWithRequestPlus(vendorPlayerId, externalTransactionId);
@@ -96,12 +93,6 @@ public class SettledBetService {
     @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
     public SettledBet getById(String id, String externalTransactionId, Long vendorPlayerId) {
         return rawSettledBetRepository.findById(id).orElse(null);
-    }
-
-    @Recover
-    public SettledBet recoverData(BetNotFoundException ex) {
-        // Handle recovery logic here, such as returning a default value or logging the error
-        return null;
     }
 
     /**
