@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetLookup;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -43,6 +44,7 @@ public class UnsettledBetService {
     private final KafkaService kafkaService;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final BetLookupService betLookupService;
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
     private String retryVendorList;
 
@@ -51,13 +53,15 @@ public class UnsettledBetService {
                                BetIdempotentLogService betIdempotentLogService,
                                KafkaService kafkaService,
                                UnsettledBetCachingService unsettledBetCachingService,
-                               RedisTemplate<String, Object> redisTemplate) {
+                               RedisTemplate<String, Object> redisTemplate,
+                               BetLookupService betLookupService) {
 
         this.rawUnsettledBetRepository = rawUnsettledBetRepository;
         this.betIdempotentLogService = betIdempotentLogService;
         this.kafkaService = kafkaService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.redisTemplate = redisTemplate;
+        this.betLookupService = betLookupService;
     }
 
     /**
@@ -161,7 +165,30 @@ public class UnsettledBetService {
     public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
             throws BetNotFoundException, TransactionStillProcessingException {
 
-        UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByExternalTransactionId(vendorPlayerId, externalTransactionId);
+        // Preferred path: use the helper lookup record to rebuild the real document ID,
+        // then fetch the unsettled bet directly through KV instead of query/index lookup.
+        UnsettledBet unsettledBet;
+        Optional<RawBetLookup> rawBetLookup = betLookupService.get(vendorPlayerId, externalTransactionId);
+        if (rawBetLookup.isPresent()) {
+            String documentId = rawBetLookup.get().toDocumentId(vendorPlayerId);
+            unsettledBet = rawUnsettledBetRepository.findById(documentId).orElse(null);
+            if (log.isDebugEnabled()) {
+                log.debug("Rollback KV lookup result (unsettledBet). vendorPlayerId={}, externalTransactionId={}, documentId={}, found={}",
+                        vendorPlayerId,
+                        externalTransactionId,
+                        documentId,
+                        unsettledBet != null);
+            }
+        } else {
+            // Fallback path for older records created before RawBetLookup was available,
+            // or for cases where the helper record failed to persist.
+            unsettledBet = unsettledBetCachingService.getUnsettledBetByExternalTransactionId(vendorPlayerId, externalTransactionId);
+            // Temporary observability log to identify vendors still relying on the legacy rollback lookup path.
+            log.warn("Rollback lookup fallback path used. vendorId={}, vendorPlayerId={}, externalTransactionId={}",
+                    unsettledBet != null ? unsettledBet.getVendorId() : null,
+                    vendorPlayerId,
+                    externalTransactionId);
+        }
 
         if (unsettledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("Cannot find Vendor Player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
@@ -254,7 +281,9 @@ public class UnsettledBetService {
         }
 
         try {
+            betLookupService.save(vendorBetId, betResultData.getExternalTransactionId(), roundId, vendorGameId, vendorPlayerId);
             unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundIdWithErrorResponse(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+
             Integer operatorStatus = unsettledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
 
