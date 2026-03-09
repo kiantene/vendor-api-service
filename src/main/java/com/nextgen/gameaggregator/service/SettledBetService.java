@@ -13,8 +13,8 @@ import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -25,12 +25,12 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SettledBetService {
 
-    @Autowired
-    RawSettledBetRepository rawSettledBetRepository;
-    @Autowired
-    BetIdempotentLogService betIdempotentLogService;
+    private final RawSettledBetRepository rawSettledBetRepository;
+    private final BetIdempotentLogService betIdempotentLogService;
+    private final BetLookupService betLookupService;
 
     @Caching(put = {
             @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
@@ -85,6 +85,10 @@ public class SettledBetService {
         return settledBet;
     }
 
+    public SettledBet get(String id) {
+        return rawSettledBetRepository.findById(id).orElse(null);
+    }
+
     public SettledBet getById(String id) throws BetNotFoundException {
         return rawSettledBetRepository.findById(id).orElseThrow(BetNotFoundException::new);
     }
@@ -125,6 +129,7 @@ public class SettledBetService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
+            betLookupService.save(vendorBetId, betResultData.getExternalTransactionId(), roundId, vendorGameId, vendorPlayerId);
             String settledBetId = SettledBet.generateId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             settledBet = this.getById(settledBetId);
 

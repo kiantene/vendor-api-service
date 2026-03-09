@@ -63,6 +63,7 @@ public class WalletService {
     private final BetHistoryProducer betHistoryProducer;
     private final GameRoundService gameRoundService;
     private final VendorFeatureDataService vendorFeatureService;
+    private final BetLookupService betLookupService;
     @Value("${endround-process.retry-max-attempts:5}")
     private int retryMaxAttempts;
     @Value("${endround-process.retry-vendor-list:}") // example value in properties or yml file > 1,4,19
@@ -580,9 +581,28 @@ public class WalletService {
                 checkExistsByRoundFromBetRefundLog(vendorPlayerId, roundId);
             }
 
-            loggingService.logStart();
-            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionIdWithRetry(vendorPlayerId, externalTransactionId);
-            loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+            Optional<RawBetLookup> rawBetLookup = betLookupService.get(vendorPlayerId, externalTransactionId);
+            if (rawBetLookup.isPresent()) {
+                String documentId = rawBetLookup.get().toDocumentId(vendorPlayerId);
+                settledBet = settledBetService.get(documentId);
+                if (log.isDebugEnabled()) {
+                    log.debug("Rollback KV lookup result (settledBet). vendorPlayerId={}, externalTransactionId={}, documentId={}, found={}",
+                            vendorPlayerId,
+                            externalTransactionId,
+                            documentId,
+                            settledBet != null);
+                }
+            } else {
+                loggingService.logStart();
+                settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionIdWithRetry(vendorPlayerId, externalTransactionId);
+                loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+                // Temporary observability log to identify vendors still relying on the legacy settled bet lookup path.
+                log.warn("Rollback settled bet lookup fallback path used. vendorId={}, vendorPlayerId={}, externalTransactionId={}, roundId={}",
+                        settledBet != null ? settledBet.getVendorId() : gameSession.getVendorId(),
+                        vendorPlayerId,
+                        externalTransactionId,
+                        roundId);
+            }
 
             if (settledBet == null) {
                 throw new BetNotFoundException();
@@ -666,7 +686,8 @@ public class WalletService {
         walletBetResultData.setInternalTransactionId(traceId);
 
         switch (resultType) {
-            case WIN, LOSE -> { // PP Win, data contains only result
+            case WIN, LOSE -> {
+                // PP Win, data contains only result
                 // Idempotency checks on bet_result_log
                 loggingService.logStart();
                 try {
@@ -674,8 +695,9 @@ public class WalletService {
                 } catch (AmbiguousTimeoutException | UnambiguousTimeoutException couchbaseTimeoutException) {
                     throw new InternalServerTimeoutRetryException(couchbaseTimeoutException.getMessage());
                 }
-
                 loggingService.logProcessTime("doUnsettledBetResult ｜ betResultLogService.idempotentCheck", traceId);
+
+                betLookupService.save(betResultData.getVendorBetId(), betResultData.getExternalTransactionId(), roundId, vendorGameId, vendorPlayerId);
 
                 loggingService.logStart();
                 List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
@@ -766,7 +788,8 @@ public class WalletService {
                     httpRequestLog.setBetEnd(System.currentTimeMillis());
                 }
             }
-            case BET_WIN, BET_LOSE -> { // data contains bet and result
+            case BET_WIN, BET_LOSE -> {
+                // data contains bet and result
                 // Idempotency checks on unsettled_bet
                 loggingService.logStart();
                 unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData, rawData, resultType);
