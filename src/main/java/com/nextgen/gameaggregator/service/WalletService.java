@@ -594,7 +594,7 @@ public class WalletService {
                 }
             } else {
                 loggingService.logStart();
-                settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionIdWithRetry(vendorPlayerId, externalTransactionId);
+                settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
                 loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
                 // Temporary observability log to identify vendors still relying on the legacy settled bet lookup path.
                 log.warn("Rollback settled bet lookup fallback path used. vendorId={}, vendorPlayerId={}, externalTransactionId={}, roundId={}",

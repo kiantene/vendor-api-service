@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -35,9 +36,10 @@ public class DebitAction {
     private final VendorLineService vendorLineService;
     private final SettledBetService settledBetService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
-    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
@@ -45,6 +47,7 @@ public class DebitAction {
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.DEBIT)
@@ -52,6 +55,9 @@ public class DebitAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
+        boolean isRequestExists = false;
+        DebitDto debitDto = null;
+        GameSession gameSession = null;
 
         //Get header for Validation
         String secretKey = request.getHeader("secret-key");
@@ -59,10 +65,10 @@ public class DebitAction {
         try {
             //Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
+            debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            gameSession = gameSessionService.verifyToken(debitDto.getSid());
 
             // Check game category to set game code
             debitDto.setGameCategory(gameSession.getGameCategoryId());
@@ -70,12 +76,20 @@ public class DebitAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
 
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(debitDto, gameSession.getVendorPlayerUsername()) == null) {
+                requestIdempotentLogService.create(debitDto, gameSession.getVendorPlayerUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGameId(), gameSession);
 
             this.doVerification(debitDto, gameSession, secretKey);
 
             Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckDebit(gameSession, debitDto);
-            if( idempotentCheckAfterSettle == 1){
+            if (idempotentCheckAfterSettle == 1) {
                 throw new BetResultIdempotentViolationException();
             }
 
@@ -93,13 +107,13 @@ public class DebitAction {
 
             //process bet normally
             else {
-                 betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
-                 responseVo.setBalance(betEvent.getLastBalance());
+                betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
+                responseVo.setBalance(betEvent.getLastBalance());
             }
 
             responseVo.setStatus(ResponseCodes.SUCCESS);
 
-        } catch (GameNotSupportedException  |
+        } catch (GameNotSupportedException |
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
@@ -119,15 +133,18 @@ public class DebitAction {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.ACCESS_DENIED);
             httpService.logError(httpRequestLog, e);
-        }catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.INVALID_USER);
             httpService.logError(httpRequestLog, e);
-        }catch (Exception e) {
+        } catch (Exception e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists && gameSession != null) {
+                requestIdempotentLogService.delete(debitDto, gameSession.getVendorPlayerUsername());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
@@ -152,7 +169,7 @@ public class DebitAction {
 
         // 2. Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        ValidationUtils.isEquals(credentialKey,secretKey, InvalidSignatureException::new);
+        ValidationUtils.isEquals(credentialKey, secretKey, InvalidSignatureException::new);
 
         // 3. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
@@ -166,11 +183,12 @@ public class DebitAction {
         ValidationUtils.isEquals(String.valueOf(debitDto.getPrdId()), prdId);
 
     }
+
     public Integer settledBetIdempotentCheckDebit(GameSession gameSession, DebitDto dto) {
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         SettledBet settledBet;
-        Integer betCheck= 0;
+        Integer betCheck = 0;
 
         try {
 
