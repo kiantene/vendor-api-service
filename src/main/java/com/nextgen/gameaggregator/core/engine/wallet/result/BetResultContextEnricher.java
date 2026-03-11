@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
@@ -8,6 +9,7 @@ import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.GameRoundState;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -35,6 +37,11 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         BetResultWrapperContext wrapperContext = BetResultContextHolder.getRequired();
         if (wrapperContext.getVendorService() == null) {
             wrapperContext.setVendorService(InternalVendorService.getInstance(applicationContext));
+            try {
+                wrapperContext.getVendorService().verifyIsPreProcessingVendorGame(context.getVendorGameId());
+            } catch (GameNotSupportedException e) {
+                throw new InternalServerException(e.getMessage(), e);
+            }
         }
 
         // populateLogContext must be run in doEnrich so that context object will contain all required fields

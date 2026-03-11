@@ -80,7 +80,7 @@ public class UnsettledBetCachingService {
 
     //@Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
     public UnsettledBet getUnsettledBetByExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
-        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionIdWithRequestPlus(vendorPlayerId, externalTransactionId);
+        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (unsettledBet == null) {
             throw new BetNotFoundException();
         }
