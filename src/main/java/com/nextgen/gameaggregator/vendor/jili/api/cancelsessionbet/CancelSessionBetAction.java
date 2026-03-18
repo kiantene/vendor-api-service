@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.cancelsessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -33,6 +34,8 @@ public class CancelSessionBetAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
 
     @PostMapping(path = EndPoints.CANCEL_SESSION_BET)
@@ -42,14 +45,23 @@ public class CancelSessionBetAction {
 
         CancelSessionBetVo cancelSessionBetVo = new CancelSessionBetVo();
         String traceId = httpRequestLog.getId();
-
+        boolean isRequestExists = false;
+        CancelSessionBetDto cancelSessionBetDto = new CancelSessionBetDto();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelSessionBetDto cancelSessionBetDto = HttpService.convertJsonToDto(body, CancelSessionBetDto.class);
+            cancelSessionBetDto = HttpService.convertJsonToDto(body, CancelSessionBetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cancelSessionBetDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(cancelSessionBetDto, cancelSessionBetDto.getUserId()) == null) {
+                requestIdempotentLogService.create(cancelSessionBetDto, cancelSessionBetDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession;
@@ -140,6 +152,9 @@ public class CancelSessionBetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelSessionBetDto, cancelSessionBetDto.getUserId());
+            }
             httpService.end(httpRequestLog, cancelSessionBetVo);
 
         }
