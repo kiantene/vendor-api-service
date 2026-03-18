@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
@@ -40,6 +41,8 @@ public class BetAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.BET)
     public BetVo betRequest(HttpServletRequest request) {
@@ -50,17 +53,28 @@ public class BetAction {
         String vendorPlayerUsername = "";
         String vendorCurrencyCode = "";
         String token = "";
-
+        BetDto betDto = new BetDto();
+        boolean isRequestExists = false;
+        GameSession gameSession = new GameSession();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            betDto = HttpService.convertJsonToDto(body, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(betDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(betDto.getToken());
+            gameSession = gameSessionService.verifyToken(betDto.getToken());
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(betDto, gameSession.getVendorPlayerUsername()) == null) {
+                requestIdempotentLogService.create(betDto, gameSession.getVendorPlayerUsername());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+            //after Idempotent checking only verify and regenerate new vendor code
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(betDto.getGame()), gameSession);
             vendorPlayerUsername = gameSession.getVendorPlayerUsername();
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
@@ -139,6 +153,9 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, gameSession.getVendorPlayerUsername());
+            }
             httpService.end(httpRequestLog, betVo);
         }
         return betVo;

@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.api.bet;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -87,6 +91,8 @@ public class BetAction {
                 case TransferType.PAYOUT:
                     //Settle
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
+                    //GA-13341 set end round info when round end
+                    this.setEndRoundInfo(betDto);
                     balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
 
                     vo.getMember().setAmount(betDto.getWinAmount());
@@ -178,5 +184,14 @@ public class BetAction {
         if ("null".equalsIgnoreCase(dto.getDetailDto().getExt())) {
             throw new InvalidRequestException();
         }
+    }
+
+    public void setEndRoundInfo(BetDto betDto) {
+        // if type payout then send round ended info
+        BetResultContextHolder.initialise()
+                .configure(config -> config.setSettleType(SettleType.ROUND));
+        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+
     }
 }

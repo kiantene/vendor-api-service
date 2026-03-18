@@ -65,6 +65,9 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
+        if (this.transactionType.equals("WinAmount")) {
+            return this.transactionInfoDto.getBetTransactionId();
+        }
         return this.transactionId;
     }
 
