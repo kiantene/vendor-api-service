@@ -5,10 +5,7 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
-import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -48,6 +45,7 @@ public class SettlementService {
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final WalletTransactionService walletTransactionService;
     private final WalletRequestService walletRequestService;
+    private final VendorGameService vendorGameService;
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -60,7 +58,8 @@ public class SettlementService {
                              OperatorWalletService operatorWalletService,
                              UnsettledBetCachingService unsettledBetCachingService,
                              WalletTransactionService walletTransactionService,
-                             WalletRequestService walletRequestService) {
+                             WalletRequestService walletRequestService,
+                             VendorGameService vendorGameService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -73,6 +72,7 @@ public class SettlementService {
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.walletTransactionService = walletTransactionService;
         this.walletRequestService = walletRequestService;
+        this.vendorGameService = vendorGameService;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -86,14 +86,8 @@ public class SettlementService {
             int orderCount = settleDto.getParamsDto().getOrders().size();
             executor = vendorService.createThreadPool(orderCount);
             this.doValidation(settleDto);
-            try {
-                gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
 
-            } catch (AuthenticationException authenticationException) {
-                //regenerate token
-                gameSession = regenerateSession(settleDto, traceId);
-
-            }
+            gameSession = this.getGameSession(settleDto, traceId);
 
             this.doVerification(settleDto, gameSession);
 
@@ -174,10 +168,6 @@ public class SettlementService {
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-    }
-
-    private GameSession getGameSession(String loginId) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
     }
 
     //Concurrent process orders
@@ -338,23 +328,14 @@ public class SettlementService {
         return gameSession;
     }
 
-    private GameSession regenerateSession(SettleDto settleDto, String traceId) throws
-            BetNotFoundException,
+    private GameSession regenerateSession(SettleDto settleDto, String traceId, UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
             InvalidPlayerException,
             AuthenticationException,
             GameNotSupportedException,
             VendorCurrencyNotSupportException {
 
-        String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
         String loginId = settleDto.getParamsDto().getLoginId();
         GameSession session;
-
-        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
-        WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, loginId);
-
-        if (unsettledBet == null && walletTransaction == null) {
-            throw new BetNotFoundException("Cannot find round Id: " + roundId);
-        }
 
         session = getVendorPlayerId(unsettledBet, walletTransaction);
 
@@ -370,5 +351,34 @@ public class SettlementService {
         session.setVendorToken(traceId);
 
         return session;
+    }
+
+    private GameSession getGameSession(SettleDto settleDto, String traceId) throws
+            BetNotFoundException,
+            InvalidPlayerException,
+            AuthenticationException,
+            GameNotSupportedException,
+            VendorCurrencyNotSupportException {
+
+        String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
+        String vendorPlayerUsername = settleDto.getParamsDto().getLoginId();
+        GameSession gameSession;
+
+
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
+        WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, vendorPlayerUsername);
+
+        if (unsettledBet == null && walletTransaction == null) {
+            throw new BetNotFoundException("Cannot find round Id: " + roundId);
+        }
+        VendorGame vendorGame = vendorGameService.getByVendorGameId(unsettledBet.getVendorGameId());
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGame.getVendorGameCode(), gameSession);
+        } catch (AuthenticationException authenticationException) {
+            //regenerate token
+            gameSession = regenerateSession(settleDto, traceId, unsettledBet, walletTransaction);
+        }
+        return gameSession;
     }
 }

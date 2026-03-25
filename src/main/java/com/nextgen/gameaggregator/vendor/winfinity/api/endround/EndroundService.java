@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -53,8 +57,8 @@ public class EndroundService {
                 gameSession.setVendorToken(dto.getMsid());
             }
 
-            // Verify remaining parameters (Verify against database values)
-            this.doVerification(gameSession);
+            // is End Round then set config to send topic round ended info
+            this.setRoundEndedInfo(dto);
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
@@ -64,10 +68,6 @@ public class EndroundService {
                  InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
-
-        } catch (AuthenticationException authenticationException) {
-            httpService.logError(httpRequestLog, authenticationException);
-            vo.setErrorVo(ErrorCodes.WRONG_SESSION);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             httpService.logError(httpRequestLog, insufficientBalanceException);
@@ -99,8 +99,10 @@ public class EndroundService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession) throws AuthenticationException {
-
-        //if (gameSession.getStatus() == 0) throw new AuthenticationException();
+    private void setRoundEndedInfo(EndroundDto dto) {
+        BetResultContextHolder.initialise()
+                .configure(config -> config.setSettleType(SettleType.ROUND));
+        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(dto.getBetStatus().code));
     }
 }
