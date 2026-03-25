@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestScope
@@ -124,12 +125,10 @@ public class CashTransferInOutAction {
             // 6. check is settledBet is exists
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
             parentResponseVo.setData(responseVo);
-            responseVo.setBalanceAmount(balance);
+            responseVo.setBalanceAmount(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setCurrencyCode(vendorCurrencyCode);
             responseVo.setUpdatedTime(dto.getUpdatedTime());
-            if (dto.getRealTransferAmount() != null) {
-                responseVo.setRealTransferAmount(dto.getRealTransferAmount());
-            }
+            responseVo.setRealTransferAmount(dto.getRealTransferAmount());
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             parentResponseVo.setError(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
@@ -137,14 +136,18 @@ public class CashTransferInOutAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             parentResponseVo.setData(responseVo);
+            responseVo.setRealTransferAmount(dto.getRealTransferAmount());
             responseVo.setUpdatedTime(dto.getUpdatedTime());
-            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
+            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
             responseVo.setCurrencyCode(vendorCurrencyCode);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException | CredentialNotFoundException |
                  InvalidSignatureException invalidRequestException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+
+            parentResponseVo.setError(dto.getRealTransferAmount() == null
+                    ? ResponseCodes.INVALID_REAL_TRANSFER_AMOUNT
+                    : ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (GameTerminatedException | AuthenticationException gameException) {

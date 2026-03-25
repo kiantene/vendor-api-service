@@ -64,7 +64,7 @@ public class BalanceAction {
             balanceDto.setClientExternalKey(request.getHeader(Headers.CLIENT_EXTERNAL_KEY));
 
             // Get GameSession with username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUserName());
+            GameSession gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(balanceDto.getUserName());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);

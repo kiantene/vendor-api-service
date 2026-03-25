@@ -25,26 +25,26 @@ public abstract class AbstractVendorSignatureValidator implements VendorSignatur
     private final SignatureStrategy signatureStrategy;
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                            VendorLineService vendorLineService,
-                                            GameSessionDataService gameSessionDataService) {
+                                               VendorLineService vendorLineService,
+                                               GameSessionDataService gameSessionDataService) {
         this(vendorPlayerDataService, vendorLineService, gameSessionDataService, null);
     }
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                            VendorLineService vendorLineService) {
+                                               VendorLineService vendorLineService) {
         this(vendorPlayerDataService, vendorLineService, null, null);
     }
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                            VendorLineService vendorLineService,
-                                            SigningStrategyType strategyType) {
+                                               VendorLineService vendorLineService,
+                                               SigningStrategyType strategyType) {
         this(vendorPlayerDataService, vendorLineService, null, strategyType);
     }
 
     protected AbstractVendorSignatureValidator(VendorPlayerDataService vendorPlayerDataService,
-                                            VendorLineService vendorLineService,
-                                            GameSessionDataService gameSessionDataService,
-                                            SigningStrategyType strategyType) {
+                                               VendorLineService vendorLineService,
+                                               GameSessionDataService gameSessionDataService,
+                                               SigningStrategyType strategyType) {
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.vendorLineService = vendorLineService;
         this.gameSessionDataService = gameSessionDataService;

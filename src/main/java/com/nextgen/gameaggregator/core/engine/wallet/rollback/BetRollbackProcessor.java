@@ -67,12 +67,7 @@ class BetRollbackProcessor {
 
         onAfterSendBetRollback(context, round, betTxn, rollbackTxn, balanceData);
 
-        // translate to vendor's username/currency
-        return balanceData.toVendorView(
-                round.getUsername(),
-                round.getCurrency(),
-                context.getToVendorRate()
-        );
+        return balanceData;
     }
 
     public PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
@@ -104,6 +99,7 @@ class BetRollbackProcessor {
             // 1. Call once per gaBetId -> overwrite each time
             // Use the original bet txn's id as external id for rollback.
             // TODO: to revisit later if we want to use a different external id for round rollback
+            // TODO: Exception Handling for Rollback by Round?
             balanceData = callToOperator(context, round, gaBetId, context.getTransactionId());
 
             // 2. Update every txn in this group
@@ -116,12 +112,7 @@ class BetRollbackProcessor {
         BigDecimal balance = Optional.ofNullable(balanceData.getBalance()).orElse(round.getLastBalance());
         gameTransactionService.markRollback(round, rollbackTxn, balance);
 
-        // translate to vendor's username/currency
-        return balanceData.toVendorView(
-                round.getUsername(),
-                round.getCurrency(),
-                context.getToVendorRate()
-        );
+        return balanceData;
     }
 
     private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId, String transactionId) {
@@ -142,7 +133,13 @@ class BetRollbackProcessor {
                     false
             ), context);
 
-            return response.getData();
+            // Translate Back to Vendor Amount
+            return response.getData().toVendorView(
+                    round.getUsername(),
+                    round.getCurrency(),
+                    context.getToVendorRate()
+            );
+
         } catch (Exception ex) { // only operator exception then send to retry queue
             if (RetryPolicy.shouldRetry(RetryOrigin.BET_ROLLBACK, ex)) {
                 retryQueueService
@@ -150,10 +147,14 @@ class BetRollbackProcessor {
                         .subscribe();
             }
         }
-        // if operator exception then return default balance
-        return PlayerBalanceData.getDefault(
+        /**
+         * Return Last Known Round Balance
+         * If Previous Bet fails too, Last Known Round Balance will be 0
+         */
+        return PlayerBalanceData.getDefaultWithBalance(
                 round.getAgentMeta().getUsername(),
-                round.getAgentMeta().getCurrency()
+                round.getAgentMeta().getCurrency(),
+                Optional.ofNullable(round.getLastBalance()).orElse(BigDecimal.ZERO)
         );
     }
 
@@ -179,6 +180,7 @@ class BetRollbackProcessor {
                                          GameTransaction rollbackTxn) {
 
         betHistoryProducer.publishBetHistoryForRollback(context, round, betTxn);
+
         // Send Kafka
         if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
             betTransactionHistoryProducer.publishTransactionHistoryForRollback(context, round, betTxn);
