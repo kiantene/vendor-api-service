@@ -12,22 +12,18 @@ import lombok.Data;
 public class RollbackDto extends CommonDto implements RollbackData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String transactionId;
     @NotNull
     private String roundId;
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     private Integer gameId;
     @NotNull
     private Integer tableId;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 4)
     private String currency;
     @NotNull
     @PositiveOrZero(message = "Negative amount")

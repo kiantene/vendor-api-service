@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeo
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.custodianseamless.service.WalletRequestValidationService;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.dto.WalletServiceTransferDto;
+import com.nextgen.gameaggregator.custodianseamless.walletservice.rollback.WalletRollbackContext;
 import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceBeforeAfterVo;
 import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import com.nextgen.gameaggregator.entity.wallet.AccessKey;
@@ -19,7 +20,9 @@ import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -40,14 +43,17 @@ public class WithdrawRequest {
 
     private final AuthenticationService authenticationService;
     private final TransferService transferService;
+    private final ApplicationEventPublisher eventPublisher;
     @Value("${walletservice.timeout:1000}")
     public Integer timeout;
     @Value("${walletservice.host}")
     private String walletServiceUrl;
 
-    public WithdrawRequest(AuthenticationService authenticationService, TransferService transferService) {
+    public WithdrawRequest(AuthenticationService authenticationService, TransferService transferService,
+                           @Qualifier ApplicationEventPublisher eventPublisher) {
         this.authenticationService = authenticationService;
         this.transferService = transferService;
+        this.eventPublisher = eventPublisher;
     }
 
     public RawTransferHistory call(String traceId, RawTransferHistory rawTransferHistory, TransferWalletRequestLog transferWalletRequestLog) throws
@@ -70,6 +76,13 @@ public class WithdrawRequest {
 
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         ResponseEntity<String> response = null;
+
+        WalletRollbackContext context = new WalletRollbackContext();
+        context.setReferenceId(rawTransferHistory.getReferenceId());
+        context.setUsername(rawTransferHistory.getAgentPlayerUsername());
+        context.setPlayerId(rawTransferHistory.getAgentPlayerId());
+        context.setTokenId(rawTransferHistory.getCurrencyId());
+        context.setEntityId(rawTransferHistory.getAgentId());
 
         try {
             response = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_WITHDRAW)
@@ -109,11 +122,13 @@ public class WithdrawRequest {
             rawTransferHistory = transferService.mapWalletServiceResponse(rawTransferHistory, responseVo, TransactionType.WITHDRAWAL.status);
 
         } catch (InvalidResponseException invalidResponseException) {
+            eventPublisher.publishEvent(context);
             throw new InvalidWalletServiceResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (Exception exception) {
             transferWalletRequestLog.setException(exception.getClass().getSimpleName());
             transferWalletRequestLog.setExceptionMessage(exception.getMessage());
+            eventPublisher.publishEvent(context);
             throw exception;
         } finally {
             if (transferWalletRequestLog.getWalletEnd() == null) {
