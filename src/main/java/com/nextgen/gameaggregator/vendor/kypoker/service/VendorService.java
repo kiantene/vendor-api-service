@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
@@ -179,4 +180,16 @@ public class VendorService extends BaseVendorService {
         return true;
     }
 
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //especially set for bet's effective turnover.(GA-13536)
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = BigDecimal.ZERO;
+        }
+
+        return effectiveTurnover;
+    }
 }

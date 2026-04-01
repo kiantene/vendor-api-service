@@ -4,10 +4,12 @@ import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.constant.WalletServiceConstant;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.core.service.AgentFeatureService;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -38,6 +40,7 @@ public class GameRoundService {
     private final ThreadPoolTaskScheduler taskScheduler;
     private final RedisTemplate<String, Object> redisTemplate;
     private final GameRoundProducer gameRoundProducer;
+    private final AgentFeatureService agentFeatureService;
 
     // to exclude vendors not using unsettled bets (eg. PGSoft)
     private final List<Integer> asyncEndRoundVendorExclusionList = List.of(
@@ -72,9 +75,9 @@ public class GameRoundService {
             return false;
         }
 
-        // only api version 3 will run below logic
-        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(gameSession.getAgentId());
-        return agentApiVersion != null && agentApiVersion == 3;
+        // only agent feature for Features. will run below logic
+        Integer status = agentFeatureService.getStatus(gameSession.getAgentId(), Features.AGENT_END_ROUND);
+        return status == 1;
     }
 
     public void notifyEndRoundAsync(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {

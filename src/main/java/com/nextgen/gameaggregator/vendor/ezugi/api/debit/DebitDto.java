@@ -19,18 +19,14 @@ import java.math.BigInteger;
 public class DebitDto extends CommonDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String transactionId;
     @NotNull
-    @Digits(integer = 18, fraction = 0)
     @JsonProperty("roundId")
     private BigInteger vendorRoundId;
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     @JsonProperty("gameId")
     private Integer vendorGameId;
     @NotNull
@@ -40,11 +36,9 @@ public class DebitDto extends CommonDto implements BetResultData {
     @Digits(integer = 25, fraction = 2, message = "Invalid amount")
     private Double debitAmount;
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     private Integer betTypeID;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 4)
     private String currency;
 
     @Override

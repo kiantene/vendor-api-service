@@ -210,6 +210,8 @@ public class GameTransactionService {
         // if vendor bet id is different from transaction id
         boolean isVendorBetIdDifferent = !txn.getTransactionId().equals(txn.getVendorBetId());
 
-        return (txn.isBet() || txn.isBetNResult()) && isVendorBetIdDifferent;
+        //As Rollback searches by <classname>::BET::<vendorbetid>, we have to create an alias txn for BetNResult
+        //scenario OR Bet transaction with different vendorbetid and txnid
+        return txn.isBetNResult() || (txn.isBet() && isVendorBetIdDifferent);
     }
 }

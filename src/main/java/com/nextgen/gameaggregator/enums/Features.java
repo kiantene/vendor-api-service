@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum Features {
-    AGENT_MAX_PAYOUT(1, "AGENT_MAX_PAYOUT", "set agent max payout by vendor currencies and game category");
+    AGENT_MAX_PAYOUT(1, "AGENT_MAX_PAYOUT", "set agent max payout by vendor currencies and game category"),
+    AGENT_END_ROUND(3, "AGENT_END_ROUND", "fire end round request to agent");
 
     public final Integer id;
     public final String code;

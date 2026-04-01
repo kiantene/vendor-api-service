@@ -187,7 +187,7 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (InvalidAgentApiCredentialException | DisabledVendorLineException invalidAgentApiCredentialException) {
+        } catch (DisabledVendorLineException invalidAgentApiCredentialException) {
             parentResponseVo.setError(ResponseCodes.INVALID_OPERATOR);
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
@@ -203,7 +203,7 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
-        } catch (BetFailedException betFailedException) {
+        } catch (BetFailedException | InvalidAgentApiCredentialException betFailedException) {
             parentResponseVo.setError(ResponseCodes.BET_FAILED_3073);
             httpService.logError(httpRequestLog, betFailedException);
 

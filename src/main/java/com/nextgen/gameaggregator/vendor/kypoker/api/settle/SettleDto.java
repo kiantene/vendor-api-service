@@ -115,7 +115,13 @@ public class SettleDto implements BetResultData, RequestIdempotency {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+
+        if (this.getRoomMode().equals(RoomCode.BONUS.code) || this.getRoomMode().equals(RoomCode.SINGLE.code)) {
+            return this.validBet;
+        } else {
+            return null;
+        }
+
     }
 
     @Override

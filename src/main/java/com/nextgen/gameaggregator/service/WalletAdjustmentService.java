@@ -43,7 +43,7 @@ public class WalletAdjustmentService {
         httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
         httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         WalletBalanceVo balanceVo = null;
-
+        SettledBet settledBet = null;
         // check idempotent
         RawBetAdjustmentLog rawBetAdjustmentLog = this.betAdjustmentLogService.idempotentCheck(traceId, gameSession, adjustmentData);
 
@@ -51,7 +51,7 @@ public class WalletAdjustmentService {
         try {
             this.checkValidAdjustment(gameSession, adjustmentData);
 
-            SettledBet settledBet = this.newAdjustmentSettledBet(traceId, adjustmentData, gameSession);
+            settledBet = this.newAdjustmentSettledBet(traceId, adjustmentData, gameSession);
 
             VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
 
@@ -80,11 +80,8 @@ public class WalletAdjustmentService {
             rawBetAdjustmentLog.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
             betAdjustmentLogService.create(rawBetAdjustmentLog);
 
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                throw new InsufficientBalanceException();
-            } else {
-                throw invalidOperatorResponseException;
-            }
+            //GA-12667 add force success to vendor and retry to operator.
+
         } catch (BetNotFoundException |
                  SettledBetNotFoundException betNotFoundException) {
             rawBetAdjustmentLog.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -125,4 +122,5 @@ public class WalletAdjustmentService {
             }
         }
     }
+
 }

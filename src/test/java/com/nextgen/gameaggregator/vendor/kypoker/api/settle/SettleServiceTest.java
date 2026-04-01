@@ -458,7 +458,7 @@ class SettleServiceTest {
                     600,
                     new BigDecimal("100"),
                     "game-456",
-                    1,
+                    2,
                     new BigDecimal("50"),
                     new BigDecimal("50"),
                     new BigDecimal("50"),
@@ -472,7 +472,7 @@ class SettleServiceTest {
             assertEquals("600", settleDto.getGameId());
             assertEquals(BigDecimal.ZERO, settleDto.getBetAmount()); // Always returns ZERO
             assertNull(settleDto.getWinLoss());
-            assertNull(settleDto.getEffectiveTurnover());
+            assertEquals(new BigDecimal(50), settleDto.getEffectiveTurnover());
             assertNull(settleDto.getVendorBetTime());
             assertNull(settleDto.getJackpotAmount());
             assertEquals(0, settleDto.getIsFreespin());

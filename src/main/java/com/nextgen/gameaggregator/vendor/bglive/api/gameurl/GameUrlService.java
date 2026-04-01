@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -104,9 +105,15 @@ public class GameUrlService extends BaseGameUrlService<BgLiveGameUrlVo> {
             String body = response.getBody();
             LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
             String gameUrl = loginDto.getResult();
-            BgLiveGameUrlVo responseVo = new BgLiveGameUrlVo();
-            responseVo.setResult(gameUrl);
 
+            String finalUrl = UriComponentsBuilder.fromHttpUrl(gameUrl)
+                    .queryParam(
+                            CuiType.DISABLE_DOWNLOAD_BUTTON_H5.getKey(),
+                            CuiType.DISABLE_DOWNLOAD_BUTTON_H5.getValue())
+                    .toUriString();
+
+            BgLiveGameUrlVo responseVo = new BgLiveGameUrlVo();
+            responseVo.setResult(finalUrl);
             return responseVo;
         } catch (Exception e) {
             throw new InvalidVendorResponseException("Error processing JSON" + e);
