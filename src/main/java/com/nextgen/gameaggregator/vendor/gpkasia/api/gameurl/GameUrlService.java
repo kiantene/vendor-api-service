@@ -29,8 +29,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType.SEVENMOJO;
+import static com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType.SEVENMOJOLATAM;
 
 @Service
 @Slf4j
@@ -58,8 +60,8 @@ public class GameUrlService implements GameUrl {
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
         formData.add("ip", gameSession.getIpAddress());
-        //to use latest lobby version for sevenmojo only.
-        if (SEVENMOJO.equals(formData.getFirst("platform"))) {
+        //to use latest lobby version for SEVENMOJO, SEVENMOJOLATAM only.
+        if (Set.of(SEVENMOJO, SEVENMOJOLATAM).contains(formData.getFirst("platform"))) {
             formData.add("lobby_v2", "1");
         }
         return formData;
