@@ -16,7 +16,7 @@ public class VplusConfig extends AbstractVendorConfig {
 
     @Override
     protected void overrideDefaults() {
-//        setWalletServiceLegacyEnabled(false);
+        setWalletServiceLegacyEnabled(false);
         setTransactionHistoryEnabled(true);
     }
 
