@@ -18,6 +18,8 @@ import com.nextgen.gameaggregator.vendor.superbullgaming.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 @Slf4j
@@ -32,11 +34,15 @@ public class AuthenticateAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private WalletService walletService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public CommonVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
+        String traceId = httpRequestLog.getId();
+
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -52,33 +58,37 @@ public class AuthenticateAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
+            //Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
             // 5. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
             responseVo.setToken(gameSession.getToken());
+            responseVo.setBalance(balance);
             responseVo.setUsername(dto.getUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setTimestamp(System.currentTimeMillis());
-            
-            } catch (JsonProcessingException | InvalidRequestException e) {
-                httpService.logError(httpRequestLog, e);
-                responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-            } catch (DisabledVendorLineException | DisabledAgentPlayerException e) {
-                httpService.logError(httpRequestLog, e);
-                responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
+        } catch (JsonProcessingException | InvalidRequestException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-            } catch (DisabledGameException e) {
-                httpService.logError(httpRequestLog, e);
-                responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
+        } catch (DisabledVendorLineException | DisabledAgentPlayerException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INACTIVE_PLAYER);
 
-            } catch (AuthenticationException | CredentialNotFoundException e) {
-                httpService.logError(httpRequestLog, e);
-                responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
+        } catch (DisabledGameException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.GAME_DOES_NOT_EXIST);
 
-            } catch (Exception exception) { // any other exception encountered
-                httpService.logError(httpRequestLog, exception);
-                responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
+        } catch (AuthenticationException | CredentialNotFoundException e) {
+            httpService.logError(httpRequestLog, e);
+            responseVo.setResponseCode(ResponseCode.INVALID_TOKEN);
+
+        } catch (Exception exception) { // any other exception encountered
+            httpService.logError(httpRequestLog, exception);
+            responseVo.setResponseCode(ResponseCode.OPERATION_FAILED);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);

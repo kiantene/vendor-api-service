@@ -66,7 +66,7 @@ public class BetResultOperatorWalletAdapter implements OperatorRequestAdapter {
     }
 
     private PlayerBalanceData getFallbackBalance(GameRound round) {
-        return PlayerBalanceData.getDefaultWithBalance(
+        return PlayerBalanceData.ofVendorView(
                 round.getAgentMeta().getUsername(),
                 round.getAgentMeta().getCurrency(),
                 round.getLastBalance()
