@@ -7,11 +7,12 @@ import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.S3Service;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -35,6 +37,10 @@ import java.util.UUID;
 public class BetDetailService implements BetDetailUrl {
     @Autowired
     RequestService requestService;
+    @Autowired
+    private S3Service s3Service;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -65,30 +71,51 @@ public class BetDetailService implements BetDetailUrl {
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
                                IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
+        String traceId = String.valueOf(UUID.randomUUID());
 
-        LoginProxyVo loginProxyVo = this.callLoginProxy(formData, credentials);
+        LoginProxyVo loginProxyVo = this.callLoginProxy(formData, credentials, traceId);
         BetDetailUrlVo betDetailUrlVo = new BetDetailUrlVo();
         if (loginProxyVo.equals(null)) {
             betDetailUrlVo.setError(loginProxyVo.getError());
         } else {
-            String UrlBetHistory = credentials.get(Credentials.PUBLIC_DOMAIN)+Endpoints.BET_DETAIL_STEP_TWO+
-                    "?trace_id={0}&t={1}&psid={2}&sid={3}&lang={4}&type=operator";
 
-            String betDetailUrl = VendorService.generateBetDetailUrl(
-                    UrlBetHistory, String.valueOf(UUID.randomUUID()), loginProxyVo.getData().getOperator_session(), iBetDetailUrlInfo.getExternalRoundId(),
-                    iBetDetailUrlInfo.getExternalTransactionId(), vendorLanguageCode.getLanguageCode());
-            betDetailUrlVo.setUrl(betDetailUrl);
+            GameSession gameSession = this.getGameSession(iBetDetailUrlInfo);
+
+            MultiValueMap<String, String> newDataFormat = this.newDataFormat(iBetDetailUrlInfo, traceId, loginProxyVo.getData().getOperator_session());
+            //The bet detail uses the same domain as the game URL.
+            String apiUrl = credentials.get(Credentials.GAME_URL_DOMAIN);
+            Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
+
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
+                    .post()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(BodyInserters.fromFormData(newDataFormat))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .onErrorResume(WebClientRequestException.class, e -> {
+                        log.error("Failed to fetch data from {}: {}", apiUrl, e.getMessage());
+                        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching data from " + apiUrl));
+                    })
+                    .retry(3)
+                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                    .block();
+
+            Optional.ofNullable(apiResponse).orElseThrow(InvalidVendorResponseException::new);
+
+            String vendorGameUrl = s3Service.generateHtmlToS3(gameSession, apiResponse.getBody());
+            betDetailUrlVo.setUrl(vendorGameUrl);
         }
 
 
         return betDetailUrlVo;
     }
 
-    public LoginProxyVo callLoginProxy(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorResponseException, InvalidVendorLineException {
-        String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN) ;
+    public LoginProxyVo callLoginProxy(MultiValueMap<String, String> formData, Map<String, String> credentials, String traceId) throws InvalidVendorResponseException, InvalidVendorLineException {
+        String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        String uri = Endpoints.BET_DETAIL_STEP_ONE+ "?trace_id="+String.valueOf(UUID.randomUUID());
+        String uri = Endpoints.BET_DETAIL_STEP_ONE + "?trace_id=" + traceId;
 
         LoginProxyVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
@@ -139,5 +166,42 @@ public class BetDetailService implements BetDetailUrl {
         }
 
         return responseVo;
+    }
+
+    private MultiValueMap<String, String> newDataFormat(
+            IBetDetailUrlInfo iBetDetailUrlInfo,
+            String traceId, String operatorSession) {
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+
+        //build extra args for bet detail
+        String extraArgs = UriComponentsBuilder.newInstance()
+                .queryParam("trace_id", traceId)
+                .queryParam("t", operatorSession)
+                .queryParam("psid", iBetDetailUrlInfo.getExternalRoundId())
+                .queryParam("sid", iBetDetailUrlInfo.getExternalTransactionId())
+                .queryParam("type", "operator")
+                .build()
+                .toUriString()
+                .substring(1);
+
+        formData.add("trace_id", traceId);
+        formData.add("path", Endpoints.BET_DETAIL_STEP_TWO);
+        formData.add("extra_args", extraArgs);
+        formData.add("url_type", "web-history");
+        formData.add("client_ip", "192.168.2.2");
+
+        return formData;
+
+    }
+
+    //customize game session for generate html to s3
+    private GameSession getGameSession(IBetDetailUrlInfo iBetDetailUrlInfo) {
+
+        GameSession gameSession = new GameSession();
+        gameSession.setGameCode(iBetDetailUrlInfo.getGameCode());
+        gameSession.setToken(iBetDetailUrlInfo.getVendorUsername());
+
+        return gameSession;
     }
 }

@@ -52,7 +52,8 @@ public class ResponseCodes {
         SC_TRACE_ID_MISMATCHED(40, "Trace Id mismatched"),
         SC_USERNAME_MISMATCHED(41, "Request username is different from Response username"),
         SC_INVALID_DATE_7_RANGE(42, "Date range should be within seven days."),
-        SC_PRODUCT_COMBINATION_NOT_SUPPORTED(44, "Product combination (game category/currency) not supported."),    
+        SC_PRODUCT_COMBINATION_NOT_SUPPORTED(44, "Product combination (game category/currency) not supported."),
+        SC_DUPLICATE_PLAYER_ID_OR_USERNAME(45, "Duplicate player id or username."),
         ;
 
 

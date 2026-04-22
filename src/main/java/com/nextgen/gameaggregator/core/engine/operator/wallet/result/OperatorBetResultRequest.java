@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.operator.wallet.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nextgen.gameaggregator.core.common.OperatorRequestObject;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
-import net.minidev.json.annotate.JsonIgnore;
 
 import java.math.BigDecimal;
 

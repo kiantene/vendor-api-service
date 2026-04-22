@@ -29,7 +29,6 @@ public enum Vendors {
     INBETGAMES      (91,  null, "inbetgames",    true),
     BOMBAY          (42,  null, "bombay",        true),
     CRYSTAL         (94,  null, "crystal",       true),
-    AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
     VPLUS           (97,  null, "vplus",         true),
     FUGASO          (101, null, "groove",        true),
     GALAXSYS        (102, null, "digitain",      true),
@@ -50,6 +49,7 @@ public enum Vendors {
     LUCKY365        (130, null, "lucky365",      true),
     HP100           (124, null, "hp100",         true),
     CF6             (137, null, "cockfight6",           true),
+    AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true)
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds

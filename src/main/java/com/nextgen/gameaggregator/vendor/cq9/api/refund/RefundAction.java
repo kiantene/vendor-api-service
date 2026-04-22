@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.core.WalletRequestServiceImpl;
@@ -45,6 +46,7 @@ public class RefundAction {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final WalletTransactionService walletTransactionService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     public RefundAction(GameSessionService gameSessionService,
                         HttpService httpService,
@@ -54,7 +56,8 @@ public class RefundAction {
                         UnsettledBetService unsettledBetService,
                         OperatorWalletServiceImpl operatorWalletService,
                         WalletRequestServiceImpl walletRequestService,
-                        WalletTransactionServiceImpl walletTransactionService) {
+                        WalletTransactionServiceImpl walletTransactionService,
+                        RequestIdempotentLogService requestIdempotentLogService) {
 
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
@@ -65,6 +68,7 @@ public class RefundAction {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.walletTransactionService = walletTransactionService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.REFUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -83,16 +87,25 @@ public class RefundAction {
         CommonVo commonVo = new CommonVo();
         String vendorCurrencyCode = null;
         WalletTransaction walletTransaction = null;
-
+        boolean isRequestExists = false;
+        RefundDto refundDto = new RefundDto();
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            RefundDto refundDto = HttpService.convertQueryStringToDtoUrlDecode(body, RefundDto.class);
+            refundDto = HttpService.convertQueryStringToDtoUrlDecode(body, RefundDto.class);
 
             // 1. Validate request parameters from vendor
             this.doValidation(refundDto, wToken);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(refundDto, refundDto.getAccount()) == null) {
+                requestIdempotentLogService.create(refundDto, refundDto.getAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Gather require data
             Integer vendorId = vendorService.findVendorByCode(Credentials.VENDOR_CODE).getId();
@@ -169,6 +182,10 @@ public class RefundAction {
             walletRequest.setErrorMessage(exception.getMessage());
 
         } finally {
+
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(refundDto, refundDto.getAccount());
+            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
 

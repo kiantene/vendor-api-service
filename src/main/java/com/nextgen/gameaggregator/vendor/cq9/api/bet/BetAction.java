@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -38,6 +39,7 @@ public class BetAction {
     private final VendorLineService vendorLineService;
     private final WalletService walletService;
     private final VendorService vendorService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public BetAction(GameSessionService gameSessionService,
@@ -45,13 +47,15 @@ public class BetAction {
                      ValidationService validationService,
                      VendorLineService vendorLineService,
                      WalletService walletService,
-                     VendorService vendorService) {
+                     VendorService vendorService,
+                     RequestIdempotentLogService requestIdempotentLogService) {
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.walletService = walletService;
         this.vendorService = vendorService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -67,13 +71,22 @@ public class BetAction {
         CommonVo commonVo = new CommonVo();
         responseVo.setStatus(statusVo);
         String vendorCurrencyCode = "";
-
+        boolean isRequestExists = false;
+        BetDto betDto = new BetDto();
         try {
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BetDto.class);
+            betDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BetDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto, wToken);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getAccount()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
@@ -159,6 +172,9 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getAccount());
+            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             httpService.end(httpRequestLog, responseVo);
