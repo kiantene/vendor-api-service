@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.rollback;
 
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -40,6 +40,12 @@ public class RollbackAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
+    @Autowired
+    private SettledBetService settledBetService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     @PostMapping(path = EndPoints.ROLLBACK)
     public ResponseVo rollBack(HttpServletRequest request) {
@@ -53,18 +59,21 @@ public class RollbackAction {
         BigDecimal balance = null;
 
         ResponseVo responseVo = new ResponseVo();
+        RollbackDto rollbackDto = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-            RollbackDto rollbackDto = httpService.convertQueryStringToDtoUrlDecode(body, RollbackDto.class);
+            rollbackDto = httpService.convertQueryStringToDtoUrlDecode(body, RollbackDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
 
+            BetInformation betInformation = this.resolveBetInformation(rollbackDto.getRollbackId(), rollbackDto.getUsername());
+
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollbackDto.getUsername());
+            gameSession = this.getGameSession(betInformation, rollbackDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession, body);
@@ -91,15 +100,20 @@ public class RollbackAction {
                  BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
 
-            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+            if (rollbackDto.getType().equals(RequestType.CANCEL_REQUEST)) {
+                // set vo
+                responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
+                responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
+            } else {
+                balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
-            // set vo
-            responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
-            responseVo.setResult(ResponseCodes.SUCCESS_CODE);
-            responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
+                // set vo
+                responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
+                responseVo.setResult(ResponseCodes.SUCCESS_CODE);
+                responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
+            }
         } catch (VendorCurrencyNotSupportException |
-                 AuthenticationException |
                  InvalidOperatorResponseException |
                  DisabledVendorLineException |
                  InvalidAgentApiCredentialException |
@@ -183,4 +197,62 @@ public class RollbackAction {
 
         return balance;
     }
+
+    private GameSession getGameSession(BetInformation betInformation, String vendorPlayerUsername)
+            throws GameNotSupportedException, InvalidCurrencyException, RecordNotFoundException {
+        GameSession gameSession;
+
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            if (!gameSession.getVendorGameId().equals(betInformation.getVendorGameId())) {
+                throw new AuthenticationException();
+            }
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewGameSessionFromBetInformation(betInformation, vendorPlayerUsername);
+
+        }
+        return gameSession;
+    }
+
+    private BetInformation resolveBetInformation(String externalTransactionId, String vendorPlayerUsername)
+            throws InvalidPlayerException,
+            BetResultIdempotentViolationException,
+            BetNotFoundException {
+
+        // 1. Get vendor player
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorPlayerUsername);
+        Long vendorPlayerId = vendorPlayer.getId();
+
+        // 2. Attempt to retrieve unsettled bet first
+        UnsettledBet unsettledBet = this.getUnsettledBet(vendorPlayerId, externalTransactionId);
+        if (unsettledBet != null) {
+            return unsettledBet;
+        }
+
+        // 3. Fallback to settled bet if unsettled bet is not found
+        return this.getSettledBetOrThrow(vendorPlayerId, externalTransactionId);
+
+    }
+
+    private SettledBet getSettledBetOrThrow(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException, BetResultIdempotentViolationException {
+        SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+
+        // ACTIVE status means bet already processed
+        if (settledBet.getStatus().equals(Status.ACTIVE.code)) {
+            throw new BetResultIdempotentViolationException("Already settle");
+        }
+
+        return settledBet;
+    }
+
+    private UnsettledBet getUnsettledBet(Long vendorPlayerId, String externalTransactionId) {
+        try {
+            return unsettledBetCachingService
+                    .getUnsettledBetByExternalTransactionId(vendorPlayerId, externalTransactionId);
+        } catch (BetNotFoundException e) {
+            // Fallback to settled bet flow when unsettled bet does not exist
+            return null;
+        }
+    }
+
 }

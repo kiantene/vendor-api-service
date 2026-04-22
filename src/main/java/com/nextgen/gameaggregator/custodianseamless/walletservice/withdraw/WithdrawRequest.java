@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.custodianseamless.walletservice.rollback.Walle
 import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceBeforeAfterVo;
 import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import com.nextgen.gameaggregator.entity.wallet.AccessKey;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
 import com.nextgen.gameaggregator.logging.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -34,8 +35,11 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.*;
 
 @Service
 @Slf4j
@@ -48,6 +52,14 @@ public class WithdrawRequest {
     public Integer timeout;
     @Value("${walletservice.host}")
     private String walletServiceUrl;
+    private static final Set<ResponseCodes.Status> SKIP_SEND_ROLLBACK_ERROR = Set.of(
+            SC_INVALID_REQUEST,
+            SC_INVALID_SIGNATURE,
+            SC_DUPLICATE_REQUEST,
+            SC_USER_NOT_EXISTS,
+            SC_DUPLICATE_PLAYER_ID_OR_USERNAME,
+            SC_INSUFFICIENT_FUNDS
+    );
 
     public WithdrawRequest(AuthenticationService authenticationService, TransferService transferService,
                            @Qualifier ApplicationEventPublisher eventPublisher) {
@@ -120,9 +132,34 @@ public class WithdrawRequest {
 
             // 5. validate wallet response fail status
             rawTransferHistory = transferService.mapWalletServiceResponse(rawTransferHistory, responseVo, TransactionType.WITHDRAWAL.status);
+            
+        } catch (InvalidWalletServiceResponseException invalidWalletServiceResponseException) {
+            Integer errorCode = invalidWalletServiceResponseException.getWalletStatus();
+
+            //cater differently.
+            boolean shouldSkip = SKIP_SEND_ROLLBACK_ERROR.stream()
+                    .anyMatch(status -> status.code.equals(errorCode));
+
+            if (!shouldSkip) {
+                eventPublisher.publishEvent(context);
+            }
+            
+            throw invalidWalletServiceResponseException;
+
+        } catch (WalletServiceTimeoutException walletServiceTimeoutException) {
+            eventPublisher.publishEvent(context);
+            throw walletServiceTimeoutException;
 
         } catch (InvalidResponseException invalidResponseException) {
-            eventPublisher.publishEvent(context);
+            String normalizedErrorCode = invalidResponseException.getMessage().toUpperCase();
+
+            //if error code is not in SKIP_SEND_ROLLBACK_ERROR, publish event
+            for (Status code : SKIP_SEND_ROLLBACK_ERROR) {
+                if (!normalizedErrorCode.contains(code.name())) {
+                    eventPublisher.publishEvent(context);
+                }
+            }
+
             throw new InvalidWalletServiceResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (Exception exception) {
@@ -130,6 +167,7 @@ public class WithdrawRequest {
             transferWalletRequestLog.setExceptionMessage(exception.getMessage());
             eventPublisher.publishEvent(context);
             throw exception;
+
         } finally {
             if (transferWalletRequestLog.getWalletEnd() == null) {
                 Long timestamp = System.currentTimeMillis();

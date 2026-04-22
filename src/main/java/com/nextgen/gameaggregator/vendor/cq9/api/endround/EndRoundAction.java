@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
@@ -54,6 +55,8 @@ public class EndRoundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -67,16 +70,25 @@ public class EndRoundAction {
         CommonVo commonVo = new CommonVo();
         responseVo.setStatus(statusVo);
         String vendorCurrencyCode = "";
-
+        boolean isRequestExists = false;
+        EndRoundDto endRoundDto = new EndRoundDto();
         try {
             // Convert original request body into dto
-            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
+            endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
             List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {
             });
 
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(endRoundDto, endRoundDto.getAccount()) == null) {
+                requestIdempotentLogService.create(endRoundDto, endRoundDto.getAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 3. Verify session token
             GameSession gameSession;
@@ -168,6 +180,9 @@ public class EndRoundAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(endRoundDto, endRoundDto.getAccount());
+            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             httpService.end(httpRequestLog, responseVo);

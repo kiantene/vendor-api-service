@@ -75,14 +75,7 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
-
-            // check db game code is stg or not
-            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
-                creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
-            }
-
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(), gameSession);
+            gameSession = this.getGameSession(traceId, creditDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, body);
@@ -123,7 +116,6 @@ public class CreditAction {
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
         } catch (VendorCurrencyNotSupportException |
-                 AuthenticationException |
                  InsufficientBalanceException |
                  InvalidOperatorResponseException |
                  DisabledVendorLineException |
@@ -213,5 +205,27 @@ public class CreditAction {
         }
 
         return balance;
+    }
+
+    private GameSession getGameSession(String traceId, CreditDto creditDto) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
+
+            // check db game code is stg or not
+            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
+                creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
+            }
+
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(), gameSession);
+
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(creditDto.getUsername());
+            gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }
