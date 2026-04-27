@@ -363,18 +363,23 @@ public class SettlementService {
         String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
         String vendorPlayerUsername = settleDto.getParamsDto().getLoginId();
         GameSession gameSession;
+        String vendorGameCode;
 
 
         UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
         WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, vendorPlayerUsername);
-
         if (unsettledBet == null && walletTransaction == null) {
             throw new BetNotFoundException("Cannot find round Id: " + roundId);
         }
-        VendorGame vendorGame = vendorGameService.getByVendorGameId(unsettledBet.getVendorGameId());
+        if (unsettledBet != null) {
+            VendorGame vendorGame = vendorGameService.getByVendorGameId(unsettledBet.getVendorGameId());
+            vendorGameCode = vendorGame.getVendorGameCode();
+        } else {
+            vendorGameCode = walletTransaction.getVendorGameCode();
+        }
         try {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
-            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGame.getVendorGameCode(), gameSession);
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
         } catch (AuthenticationException authenticationException) {
             //regenerate token
             gameSession = regenerateSession(settleDto, traceId, unsettledBet, walletTransaction);
