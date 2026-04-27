@@ -307,7 +307,12 @@ public class KafkaConsumerService {
         });
     }
 
-    @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    @KafkaListener(
+            id = "rawSettledBetListener",
+            topics = KafkaConstant.TOPIC_RAW_SETTLED_BET,
+            groupId = KafkaConstant.GROUP_ID,
+            containerFactory = "customKafkaListenerContainerFactory",
+            autoStartup = "${kafka.listener.raw-settled-bet.enabled:false}")
     public void consumeRawSettledBet(String message) {
         String traceId = UUID.randomUUID().toString();
         HttpRequestLog httpRequestLog = httpService.startInternalConsumerForRawSettledBet();

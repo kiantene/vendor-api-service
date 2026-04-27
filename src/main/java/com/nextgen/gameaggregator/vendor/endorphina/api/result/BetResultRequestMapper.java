@@ -11,7 +11,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
     @Override
     public BetResultContext toInternal(BetResultRequest request) {
         return BetResultContext.builder()
-                .idempotencyKey(request.getId() != null ? request.getId() : request.getDate())
+                .idempotencyKey(request.getId() != null ? request.getId() : request.getToken() + "_" + request.getPlayer() + "_" + request.getGameId())
                 .vendorBetId(request.getBetTransactionId())
                 .roundId(request.getBetTransactionId())
                 .vendorGameCode(request.getGame())
