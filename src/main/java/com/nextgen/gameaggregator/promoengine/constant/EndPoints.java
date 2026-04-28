@@ -5,4 +5,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EndPoints {
     public static final String FETCH_CAMPAIGN = "/internal/fetchCampaign";
+    public static final String FETCH_PLAYER_ACTIVE_CAMPAIGN = "/internal/fetchPlayerActiveCampaign";
 }
+
