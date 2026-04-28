@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.core.engine.promo.player.ActiveCampaignService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
@@ -27,6 +28,9 @@ import java.util.Map;
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     @Autowired
     RequestService requestService;
+
+    @Autowired
+    ActiveCampaignService activeCampaignService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -61,6 +65,11 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         dto.setGType(gType);
         dto.setMType(String.valueOf(mType));
         dto.setWindowMode(windowMode);
+
+        String eventId = activeCampaignService.getVendorCampaignCode(gameSession);
+        if (eventId != null) {
+            dto.setEventId(eventId);
+        }
 
         Gson gson = new GsonBuilder().create();
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();

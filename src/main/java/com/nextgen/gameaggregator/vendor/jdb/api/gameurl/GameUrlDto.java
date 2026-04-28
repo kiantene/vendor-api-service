@@ -15,4 +15,5 @@ public class GameUrlDto {
     private int gType;
     private String mType;
     private String windowMode;
+    private String eventId;
 }

@@ -262,6 +262,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("TempIdempotency", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorCampaignGame", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         //endregion
 
 
