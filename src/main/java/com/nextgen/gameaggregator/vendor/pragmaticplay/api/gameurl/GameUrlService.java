@@ -64,7 +64,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
         //TEMPORARY FIXES GA-13725
         if (region.equalsIgnoreCase("CIS")) {
-            return "BE";
+            return "FI";
         }
 
         String countryCode = GeoIpUtil.getCountryCode(ip);
