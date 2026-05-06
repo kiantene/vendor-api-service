@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.betdetail;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -10,14 +11,21 @@ import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yeebet.service.VendorService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class BetDetailService implements BetDetailUrl {
 
     @Autowired
@@ -31,7 +39,7 @@ public class BetDetailService implements BetDetailUrl {
 
         //setup form data
         formData.add("appid", credentials.get(Credentials.game_app_id));
-        formData.add("ids", iBetDetailUrlInfo.getTransactionId());
+        formData.add("ids", iBetDetailUrlInfo.getExternalTransactionId());
         formData.add("index", "0");
         formData.add("size", "2000");
 
@@ -62,7 +70,35 @@ public class BetDetailService implements BetDetailUrl {
                 .toUri()
                 .toString();
 
-        responseVo.setUrl(uri);
+        ResponseEntity<String> apiResponse = WebClient.create()
+                .get()
+                .uri(uri)
+                .retrieve()
+                // TODO: to catch more error codes
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                .toEntity(String.class)
+                .retry(com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints.RETRY)
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                .block();
+
+        if (apiResponse != null && apiResponse.getBody() != null) {
+            try {
+                YeeBetBetDetailResponse yeeBetData = new Gson().fromJson(apiResponse.getBody(), YeeBetBetDetailResponse.class);
+
+                if (yeeBetData != null && yeeBetData.getResult() == 0 && yeeBetData.getBetDetailArray() != null && !yeeBetData.getBetDetailArray().isEmpty()) {
+                    String grUrl = yeeBetData.getBetDetailArray().get(0).getGrUrl();
+                    responseVo.setUrl(grUrl);
+                } else {
+                    log.warn("[YeebetTransactionDetail] Invalid result or empty array. Body: {}", apiResponse.getBody());
+                    responseVo.setUrl("");
+                }
+            } catch (Exception e) {
+                log.error("[YeebetTransactionDetail] JSON Parse Error: {}", e.getMessage());
+                responseVo.setUrl("");
+            }
+        } else {
+            responseVo.setUrl("");
+        }
 
         return responseVo;
     }

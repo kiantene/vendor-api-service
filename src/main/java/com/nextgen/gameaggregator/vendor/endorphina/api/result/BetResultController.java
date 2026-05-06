@@ -33,7 +33,7 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
 
     @Override
     public void configure(BetResultConfig config, BetResultRequest request) {
-        config.betAndResult(false)
+        config.betAndResult(request.isProgressive())
                 .returnSuccessOnDuplicate(true)
                 .setSettleType(SettleType.BET);
     }
