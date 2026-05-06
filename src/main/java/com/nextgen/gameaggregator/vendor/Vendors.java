@@ -40,7 +40,6 @@ public enum Vendors {
     ONEBET          (114, null, "onebet",        true),
     EGT_DIGITAL     (115, null, "egtdigital",    true),
     WAZDAN          (116, null, "wazdan",        true),
-    ENDORPHINA      (117, null, "endorphina",    true),
     VIVOGAMING      (118, null, "vivogaming",    true),
     MANCALA         (120, null, "mancala",       true),
     YESBINGO        (30,  null, "yesbingo",      false),

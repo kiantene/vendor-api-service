@@ -27,4 +27,6 @@ public class GameLaunchRequest {
 
     // Game laucher URL
     private String url;
+
+    private String sd;
 }

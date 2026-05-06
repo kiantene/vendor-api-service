@@ -12,7 +12,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
     public BetResultContext toInternal(BetResultRequest request) {
         return BetResultContext.builder()
                 .idempotencyKey(request.getId() != null ? request.getId() : request.getToken() + "_" + request.getPlayer() + "_" + request.getGameId())
-                .vendorBetId(request.getBetTransactionId())
+                .vendorBetId(request.isProgressive()?null: request.getBetTransactionId()) //if only jackpot will set null,the jackpot will consider settled bet
                 .roundId(request.getBetTransactionId())
                 .vendorGameCode(request.getGame())
                 .vendorPlayerUsername(request.getPlayer())
@@ -20,6 +20,8 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
                 .jackpotAmount(request.isProgressive() ? request.getAmount() : BigDecimal.ZERO)
                 .vendorCurrency(request.getCurrency())
                 .token(request.getToken())
+                .vendorBetTime(request.isProgressive()?request.getDate():null)
+                .vendorSettleTime(request.getDate())
                 .build();
     }
 }

@@ -10,9 +10,10 @@ import org.springframework.stereotype.Service;
 
 @Service(CosmoPlayVendorConfig.GAME_LAUNCHER_SERVICE_NAME)
 public class CosmoPlayGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
-
-    protected CosmoPlayGameLauncher(VendorCredentialUtils credentialUtils) {
+    private final CosmoPlayVendorConfig config;
+    protected CosmoPlayGameLauncher(VendorCredentialUtils credentialUtils, CosmoPlayVendorConfig config) {
         super(credentialUtils, CosmoPlayVendorConfig.CLASS_NAME);
+        this.config = config;
     }
 
     @Override
@@ -44,6 +45,7 @@ public class CosmoPlayGameLauncher extends QueryStringUrlGameLauncher<GameLaunch
                 .atk(context.getToken())  // Changed from .authToken()
                 .language(CosmoPlayVendorConfig.language(context.getVendorLanguageCode()))
                 .url(context.getLobbyUrl())// Changed from .hostURL()
+                .sd(config.getSdParam()) // only production required
                 .build();
     }
 }

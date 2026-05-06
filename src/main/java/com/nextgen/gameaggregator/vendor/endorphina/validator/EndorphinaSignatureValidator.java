@@ -12,7 +12,7 @@ import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.game.launcher.endorphina.util.VendorUtil;
 import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.Vendors;
+import com.nextgen.gameaggregator.vendor.endorphina.config.EndorphinaConfig;
 import com.nextgen.gameaggregator.vendor.endorphina.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.endorphina.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.endorphina.response.ErrorResponse;
@@ -31,7 +31,7 @@ public class EndorphinaSignatureValidator extends AbstractVendorSignatureValidat
 
     @Override
     public String getVendorClassName() {
-        return Vendors.ENDORPHINA.getClassName();
+        return EndorphinaConfig.CLASS_NAME;
     }
 
     @Override
