@@ -149,6 +149,10 @@ public abstract class WalletBaseAction {
     private WalletBalanceVo.ResponseData validateOperatorResponse(WalletRequest request, WalletBalanceVo response)
             throws InvalidOperatorResponseException, InsufficientBalanceException {
 
+        if (response == null || response.getStatus() == null) {
+            throw new InvalidOperatorResponseException(invalidResponseCode);
+        }
+        
         WalletBalanceVo.ResponseData responseData = response.getData();
 
         if (!response.getStatus().equals(ResponseCodes.Status.SC_OK)) {

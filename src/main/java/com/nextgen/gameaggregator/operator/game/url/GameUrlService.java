@@ -47,6 +47,7 @@ public class GameUrlService {
     private final GameLauncherRegistry gameLauncherRegistry;
     private final GameLaunchService gameLaunchService;
     private final GameSessionService gameSessionService;
+    private final MaintenanceGameService maintenanceGameService;
 
     //remove request service
     @Autowired
@@ -67,7 +68,8 @@ public class GameUrlService {
                           TestSupportService testSupportService,
                           GameLauncherRegistry gameLauncherRegistry,
                           GameLaunchService gameLaunchService,
-                          GameSessionService gameSessionService) {
+                          GameSessionService gameSessionService,
+                          MaintenanceGameService maintenanceGameService) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -87,6 +89,7 @@ public class GameUrlService {
         this.gameLauncherRegistry = gameLauncherRegistry;
         this.gameLaunchService = gameLaunchService;
         this.gameSessionService = gameSessionService;
+        this.maintenanceGameService = maintenanceGameService;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -301,6 +304,9 @@ public class GameUrlService {
         gameLaunchDto.setVendorLine(vendorLine);
         gameLaunchDto.setVendorLineId(vendorLineId);
 
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(productGame.getVendorGameId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
+
         VendorGameCode vendorGameCode = vendorGameCodeService.getByProductGame(productGameId, vendorId, platformId, gameLaunchDto.getLanguageId());
         vendorGameCodeService.checkGameStatus(vendorGameCode);
 
@@ -329,6 +335,9 @@ public class GameUrlService {
         gameLaunchDto.setVendorId(vendorId);
         gameLaunchDto.setVendorGameId(vendorGame.getId());
         gameLaunchDto.setGameCategoryId(gameCategoryId);
+
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(vendorGame.getId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
 
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGame(vendorGameId, platformId, languageId);
         vendorGameCodeService.checkGameStatus(vendorGameCode);

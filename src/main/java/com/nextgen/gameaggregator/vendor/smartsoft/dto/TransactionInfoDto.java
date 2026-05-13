@@ -3,11 +3,15 @@ package com.nextgen.gameaggregator.vendor.smartsoft.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.nextgen.gameaggregator.vendor.smartsoft.service.DateDeserializer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -39,4 +43,8 @@ public class TransactionInfoDto {
     @NotNull
     @JsonProperty("CashierTransactionId")
     private int cashierTransactionId;
+    
+    @JsonProperty("TransactionDate")
+    @JsonDeserialize(using = DateDeserializer.class)
+    private OffsetDateTime transactionDate;
 }

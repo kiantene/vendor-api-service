@@ -213,7 +213,7 @@ public class WalletService {
         return unsettledBet;
     }
 
-    private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, boolean sendToOperator)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
 
@@ -326,37 +326,46 @@ public class WalletService {
             this.processDefaultDataForSettledBet(walletBetResultData, settledBet);
             walletBetResultData.setBalance(settledBet.getBalance());
 
-            BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
+            if (sendToOperator) {
+                BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
 
-            //Handle for WIN Scenario, CQ9
-            if (resultType == ResultType.WIN) {
-                walletBetResultData.setBetAmount(BigDecimal.ZERO);
-                if (cappedBetResult.getUncapWinAmount() != null) {
-                    agentMaxPayoutService.applyUpdatedAmount(settledBet, cappedBetResult.getWinAmount(), cappedBetResult.getWinLoss(), cappedBetResult.getJackpotAmount());
+                //Handle for WIN Scenario, CQ9
+                if (resultType == ResultType.WIN) {
+                    walletBetResultData.setBetAmount(BigDecimal.ZERO);
+                    if (cappedBetResult.getUncapWinAmount() != null) {
+                        agentMaxPayoutService.applyUpdatedAmount(settledBet, cappedBetResult.getWinAmount(), cappedBetResult.getWinLoss(), cappedBetResult.getJackpotAmount());
+                    }
                 }
-            }
 
-            if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, cappedBetResult.getWinAmount(), settledBet.getOperatorStatus())) {
-                balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(
-                        traceId,
-                        agentId,
-                        gameSession,
-                        cappedBetResult,
-                        resultType,
-                        httpRequestLog,
-                        fromVendorConversionRate);
+                if (this.doCheckPPEndRoundForceProcessRetry(gameSession.getVendorId(), resultType, cappedBetResult.getWinAmount(), settledBet.getOperatorStatus())) {
+                    balanceVo = walletBetResultAction.generateOperatorBetResultInfoAndForceRetry(
+                            traceId,
+                            agentId,
+                            gameSession,
+                            cappedBetResult,
+                            resultType,
+                            httpRequestLog,
+                            fromVendorConversionRate);
+                } else {
+                    balanceVo = walletBetResultAction.call(
+                            traceId,
+                            agentId,
+                            gameSession,
+                            cappedBetResult,
+                            resultType,
+                            httpRequestLog,
+                            fromVendorConversionRate,
+                            toVendorConversionRate,
+                            vendorService.operatorTimeoutTiming()
+                    );
+                }
             } else {
-                balanceVo = walletBetResultAction.call(
-                        traceId,
-                        agentId,
-                        gameSession,
-                        cappedBetResult,
-                        resultType,
-                        httpRequestLog,
-                        fromVendorConversionRate,
-                        toVendorConversionRate,
-                        vendorService.operatorTimeoutTiming()
-                );
+                // no need call to operator than will set a custom balance vo
+                httpRequestLog.setOperatorEndPoints("SendToOperator is false");
+                balanceVo = new WalletBalanceVo();
+                WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+                data.setBalance(BigDecimal.ZERO);
+                balanceVo.setData(data);
             }
 
             loggingService.logStart();
@@ -668,7 +677,7 @@ public class WalletService {
         }
     }
 
-    private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, boolean sendToOperator)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException,
             InsufficientBalanceException, InternalServerTimeoutRetryException {
@@ -723,20 +732,28 @@ public class WalletService {
                 try {
                     // record operator processing time
                     walletBetResultData.setBalance(unsettledBet.getBalance());
+                    if (sendToOperator) {
+                        BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
 
-                    BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
-
-                    balanceVo = walletBetResultAction.call(
-                            traceId,
-                            agentId,
-                            gameSession,
-                            cappedBetResult,
-                            resultType,
-                            httpRequestLog,
-                            fromVendorConversionRate,
-                            toVendorConversionRate,
-                            vendorService.operatorTimeoutTiming()
-                    );
+                        balanceVo = walletBetResultAction.call(
+                                traceId,
+                                agentId,
+                                gameSession,
+                                cappedBetResult,
+                                resultType,
+                                httpRequestLog,
+                                fromVendorConversionRate,
+                                toVendorConversionRate,
+                                vendorService.operatorTimeoutTiming()
+                        );
+                    } else {
+                        // no need call to operator than will set a custom balance vo
+                        httpRequestLog.setOperatorEndPoints("SendToOperator is false");
+                        balanceVo = new WalletBalanceVo();
+                        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+                        data.setBalance(BigDecimal.ZERO);
+                        balanceVo.setData(data);
+                    }
                     BigDecimal balance = balanceVo.getData().getBalance();
 
                     rawBetResultLog.setOperatorStatus(this.operatorStatusSuccess);
@@ -797,10 +814,18 @@ public class WalletService {
                 walletBetResultData = unsettledBet;
 
                 try {
-                    BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
-                    
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, cappedBetResult, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
+                    if (sendToOperator) {
+                        BetInformation cappedBetResult = agentMaxPayoutService.applyPayoutCap(walletBetResultData, toVendorConversionRate);
 
+                        balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, cappedBetResult, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate, vendorService.operatorTimeoutTiming());
+                    } else {
+                        // no need call to operator than will set a custom balance vo
+                        httpRequestLog.setOperatorEndPoints("SendToOperator is false");
+                        balanceVo = new WalletBalanceVo();
+                        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+                        data.setBalance(BigDecimal.ZERO);
+                        balanceVo.setData(data);
+                    }
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balanceVo.getData().getBalance());
                     unsettledBetService.save(unsettledBet);
@@ -836,6 +861,10 @@ public class WalletService {
         return balanceVo;
     }
 
+    public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException {
+        return processBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, true);
+    }
+
     /**
      * To process the result of a bet by sending the bet result data to Operator so that the Operator can update
      * the player's balance.
@@ -848,7 +877,7 @@ public class WalletService {
      * that can be used for further processing, if required
      * @throws BetNotFoundException If no bet record is found
      */
-    public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
+    public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, boolean sendToOperator)
             throws BetNotFoundException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException, InternalServerTimeoutRetryException {
@@ -869,9 +898,9 @@ public class WalletService {
         VendorCurrency vendorCurrency = vendorCurrencyConversionService.getCurrencyConversionRate(gameSession, traceId);
 
         if (isSettled) {
-            balanceVo = this.doSettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
+            balanceVo = this.doSettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), sendToOperator);
         } else { // bets not settled yet
-            balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
+            balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), sendToOperator);
         }
 
         return balanceVo.getData().getBalance();
@@ -925,12 +954,16 @@ public class WalletService {
 
     }
 
+    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog) throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
+        return processRollback(traceId, rollbackData, gameSession, vendorService, httpRequestLog, true);
+    }
+
     public WalletRequest processRollback(RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
             throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException,
             BetResultIdempotentViolationException, BetRefundIdempotentViolationException,
             TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException, InvalidFormatException {
 
-        this.processRollback(httpRequestLog.getId(), rollbackData, gameSession, vendorService, httpRequestLog);
+        this.processRollback(httpRequestLog.getId(), rollbackData, gameSession, vendorService, httpRequestLog, true);
 
         return httpRequestLog.getWalletRequest();
     }
@@ -946,7 +979,7 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
+    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog, boolean sendToOperator)
             throws RecordNotFoundException, InvalidAgentApiCredentialException,
             InvalidOperatorResponseException, BetRefundIdempotentViolationException, BetNotFoundException,
             BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException, InvalidFormatException {
@@ -969,6 +1002,7 @@ public class WalletService {
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
         BigDecimal fromVendorRate = BigDecimal.ONE;
         String roundId = rollbackData.getRoundId();
+        WalletBalanceVo balanceVo = null;
 
         WalletRequest walletRequest = httpRequestLog.getWalletRequest();
 
@@ -1014,7 +1048,16 @@ public class WalletService {
             fromVendorRate = vendorCurrency.getFromVendorRate();
 
             loggingService.logStart();
-            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog, vendorService.operatorTimeoutTiming());
+            if (sendToOperator) {
+                balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog, vendorService.operatorTimeoutTiming());
+            } else {
+                // no need call to operator than will set a custom balance vo
+                httpRequestLog.setOperatorEndPoints("SendToOperator is false");
+                balanceVo = new WalletBalanceVo();
+                WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+                data.setBalance(BigDecimal.ZERO);
+                balanceVo.setData(data);
+            }
             loggingService.logProcessTime("processRollback ｜ walletRollbackAction.call", traceId);
 
             //resettlement with below condition, then resettle_num need increase
