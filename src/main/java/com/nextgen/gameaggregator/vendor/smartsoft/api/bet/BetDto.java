@@ -107,7 +107,10 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        if (this.transactionInfoDto == null || this.transactionInfoDto.getTransactionDate() == null) {
+            return System.currentTimeMillis();
+        }
+        return this.transactionInfoDto.getTransactionDate().toInstant().toEpochMilli();
     }
 
     @Override

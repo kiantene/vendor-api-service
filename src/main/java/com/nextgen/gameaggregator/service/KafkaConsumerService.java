@@ -495,7 +495,7 @@ public class KafkaConsumerService {
 
             // process Rollback or BetResult
             if (endRoundSettledBetForPatching.isRefund()) {
-                processRollbackCase(endRoundSettledBetForPatching, session, log);
+                processRollbackCase(traceId, endRoundSettledBetForPatching, session, log);
             } else {
                 processSettleCase(traceId, endRoundSettledBetForPatching, session, log);
             }
@@ -563,7 +563,7 @@ public class KafkaConsumerService {
                 : gameSessionService.generateNewSessionToken(username);
     }
 
-    private void processRollbackCase(EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException, GameNotSupportedException {
+    private void processRollbackCase(String traceId, EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException, GameNotSupportedException {
         UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(
                 session.getVendorId(),
                 betData.getExternalTransactionId()
@@ -579,7 +579,7 @@ public class KafkaConsumerService {
         dto.setRollbackId(unsettledBet.getExternalTransactionId());
         dto.setVendorSettledTime(betData.getVendorSettleTime());
 
-        walletService.processRollback(dto, session, new GeneralVendorService(), log);
+        walletService.processRollback(traceId, dto, session, new GeneralVendorService(), log, betData.isCallToOperator());
     }
 
     private void processSettleCase(String traceId, EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException, GameNotSupportedException {
@@ -601,7 +601,7 @@ public class KafkaConsumerService {
         ResultType resultType = determineResultType(totalBetAmount, betData.getBetAmount());
 
         GeneralSettleDto dto = generateGeneralSettleDto(betData, totalBetAmount, unsettledBetList.get(0).getVendorBetTime());
-        walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log);
+        walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log, betData.isCallToOperator());
     }
 
     private BigDecimal calculateTotalBetAmount(List<UnsettledBet> unsettledBetList) {

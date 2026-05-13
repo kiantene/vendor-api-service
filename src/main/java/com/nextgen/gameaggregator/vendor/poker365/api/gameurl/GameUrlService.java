@@ -41,6 +41,7 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
     private HttpHeaders httpHeaders;
     private String keyUrl;
     private String api = "/api/";
+    private String location = "Location";
 
     public GameUrlService() {
 
@@ -75,8 +76,7 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
                                           GameSession gameSession, HttpRequestLog httpRequestLog)
             throws InvalidVendorResponseException,
             TimeoutException,
-            InvalidVendorLineException
-    {
+            InvalidVendorLineException {
         try {
             key = this.getKey(gameSession, httpRequestLog);
             formData.add("key", key);
@@ -85,14 +85,20 @@ public class GameUrlService extends BaseGameUrlService<Poker365GameUrlVo> {
             throw new InvalidVendorResponseException("Failed to get Key: " + e);
 
         }
-
         AtomicBoolean isTimeout = new AtomicBoolean(false);
         httpRequestLog.setUrl(this.getApiUrl() + api + website + EndPoints.LAUNCH_GAME);
         this.launchGameUrl = this.getApiUrl() + api + website;
         ResponseEntity<String> response = this.doPost(this.getLaunchGameUrl(), EndPoints.LAUNCH_GAME, headers, formData, isTimeout);
         this.validateResponse(response, isTimeout, httpRequestLog, Poker365GameUrlVo.class, gameSession);
+        //get from headers is because the vendor have redirection status code 302
+        String locationUrl = response.getHeaders().getFirst(location);
 
-        return new Gson().fromJson(response.getBody(), Poker365GameUrlVo.class);
+        if (locationUrl == null || locationUrl.isBlank()) {
+            throw new InvalidVendorResponseException("Response headers do not contain 'Location'.");
+        }
+        Poker365GameUrlVo vo = new Poker365GameUrlVo();
+        vo.setUrl(locationUrl);
+        return vo;
     }
 
 

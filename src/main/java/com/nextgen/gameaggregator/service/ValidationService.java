@@ -24,6 +24,7 @@ public class ValidationService {
     private final AgentVendorLineRepository agentVendorLineRepository;
     private final VendorGameDeactivatedService vendorGameDeactivatedService;
     private final LoggingService loggingService;
+    private final MaintenanceGameService maintenanceGameService;
 
     @Autowired
     public ValidationService(AgentService agentService,
@@ -33,7 +34,7 @@ public class ValidationService {
                              VendorGameCurrencyRepository vendorGameCurrencyRepository,
                              AgentVendorLineRepository agentVendorLineRepository,
                              VendorGameDeactivatedService vendorGameDeactivatedService,
-                             LoggingService loggingService) {
+                             LoggingService loggingService, MaintenanceGameService maintenanceGameService) {
 
         this.agentService = agentService;
         this.agentApiCredentialRepository = agentApiCredentialRepository;
@@ -43,6 +44,7 @@ public class ValidationService {
         this.agentVendorLineRepository = agentVendorLineRepository;
         this.vendorGameDeactivatedService = vendorGameDeactivatedService;
         this.loggingService = loggingService;
+        this.maintenanceGameService = maintenanceGameService;
     }
 
 
@@ -118,6 +120,9 @@ public class ValidationService {
                 + gameSession.getAgentPlayerUsername() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
 
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(gameSession.getVendorGameId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
+
         //5. verify by vendor openGameCode instead, for play game with different game code token
         loggingService.logStart();
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(gameSession.getVendorGameCode(),
@@ -175,6 +180,9 @@ public class ValidationService {
                 findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
 
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
+
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(gameSession.getVendorGameId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
 
         //5. verify by vendor openGameCode instead, for play game with different game code token
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(gameSession.getVendorGameCode(),
