@@ -1,7 +1,11 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.action;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawSportsBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.BetIdempotentLogService;
@@ -45,6 +49,11 @@ public class GeneralAction {
     private final UnsettleService unsettleService;
     private final WalletRequestService walletRequestService;
     private final BetIdempotentLogService betIdempotentLogService;
+    private final RawSportsBetDetailsProducer rawSportsBetDetailsProducer;
+    private final ObjectMapper objectMapper;
+
+    private static final String VENDOR = "pinnacle";
+    private static final String EVENT_FAMILY = "wagering";
 
     @Autowired
     public GeneralAction(HttpService httpService,
@@ -54,7 +63,9 @@ public class GeneralAction {
                          RefundService refundService,
                          UnsettleService unsettleService,
                          WalletRequestService walletRequestService,
-                         BetIdempotentLogService betIdempotentLogService) {
+                         BetIdempotentLogService betIdempotentLogService,
+                         RawSportsBetDetailsProducer rawSportsBetDetailsProducer,
+                         ObjectMapper objectMapper) {
 
         this.httpService = httpService;
         this.betService = betService;
@@ -64,6 +75,8 @@ public class GeneralAction {
         this.unsettleService = unsettleService;
         this.walletRequestService = walletRequestService;
         this.betIdempotentLogService = betIdempotentLogService;
+        this.rawSportsBetDetailsProducer = rawSportsBetDetailsProducer;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping(path = "/{agentCode}/wagering/usercode/{userCode}/request/{requestId}")
@@ -108,6 +121,7 @@ public class GeneralAction {
             // Process Data
             for (Action data : actionsDto.getActions()) {
                 commonVo = this.actionsSwitching(data, walletRequest, commonVo);
+                this.emitRawBetDetail(data, walletRequest);
                 commonVoList.add(commonVo);
             }
 
@@ -158,6 +172,67 @@ public class GeneralAction {
     private void dataMapper(WalletRequest walletRequest, String vendorPlayerUsername, String externalTransactionId) {
         walletRequest.setVendorPlayerUsername(vendorPlayerUsername);
         walletRequest.setExternalTransactionId(externalTransactionId);
+    }
+
+    private void emitRawBetDetail(Action action, WalletRequest walletRequest) {
+        try {
+            if (action == null || action.getWagerInfo() == null || action.getWagerInfo().getWagerId() == null) {
+                log.warn("Skipping Pinnacle wagering emit: missing wagerId actionName={}", action == null ? null : action.getName());
+                return;
+            }
+            EventKind eventKind = mapEventKind(action.getName());
+            if (eventKind == null) {
+                log.warn("Skipping Pinnacle wagering emit: unmapped actionName={}", action.getName());
+                return;
+            }
+            if (walletRequest == null) {
+                log.warn("Skipping Pinnacle wagering emit: walletRequest is null actionName={}", action.getName());
+                return;
+            }
+            // Each service (BetService/AcceptService/SettledService/etc.) sets walletRequest.vendorBetId
+            // and roundId to the normalized/persisted IDs (e.g. AcceptService remaps multi-leg updates to
+            // wagerMasterId_wagerNum with roundId=wagerMasterId). Honor those so downstream emits line
+            // up with the stored bets rather than the raw wagerId on the action.
+            String vendorBetId = walletRequest.getVendorBetId();
+            String roundId = walletRequest.getRoundId();
+            if (vendorBetId == null || roundId == null) {
+                log.warn("Skipping Pinnacle wagering emit: walletRequest missing ids actionName={} vendorBetId={} roundId={}",
+                        action.getName(), vendorBetId, roundId);
+                return;
+            }
+            // Pinnacle may re-issue SETTLED for the same wager (resettle) — WagerInfo.resettlementTime
+            // is populated on the resettle callback. Without a discriminator the resettle and the
+            // original settle produce the same `vendor:vendorBetId:RESULT_UPDATE` key, so Stage-2
+            // would collapse them. action.Id is unique per action, so we use it as the version
+            // suffix on resettles only. The same rule must be mirrored in C.1.
+            Long resettleVersion = action.getWagerInfo().getResettlementTime() != null ? action.getId() : null;
+            String body = objectMapper.writeValueAsString(action);
+            rawSportsBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(VENDOR)
+                    .eventFamily(EVENT_FAMILY)
+                    .eventKind(eventKind)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(walletRequest.getBetId())
+                    .roundId(roundId)
+                    .vendorPlayerUsername(walletRequest.getVendorPlayerUsername())
+                    .agentId(walletRequest.getAgentId())
+                    .requestBody(body)
+                    .resettleVersion(resettleVersion)
+                    .build());
+        } catch (Exception e) {
+            // emit-only — never block the wallet path
+            log.warn("Pinnacle wagering emit failed actionName={}: {}", action == null ? null : action.getName(), e.getMessage());
+        }
+    }
+
+    private static EventKind mapEventKind(String actionName) {
+        if (actionName == null) return null;
+        return switch (actionName.toUpperCase()) {
+            case "BETTED" -> EventKind.PLACE_BET;
+            case "ACCEPTED", "REJECTED", "ROLLBACKED", "CANCELLED", "UNSETTLED" -> EventKind.UPDATE_BET;
+            case "SETTLED" -> EventKind.RESULT_UPDATE;
+            default -> null;
+        };
     }
 
     private void doValidation(ActionsDto actionsDto) throws InvalidRequestException {

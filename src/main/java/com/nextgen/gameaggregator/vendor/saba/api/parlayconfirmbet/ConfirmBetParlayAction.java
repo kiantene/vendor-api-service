@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawSportsBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
@@ -40,17 +43,23 @@ public class ConfirmBetParlayAction {
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
     private final BetIdempotentLogService betIdempotentLogService;
+    private final RawSportsBetDetailsProducer rawSportsBetDetailsProducer;
+
+    private static final String VENDOR = "saba";
+    private static final String EVENT_FAMILY = "parlayconfirmbet";
 
     @Autowired
     public ConfirmBetParlayAction(HttpService httpService,
                                   SportWalletService sportWalletService,
                                   WalletRequestService walletRequestService,
-                                  BetIdempotentLogService betIdempotentLogService) {
+                                  BetIdempotentLogService betIdempotentLogService,
+                                  RawSportsBetDetailsProducer rawSportsBetDetailsProducer) {
 
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
         this.betIdempotentLogService = betIdempotentLogService;
+        this.rawSportsBetDetailsProducer = rawSportsBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.CONFIRM_BET_PARLAY)
@@ -89,6 +98,7 @@ public class ConfirmBetParlayAction {
             if (!isMultipleBet) { // if only 1 transaction, then don't need to use threading
                 this.dataMapper(walletRequest, txnList.get(0), operationId, roundId);
                 sportWalletService.confirmBet(walletRequest);
+                this.emitRawBetDetail(walletRequest, httpRequestLog.getRequestBody());
                 vo.setBalance(walletRequest.getBalanceAfter());
                 walletRequestService.end(walletRequest, httpRequestLog, vo);
 
@@ -100,6 +110,7 @@ public class ConfirmBetParlayAction {
                     SportWalletService.THREAD_POOL.submit(() -> {
                         try {
                             sportWalletService.confirmBet(newWalletRequest);
+                            this.emitRawBetDetail(newWalletRequest, httpRequestLog.getRequestBody());
 
                         } catch (Exception exception) {
                             // throw to dlq
@@ -165,5 +176,41 @@ public class ConfirmBetParlayAction {
             refIdList.add(dto.getRefId());
         }
         return VendorService.generateMultipleBetRoundId(refIdList);
+    }
+
+    private void emitRawBetDetail(WalletRequest walletRequest, String requestBody) {
+        try {
+            if (walletRequest == null) {
+                log.warn("Skipping SABA parlayconfirmbet emit: walletRequest is null");
+                return;
+            }
+            // SportUpdateBetProcessor promotes newVendorBetId (txId) onto the stored unsettled bet.
+            // Emit with the post-confirm id so downstream events line up with the persisted record,
+            // matching the SABA single-bet confirm emit.
+            String postConfirmVendorBetId = walletRequest.getNewVendorBetId();
+            String roundId = walletRequest.getRoundId();
+            if (postConfirmVendorBetId == null || roundId == null) {
+                log.warn("Skipping SABA parlayconfirmbet emit: missing required fields newVendorBetId={} roundId={}",
+                        postConfirmVendorBetId, roundId);
+                return;
+            }
+            rawSportsBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(VENDOR)
+                    .eventFamily(EVENT_FAMILY)
+                    .eventKind(EventKind.UPDATE_BET)
+                    .vendorBetId(postConfirmVendorBetId)
+                    .gaBetId(walletRequest.getBetId())
+                    .roundId(roundId)
+                    .vendorPlayerUsername(walletRequest.getVendorPlayerUsername())
+                    .agentId(walletRequest.getAgentId())
+                    .requestBody(requestBody)
+                    .build());
+        } catch (Exception e) {
+            // emit-only — never block the wallet path
+            log.warn("SABA parlayconfirmbet emit failed newVendorBetId={} roundId={}: {}",
+                    walletRequest == null ? null : walletRequest.getNewVendorBetId(),
+                    walletRequest == null ? null : walletRequest.getRoundId(),
+                    e.getMessage());
+        }
     }
 }

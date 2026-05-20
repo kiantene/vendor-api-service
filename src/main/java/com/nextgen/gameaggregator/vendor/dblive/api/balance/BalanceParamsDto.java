@@ -12,7 +12,6 @@ public class BalanceParamsDto {
     @Size(max = 50)
     private String loginName;
     @NotBlank
-    @Size(max = 4)
     private String currency;
 
 }

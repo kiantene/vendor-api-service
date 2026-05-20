@@ -3,6 +3,9 @@ package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawSportsBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
@@ -29,15 +32,21 @@ public class ConfirmBetAction {
     private final HttpService httpService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
+    private final RawSportsBetDetailsProducer rawSportsBetDetailsProducer;
+
+    private static final String VENDOR = "saba";
+    private static final String EVENT_FAMILY = "confirmbet";
 
     @Autowired
     public ConfirmBetAction(HttpService httpService,
                             SportWalletService sportWalletService,
-                            WalletRequestService walletRequestService) {
+                            WalletRequestService walletRequestService,
+                            RawSportsBetDetailsProducer rawSportsBetDetailsProducer) {
 
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
+        this.rawSportsBetDetailsProducer = rawSportsBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.CONFIRM_BET)
@@ -58,6 +67,8 @@ public class ConfirmBetAction {
 
             // 4. Process unsettle data
             sportWalletService.confirmBet(walletRequest);
+
+            this.emitRawBetDetail(walletRequest, dto.getMessage(), httpRequestLog.getRequestBody());
 
             vo.setResponseCode(ResponseCode.SUCCESS);
             vo.setBalance(walletRequest.getBalanceAfter());
@@ -81,6 +92,35 @@ public class ConfirmBetAction {
         }
 
         return vo;
+    }
+
+    private void emitRawBetDetail(WalletRequest walletRequest, ConfirmBetDto dto, String requestBody) {
+        try {
+            if (dto == null || dto.getTxns() == null || dto.getTxns().isEmpty()) {
+                log.warn("Skipping SABA confirmbet emit: missing txns traceId={}", walletRequest == null ? null : walletRequest.getTraceId());
+                return;
+            }
+            String txId = dto.getTxns().get(0).getTxId() == null ? null : dto.getTxns().get(0).getTxId().toString();
+            String refId = dto.getTxns().get(0).getRefId();
+            if (txId == null || refId == null) {
+                log.warn("Skipping SABA confirmbet emit: missing required fields txId={} refId={}", txId, refId);
+                return;
+            }
+            rawSportsBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(VENDOR)
+                    .eventFamily(EVENT_FAMILY)
+                    .eventKind(EventKind.UPDATE_BET)
+                    .vendorBetId(txId)
+                    .gaBetId(walletRequest.getBetId())
+                    .roundId(refId)
+                    .vendorPlayerUsername(walletRequest.getVendorPlayerUsername())
+                    .agentId(walletRequest.getAgentId())
+                    .requestBody(requestBody)
+                    .build());
+        } catch (Exception e) {
+            // emit-only — never block the wallet path
+            log.warn("SABA confirmbet emit failed: {}", e.getMessage());
+        }
     }
 
     private void dataMapper(WalletRequest walletRequest, ConfirmBetDto dto) {

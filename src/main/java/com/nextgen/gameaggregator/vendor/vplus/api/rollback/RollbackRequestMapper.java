@@ -12,6 +12,7 @@ class RollbackRequestMapper implements BetRollbackContextMapper<BetResultRequest
     public BetRollbackContext toInternal(BetResultRequest vendorRequest) {
         return BetRollbackContext.builder()
                 .idempotencyKey(vendorRequest.getTransactionId())
+                .vendorBetId(vendorRequest.getTransactionId())
                 .roundId(vendorRequest.getGameRoundId())
                 .vendorPlayerUsername(vendorRequest.getUsername())
                 .timestamp(System.currentTimeMillis())
