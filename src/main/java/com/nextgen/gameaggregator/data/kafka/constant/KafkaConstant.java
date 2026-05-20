@@ -37,4 +37,5 @@ public class KafkaConstant {
 
     public static final String TOPIC_SETTLED_BET_DLQ = "topic_settled_bet_dlq";
     public static final String TOPIC_PROCESS_ROUND_ENDED = "topic_process_round_ended";
+    public static final String TOPIC_RAW_SPORTS_BET_DETAILS = "topic_raw_sports_bet_details";
 }

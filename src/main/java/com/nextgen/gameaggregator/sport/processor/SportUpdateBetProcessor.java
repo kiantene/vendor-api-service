@@ -168,6 +168,7 @@ public class SportUpdateBetProcessor {
 
         walletRequest.setVendorBetTime(unsettledBet.getVendorBetTime());
         walletRequest.setBetId(unsettledBet.getBetId());
+        walletRequest.setAgentId(unsettledBet.getAgentId());
 
         // check and verify vendor currency and vendor game
         walletRequestService.updateByVendorGameId(walletRequest, unsettledBet.getVendorGameId());

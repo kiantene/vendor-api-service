@@ -313,8 +313,7 @@ public class SettlementService {
     }
 
     private GameSession getVendorPlayerId(UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
-            InvalidPlayerException,
-            AuthenticationException {
+            InvalidPlayerException {
 
         GameSession gameSession = null;
         if (unsettledBet != null) {
@@ -322,29 +321,24 @@ public class SettlementService {
         }
 
         if (walletTransaction != null) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(walletTransaction.getVendorPlayerUsername());
+            gameSession = gameSessionService.generateNewSessionToken(walletTransaction.getVendorPlayerUsername());
         }
 
         return gameSession;
     }
 
-    private GameSession regenerateSession(SettleDto settleDto, String traceId, UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
+    private GameSession regenerateSession(String traceId, UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
             InvalidPlayerException,
-            AuthenticationException,
             GameNotSupportedException,
             VendorCurrencyNotSupportException {
 
-        String loginId = settleDto.getParamsDto().getLoginId();
         GameSession session;
-
         session = getVendorPlayerId(unsettledBet, walletTransaction);
-
-        if (session == null) {
-            session = gameSessionService.generateNewSessionToken(loginId);
-        }
 
         if (unsettledBet != null) {
             gameSessionService.updateByVendorGameId(session, unsettledBet.getVendorGameId());
+        } else {
+            gameSessionService.updateByVendorGameCode(session, walletTransaction.getVendorGameCode());
         }
         gameSessionService.updateByVendorCurrencyId(session);
         session.setToken(traceId);
@@ -356,7 +350,6 @@ public class SettlementService {
     private GameSession getGameSession(SettleDto settleDto, String traceId) throws
             BetNotFoundException,
             InvalidPlayerException,
-            AuthenticationException,
             GameNotSupportedException,
             VendorCurrencyNotSupportException {
 
@@ -382,7 +375,7 @@ public class SettlementService {
             vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
         } catch (AuthenticationException authenticationException) {
             //regenerate token
-            gameSession = regenerateSession(settleDto, traceId, unsettledBet, walletTransaction);
+            gameSession = regenerateSession(traceId, unsettledBet, walletTransaction);
         }
         return gameSession;
     }

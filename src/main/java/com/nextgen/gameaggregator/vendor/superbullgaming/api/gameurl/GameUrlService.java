@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Service
@@ -68,7 +70,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("operator", operator);
         formData.add("player", gameSession.getVendorPlayerUsername());
         formData.add("playmode", "free");
-        formData.add("returnURL", gameSession.getLobbyUrl());
+        formData.add("returnURL", URLEncoder.encode(gameSession.getLobbyUrl(), StandardCharsets.UTF_8));
         formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
         formData.add("url", gameUrl);
 

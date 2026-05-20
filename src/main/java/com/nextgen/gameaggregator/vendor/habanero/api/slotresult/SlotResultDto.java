@@ -84,7 +84,7 @@ public class SlotResultDto extends FundInfoDto implements BetResultData {
         if (this.getIsBonus()) {
             //bonus free spin
             isFreespin = 1;
-        } else if (this.getGameStateMode().equals(GameStateMode.COUTINUEATION) && !this.getJpWin()) {
+        } else if (Boolean.TRUE.equals(this.getGameInFeature()) && !this.getJpWin()) {
             //free spin
             isFreespin = 1;
         }

@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.transactions.detail.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -40,16 +41,18 @@ public class BetHistoryService {
     private final VendorLineService vendorLineService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final VendorService vendorService;
+    private final MeterRegistry meterRegistry;
 
     public BetHistoryService(AutowireCapableBeanFactory autowireCapableBeanFactor, BetHistoryRepository betHistoryRepository,
                              GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig, VendorLineService vendorLineService,
-                             WarehouseBetHistoryService warehouseBetHistoryService, VendorService vendorService) {
+                             WarehouseBetHistoryService warehouseBetHistoryService, VendorService vendorService, MeterRegistry meterRegistry) {
         this.autowireCapableBeanFactory = autowireCapableBeanFactor;
         this.betHistoryRepository = betHistoryRepository;
         this.gaServiceWriterDataSourceConfig = gaServiceWriterDataSourceConfig;
         this.vendorLineService = vendorLineService;
         this.warehouseBetHistoryService = warehouseBetHistoryService;
         this.vendorService = vendorService;
+        this.meterRegistry = meterRegistry;
     }
 
     public Long getVendorSettleTime(BetResultData betResultData, UnsettledBet unsettledBet) {
@@ -148,9 +151,10 @@ public class BetHistoryService {
         //2. get vendor line credential
         Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine.getId());
 
-
+        String vendorClassName = "Unknown";
+        Integer vendorId = vendorLine.getVendorId();
         try {
-            String vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
+            vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
 
             String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
@@ -161,16 +165,22 @@ public class BetHistoryService {
             if (betDetailUrlVo != null) {
                 transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
             }
-
-            return transactionDetailData;
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+        } catch (ClassNotFoundException e) {
+            log.warn("Vendor detail service not implemented for class name:{} (vendor id: {}). Returning empty URL.", vendorClassName, vendorId);
+            meterRegistry.counter("vendor.detail.url.missing",
+                            "vendor", vendorClassName,
+                            "vendorId", String.valueOf(vendorId))
+                    .increment();
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException | InvalidVendorLineException |
                  InvalidFormatException | RecordNotFoundException | InvalidVendorException
                 gameClassException) {
             gameClassException.printStackTrace();
             log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());
+            meterRegistry.counter("vendor.detail.error", "vendor", vendorClassName, "vendorId", String.valueOf(vendorId)).increment();
             throw new InvalidVendorResponseException();
         }
+        return transactionDetailData;
     }
 
     public TransactionDetailData getSportBetDetail(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
