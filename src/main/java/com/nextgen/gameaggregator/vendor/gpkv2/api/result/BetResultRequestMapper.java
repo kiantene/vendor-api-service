@@ -7,19 +7,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class BetResultRequestMapper implements BetResultContextMapper<BetResultRequest> {
+    public static final String UNKNOWN = "Unknown";
+
     @Override
     public BetResultContext toInternal(BetResultRequest request) {
 
         boolean roundEnd = (request.getFinished() != null && request.getFinished()
-                && request.getBetTransactionId()==null);
+                && request.getBetTransactionId() == null);
 
         return BetResultContext.builder()
                 .idempotencyKey(request.getTransactionId())
                 .vendorBetId(request.getBetTransactionId() == null ? request.getTransactionId() : request.getBetTransactionId())
                 .vendorPlayerUsername(request.getOperatorPlayerId())
-                .vendorGameCode(request.getGameToken())
                 .roundId(request.getRoundId())
                 .token(request.getSessionToken())
+                .vendorGameCode(UNKNOWN.equalsIgnoreCase(request.getGameToken()) ? null : request.getGameToken())
                 .winAmount(request.getAmount())
                 .vendorSettleTime(TimeStampUtils.normalizeToMillis(request.getTimestamp()))
                 .roundEnded(roundEnd)
