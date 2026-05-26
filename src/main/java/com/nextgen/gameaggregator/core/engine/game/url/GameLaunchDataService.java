@@ -21,4 +21,10 @@ public class GameLaunchDataService {
 
         return subcategory == null ? null : new GameSubcategoryInfo(subcategory.getId(), subcategory.getCode(), subcategory.getName());
     }
+
+    public record GameSubcategoryInfo(
+            Integer id,
+            String code,
+            String name
+    ) {}
 }
