@@ -14,11 +14,27 @@ public class GameLaunchDataService {
     private final VendorGameDataService vendorGameDataService;
     private final GameSubcategoryDataService gameSubcategoryDataService;
 
-    public String getBackfacingGameSubcategoryByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
-        VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+    public Integer getBackfacingGameSubcategoryIdByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
+        GameSubcategory subcategory = getBackfacingGameSubcategory(vendorGameCode, vendorId);
 
-        GameSubcategory subcategory = gameSubcategoryDataService.get(vendorGame.getBackfacingGameSubCategoryId());
+        return subcategory == null ? 0 : subcategory.getId();
+    }
+
+    public String getBackfacingGameSubcategoryCodeByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
+        GameSubcategory subcategory = getBackfacingGameSubcategory(vendorGameCode, vendorId);
+
+        return subcategory == null ? "" : subcategory.getCode();
+    }
+
+    public String getBackfacingGameSubcategoryNameByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
+        GameSubcategory subcategory = getBackfacingGameSubcategory(vendorGameCode, vendorId);
 
         return subcategory == null ? "" : subcategory.getName();
+    }
+
+    private GameSubcategory getBackfacingGameSubcategory(String vendorGameCode, Integer vendorId) {
+        VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+
+        return gameSubcategoryDataService.get(vendorGame.getBackfacingGameSubCategoryId());
     }
 }
