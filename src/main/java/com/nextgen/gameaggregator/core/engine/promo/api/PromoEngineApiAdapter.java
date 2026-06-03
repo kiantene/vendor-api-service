@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.engine.promo.api;
 import com.nextgen.core.api.ApiRequest;
 import com.nextgen.core.api.ApiResult;
 import com.nextgen.core.api.BlockingApiAdapter;
+import com.nextgen.gameaggregator.core.engine.promo.campaign.FetchCampaignByPlayerRequest;
 import com.nextgen.gameaggregator.core.engine.promo.campaign.FetchCampaignRequest;
 import com.nextgen.gameaggregator.core.engine.promo.player.FindActivePlayerCampaignRequest;
 import com.nextgen.gameaggregator.core.util.OperatorSignatureUtil;
@@ -38,6 +39,10 @@ public class PromoEngineApiAdapter extends BlockingApiAdapter<ApiRequest, ApiRes
 
     public ApiRequest ofFetchCampaign(String traceId, FetchCampaignRequest request) {
         return buildRequest(traceId, EndPoints.FETCH_CAMPAIGN, request);
+    }
+
+    public ApiRequest ofFetchCampaignByPlayer(String traceId, FetchCampaignByPlayerRequest request) {
+        return buildRequest(traceId, EndPoints.FETCH_CAMPAIGN_BY_PLAYER, request);
     }
 
     public ApiRequest ofFetchPlayerActiveCampaign(String traceId, FindActivePlayerCampaignRequest request) {

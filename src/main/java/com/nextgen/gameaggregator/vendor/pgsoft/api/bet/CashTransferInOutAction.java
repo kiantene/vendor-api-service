@@ -207,6 +207,10 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.BET_FAILED_3073);
             httpService.logError(httpRequestLog, betFailedException);
 
+        } catch (InvalidGameCategoryException ex) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, ex);
+
         } catch (Exception exception) {
             parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
             httpService.logError(httpRequestLog, exception);
@@ -252,7 +256,7 @@ public class CashTransferInOutAction {
             InvalidPlayerException,
             BetNotAllowedException,
             BetFailedException,
-            IllegalArgumentException {
+            IllegalArgumentException, InvalidGameCategoryException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
@@ -268,7 +272,7 @@ public class CashTransferInOutAction {
 
         //GA-12228: Disallow transaction type 400 from betting
         if (dto.getTransactionId().contains("-400-")) {
-            throw new BetFailedException("Transaction type 400 is not allowed");
+            throw new InvalidGameCategoryException("Transaction type 400 is not allowed");
         }
     }
 

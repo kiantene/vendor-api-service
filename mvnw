@@ -50,6 +50,19 @@ if [ -z "$MAVEN_SKIP_RC" ] ; then
 
 fi
 
+# Use .java-version in the script's directory to pin JAVA_HOME if not already set.
+# The file contains a full JDK home path (e.g. macOS Temurin path). The directory
+# existence check prevents a platform-mismatched path from being applied on Jenkins.
+if [ -z "$JAVA_HOME" ]; then
+  MVNW_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [ -f "$MVNW_SCRIPT_DIR/.java-version" ]; then
+    MVNW_JAVA_HOME_CANDIDATE="$(cat "$MVNW_SCRIPT_DIR/.java-version" | tr -d '[:space:]')"
+    if [ -d "$MVNW_JAVA_HOME_CANDIDATE" ]; then
+      export JAVA_HOME="$MVNW_JAVA_HOME_CANDIDATE"
+    fi
+  fi
+fi
+
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
 darwin=false;

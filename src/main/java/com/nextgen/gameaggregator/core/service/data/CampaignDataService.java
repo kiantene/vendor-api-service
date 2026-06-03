@@ -18,4 +18,9 @@ public class CampaignDataService {
         return Optional.ofNullable(this.cache.getByVendorCampaignCodeAndVendorLineIdAndPromoType(vendorCampaignCode, vendorLineId, promoType))
                 .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "vendorCampaignCodeAndVendorLineIdAndPromoType", vendorCampaignCode, vendorLineId, promoType));
     }
+
+    public Campaign getByPlayerUuid(String playerUuid) {
+        return Optional.ofNullable(this.cache.getByPlayerUuid(playerUuid))
+                .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "playerUuid", playerUuid));
+    }
 }

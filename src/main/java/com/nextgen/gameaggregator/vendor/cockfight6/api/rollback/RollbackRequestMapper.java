@@ -10,10 +10,18 @@ public class RollbackRequestMapper implements BetRollbackContextMapper<CommonReq
 
     @Override
     public BetRollbackContext toInternal(CommonRequest request) {
-        return BetRollbackContext.builder()
+
+        //TO handle different types of requests (1. settle, 2. cancel)
+        BetRollbackContext.BetRollbackContextBuilder builder = BetRollbackContext.builder()
                 .idempotencyKey(String.valueOf(request.getRecordId()))
                 .vendorPlayerUsername(request.getPlayerName())
-                .vendorBetId(String.valueOf(request.getRecordId()))
-                .build();
+                .vendorBetId(String.valueOf(request.getRecordId()));
+
+        if (request.getSettle() != null) {
+            builder.roundId(String.valueOf(request.getSettle().getGameRoundId()))
+                    .timestamp(request.getCreateTime() * 1000);
+        }
+
+        return builder.build();
     }
 }

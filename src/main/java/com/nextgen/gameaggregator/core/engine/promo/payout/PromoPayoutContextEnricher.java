@@ -58,6 +58,20 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             context.setTraceId(logContext.getTraceId());
         }
 
+        // Some vendors (e.g. Spribe) omit a transaction timestamp in their callback payload.
+        // Fall back to the HTTP request receive time so downstream processing always has a non-null value.
+        if (context.getVendorTransactionTime() == null) {
+            context.setVendorTransactionTime(logContext.getStart());
+        }
+        // Some vendors send transactions in batch (e.g. Facai); each child transaction may also omit a timestamp.
+        if (context.getPayoutTransactions() != null) {
+            context.getPayoutTransactions().forEach(txn -> {
+                if (txn.getVendorTransactionTime() == null) {
+                    txn.setVendorTransactionTime(logContext.getStart());
+                }
+            });
+        }
+
         this.populateAgent(context);
         this.populateVendor(context);
         this.populateCampaign(context);
@@ -97,10 +111,17 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
     private void populateCampaign(PromoPayoutContext context) {
         if (Objects.isNull(context.getVendorCampaignCode())) return;
 
-        Integer promoType = Optional.ofNullable(context.getPromoType()).map(type -> type.id).orElse(null);
+        PromoPayoutConfig config = PromoPayoutContextHolder.getConfig();
+        Campaign campaign = config.isPlayerUuidCampaignLookup()
+                ? campaignDataService.getByPlayerUuid(context.getVendorCampaignCode())
+                : campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().lineId(),
+                        Optional.ofNullable(context.getPromoType()).map(type -> type.id).orElse(null));
 
-        Campaign campaign = campaignDataService.get(context.getVendorCampaignCode(), context.getVendor().lineId(), promoType);
-        context.setCampaignUuid(campaign.getUuid());
-        context.setVendorCampaignName(campaign.getCampaignName());
+        if (campaign.getUuid() != null) {
+            context.setCampaignUuid(campaign.getUuid());
+        }
+        if (campaign.getCampaignName() != null) {
+            context.setVendorCampaignName(campaign.getCampaignName());
+        }
     }
 }

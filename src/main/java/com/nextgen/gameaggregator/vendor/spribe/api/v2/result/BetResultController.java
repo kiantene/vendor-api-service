@@ -18,23 +18,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH + "/v2")
 public class BetResultController extends AbstractBetResultController<BetResultRequest, SuccessResponse> {
+    private final List<DepositActionHandler> depositActionHandlers;
+
     public BetResultController(BetResultRequestMapper requestMapper,
                                BetResultResponseMapper responseMapper,
-                               WalletBetResultServiceWrapper walletBetResultService) {
+                               WalletBetResultServiceWrapper walletBetResultService,
+                               List<DepositActionHandler> depositActionHandlers) {
         super(requestMapper, responseMapper, walletBetResultService);
+        this.depositActionHandlers = depositActionHandlers;
     }
 
     @PostMapping(path = Endpoints.DEPOSIT)
     @VendorExceptionHandler(className = SpribeConfig.CLASS_NAME)
     public ResponseEntity<SuccessResponse> result(@Valid @RequestBody BetResultRequest request) {
-        return ResponseEntity.ok(processRequest(
-                request,
-                (context, betResponse) -> enrichResponse(request, betResponse, context)
-        ));
+        return ResponseEntity.ok(
+            depositActionHandlers.stream()
+                .filter(h -> h.supports(request.getAction()))
+                .findFirst()
+                .map(h -> h.handle(request))
+                .orElseGet(() -> processRequest(request,
+                    (ctx, resp) -> enrichResponse(request, resp, ctx)))
+        );
     }
 
     @Override

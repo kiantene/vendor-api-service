@@ -32,4 +32,20 @@ public class CampaignServiceImpl implements CampaignService {
 
         return responseMapper.responseToCampaign(response);
     }
+
+    @Override
+    public Campaign getCampaignByPlayerUuid(String playerUuid) {
+        LogContext logContext = LogContextHolder.get().copy();
+        String traceId = logContext.getTraceId();
+
+        ApiRequest apiRequest = apiAdapter.ofFetchCampaignByPlayer(
+                traceId,
+                FetchCampaignByPlayerRequest.builder().traceId(traceId).playerUuid(playerUuid).build()
+        );
+        ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
+        apiResult.throwIfError();
+        FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
+
+        return responseMapper.responseToCampaign(response);
+    }
 }

@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.superbullgaming.api.promo;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.promo.payout.AbstractPromoPayoutController;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutConfig;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
+import com.nextgen.gameaggregator.enums.PromoType;
 import com.nextgen.gameaggregator.vendor.superbullgaming.api.betNSettle.BetNSettleDto;
 import com.nextgen.gameaggregator.vendor.superbullgaming.config.SuperBullGamingConfig;
 import com.nextgen.gameaggregator.vendor.superbullgaming.constant.Endpoints;
@@ -28,6 +30,15 @@ public class SBGPromoPayoutHandler extends AbstractPromoPayoutController<BetNSet
     public boolean isPromoPayout(BetNSettleDto dto) {
         return dto.getPromoType() != null && dto.getPromoType() != 0
                 && dto.getPromoCode() != null && !dto.getPromoCode().isBlank();
+    }
+
+    @Override
+    protected void configure(PromoPayoutConfig config, BetNSettleDto request) {
+        // SBG free round with winAmount/payout=0 must still notify operator (promo payout with amount 0).
+        //TODO need to use a agent config???
+        if (PromoType.FREE_ROUND.id.equals(request.getPromoType())) {
+            config.callOperatorOnZeroPayout(true);
+        }
     }
     private CommonVo mapToCommonVo(PromoPayoutResponse response) {
         CommonVo vo = new CommonVo();

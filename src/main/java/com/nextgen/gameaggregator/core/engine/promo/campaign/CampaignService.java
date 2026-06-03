@@ -4,4 +4,5 @@ import com.nextgen.gameaggregator.entity.promo.Campaign;
 
 public interface CampaignService {
     Campaign getCampaign(String vendorCampaignCode, Integer vendorLineId, Integer promoType);
+    Campaign getCampaignByPlayerUuid(String playerUuid);
 }

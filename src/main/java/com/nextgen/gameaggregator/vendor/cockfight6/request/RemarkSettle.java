@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RemarkSettle {
@@ -15,4 +17,9 @@ public class RemarkSettle {
     @JsonProperty("game_id")
     private Integer gameId; // 桌子所属游戏
 
+    @JsonProperty("result")
+    private String result;
+
+    @JsonProperty("total_valid_bet")
+    private BigDecimal totalValidBet;
 }

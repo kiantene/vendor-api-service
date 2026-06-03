@@ -42,8 +42,11 @@ public class BetResultRequest {
     @NotBlank
     private String providerTxId;
 
-    @NotBlank
     private String withdrawProviderTxId;
 
     private String platform;
+
+    private String operatorFreeBetId;
+
+    private BigDecimal freeBetTotalBetAmount;
 }
