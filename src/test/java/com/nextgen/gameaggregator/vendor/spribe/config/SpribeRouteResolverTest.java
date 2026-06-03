@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.Optional;
 import java.util.Set;
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SpribeRouteResolverTest {
 
     @Mock
@@ -152,6 +155,44 @@ class SpribeRouteResolverTest {
         // Just verify the branch executes
         assertThat(result).isInstanceOf(Optional.class);
         verify(gameTransactionService).get("VENDOR::BET::tx123");
+    }
+
+    // ---------------- Freebet Routing ----------------
+
+    @Test
+    void shouldBypassGameTransactionCheck_whenActionIsFreebetAndVendorBetIdAbsent() {
+        mockAgentLookup(3);
+        when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/deposit"));
+
+        String freebetBody = """
+                {
+                  "user_id": "u1",
+                  "action": "freebet"
+                }
+                """;
+
+        resolver.resolveTargetUri(contextWithOriginalUri("/deposit", freebetBody));
+
+        // Route resolver must not consult game transaction store for freebet deposits.
+        verify(gameTransactionService, never()).get(any(String.class));
+    }
+
+    @Test
+    void shouldReturnEmpty_whenNoVendorBetIdAndActionIsNotFreebet() {
+        mockAgentLookup(3);
+        when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/deposit"));
+
+        String unknownBody = """
+                {
+                  "user_id": "u1",
+                  "action": "unknownaction"
+                }
+                """;
+
+        Optional<String> result = resolver.resolveTargetUri(contextWithOriginalUri("/deposit", unknownBody));
+
+        assertThat(result).isEmpty();
+        verify(gameTransactionService, never()).get(any(String.class));
     }
 
     // ---------------- Exception Handling ----------------

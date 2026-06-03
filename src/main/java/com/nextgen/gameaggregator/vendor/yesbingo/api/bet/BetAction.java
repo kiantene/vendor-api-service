@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
@@ -29,15 +33,27 @@ public class BetAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     public void bet(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
+        boolean isRequestExists = false;
+        BetDto dto = new BetDto();
         try {
 
-            BetDto dto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
+            dto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(dto, dto.getUid()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Get session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
@@ -107,6 +123,10 @@ public class BetAction {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
 
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUid());
+            }
         }
 
     }

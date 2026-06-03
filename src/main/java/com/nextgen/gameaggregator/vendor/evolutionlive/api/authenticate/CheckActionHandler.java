@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
@@ -15,17 +14,15 @@ import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.UUID;
 
-@RestController
-@RequestMapping(path = EndPoints.PATH)
+
+@Service
 @Slf4j
-public class CheckAction {
+public class CheckActionHandler {
 
     private final HttpService httpService;
     private final VendorLineService vendorLineService;
@@ -35,7 +32,7 @@ public class CheckAction {
     private final VendorService vendorService;
 
     @Autowired
-    public CheckAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, GameSessionService gameSessionService, VendorService vendorService) {
+    public CheckActionHandler(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, GameSessionService gameSessionService, VendorService vendorService) {
         this.httpService = httpService;
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
@@ -44,12 +41,9 @@ public class CheckAction {
         this.vendorService = vendorService;
     }
 
-    @PostMapping(path = EndPoints.CHECK)
-    public ResponseVo checkAction(HttpServletRequest request) {
-
+    public ResponseVo handleAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseVo responseVo = new ResponseVo();
-        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

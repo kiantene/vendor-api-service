@@ -6,7 +6,9 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.DateTimeConversionUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.api.freespin.FreeSpinData;
 import com.nextgen.gameaggregator.vendor.jili.service.CustomBooleanDeserializer;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -48,6 +50,9 @@ public class BetDto implements BetResultData {
 
     @JsonDeserialize(using = CustomBooleanDeserializer.class)
     private Boolean isFreeRound;
+
+    @Valid
+    private FreeSpinData freeSpinData;
 
     // Transaction ID used when Free Spin
     @Positive

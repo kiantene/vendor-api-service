@@ -30,7 +30,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
 
             enricher.enrich(context);
 
-            if (!hasPayout(context)) {
+            if (!state().getConfig().isCallOperatorOnZeroPayout() && !hasPayout(context)) {
                 // if no payout amount, return player balance to vendor
                 // if get balance failed, return default zero balance
                 return balanceProcessor.process(logContext.getTraceId(), context);

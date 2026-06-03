@@ -5,6 +5,7 @@ import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.vendor.spribe.config.SpribeConfig;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.response.ErrorResponse;
@@ -66,6 +67,9 @@ public class SpribeExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onInternalError(InternalServerException ex) {
+        if (ex.isCausedBy(InvalidOperatorResponseException.class))
+            return getErrorResponse(ErrorCodes.INTERNAL_ERROR);
+
         return getErrorResponse(ErrorCodes.INTERNAL_ERROR_NO_RETRY);
     }
 

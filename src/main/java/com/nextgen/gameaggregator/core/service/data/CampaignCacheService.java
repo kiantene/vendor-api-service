@@ -27,12 +27,18 @@ public class CampaignCacheService extends CouchbaseCacheService<Campaign> {
     @Override
     protected Map<String, Duration> getTtlMap() {
         return Map.of(
-                ttlKey("vendorCampaignCodeAndVendorLineIdAndPromoType"), Duration.ofMinutes(120)
+                ttlKey("vendorCampaignCodeAndVendorLineIdAndPromoType"), Duration.ofMinutes(120),
+                ttlKey("playerUuid"), Duration.ofMinutes(120)
         );
     }
 
     public Campaign getByVendorCampaignCodeAndVendorLineIdAndPromoType(String vendorCampaignCode, Integer vendorLineId, Integer promoType) {
         String key = buildCacheKey("vendorCampaignCodeAndVendorLineIdAndPromoType", vendorCampaignCode, vendorLineId, promoType);
         return get(key, () -> repository.getCampaign(vendorCampaignCode, vendorLineId, promoType));
+    }
+
+    public Campaign getByPlayerUuid(String playerUuid) {
+        String key = buildCacheKey("playerUuid", playerUuid);
+        return get(key, () -> repository.getCampaignByPlayerUuid(playerUuid));
     }
 }

@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.api.freespin.JiliFreeSpinPayoutProcessor;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
@@ -43,6 +44,8 @@ public class BetAction {
     private ValidationService validationService;
     @Autowired
     private RequestIdempotentLogService requestIdempotentLogService;
+    @Autowired
+    private JiliFreeSpinPayoutProcessor jiliFreeSpinPayoutProcessor;
 
     @PostMapping(path = EndPoints.BET)
     public BetVo betRequest(HttpServletRequest request) {
@@ -85,24 +88,33 @@ public class BetAction {
             // bet endpoint operator time out set 3.5sec
             vendorService.setOperatorTiming(3500);
 
-            // 3. Process bet data
-            // 4. Process win data
-            ResultType resultType = getResultType(betDto);
-
-            if (betDto.getBetStatus().equals(BetStatus.SETTLED)) {
-                BetResultContextHolder.initialise()
-                        .configure(config -> config.setSettleType(SettleType.ROUND));
-                BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
-                betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
-                betDto.setMultipleUnsettledBets(false);
+            // G5: isFreeRound and freeSpinData are mutually exclusive per Jili spec
+            if (Boolean.TRUE.equals(betDto.getIsFreeRound()) && betDto.getFreeSpinData() != null) {
+                throw new InvalidRequestException("isFreeRound and freeSpinData are mutually exclusive");
             }
 
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+            if (betDto.getFreeSpinData() != null) {
+                betVo = jiliFreeSpinPayoutProcessor.process(betDto, vendorPlayerUsername, vendorCurrencyCode, token);
+            } else {
+                // 3. Process bet data
+                // 4. Process win data
+                ResultType resultType = getResultType(betDto);
 
-            betVo.setUsername(vendorPlayerUsername);
-            betVo.setCurrency(vendorCurrencyCode);
-            betVo.setBalance(balance);
-            betVo.setToken(token);
+                if (betDto.getBetStatus().equals(BetStatus.SETTLED)) {
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+                    betDto.setMultipleUnsettledBets(false);
+                }
+
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+
+                betVo.setUsername(vendorPlayerUsername);
+                betVo.setCurrency(vendorCurrencyCode);
+                betVo.setBalance(balance);
+                betVo.setToken(token);
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);

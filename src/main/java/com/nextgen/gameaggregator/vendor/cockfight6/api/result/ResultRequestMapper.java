@@ -14,6 +14,7 @@ public class ResultRequestMapper implements BetResultContextMapper<CommonRequest
                 .vendorPlayerUsername(request.getPlayerName())
                 .roundId(request.getSettle().getGameRoundId())
                 .winAmount(request.getChange())
+                .effectiveTurnover(request.getSettle().getTotalValidBet())
                 .vendorSettleTime(request.getCreateTime() * 1000)
                 .roundEnded(true)//Confirmed with vendor only one settlement request.
                 .build();
