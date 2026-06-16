@@ -69,4 +69,8 @@ public final class BetRollbackContextTransactionHistoryAdapter implements Transa
     @Override public Long timestamp() {
         return ctx.getTimestamp();
     }
+
+    @Override public Integer status() {
+        return 0;
+    }
 }

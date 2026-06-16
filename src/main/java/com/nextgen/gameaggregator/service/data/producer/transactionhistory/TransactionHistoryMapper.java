@@ -41,6 +41,10 @@ public class TransactionHistoryMapper {
         transactionHistory.setTimestamp(context.timestamp());
         transactionHistory.setGameCategoryCode(gameCategory.getCode());
 
+        // Operator Response
+        transactionHistory.setOperatorResponseStatus(context.status());
+        transactionHistory.setOperatorTransactionId(context.walletTxnId());
+
         return transactionHistory;
     }
 }

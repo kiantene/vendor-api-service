@@ -60,33 +60,39 @@ public class BetProcessor {
 
         PlayerBalanceData balanceData;
 
-        if (vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
-            balanceData = walletLegacyService.processBet(httpRequestLog, gameSession, context, txn);
-        } else {
-            BetScenario scenario = new BetScenario();
+        try {
+            if (vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
+                balanceData = walletLegacyService.processBet(httpRequestLog, gameSession, context, txn);
+            } else {
+                BetScenario scenario = new BetScenario();
 
-            OperatorBetRequest operatorRequest = operatorBetRequestMapper.toOperatorRequest(
-                    OperatorApiContext.of(context, round, txn),
-                    scenario
-            );
+                OperatorBetRequest operatorRequest = operatorBetRequestMapper.toOperatorRequest(
+                        OperatorApiContext.of(context, round, txn),
+                        scenario
+                );
 
-            balanceData = operatorApiService.execute(
-                    betOperatorWalletAdapter,
-                    new OperatorRequestContext<>(
-                            operatorRequest,
-                            vendorConfigService.getTimeoutInMillis(context.getVendorClassName()),
-                            EndPoints.WALLET_BET,
-                            round,
-                            txn,
-                            scenario),
-                    context
-            );
+                balanceData = operatorApiService.execute(
+                        betOperatorWalletAdapter,
+                        new OperatorRequestContext<>(
+                                operatorRequest,
+                                vendorConfigService.getTimeoutInMillis(context.getVendorClassName()),
+                                EndPoints.WALLET_BET,
+                                round,
+                                txn,
+                                scenario),
+                        context
+                );
 
-            balanceData = balanceData.toVendorView(
-                    round.getUsername(),
-                    round.getCurrency(),
-                    context.getToVendorRate()
-            );
+                balanceData = balanceData.toVendorView(
+                        round.getUsername(),
+                        round.getCurrency(),
+                        context.getToVendorRate()
+                );
+            }
+        } catch (Exception e) {
+            // Catch Exception here for Handling Bet Transaction History
+            sendBetTransactionHistory(context, round, txn, e);
+            throw e;
         }
 
         onAfterSendBet(round, txn, balanceData.getBalance(), context);
@@ -113,9 +119,13 @@ public class BetProcessor {
     private void onAfterSendBet(GameRound round, GameTransaction txn, BigDecimal balance, BetContext context) {
         gameTransactionService.markSuccess(round, txn, balance);
 
+        sendBetTransactionHistory(context, round, txn, null);
+    }
+
+    private void sendBetTransactionHistory(BetContext context, GameRound round, GameTransaction txn, Exception e) {
         // Send Kafka Message For Transaction History
         if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
-            betTransactionHistoryProducer.publishTransactionHistoryForBet(context, round, txn);
+            betTransactionHistoryProducer.publishTransactionHistoryForBet(context, round, txn, e);
         }
     }
 

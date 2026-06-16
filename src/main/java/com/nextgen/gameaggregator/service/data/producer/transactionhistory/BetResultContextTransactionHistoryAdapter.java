@@ -69,4 +69,8 @@ public final class BetResultContextTransactionHistoryAdapter implements Transact
     @Override public Long timestamp() {
         return ctx.getResultTime();
     }
+
+    @Override public Integer status() {
+        return 0;
+    }
 }
