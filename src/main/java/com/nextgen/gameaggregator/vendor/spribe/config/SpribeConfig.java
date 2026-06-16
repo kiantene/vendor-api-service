@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.vendor.config.AbstractVendorConfig;
 import com.nextgen.gameaggregator.core.vendor.routing.VendorCallbackRouteResolver;
-import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import org.springframework.stereotype.Component;
@@ -19,14 +18,12 @@ public class SpribeConfig extends AbstractVendorConfig {
     private final VendorCallbackRouteResolver routeResolver;
 
     public SpribeConfig(ObjectMapper objectMapper,
-                        AgentApiVersionService agentApiVersionService,
                         AgentPlayerDataService agentPlayerDataService,
                         VendorPlayerDataService vendorPlayerDataService,
                         GameTransactionService gameTransactionService) {
         super(CLASS_NAME);
         this.routeResolver = new SpribeRouteResolver(
                 objectMapper,
-                agentApiVersionService,
                 agentPlayerDataService,
                 vendorPlayerDataService,
                 gameTransactionService,

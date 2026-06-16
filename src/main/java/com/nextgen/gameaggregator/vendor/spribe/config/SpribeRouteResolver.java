@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.core.vendor.routing.VendorCallbackRouteResolve
 import com.nextgen.gameaggregator.core.vendor.routing.VendorRouteContext;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.TxnType;
-import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
 
@@ -23,20 +22,17 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
 
     private final ObjectMapper objectMapper;
     private final VendorCallbackRouteResolver v1ToV2Resolver = new DefaultV1ToV2RouteResolver();
-    private final AgentApiVersionService agentApiVersionService;
     private final AgentPlayerDataService agentPlayerDataService;
     private final VendorPlayerDataService vendorPlayerDataService;
     private final GameTransactionService gameTransactionService;
     private final SpribeConfig spribeConfig;
 
     public SpribeRouteResolver(ObjectMapper objectMapper,
-                               AgentApiVersionService agentApiVersionService,
                                AgentPlayerDataService agentPlayerDataService,
                                VendorPlayerDataService vendorPlayerDataService,
                                GameTransactionService gameTransactionService,
                                SpribeConfig spribeConfig) {
         this.objectMapper = objectMapper;
-        this.agentApiVersionService = agentApiVersionService;
         this.agentPlayerDataService = agentPlayerDataService;
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.gameTransactionService = gameTransactionService;
@@ -65,20 +61,15 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
         try {
             VendorPlayer vendorPlayer = vendorPlayerDataService.getByUsername(requiredValues.get().username);
             AgentPlayer agentPlayer = agentPlayerDataService.get(vendorPlayer.getAgentPlayerId());
-            int apiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
 
-            if (apiVersion == 3) {
-                if (needToCheckGameTransaction(context)) {
-                    return resolveByGameTransaction(context, requiredValues.get());
-                } else {
-                    return v1ToV2Resolver.resolveTargetUri(context);
-                }
+            if (needToCheckGameTransaction(context)) {
+                return resolveByGameTransaction(context, requiredValues.get());
+            } else {
+                return v1ToV2Resolver.resolveTargetUri(context);
             }
         } catch (Exception ex) {
             return Optional.empty();
         }
-
-        return Optional.empty();
     }
 
     private boolean needToCheckGameTransaction(VendorRouteContext context) {
