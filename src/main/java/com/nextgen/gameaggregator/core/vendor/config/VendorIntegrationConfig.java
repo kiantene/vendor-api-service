@@ -25,4 +25,6 @@ public interface VendorIntegrationConfig extends VendorConfigExtension {
 
    boolean isMigrationVendor();
 
+   boolean isGameCodeValidationEnabled();
+
 }

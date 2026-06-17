@@ -82,6 +82,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         txn.setBetAmount(context.getBetAmount());
         txn.setWinAmount(context.getWinAmount());
         txn.setJackpotAmount(context.getJackpotAmount());
+        txn.setEffectiveTurnover(context.getEffectiveTurnover());
         txn.setBetTime(context.getVendorBetTime());
         txn.setSettleTime(context.getVendorSettleTime());
         txn.setState(GameRoundState.SETTLED);

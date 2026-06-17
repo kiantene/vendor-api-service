@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
-import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiAdapter;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
@@ -20,12 +19,12 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
-import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,8 +42,6 @@ class BetRollbackProcessor {
     private final BetHistoryProducer betHistoryProducer;
     private final RetryQueueService retryQueueService;
     private final LegacyCleanupService legacyCleanupService;
-    private final VendorConfigService vendorConfigService;
-    private final BetTransactionHistoryProducer betTransactionHistoryProducer;
 
     public PlayerBalanceData processRollbackByBet(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         // There is a possibility that the alias txn is not created yet if an error is encountered before markSent is called
@@ -61,6 +58,11 @@ class BetRollbackProcessor {
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
 
+        if (decision.isDefered()) {
+            deferRollbackToRetryQueue(context, round, betTxn);
+            return PlayerBalanceData.getDefaultWithBalance(betTxn.getUsername(), betTxn.getCurrency(), round.getLastBalanceWithDefault());
+        }
+
         onBeforeSendBetRollback(context, round, betTxn, rollbackTxn);
 
         PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId(), betTxn.getTransactionId());
@@ -68,6 +70,15 @@ class BetRollbackProcessor {
         onAfterSendBetRollback(context, round, betTxn, rollbackTxn, balanceData);
 
         return balanceData;
+    }
+
+    private void deferRollbackToRetryQueue(BetRollbackContext context, GameRound round, GameTransaction betTxn) {
+        WalletRollbackDto requestDto = mapToClientRequest(context, round, betTxn.getGaBetId(), betTxn.getTransactionId());
+        OperatorApiRequest apiRequest = operatorApiAdapter.toApiRequest(requestDto, round.getAgentMeta().getAgentId());
+
+        retryQueueService
+                .enqueueWithDelay(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.BET_ROLLBACK, Duration.ofSeconds(5))
+                .subscribe();
     }
 
     public PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
@@ -83,7 +94,15 @@ class BetRollbackProcessor {
         enricher.enrichByGameRound(context, round, rollbackTxn);
 
         //TODO: to revisit if we want standardise the bet history for round rollback by using transaction id from bet txn
-        betHistoryProducer.publishCancelledBetHistory(context, round);
+        // Get First Bet or BetNResult
+        Optional<GameTransaction> firstBetTxn =
+                round.getTransactions().stream()
+                        .filter(t -> t.isBet() || t.isBetNResult())
+                        .filter(RoundTxn::isSuccess)
+                        .findFirst()
+                        .flatMap(txn -> gameTransactionService.get(txn.getId()));
+
+        betHistoryProducer.publishBetHistoryForRollbackByRound(context, round, firstBetTxn, rollbackTxn);
 
         var byGaBetId = round.getTransactions().stream()
                 .filter(RoundTxn::isSuccessfulBetOrResult)
@@ -180,11 +199,6 @@ class BetRollbackProcessor {
                                          GameTransaction rollbackTxn) {
 
         betHistoryProducer.publishBetHistoryForRollback(context, round, betTxn);
-
-        // Send Kafka
-        if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
-            betTransactionHistoryProducer.publishTransactionHistoryForRollback(context, round, betTxn);
-        }
 
         // Update bet txn status to refunded
         gameTransactionService.markRefunded(betTxn);

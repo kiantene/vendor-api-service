@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.validator.VendorRequestValidator;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
@@ -25,6 +26,7 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
     private final GameSessionDataService gameSessionDataService;
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final VendorRequestValidator vendorRequestValidator;
 
     public PlayerBalanceData process(BalanceContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
@@ -34,7 +36,8 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
             enrichByGameSession(context, gameSession);
-
+            //validate vendor request
+            vendorRequestValidator.validateVendorRequestWithGameSession(gameSession, context);
             // TODO: add validator
             return getBalance(
                     context.getVendorPlayerUsername(),

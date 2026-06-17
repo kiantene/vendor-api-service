@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import java.util.function.Consumer;
 
+import com.nextgen.gameaggregator.core.validator.VendorRequestValidator;
 import com.nextgen.core.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class WalletBetServiceWrapper implements WalletBetService {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "bet";
+    private static final String REQUEST_TYPE = "WalletBetAction"; // For HttpRequestLog Backward Compatability
     private final DuplicateRequestGuard guard;
     private final BetContextEnricher enricher;
     private final GameSessionDataService gameSessionDataService;
@@ -37,9 +40,9 @@ public class WalletBetServiceWrapper implements WalletBetService {
     private final WalletBetValidator walletBetValidator;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final BetLifeCycleRegistry lifeCycleRegistry;
-    private final VendorConfigService vendorConfigService;
     private final BetTransactionHistoryProducer betTransactionHistoryProducer;
     private final BetProcessor betProcessor;
+    private final VendorRequestValidator vendorRequestValidator;
 
     @Override
     public PlayerBalanceData process() {
@@ -50,10 +53,17 @@ public class WalletBetServiceWrapper implements WalletBetService {
     public PlayerBalanceData process(BetContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
         HttpRequestLog httpRequestLog = LogContextService.toHttpRequestLog(logContext);
+        httpRequestLog.setRequestType(REQUEST_TYPE);
         GameTransaction txn = null;
         String vendorClassName = logContext.getVendorClassName();
 
         try {
+            /**
+             * Enriching HttpRequestLog for backward compatability
+             * TO BE REMOVED when HttpRequestLog is completely removed
+             */
+            enrichHttpRequestLog(httpRequestLog, context);
+
             txn = guard.ensureNotDuplicate(
                     TxnType.BET,
                     logContext.getVendorClassName(),
@@ -66,7 +76,8 @@ public class WalletBetServiceWrapper implements WalletBetService {
             GameSession gameSession = gameSessionDataService.getGameSession(context);
 
             enricher.enrichByGameSession(context, gameSession);
-
+            //validate vendor request
+            vendorRequestValidator.validateVendorRequestWithGameSession(gameSession, context);
             /**
              * Use the Strategy Pattern to execute vendor specific logic before the wallet call.
              * The handler is retrieved from the registry based on the transaction's vendor class name.
@@ -128,5 +139,14 @@ public class WalletBetServiceWrapper implements WalletBetService {
             );
         }
         throw ex;
+    }
+
+    private void enrichHttpRequestLog(HttpRequestLog httpRequestLog, BetContext context) {
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(REQUEST_TYPE);
+
+            httpRequestLog.setVendorBetId(context.getVendorBetId());
+            httpRequestLog.setRoundId(context.getRoundId());
+        }
     }
 }

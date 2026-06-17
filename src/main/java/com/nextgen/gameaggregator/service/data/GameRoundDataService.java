@@ -19,7 +19,8 @@ public interface GameRoundDataService {
      * Return Existing GameRound if Insert failed due to existing record
      */
     Optional<KvDoc<GameRound>> insertOrGet(GameRound round);
-    void appendTxn(String docId, RoundTxn roundTxn, long cas);
+    /** Returns the array index at which {@code roundTxn} now sits inside {@code transactions[]}, server-authoritative. */
+    int appendTxn(String docId, RoundTxn roundTxn);
     void updateTxn(String docId, int idx, Map<String, Object> updates);
     void setRoundState(String docId, GameRoundState state);
     GameRound applyTxnDelta(TxnDelta delta, Duration ttl);

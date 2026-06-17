@@ -20,10 +20,12 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.endround.RoundEndedTriggerProducer;
 import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -47,6 +49,7 @@ class BetResultProcessor {
     private final SettleByRoundOperatorBetResultRequestMapper settleByRoundOperatorBetResultRequestMapper;
     private final BetAndResultOperatorBetResultRequestMapper betAndResultOperatorBetResultRequestMapper;
     private final BetResultOperatorWalletAdapter betResultOperatorWalletAdapter;
+    private final RoundEndedTriggerProducer roundEndedTriggerProducer;
 
     public PlayerBalanceData processResultTransaction(
             BetResultContext context,
@@ -87,26 +90,21 @@ class BetResultProcessor {
 
             resultTxn.setGaBetId(httpRequestLog.getGaBetId());
         } else {
+
             /**
              * Bet Txn is Always Present for SettleByBet if not BetNotFoundException would have been thrown earlier
              */
             betFullTxn = gameTransactionService.getOrThrow(betTxn.get().getId());
             if (config.isSettledByRound()) {
-                if (context.isRoundEnded()) {
-                    SettleByRoundScenario scenario = new SettleByRoundScenario(resultType, betFullTxn);
+                SettleByRoundScenario scenario = new SettleByRoundScenario(resultType, betFullTxn);
 
-                    OperatorBetResultRequest operatorRequest =
-                            settleByRoundOperatorBetResultRequestMapper.toOperatorRequest(
-                                    OperatorApiContext.of(context, round, resultTxn),
-                                    scenario
-                            );
+                OperatorBetResultRequest operatorRequest =
+                        settleByRoundOperatorBetResultRequestMapper.toOperatorRequest(
+                                OperatorApiContext.of(context, round, resultTxn),
+                                scenario
+                        );
 
-                    // Will Send 1 Final Result to Operator when Round is Ended
-                    balanceData = callToOperator(context, round, resultTxn, operatorRequest, scenario);
-                } else {
-                    // Return LastKnown Balance from GameRound? Or should we do GetBalance from Operator?
-                    balanceData = PlayerBalanceData.getDefaultWithBalance(context.getVendorPlayerUsername(), context.getVendorCurrency(), round.getLastBalance());
-                }
+                balanceData = callToOperator(context, round, resultTxn, operatorRequest, scenario);
             } else {
                 SettleByBetScenario scenario = new SettleByBetScenario(resultType, betFullTxn);
 
@@ -174,7 +172,22 @@ class BetResultProcessor {
                 betFullTxn = gameTransactionService.getOrThrow(betTxn.getId());
             }
 
-            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn);
+            /**
+             * If Result after RoundEnded is Possible, we will Publish to a Temp Staging Table
+             * A seperate Scheduler will pick up and send the LATEST one for each round to Bet History table
+             */
+            boolean publishToCoalescingTable = config.isAllowResultWhenRoundHasEnded();
+//            betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn);
+
+            /**
+             *  If using Legacy Wallet Service, it will already have its own EndRoundProcess logic
+             *  New Framework EndRoundService will handle the Bet History Publishing
+             */
+            if (!vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
+                roundEndedTriggerProducer.publishEndRound(round);
+            } else {
+                betHistoryProducer.publishBetHistoryByRound(context, updatedRound, resultTxn, betFullTxn);
+            }
 
         } else if (config.isSettledByBet() && betFullTxn != null) {
             /**
@@ -220,6 +233,7 @@ class BetResultProcessor {
                     httpRequestLog.getOperatorEnd()
             );
         } else {
+
             BetAndResultScenario scenario = new BetAndResultScenario(resultType);
 
             OperatorBetResultRequest operatorRequest = betAndResultOperatorBetResultRequestMapper.toOperatorRequest(

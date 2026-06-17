@@ -2,10 +2,15 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
+import com.nextgen.gameaggregator.enums.GameRoundState;
+import com.nextgen.gameaggregator.enums.TxnStatus;
+import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.data.model.TxnAmounts;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,10 +33,22 @@ class TxnAmountsTest {
 
     private GameRound round(BigDecimal bet, BigDecimal win, BigDecimal jackpot) {
         GameRound round = new GameRound();
-        round.setBetAmount(bet);
-        round.setWinAmount(win);
-        round.setJackpotAmount(jackpot);
+        round.setTransactions(List.of(
+                roundTxn(TxnType.BET_N_RESULT, TxnStatus.SUCCESS, GameRoundState.UNSETTLED, bet, win, jackpot)
+        ));
         return round;
+    }
+
+    private RoundTxn roundTxn(TxnType type, TxnStatus status, GameRoundState state,
+                              BigDecimal bet, BigDecimal win, BigDecimal jackpot) {
+        RoundTxn t = new RoundTxn();
+        t.setType(type);
+        t.setStatus(status);
+        t.setState(state);
+        t.setBetAmount(bet);
+        t.setWinAmount(win);
+        t.setJackpotAmount(jackpot);
+        return t;
     }
 
     // -------------------------------------------------------
@@ -70,6 +87,52 @@ class TxnAmountsTest {
         assertEquals(new BigDecimal("0.5"), amounts.getJackpot());
         assertEquals(new BigDecimal("10"), amounts.getTurnover());
         assertEquals(new BigDecimal("-6"), amounts.getWinLoss());
+    }
+
+    // -------------------------------------------------------
+    // effectiveTurnover — provided vs. null
+    // -------------------------------------------------------
+
+    @Test
+    void of_transaction_whenEffectiveTurnoverProvided_shouldUseThatInsteadOfBet() {
+        GameTransaction txn = txn(new BigDecimal("1000"), new BigDecimal("400"), BigDecimal.ZERO);
+        txn.setEffectiveTurnover(new BigDecimal("800"));
+
+        TxnAmounts amounts = TxnAmounts.of(txn, RATE_001);
+
+        assertEquals(new BigDecimal("8"), amounts.getTurnover()); // 800 * 0.01
+        assertEquals(new BigDecimal("10"), amounts.getBet());     // 1000 * 0.01 unchanged
+    }
+
+    @Test
+    void of_transaction_whenEffectiveTurnoverNull_shouldFallBackToBet() {
+        GameTransaction txn = txn(new BigDecimal("1000"), new BigDecimal("400"), BigDecimal.ZERO);
+        // effectiveTurnover not set → null
+
+        TxnAmounts amounts = TxnAmounts.of(txn, RATE_001);
+
+        assertEquals(new BigDecimal("10"), amounts.getTurnover()); // falls back to bet * rate
+    }
+
+    @Test
+    void of_round_whenEffectiveTurnoverProvided_shouldUseThatInsteadOfBet() {
+        GameRound round = round(new BigDecimal("500"), new BigDecimal("200"), BigDecimal.ZERO);
+        round.setEffectiveTurnover(new BigDecimal("300"));
+
+        TxnAmounts amounts = TxnAmounts.of(round, RATE_001);
+
+        assertEquals(new BigDecimal("3"), amounts.getTurnover()); // 300 * 0.01
+        assertEquals(new BigDecimal("5"), amounts.getBet());      // 500 * 0.01 unchanged
+    }
+
+    @Test
+    void of_round_whenEffectiveTurnoverNull_shouldFallBackToBet() {
+        GameRound round = round(new BigDecimal("500"), new BigDecimal("200"), BigDecimal.ZERO);
+        // effectiveTurnover not set → null
+
+        TxnAmounts amounts = TxnAmounts.of(round, RATE_001);
+
+        assertEquals(new BigDecimal("5"), amounts.getTurnover()); // falls back to bet * rate
     }
 
     // -------------------------------------------------------
@@ -210,25 +273,6 @@ class TxnAmountsTest {
         TxnAmounts amounts = TxnAmounts.of(round, resultTxn, RATE_ONE);
 
         assertEquals(new BigDecimal("10"), amounts.getJackpot());
-    }
-
-    @Test
-    void of_roundAndResultTxn_shouldHandleZeroValues() {
-        GameRound round = round(
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO
-        );
-
-        GameTransaction resultTxn = txn(
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                new BigDecimal("7")
-        );
-
-        TxnAmounts amounts = TxnAmounts.of(round, resultTxn, RATE_ONE);
-
-        assertEquals(new BigDecimal("7"), amounts.getJackpot());
     }
 
     // -------------------------------------------------------

@@ -59,8 +59,13 @@ public class GameRoundService {
             GameRound newRound = buildRound(txn, agentMeta);
             Optional<KvDoc<GameRound>> existingRound = data.insertOrGet(newRound);
             if (existingRound.isPresent()) {
+                // Lost the insert race; fall through and append to the round
+                // someone else just inserted. txn.idx remains null until appendTxn
+                // reports the server-authoritative slot.
                 kvDoc = existingRound.get();
             } else {
+                // Won the insert race; the new round has this txn's RoundTxn at index 0.
+                txn.setIdx(0);
                 return newRound;
             }
         }
@@ -136,7 +141,10 @@ public class GameRoundService {
         round.setTransactions(List.of(RoundTxn.of(txn)));
         round.setCreatedAt(txn.getCreatedAt());
         round.setCreatedTs(txn.getCreatedTs());
-        txn.setIdx(0);
+        // NOTE: txn.idx is intentionally NOT set here. It is the caller's
+        // responsibility (save()) to set idx=0 only after the insert race is
+        // won, so threads that lose the race and fall through to addNewTxnToRound
+        // do not carry a stale idx into a CAS failure path.
 
         // If the transaction is marked as VOID, set the round state to VOID
         if (txn.getState() == GameRoundState.VOID) {
@@ -150,20 +158,27 @@ public class GameRoundService {
         // Existing round document
         GameRound round = kvDoc.getPayload();
 
-        // Idempotency: skip if this transaction already exists in the round
-        if (isTransactionExists(round, txn)) {
+        // Idempotency: if this txn was already appended (e.g. by a prior attempt
+        // that failed later and left its RoundTxn behind), do NOT append again —
+        // but DO restore idx from the existing slot so later updates
+        // (markSuccess/markSettled) target the correct transactions[idx] instead
+        // of carrying a null idx into markSuccess and unboxing it.
+        int existingIdx = indexOfTxn(round, txn);
+        if (existingIdx >= 0) {
+            txn.setIdx(existingIdx);
             return round; // no overwrite / no double-count
         }
 
         RoundTxn roundTxn = RoundTxn.of(txn);
 
-        // Persist append atomically with CAS
-        data.appendTxn(round.getId(), roundTxn, kvDoc.getCas());
+        // appendTxn returns the server-authoritative index of the just-appended
+        // RoundTxn. The append is concurrency-safe without CAS — commutative
+        // arrayAppend + atomic counter increment — so concurrent siblings each
+        // get a distinct, correct idx.
+        int newIdx = data.appendTxn(round.getId(), roundTxn);
 
-        int txnCount = (round.getTxnCount() == null ? 0 : round.getTxnCount());
-        // Reflect in-memory changes on txn idx for further updates later
-        txn.setIdx(txnCount);
-        round.setTxnCount(txnCount + 1);
+        txn.setIdx(newIdx);
+        round.setTxnCount(newIdx + 1);
 
         if (round.getTransactions() != null) {
             round.getTransactions().add(roundTxn);
@@ -172,17 +187,23 @@ public class GameRoundService {
         return round;
     }
 
-    private boolean isTransactionExists(GameRound round, GameTransaction txn) {
+    private int indexOfTxn(GameRound round, GameTransaction txn) {
         List<RoundTxn> txnList = round.getTransactions();
 
         if (txnList == null || txnList.isEmpty()) {
-            return false;
+            return -1;
         }
 
         String transactionIdToFind = txn.getId();
 
-        // Check if any existing transaction has the same ID
-        return txnList.stream().anyMatch(t -> transactionIdToFind.equals(t.getId()));
+        // Array position is the authoritative idx: RoundTxns are only ever appended
+        // (never removed or reordered), so list index == transactions[idx].
+        for (int i = 0; i < txnList.size(); i++) {
+            if (transactionIdToFind.equals(txnList.get(i).getId())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private String getNow() {

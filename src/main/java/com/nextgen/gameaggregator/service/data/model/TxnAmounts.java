@@ -13,11 +13,16 @@ public class TxnAmounts extends TxnAmount {
     private BigDecimal winLoss;
 
     public TxnAmounts(BigDecimal bet, BigDecimal win, BigDecimal jackpot, BigDecimal denominationRate) {
+        this(bet, win, jackpot, null, denominationRate);
+    }
+
+    public TxnAmounts(BigDecimal bet, BigDecimal win, BigDecimal jackpot,
+                      BigDecimal effectiveTurnover, BigDecimal denominationRate) {
         super(null, denominationRate);
         this.bet = bet;
         this.win = win;
         this.jackpot = jackpot;
-        this.turnover = bet;
+        this.turnover = effectiveTurnover != null ? effectiveTurnover : bet;
         this.winLoss = safeSubtract(win, bet);
     }
 
@@ -26,15 +31,19 @@ public class TxnAmounts extends TxnAmount {
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getJackpotAmount(),
+                txn.getEffectiveTurnover(),
                 fromVendorRate
         );
     }
 
     public static TxnAmounts of(GameRound round, BigDecimal fromVendorRate) {
+        // Round-level totals derived from transactions[*] (see GameRound.computeTotals).
+        var totals = round.computeTotals();
         return new TxnAmounts(
-                round.getBetAmount(),
-                round.getWinAmount(),
-                round.getJackpotAmount(),
+                totals.bet(),
+                totals.win(),
+                totals.jackpot(),
+                round.getEffectiveTurnover(),
                 fromVendorRate
         );
     }
@@ -44,15 +53,20 @@ public class TxnAmounts extends TxnAmount {
                 betTxn.getBetAmount(),
                 resultTxn.getWinAmount(),
                 resultTxn.getJackpotAmount(),
+                resultTxn.getEffectiveTurnover(),
                 fromVendorRate
         );
     }
 
     public static TxnAmounts of(GameRound round, GameTransaction resultTxn, BigDecimal fromVendorRate) {
+        // Round totals + the additional resultTxn (not yet folded into transactions[*]).
+        var totals = round.computeTotals();
+        BigDecimal extraJackpot = resultTxn.getJackpotAmount() == null ? BigDecimal.ZERO : resultTxn.getJackpotAmount();
         return new TxnAmounts(
-                round.getBetAmount(),
-                round.getWinAmount().add(resultTxn.getWinAmount()),
-                round.getJackpotAmount().add(resultTxn.getJackpotAmount() == null ? BigDecimal.ZERO : resultTxn.getJackpotAmount()),
+                totals.bet(),
+                totals.win().add(resultTxn.getWinAmount()),
+                totals.jackpot().add(extraJackpot),
+                round.getEffectiveTurnover(),
                 fromVendorRate
         );
     }

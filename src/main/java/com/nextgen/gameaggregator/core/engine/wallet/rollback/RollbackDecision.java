@@ -10,6 +10,7 @@ public record RollbackDecision(RollbackDecisionType type,
     public boolean isAllowed()  { return type == RollbackDecisionType.ALLOW; }
     public boolean isRejected() { return type == RollbackDecisionType.REJECT; }
     public boolean isNoOp()     { return type == RollbackDecisionType.NO_OP; }
+    public boolean isDefered()  { return type == RollbackDecisionType.DEFER; }
 
     public void throwIfRejected(VendorRequestContext context) {
         if (isRejected()) {
@@ -41,5 +42,9 @@ public record RollbackDecision(RollbackDecisionType type,
 
     public static RollbackDecision noop(String reason) {
         return new RollbackDecision(RollbackDecisionType.NO_OP, reason, null);
+    }
+
+    public static RollbackDecision defer(String reason) {
+        return new RollbackDecision(RollbackDecisionType.DEFER, reason, null);
     }
 }

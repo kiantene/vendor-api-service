@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service.business;
 
 import com.couchbase.client.core.error.DocumentExistsException;
+import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -82,6 +83,13 @@ public class GameTransactionService {
     }
 
     public GameRound markSuccess(GameRound round, GameTransaction txn, BigDecimal balance, Boolean isEnded) {
+        // Defense-in-depth: idx must be assigned before finalizing (TxnDelta.idx is a
+        // primitive int). Fail fast with context instead of an opaque NPE on unboxing.
+        if (txn.getIdx() == null) {
+            throw new IllegalStateException(
+                    "markSuccess called with unassigned idx for txn " + txn.getId()
+                            + " — transaction was not appended to its round");
+        }
         txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
@@ -103,12 +111,19 @@ public class GameTransactionService {
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getJackpotAmount(),
+                txn.getEffectiveTurnover(),
                 txn.getDoneAt(),
-                GameRoundState.SETTLED == txn.getState(),
+                isSettled(txn, isEnded),
                 Optional.ofNullable(isEnded).orElse(false)
         );
 
         return gameRoundService.applyTxnDelta(delta);
+    }
+
+    private boolean isSettled(GameTransaction txn, Boolean isEnded) {
+        // If isEnded is not NULL and false, we should not update RoundState for gameRound
+        return !Boolean.FALSE.equals(isEnded)
+                && GameRoundState.SETTLED == txn.getState();
     }
 
     public void markError(GameTransaction txn, RuntimeException ex) {
@@ -117,6 +132,17 @@ public class GameTransactionService {
         String exName = getMeaningfulExceptionName(ex);
         txn.setException(exName);
         txnDataService.updateStatus(txn, null, TxnStatus.ERROR);
+
+        if (shouldCreateAliasTxn(txn)) {
+            try {
+                GameTransaction betTxn = txn.copy();
+                betTxn.setType(TxnType.BET);
+                betTxn.setTransactionId(txn.getVendorBetId());
+                txnDataService.updateStatus(betTxn, null, TxnStatus.ERROR);
+            } catch (DocumentNotFoundException e) {
+                log.warn("Alias BET " + txn.getVendorBetId() + " Txn has not been created yet");
+            }
+        }
 
         Map<String, Object> updates = Map.of(
                 "status", TxnStatus.ERROR.name(),

@@ -3,12 +3,14 @@ package com.nextgen.gameaggregator.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.data.producer.endround.RoundEndedTriggerMessage;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.util.StackTraceUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -413,6 +415,22 @@ public class KafkaService {
             });
         } catch (Exception ex) {
             log.error(ex.getMessage() + " : " + betTransactionHistory.toString());
+        }
+    }
+
+    public void produceRoundEndedTrigger(RoundEndedTriggerMessage message, String username) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(message);
+
+            // To use Operator Username as Kafka Key
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_FRAMEWORK_V2_ROUND_ENDED_TRIGGER, username, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending topic_framework_v2_round_ended_trigger to Kafka: ", throwable);
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + " : " + message.toString() + " : " + username);
         }
     }
 }

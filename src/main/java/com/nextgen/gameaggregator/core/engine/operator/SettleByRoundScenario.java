@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 /**
  * Concrete implementation of OperatorScenario for settling results on a per-round basis.
@@ -36,17 +35,13 @@ public final class SettleByRoundScenario implements OperatorScenario {
         return true;
     }
 
-    public ResultType getResultType(GameRound round) {
+    public ResultType getResultType() {
+        /**
+         * For Settle By Round,
+         * the END Signal will be sent a seperate microservice ga-game-round-ended-service
+         */
         if (resultType == ResultType.END) {
-            /**
-             * Need Check Previous Accumulated Round Result for the Case where the last call is purely for Ending the Round
-             */
-            BigDecimal winAmount = Optional.ofNullable(round.getWinAmount()).orElse(BigDecimal.ZERO);
-            BigDecimal jackpotAmount = Optional.ofNullable(round.getJackpotAmount()).orElse(BigDecimal.ZERO);
-            boolean hasWin = winAmount.compareTo(BigDecimal.ZERO) > 0;
-            boolean hasJackpot = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
-
-            return (hasWin || hasJackpot) ? ResultType.WIN : ResultType.END;
+            return ResultType.LOSE;
         }
 
         return resultType;

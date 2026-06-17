@@ -15,6 +15,7 @@ public record TxnDelta(
         Optional<BigDecimal> betDelta,// +bet on SUCCESS, empty otherwise
         Optional<BigDecimal> winDelta,// +win on SUCCESS, empty otherwise
         Optional<BigDecimal> jackpotDelta,// +jackpot on SUCCESS, empty otherwise
+        Optional<BigDecimal> effectiveTurnover, // replaces (not accumulates) when present
         Optional<TxnStatus> status,   // SENT / SUCCESS / FAILED (when changing status)
         Optional<TimeField> timeField,// which time to write
         Optional<String> timeValueUtc,// "HH:mm:ss.SSS" in UTC
@@ -30,6 +31,7 @@ public record TxnDelta(
                                            BigDecimal betDelta,
                                            BigDecimal winDelta,
                                            BigDecimal jackpotDelta,
+                                           BigDecimal effectiveTurnover,
                                            String doneAtUtc,
                                            boolean isSettled,
                                            boolean isEnded) {
@@ -42,6 +44,7 @@ public record TxnDelta(
                 Optional.ofNullable(betDelta),
                 Optional.ofNullable(winDelta),
                 Optional.ofNullable(jackpotDelta),
+                Optional.ofNullable(effectiveTurnover),
                 Optional.of(TxnStatus.SUCCESS),
                 Optional.of(TimeField.DONE_AT),
                 Optional.of(doneAtUtc),

@@ -3,5 +3,6 @@ package com.nextgen.gameaggregator.core.engine.wallet.rollback.enums;
 public enum RollbackDecisionType {
     ALLOW,
     REJECT,
-    NO_OP
+    NO_OP,
+    DEFER // Defer Rollback to Retry Queue to be done async
 }

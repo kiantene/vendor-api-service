@@ -8,10 +8,12 @@ public class BetRollbackConfig {
     private RollbackType rollbackType;
     private boolean allowRollbackForSettledBet;
     private boolean returnSuccessOnDuplicate;
+    private boolean validateSessionToken;
 
     public BetRollbackConfig() {
         this.allowRollbackForSettledBet = false;
         this.returnSuccessOnDuplicate = false;
+        this.validateSessionToken = false;
     }
 
     @Deprecated(forRemoval = true)
@@ -32,6 +34,11 @@ public class BetRollbackConfig {
 
     public BetRollbackConfig returnSuccessOnDuplicate(boolean flag) {
         this.returnSuccessOnDuplicate = flag;
+        return this;
+    }
+
+    public BetRollbackConfig validateSessionToken(boolean flag) {
+        this.validateSessionToken = flag;
         return this;
     }
 
