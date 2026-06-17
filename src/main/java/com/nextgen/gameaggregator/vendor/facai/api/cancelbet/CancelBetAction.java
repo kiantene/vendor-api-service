@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -37,6 +38,7 @@ public class CancelBetAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final TempIdempotencyService tempIdempotencyService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancelbet(HttpServletRequest request) {
@@ -51,6 +53,8 @@ public class CancelBetAction {
         SettledBet settledBet = null;
         GameSession gameSession;
         String idempotencyKey = null;
+        CancelBetDto cancelbetDto = new CancelBetDto();
+        boolean isRequestExists = false;
 
         try {
             //Retrieve request body in original string format
@@ -71,15 +75,20 @@ public class CancelBetAction {
             httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into cancelBetDto
-            CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
+            cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
             idempotencyKey = cancelbetDto.getRollbackId();
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(cancelbetDto);
 
+            if (requestIdempotentLogService.checkExists(cancelbetDto, cancelbetDto.getMemberAccount()) == null) {
+                requestIdempotentLogService.create(cancelbetDto, cancelbetDto.getMemberAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
+
             //get rawGameSession by player username without game id
-
-
             gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(cancelbetDto.getMemberAccount());
             if (gameSession == null) throw new AuthenticationException();
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(cancelbetDto.getGameID().toString(), gameSession);
@@ -95,7 +104,7 @@ public class CancelBetAction {
         } catch (BetNotFoundException betNotFoundException) {
 
             boolean isMaxCount = tempIdempotencyService.isIdempotencyMaxCount(idempotencyKey);
-            commonVo.setErrorResponseCode((isMaxCount)?ResponseCodes.TRANSACTION_NOT_EXIST:ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode((isMaxCount) ? ResponseCodes.TRANSACTION_NOT_EXIST : ResponseCodes.UNEXPECTED_ERROR);
 
             httpService.logError(httpRequestLog, betNotFoundException);
 
@@ -161,6 +170,9 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelbetDto, cancelbetDto.getMemberAccount());
+            }
             httpService.end(httpRequestLog, commonVo);
 
         }

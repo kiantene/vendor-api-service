@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.core.entity.VendorCurrency;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
-import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.enums.BetResultType;
@@ -32,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -92,21 +92,52 @@ public class BetHistoryProducer {
         }
     }
 
-    public void publishCancelledBetHistory(BetRollbackContext context, GameRound round) {
+    public void publishBetHistoryForRollbackByRound(BetRollbackContext rollbackContext, GameRound round, Optional<GameTransaction> firstBetTxn, GameTransaction rollbackTxn) {
+
+        String gaBetId = firstBetTxn
+                .map(GameTransaction::getGaBetId)
+                .orElseGet(UuidUtil::newUuidV7String);
+        Long betTime = firstBetTxn
+                .map(GameTransaction::getBetTime)
+                .orElse(rollbackContext.getTimestamp());
+
+        BetHistoryContext context = BetHistoryContext.of(rollbackContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, gaBetId, context.getExternalTransactionId());
+
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
         GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
         Vendor vendor = vendorDataService.get(context.getVendorId());
 
-        BetHistoryV3 betHistory = buildCancelledBetHistory(context, round, agent, vendor, gameCategory);
+        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+
+        TxnAmounts txnAmounts = TxnAmounts.of(round, rollbackContext.getFromVendorRate());
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                rollbackTxn.getVendorBetId(),
+                betTime,
+                Optional.ofNullable(rollbackTxn.getSettleTime())
+                        .orElse(rollbackContext.getTimestamp())
+        );
+
+        if (round.isSettled()) {
+            betHistoryMapper.negateAmounts(betHistory);
+            betHistory.setStatus(BetStatus.CANCELLED.code);
+            betHistory.setResettleNum(1);
+        } else {
+            betHistory.setStatus(BetStatus.REFUNDED.code);
+        }
+
         publish(betHistory);
     }
 
     /**
-     *
      * @param betResultContext
      * @param round
-     * @param resultTxn Final/Current Result Transaction
-     * @param betTxn First Successful Bet Transaction
+     * @param resultTxn        Final/Current Result Transaction
+     * @param betTxn           First Successful Bet Transaction
      */
     public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction resultTxn, GameTransaction betTxn) {
         BetHistoryContext context = BetHistoryContext.of(betResultContext);
@@ -126,7 +157,11 @@ public class BetHistoryProducer {
                 resultTxn.getSettleTime()
         );
 
-        publish(betHistory);
+//        if (publishToCoalescingTable) {
+//            kafkaService.produceBetHistoryToCoalescingTable(betHistory);
+//        } else {
+            publish(betHistory);
+//        }
     }
 
     public void publishBetHistoryForRollback(BetRollbackContext rollbackContext, GameRound round, GameTransaction txn) {
@@ -319,65 +354,6 @@ public class BetHistoryProducer {
             betHistory.setVendorBetTime(settledBet.getVendorBetTime());
             produceBetHistory(betHistory, context, usernames);
         });
-    }
-
-    // TODO: refactor
-    private BetHistoryV3 buildCancelledBetHistory(BetRollbackContext context,
-                                                  GameRound round,
-                                                  Agent agent,
-                                                  Vendor vendor,
-                                                  GameCategory gameCategory) {
-
-        BigDecimal bet      = round.getBetAmount();
-        BigDecimal win      = round.getWinAmount();
-        BigDecimal winLoss  = win.subtract(bet);
-        BigDecimal turnover = bet;
-        BigDecimal jackpot  = round.getJackpotAmount();
-
-        // TODO: conversion rate
-
-        BetHistoryV3 betHistory = new BetHistoryV3();
-
-        betHistory.setId(UuidUtil.newUuidV7String());
-        betHistory.setExternalTransactionId(context.getIdempotencyKey());
-        betHistory.setVendorBetId(context.getVendorBetId());
-        betHistory.setRoundId(round.getRoundId());
-        betHistory.setProductId(vendor.getProductId());
-        betHistory.setProductCode("");
-        betHistory.setProductGameId(0);
-        betHistory.setVendorGameId(context.getVendorGameId());
-        betHistory.setVendorPlayerId(context.getVendorPlayerId());
-        betHistory.setVendorId(round.getVendorId());
-        betHistory.setVendorCode(vendor.getCode());
-        betHistory.setVendorLineId(context.getVendorLineId());
-        betHistory.setAgentPlayerId(context.getAgentPlayerId());
-        betHistory.setHouseId(agent.getHouseId());
-        betHistory.setMasterAgentId(agent.getMasterAgentId());
-        betHistory.setAgentId(agent.getId());
-        betHistory.setOperatorStatus(0);
-        betHistory.setGameCategoryId(gameCategory.getId());
-        betHistory.setCurrencyId(context.getCurrencyId());
-        betHistory.setCurrencyCode(round.getAgentMeta().getCurrency());
-        betHistory.setBetAmount(bet.negate());
-        betHistory.setWinAmount(win.negate());
-        betHistory.setWinLoss(winLoss.negate());
-        betHistory.setEffectiveTurnover(turnover.negate());
-        betHistory.setJackpotAmount(jackpot.negate());
-        betHistory.setResultType(BetResultType.BET.code);
-        betHistory.setBetType(BetType.NORMAL_BET.code);
-        betHistory.setIsFreespin(0);
-        betHistory.setResettleNum(1);
-        betHistory.setStatus(BetStatus.CANCELLED.code);
-        betHistory.setGameSessionToken(round.getAgentMeta().getSession());
-        betHistory.setVendorBetTime(context.getTimestamp());
-        betHistory.setVendorSettleTime(context.getTimestamp());
-        betHistory.setResultTime(System.currentTimeMillis());
-        betHistory.setGameCode(round.getAgentMeta().getGameCode());
-        betHistory.setVendorPlayerUsername(round.getUsername());
-        betHistory.setAgentPlayerUsername(round.getAgentMeta().getUsername());
-        betHistory.setGameCategoryCode(gameCategory.getCode());
-
-        return betHistory;
     }
 
     private record PlayerUsernames(String agentPlayer, String vendorPlayer) {

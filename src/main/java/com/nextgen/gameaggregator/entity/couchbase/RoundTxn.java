@@ -2,10 +2,16 @@ package com.nextgen.gameaggregator.entity.couchbase;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class RoundTxn {
@@ -36,6 +42,21 @@ public class RoundTxn {
     @JsonProperty("doneAt")
     protected String doneAt;
 
+    @JsonProperty("betAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal betAmount;
+
+    @JsonProperty("winAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal winAmount;
+
+    @JsonProperty("jackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal jackpotAmount;
+
     public RoundTxn() {
         this.state = GameRoundState.UNSETTLED;
     }
@@ -47,10 +68,15 @@ public class RoundTxn {
         roundTxn.setType(txn.getType());
         roundTxn.setGaBetId(txn.getGaBetId());
         roundTxn.setVendorBetId(txn.getVendorBetId());
+        roundTxn.setWinAmount(txn.getWinAmount());
+        roundTxn.setJackpotAmount(txn.getJackpotAmount());
         roundTxn.setException(txn.getException());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());
+        roundTxn.setBetAmount(txn.getBetAmount());
+        roundTxn.setWinAmount(txn.getWinAmount());
+        roundTxn.setJackpotAmount(txn.getJackpotAmount());
 
         return roundTxn;
     }
@@ -106,7 +132,9 @@ public class RoundTxn {
     }
 
     @JsonIgnore
-    public boolean isRollback() { return type == TxnType.ROLLBACK; }
+    public boolean isRollback() {
+        return type == TxnType.ROLLBACK;
+    }
 
     @JsonIgnore
     public boolean isSuccessfulBet() {
@@ -115,7 +143,7 @@ public class RoundTxn {
 
     @JsonIgnore
     public boolean isSuccessfulBetOrResult() {
-        return isSuccess() && (isBet() || isResult());
+        return isSuccess() && (isBet() || isResult() || isBetNResult());
     }
 
     @JsonIgnore

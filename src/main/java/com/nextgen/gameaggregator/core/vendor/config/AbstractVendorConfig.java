@@ -29,7 +29,8 @@ public abstract class AbstractVendorConfig implements VendorIntegrationConfig {
      * TO BE REMOVED when no longer needed
      */
     @Deprecated
-    protected AbstractVendorConfig() {}
+    protected AbstractVendorConfig() {
+    }
 
     protected AbstractVendorConfig(String vendorClassName) {
         this.vendorClassName = vendorClassName;
@@ -43,7 +44,8 @@ public abstract class AbstractVendorConfig implements VendorIntegrationConfig {
      * 3. walletServiceLegacyEnabled
      * 4. callbackRoutingEnabled
      */
-    protected void overrideDefaults() {}
+    protected void overrideDefaults() {
+    }
 
     @Override
     public boolean isNewFramework() {
@@ -74,6 +76,11 @@ public abstract class AbstractVendorConfig implements VendorIntegrationConfig {
 
     @Override
     public boolean isMigrationVendor() {
+        return false;
+    }
+
+    @Override
+    public boolean isGameCodeValidationEnabled() {
         return false;
     }
 }

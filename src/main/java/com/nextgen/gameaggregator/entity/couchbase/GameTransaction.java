@@ -70,6 +70,11 @@ public class GameTransaction extends RoundTxn {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal jackpotAmount;
 
+    @JsonProperty("effectiveTurnover")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    private BigDecimal effectiveTurnover;
+
     @JsonProperty("balance")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
@@ -124,6 +129,8 @@ public class GameTransaction extends RoundTxn {
         copy.currency = this.currency;
         copy.betAmount = this.betAmount;
         copy.winAmount = this.winAmount;
+        copy.jackpotAmount = this.jackpotAmount;
+        copy.effectiveTurnover = this.effectiveTurnover;
         copy.balance = this.balance;
         copy.gaBetId = this.gaBetId;
         copy.status = this.status;

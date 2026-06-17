@@ -15,10 +15,17 @@ public class GameUrlVendorResponseVo implements com.nextgen.gameaggregator.opera
 
     @Override
     public String getGameUrl() {
+        // CQ9 can reply HTTP 200 with no `data` (e.g. its outage body {"data":null,"status":{...}}).
+        // Return null so BaseGameUrlService raises InvalidVendorResponseException("cannot get game url")
+        // instead of throwing a NullPointerException here (GA-14464).
+        if (this.data == null || this.data.getUrl() == null) {
+            return null;
+        }
+
         String leaveUrlValue = Optional.ofNullable(this.getLeaveUrl())
                 .filter(url -> !url.isEmpty())
                 .orElse(null);
 
-        return this.data.getUrl() + (leaveUrl == null ? "" : "&leaveUrl=" + leaveUrlValue);
+        return this.data.getUrl() + (leaveUrlValue == null ? "" : "&leaveUrl=" + leaveUrlValue);
     }
 }

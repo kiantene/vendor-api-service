@@ -17,6 +17,10 @@ public class RollbackPolicy {
             return RollbackDecision.allow();
         }
 
+        if (betTxn.isUnsettled() && isPendingStatus(betTxn)) {
+            return RollbackDecision.defer("Defer Rollback as Bet is still Pending");
+        }
+
         if (betTxn.isRefunded()) {
             return RollbackDecision.noop("Already refunded");
         }
@@ -29,6 +33,9 @@ public class RollbackPolicy {
         return RollbackDecision.allow();
     }
 
+    /**
+     * TODO: To Decide If we need a Defer Scenario for RollbackByRound
+     */
     public static RollbackDecision decide(GameRound round, BetRollbackConfig config) {
         // Reject if round exists and is already void
         if (round.isVoid()) {
@@ -57,8 +64,13 @@ public class RollbackPolicy {
         TxnStatus status = betTxn.getStatus();
 
         return betTxn.isSuccess() ||
-                status == TxnStatus.SENT ||
                 status == TxnStatus.ERROR ||
                 status == TxnStatus.TIMEOUT;
+    }
+
+    private static boolean isPendingStatus(GameTransaction betTxn) {
+        TxnStatus status = betTxn.getStatus();
+
+        return status == TxnStatus.SENT;
     }
 }

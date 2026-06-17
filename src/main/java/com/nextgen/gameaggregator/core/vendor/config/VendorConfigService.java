@@ -72,6 +72,11 @@ public class VendorConfigService extends AbstractVendorConfigService {
             }
 
             @Override
+            public boolean isGameCodeValidationEnabled() {
+                return false;
+            }
+
+            @Override
             public Optional<VendorCallbackRouteResolver> callbackRouteResolver() {
                 return Optional.empty();
             }
@@ -141,5 +146,11 @@ public class VendorConfigService extends AbstractVendorConfigService {
         Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
 
         return config.isPresent() && config.get().isMigrationVendor();
+    }
+
+    public boolean isGameCodeValidationEnabled(String className) {
+        Optional<VendorIntegrationConfig> config = getVendorIntegrationConfig(className);
+
+        return config.isPresent() && config.get().isGameCodeValidationEnabled();
     }
 }
