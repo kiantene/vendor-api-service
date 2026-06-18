@@ -72,4 +72,30 @@ public class AsyncConfig {
                 Tags.of("pipeline", "raw_sports_bet_details")
         );
     }
+
+    /**
+     * Async executor for {@code RawBetDetailsProducer.emit} (livecasino). Pipeline-isolated
+     * from the sports executor: separate threads, separate queue, separate metrics — a stuck
+     * topic in one pipeline cannot consume the workers or queue slots of the other.
+     */
+    @Bean(name = "rawBetDetailsExecutor")
+    public Executor rawBetDetailsExecutor(MeterRegistry registry) {
+        // Same sizing as rawSportsBetDetailsExecutor — see that bean for the rationale.
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(8);
+        ex.setMaxPoolSize(32);
+        ex.setQueueCapacity(5000);
+        ex.setThreadNamePrefix("raw-bet-details-emit-");
+        ex.setRejectedExecutionHandler(new DropAndCountRejectionPolicy("raw_bet_details", registry));
+        ex.setWaitForTasksToCompleteOnShutdown(true);
+        ex.setAwaitTerminationSeconds(5);
+        ex.initialize();
+
+        return ExecutorServiceMetrics.monitor(
+                registry,
+                ex.getThreadPoolExecutor(),
+                "raw_bet_details.executor",
+                Tags.of("pipeline", "raw_bet_details")
+        );
+    }
 }

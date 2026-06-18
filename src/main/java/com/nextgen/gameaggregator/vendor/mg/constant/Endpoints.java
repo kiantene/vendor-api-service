@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.mg.constant;
 
 public class Endpoints {
+    public static final String VENDOR = "mg";
+    public static final String BODY_FORMAT = "json";
     public static final String PATH = "api/v1/mg";
     public static final String LOGIN = "/login";
     public static final String GET_BALANCE = "/getbalance";

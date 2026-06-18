@@ -14,6 +14,8 @@ public class BetDetailEmitRequest {
     String roundId;
     String vendorPlayerUsername;
     Integer agentId;
+    Integer gameCategoryId;
+    String bodyFormat;
     String requestBody;
     /*
      * Non-null only for re-issued/amended result events (e.g. Pinnacle resettles, where the

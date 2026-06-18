@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -14,6 +17,7 @@ import com.nextgen.gameaggregator.scheduler.betaction.GeneralRollbackDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
 import com.nextgen.gameaggregator.vendor.bglive.constant.NiuBetMagnification;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -21,6 +25,7 @@ import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +38,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 
 @Service
+@Slf4j
 public class BetService {
     private static final ConcurrentLinkedQueue<String> errorOrderIds = new ConcurrentLinkedQueue<>();
     private final ModelMapper modelMapper = new ModelMapper();
@@ -46,6 +52,7 @@ public class BetService {
     private final OperatorWalletService operatorWalletService;
     private final WalletRequestService walletRequestService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     public BetService(HttpService httpService,
                       WalletService walletService,
@@ -56,7 +63,8 @@ public class BetService {
                       BetActionLogService betActionLogService,
                       OperatorWalletService operatorWalletService,
                       WalletRequestService walletRequestService,
-                      RequestIdempotentLogService requestIdempotentLogService) {
+                      RequestIdempotentLogService requestIdempotentLogService,
+                      RawBetDetailsProducer rawBetDetailsProducer) {
 
         this.httpService = httpService;
         this.walletService = walletService;
@@ -68,6 +76,7 @@ public class BetService {
         this.operatorWalletService = operatorWalletService;
         this.walletRequestService = walletRequestService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     public CommonVo bet(HttpRequestLog httpRequestLog, HttpServletRequest httpServletRequest) {
@@ -120,6 +129,33 @@ public class BetService {
             }
         }
         return commonVo;
+    }
+
+    private void emitRawBetDetail(GameSession gameSession, OrdersDto ordersDto, String gaBetId, String body) {
+        String vendorBetId = ordersDto.getOrderId();
+        String roundId = ordersDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.PLACE_BET)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
     }
 
     private void doValidation(BetDto betDto) throws InvalidRequestException {
@@ -192,6 +228,7 @@ public class BetService {
                 vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
             }
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
+            String gaBetId;
             if (isBullBullGame) {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 boolean isDoublePlay = VendorService.isDoublePlay(Long.parseLong(ordersDto.getPlayId()));
@@ -205,10 +242,14 @@ public class BetService {
                 vendorService.dataDebitMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betDebit(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter());
+                gaBetId = walletRequest.getBetId();
             } else {
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, ordersDto, body, httpRequestLog);
                 resultVo = new ResultVo(betEvent.getLastBalance());
+                gaBetId = betEvent.getBetInformation().getBetId();
             }
+
+            this.emitRawBetDetail(gameSession, ordersDto, gaBetId, httpRequestLog.getRequestBody());
         } catch (InsufficientBalanceException e) {
             resultVo = new ResultVo(BigDecimal.ONE.negate());
             errorOrderIds.add(ordersDto.getExternalTransactionId());
