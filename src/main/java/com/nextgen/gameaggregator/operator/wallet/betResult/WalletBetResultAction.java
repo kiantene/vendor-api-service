@@ -87,6 +87,7 @@ public class WalletBetResultAction {
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
+            httpRequestLog.setGaBetId(dto.getBetId());
             jsonApiResponse = new Gson().toJson(dto);
 
         }

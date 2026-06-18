@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.credit;
 
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -44,6 +47,8 @@ public class CreditAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private RawBetDetailsProducer rawBetDetailsProducer;
 
     @PostMapping(path = EndPoints.DEPOSIT)
     public ResponseEntity<ResponseVo> credit(HttpServletRequest request) {
@@ -85,6 +90,8 @@ public class CreditAction {
                 ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
 
                 balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+
+                this.emitRawBetDetail(gameSession, creditDto, httpRequestLog.getGaBetId(), body);
 
                 // set vo
                 responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
@@ -192,6 +199,33 @@ public class CreditAction {
         String verify_sign = vendorService.generateSign(sortedMultiValueMap, secret_key);
 
         ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
+    }
+
+    private void emitRawBetDetail(GameSession gameSession, CreditDto creditDto, String gaBetId, String body) {
+        String vendorBetId = creditDto.getVendorBetId();
+        String roundId = creditDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {

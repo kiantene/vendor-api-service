@@ -2,6 +2,9 @@ package com.nextgen.gameaggregator.vendor.evolutionlive.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -32,15 +35,17 @@ public class DebitAction {
     private final ValidationService validationService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     @Autowired
-    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService) {
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, RequestIdempotentLogService requestIdempotentLogService, RawBetDetailsProducer rawBetDetailsProducer) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.DEBIT)
@@ -75,6 +80,8 @@ public class DebitAction {
 
             // process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
+
+            this.emitRawBetDetail(gameSession, debitDto, betEvent.getBetInformation().getBetId(), body);
 
             responseVo.setBalance(betEvent.getLastBalance());
             responseVo.setUuid(debitDto.getUuid());
@@ -118,6 +125,33 @@ public class DebitAction {
         }
         return responseVo;
 
+    }
+
+    private void emitRawBetDetail(GameSession gameSession, DebitDto debitDto, String gaBetId, String body) {
+        String vendorBetId = debitDto.getVendorBetId();
+        String roundId = debitDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.PLACE_BET)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
     }
 
     private void doValidation(DebitDto debitDto) throws InvalidRequestException {

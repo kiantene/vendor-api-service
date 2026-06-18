@@ -5,6 +5,9 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -14,6 +17,7 @@ import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
@@ -21,6 +25,7 @@ import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 @Service
+@Slf4j
 public class SettlementService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
@@ -46,6 +52,7 @@ public class SettlementService {
     private final WalletTransactionService walletTransactionService;
     private final WalletRequestService walletRequestService;
     private final VendorGameService vendorGameService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -59,7 +66,8 @@ public class SettlementService {
                              UnsettledBetCachingService unsettledBetCachingService,
                              WalletTransactionService walletTransactionService,
                              WalletRequestService walletRequestService,
-                             VendorGameService vendorGameService) {
+                             VendorGameService vendorGameService,
+                             RawBetDetailsProducer rawBetDetailsProducer) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -73,6 +81,7 @@ public class SettlementService {
         this.walletTransactionService = walletTransactionService;
         this.walletRequestService = walletRequestService;
         this.vendorGameService = vendorGameService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -194,6 +203,7 @@ public class SettlementService {
             }
 
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
+            String gaBetId;
             if (isBullBullGame) {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 // add request idempotent check
@@ -201,6 +211,7 @@ public class SettlementService {
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter());
+                gaBetId = walletRequest.getBetId();
             } else {
                 // Process Result
                 resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount().abs(),
@@ -208,7 +219,10 @@ public class SettlementService {
                 balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService,
                         httpRequestLog);
                 resultVo = new ResultVo(balance);
+                gaBetId = httpRequestLog.getGaBetId();
             }
+
+            this.emitRawBetDetail(gameSession, ordersDto, gaBetId, httpRequestLog.getRequestBody());
 
         } catch (InsufficientBalanceException |
                  InvalidRequestException |
@@ -240,6 +254,33 @@ public class SettlementService {
         return resultVo;
     }
 
+
+    private void emitRawBetDetail(GameSession gameSession, OrdersDto ordersDto, String gaBetId, String body) {
+        String vendorBetId = ordersDto.getVendorBetId();
+        String roundId = ordersDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
+    }
 
     @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
             AuthenticationException.class, Exception.class})

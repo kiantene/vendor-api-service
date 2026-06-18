@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -9,15 +12,18 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.winfinity.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.service.VendorService;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
+@Slf4j
 public class PayoutService {
 
     @Autowired
@@ -28,6 +34,8 @@ public class PayoutService {
     private VendorService vendorService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private RawBetDetailsProducer rawBetDetailsProducer;
 
     public ResponseVo payout(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
@@ -59,6 +67,8 @@ public class PayoutService {
             // Determine result type
             ResultType resultType = determineResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+
+            this.emitRawBetDetail(gameSession, dto, httpRequestLog.getGaBetId(), body);
 
             vo.setDataVo(traceId, balance);
 
@@ -94,6 +104,33 @@ public class PayoutService {
         }
 
         return vo;
+    }
+
+    private void emitRawBetDetail(GameSession gameSession, PayoutDto dto, String gaBetId, String body) {
+        String vendorBetId = dto.getVendorBetId();
+        String roundId = dto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
     }
 
     private ResultType determineResultType(PayoutDto dto) {

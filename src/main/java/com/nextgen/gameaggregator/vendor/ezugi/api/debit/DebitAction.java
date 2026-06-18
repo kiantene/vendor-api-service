@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -45,6 +48,8 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RawBetDetailsProducer rawBetDetailsProducer;
 
     @PostMapping(path = EndPoints.DEBIT + "/v2")
     public CommonVo debit(HttpServletRequest request) {
@@ -75,12 +80,15 @@ public class DebitAction {
             switch (debitDto.getBetTypeID()) {
                 case BetTypeID.DEBIT_TIP:
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    this.emitRawBetDetail(gameSession, debitDto, EventKind.RESULT_UPDATE, httpRequestLog.getGaBetId(), body);
                     break;
                 default:
                     betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
                     balance = betEvent.getLastBalance();
+                    this.emitRawBetDetail(gameSession, debitDto, EventKind.PLACE_BET, betEvent.getBetInformation().getBetId(), body);
                     break;
             }
+
             // Construct Vo
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
@@ -173,6 +181,33 @@ public class DebitAction {
             httpService.end(httpRequestLog, debitVo);
         }
         return debitVo;
+    }
+
+    private void emitRawBetDetail(GameSession gameSession, DebitDto debitDto, EventKind eventKind, String gaBetId, String body) {
+        String vendorBetId = debitDto.getVendorBetId();
+        String roundId = debitDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null eventKind={} vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, eventKind, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(eventKind)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed eventKind={} vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, eventKind, vendorBetId, roundId, e.getMessage());
+        }
     }
 
     private void doValidation(DebitDto debitDto) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {

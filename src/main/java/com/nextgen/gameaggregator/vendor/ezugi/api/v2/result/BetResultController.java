@@ -3,12 +3,21 @@ package com.nextgen.gameaggregator.vendor.ezugi.api.v2.result;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.core.logging.LogContext;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
+import com.nextgen.gameaggregator.vendor.ezugi.api.v2.RawBetDetailGaBetIdResolver;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,15 +26,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
+@Slf4j
 public class BetResultController extends AbstractBetResultController<BetResultRequest, BetResultResponse> {
     private final BetRollbackService betRollbackService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     public BetResultController(BetResultRequestMapper requestMapper,
                                BetResultResponseMapper responseMapper,
                                WalletBetResultServiceWrapper walletBetResultService,
-                               BetRollbackService betRollbackService) {
+                               BetRollbackService betRollbackService,
+                               RawBetDetailsProducer rawBetDetailsProducer) {
         super(requestMapper, responseMapper, walletBetResultService);
         this.betRollbackService = betRollbackService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.CREDIT)
@@ -38,9 +51,11 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         } else {
             response = this.processRequest(
                     request,
-                    (ctx, resp) -> enrichResponse(resp, request));
-        }
-
+                    (ctx, resp) -> {
+                        enrichResponse(resp, request);
+                        emitRawBetDetail(ctx);
+                    });
+            }
         return ResponseEntity.ok(response);
     }
 
@@ -69,5 +84,39 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
         return request.getReturnReason() != null &&
                 (request.getReturnReason() == ReturnReasons.CANCEL_BET ||
                         request.getReturnReason() == ReturnReasons.CANCELED_ROUND);
+    }
+
+    private void emitRawBetDetail(BetResultContext context) {
+        String vendorBetId = context.getVendorBetId();
+        String roundId = context.getRoundId();
+        LogContext logContext = LogContextHolder.get();
+        if (logContext == null || !(logContext.getBody() instanceof String requestBody)) {
+            log.warn("Skipping {} raw bet detail emit: raw body unavailable vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        String gaBetId = RawBetDetailGaBetIdResolver.resolve(logContext.getApiBody()).orElse(null);
+        if (gaBetId == null) {
+            log.warn("Skipping {} raw bet detail emit: operator betId unavailable vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(context.getVendorPlayerUsername())
+                    .agentId(context.getAgentId())
+                    .gameCategoryId(context.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(requestBody)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
     }
 }
