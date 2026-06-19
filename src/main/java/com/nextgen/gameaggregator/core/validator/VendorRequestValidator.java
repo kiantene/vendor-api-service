@@ -30,7 +30,7 @@ public class VendorRequestValidator {
 
     private void validateCurrency(GameSession gameSession, VendorRequestContext context) {
         String vendorCurrency = context.getVendorCurrency() != null ? context.getVendorCurrency().trim().toUpperCase() : null;
-        String sessionCurrency = gameSession.getCurrencyCode() != null ? gameSession.getCurrencyCode().trim().toUpperCase() : null;
+        String sessionCurrency = gameSession.getVendorCurrencyCode() != null ? gameSession.getVendorCurrencyCode().trim().toUpperCase() : null;
 
         if (StringUtils.isNotBlank(vendorCurrency) && !vendorCurrency.equals(sessionCurrency)) {
             log.error("[MISMATCH] VendorCurrency：Session: {}, Request: {}, TraceId: {}",
