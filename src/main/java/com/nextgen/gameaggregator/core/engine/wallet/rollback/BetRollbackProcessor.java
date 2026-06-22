@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.core.retry.RetryQueueService;
 import com.nextgen.gameaggregator.core.retry.enums.RetryOrigin;
 import com.nextgen.gameaggregator.core.service.LegacyCleanupService;
 import com.nextgen.gameaggregator.core.validator.ClientResponseValidator;
+import com.nextgen.gameaggregator.core.vendor.config.VendorConfigService;
 import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiAdapter;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
@@ -19,6 +20,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
+import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,8 @@ class BetRollbackProcessor {
     private final BetHistoryProducer betHistoryProducer;
     private final RetryQueueService retryQueueService;
     private final LegacyCleanupService legacyCleanupService;
+    private final VendorConfigService vendorConfigService;
+    private final BetTransactionHistoryProducer betTransactionHistoryProducer;
 
     public PlayerBalanceData processRollbackByBet(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         // There is a possibility that the alias txn is not created yet if an error is encountered before markSent is called
@@ -199,6 +203,11 @@ class BetRollbackProcessor {
                                          GameTransaction rollbackTxn) {
 
         betHistoryProducer.publishBetHistoryForRollback(context, round, betTxn);
+
+        // Send Kafka
+        if (vendorConfigService.isTransactionHistoryEnabled(context.getVendorClassName())) {
+            betTransactionHistoryProducer.publishTransactionHistoryForRollback(context, round, betTxn);
+        }
 
         // Update bet txn status to refunded
         gameTransactionService.markRefunded(betTxn);
