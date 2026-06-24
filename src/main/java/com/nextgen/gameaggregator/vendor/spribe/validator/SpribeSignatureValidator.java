@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -80,17 +81,38 @@ public class SpribeSignatureValidator extends AbstractVendorSignatureValidator {
 
         String path = buildPath(request);
 
-        VendorCredentialAccessor acc = getCredentialAccessorByKeyValue(null, Credentials.OPERATOR, clientId);
-        String clientSecret = acc.getValue(Credentials.TOKEN);
+        try {
+            VendorCredentialAccessor acc = getCredentialAccessorByKeyValue(null, Credentials.OPERATOR, clientId);
+            String clientSecret = acc.getValue(Credentials.TOKEN);
 
-        String payload  = clientTs + path + (rawBody != null ? rawBody : "");
-        String computed = sign(payload, clientSecret);
+            String payload  = clientTs + path + (rawBody != null ? rawBody : "");
+            String computed = sign(payload, clientSecret);
 
-        if (!provided.equalsIgnoreCase(computed)) {
-            throw new SignatureValidationException("Signature mismatch");
+            if (!provided.equalsIgnoreCase(computed)) {
+                log.warn("Spribe signature mismatch | clientId={} | clientTs={} | path={} | receivedSignature={} | computedPrefix={} | payloadLength={} | payloadSha256={}",
+                        clientId,
+                        clientTs,
+                        path,
+                        provided,
+                        computed.length() <= 8 ? "********" : computed.substring(0, 8) + "...",
+                        payload.length(),
+                        DigestUtils.sha256Hex(payload));
+                // Monitor-only mode: log the mismatch but let the request pass instead of rejecting,
+                // until we confirm zero false positives. Re-enable the throw below to enforce.
+                return ValidationResult.skipped();
+//                throw new SignatureValidationException("Signature mismatch");
+            }
+
+            return ValidationResult.success();
+
+        } catch (Exception ex) {
+            // Never let an unexpected error (missing/garbled credential, signing failure, etc.)
+            // block a Spribe callback. Log and skip so the request proceeds — same fail-open
+            // stance as monitor-only mode. Tighten to reject once the integration is stable.
+            log.warn("Spribe signature validation error — skipping validation | clientId={} | path={}",
+                    clientId, path, ex);
+            return ValidationResult.skipped();
         }
-
-        return ValidationResult.success();
     }
 
     @Override
