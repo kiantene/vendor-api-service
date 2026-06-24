@@ -111,9 +111,15 @@ class SignatureValidationTest {
     class InvalidSignature {
 
         // Scenario 3.3 / 10.2
+        //
+        // Monitor-only mode: a wrong signature is logged but NOT rejected — validate()
+        // returns ValidationResult.skipped() and the request is allowed through, until we
+        // confirm zero false positives in prod. When enforcement is re-enabled (uncomment
+        // the throw in SpribeSignatureValidator), restore the assertThatThrownBy(...)
+        // expectation on SignatureValidationException("Signature mismatch").
         @Test
-        @DisplayName("3.3: invalid X-Spribe-Client-Signature — SignatureValidationException thrown")
-        void invalidSignature_throwsSignatureValidationException() throws Exception {
+        @DisplayName("3.3: invalid X-Spribe-Client-Signature — monitor-only: logged and skipped, not rejected")
+        void invalidSignature_monitorOnly_isSkippedNotRejected() throws Exception {
             String clientTs      = "1716000000";
             String body          = "{\"user_id\":\"player_001\",\"currency\":\"USD\"}";
             String wrongSig      = "deadbeef0000000000000000000000000000000000000000000000000000cafe";
@@ -121,9 +127,10 @@ class SignatureValidationTest {
             stubCredentials();
             MockHttpServletRequest request = buildRequest(CLIENT_ID, clientTs, wrongSig);
 
-            assertThatThrownBy(() -> validator.validate(request, Map.of(), body))
-                    .isInstanceOf(SignatureValidationException.class)
-                    .hasMessageContaining("Signature mismatch");
+            ValidationResult result = validator.validate(request, Map.of(), body);
+
+            assertThat(result.isSkipped()).isTrue();
+            assertThat(result.valid()).isTrue();
         }
     }
 
