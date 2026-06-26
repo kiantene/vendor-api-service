@@ -212,7 +212,6 @@ class BetRollbackProcessor {
         // Update bet txn status to refunded
         gameTransactionService.markRefunded(betTxn);
         gameTransactionService.markSent(rollbackTxn, null);
-        legacyCleanupService.cleanup(round, betTxn.getVendorBetId(), context.getVendorGameId(), context.getVendorPlayerId());
     }
 
     private void onAfterSendBetRollback(BetRollbackContext context,
@@ -223,5 +222,6 @@ class BetRollbackProcessor {
 
         // we save the original balance from operator
         gameTransactionService.markRollback(round, rollbackTxn, balanceData.getBalance());
+        legacyCleanupService.cleanup(round, betTxn.getVendorBetId(), context.getVendorGameId(), context.getVendorPlayerId());
     }
 }
