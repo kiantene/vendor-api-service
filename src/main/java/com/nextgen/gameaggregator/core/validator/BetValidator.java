@@ -34,7 +34,7 @@ public class BetValidator {
         }
     }
 
-    private void validateSession(GameSession session, VendorRequestContext context) throws GameSessionExpiredException, GameTerminatedException {
+    public void validateSession(GameSession session, VendorRequestContext context) throws GameSessionExpiredException, GameTerminatedException {
         if (session == null) {
             throw new GameSessionExpiredException(context, "Session not found or expired");
         }

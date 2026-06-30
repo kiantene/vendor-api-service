@@ -50,15 +50,14 @@ class BetRollbackProcessor {
     public PlayerBalanceData processRollbackByBet(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
         // There is a possibility that the alias txn is not created yet if an error is encountered before markSent is called
         GameTransaction betTxn = gameTransactionService.getOrThrow(rollbackTxn.getRollbackId());
+        GameRound round = gameRoundService.getOrThrow(betTxn.getRoundDocId());
 
-        RollbackDecision decision = RollbackPolicy.decide(betTxn, config);
+        RollbackDecision decision = RollbackPolicy.decide(betTxn, round, config);
         decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {
             return PlayerBalanceData.getDefault(betTxn.getUsername(), betTxn.getCurrency());
         }
-
-        GameRound round = gameRoundService.getOrThrow(betTxn.getRoundDocId());
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
 
