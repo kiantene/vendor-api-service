@@ -14,12 +14,24 @@ public interface VendorSignatureValidator extends VendorComponent {
     @Deprecated
     VendorErrorResponse onInvalidSignature(HttpServletRequest request);
 
+    @Deprecated
     default VendorErrorResponse onInvalidSignature(SignatureValidationException exception) {
         throw new IllegalArgumentException("onInvalidSignature with SignatureValidationException is not implemented");
     }
 
+    @Deprecated
     default VendorErrorResponse onPlayerNotFound(SignatureValidationException exception) {
         return onInvalidSignature(exception);
+    }
+
+    // Added Overload Method to pass in the form fields. Default behaviour is to previous without form fields
+    default VendorErrorResponse onInvalidSignature(SignatureValidationException exception, Map<String, String> formFields) {
+        return onInvalidSignature(exception);
+    }
+
+    // Added Overload Method to pass in the form fields. Default behaviour is to previous without form fields
+    default VendorErrorResponse onPlayerNotFound(SignatureValidationException exception, Map<String, String> formFields) {
+        return onPlayerNotFound(exception);
     }
 
     default boolean useNewEvents() {

@@ -5,7 +5,6 @@ import lombok.Getter;
 import java.util.HashMap;
 import java.util.Map;
 
-//@formatter:off
 public enum Vendors {
     // Add vendor according to id in sequence
     PRAGMATIC       (1,   null, "pragmaticplay", true),
@@ -16,43 +15,22 @@ public enum Vendors {
     SPADEGAMING     (7,   null, "spadegaming",   false),
     JDB             (8,   null, "jdb",           true),
     MG              (17,  null, "mg",            false),
-    RELAXGAMING     (18,  null, "dotconnections",true),
-    HABANERO        (19,  null, "habanero",      true),
-    EVOPLAY         (21,  null, "evoplay",       true),
-    EZUGI           (24,  null, "ezugi",         true),
-    YELLOWBAT       (30,  null, "yesbingo",      true),
-    SLOTEGRATOR     (74, null, "slotegrator",    true),
-    KOOLBET         (76,  null, "koolbet",       true),
-    SABAPLAY        (83,  null, "sabaplay",      true),
-    MTPOKER         (84,  null, "mtpoker",      true),
-    BLAZEGAMING     (89,  null, "blazegaming",   true),
-    INBETGAMES      (91,  null, "inbetgames",    true),
-    BOMBAY          (42,  null, "bombay",        true),
+    EZUGI           (24,  null, "ezugi",         false),
     CRYSTAL         (94,  null, "crystal",       true),
-    VPLUS           (97,  null, "vplus",         true),
-    FUGASO          (101, null, "groove",        true),
-    GALAXSYS        (102, null, "digitain",      true),
-    IRONDOG         (103, null, "groove",        true),
-    REVOLVER        (104, null, "groove",        true),
-    TOPBET          (105, null, "topbet",        true),
-    GPKEVOLUTION    (106, null, "gpkv2",         true),
-    IDNPLAY         (111, null, "idnplay",       true),
-    ONEBET          (114, null, "onebet",        true),
-    EGT_DIGITAL     (115, null, "egtdigital",    true),
-    WAZDAN          (116, null, "wazdan",        true),
-    VIVOGAMING      (118, null, "vivogaming",    true),
-    MANCALA         (120, null, "mancala",       true),
-    YESBINGO        (30,  null, "yesbingo",      false),
-    POPIPLAY        (122, null, "popiplay",      true),
-    MTLIVE          (125, null, "mtlive",        true),
-    LUCKY365        (130, null, "lucky365",      true),
-    HP100           (124, null, "hp100",         true),
-    CF6             (137, null, "cockfight6",           true),
-    AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true)
+    AVIATOR_STUDIO  (96,  2000, "aviatorstudio", true),
+    VPLUS           (97,  null, "vplus",         true)
     ;
 
     private static final int DEFAULT_TIMEOUT_MILLIS = 4000; // 4 seconds
     private static final String CALLBACK_PREFIX = "/api/v1/";
+    @Getter
+    private final int id;
+    private final Integer timeoutMillis;
+    @Getter
+    private final String className;
+    @Getter
+    private final boolean newFramework;
+
     // ---- lookup maps ----
     private static final Map<Integer, Vendors> BY_ID = new HashMap<>();
 
@@ -61,14 +39,6 @@ public enum Vendors {
             BY_ID.put(v.id, v);
         }
     }
-
-    @Getter
-    private final int id;
-    private final Integer timeoutMillis;
-    @Getter
-    private final String className;
-    @Getter
-    private final boolean newFramework;
 
     Vendors(int id, Integer timeoutMillis, String className, boolean newFramework) {
         this.id = id;

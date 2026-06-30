@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.validator.BetValidator;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -23,6 +24,7 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
     private final GameSessionDataService gameSessionDataService;
     private final BalanceProcessor balanceProcessor;
     private final WalletExceptionTranslator walletExceptionTranslator;
+    private final BetValidator betValidator;
 
     public PlayerBalanceData process() {
         AuthenticateContext context = state().getAuthContext();
@@ -39,7 +41,9 @@ public class AuthenticateServiceWrapper implements AuthenticateService {
             if (config.shouldRefreshToken()) {
                 doRefreshToken(context, gameSession, config.getReplaceTokenWith());
             }
-            // TODO: do we need to validate gameSession status? eg. session terminated
+
+            // Validate gameSession status
+            betValidator.validateSession(gameSession, context);
 
             return balanceProcessor.process(
                     logContext.getTraceId(),

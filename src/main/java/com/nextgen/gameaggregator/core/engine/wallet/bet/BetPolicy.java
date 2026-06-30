@@ -1,10 +1,11 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
-import java.util.Optional;
-
 import com.nextgen.gameaggregator.core.exception.MultipleBetNotAllowedException;
+import com.nextgen.gameaggregator.core.exception.RoundAlreadyEndedException;
 import com.nextgen.gameaggregator.core.exception.RoundAlreadyVoidException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
+
+import java.util.Optional;
 
 public class BetPolicy {
     private BetPolicy() {
@@ -29,15 +30,14 @@ public class BetPolicy {
             );
         }
 
-        // TODO: Need further discussion on handling already ended rounds for bets (AviatorStudio)
-        // Reject if round exists and is already ended
-        // if (roundOpt.isPresent() && roundOpt.get().isEnded()) {
-        //     GameRound round = roundOpt.get();
-        //     return BetDecision.reject(
-        //             round.getId() + " already ended",
-        //             RoundAlreadyEndedException.class
-        //     );
-        // }
+        // Reject if round exists and is already ended, unless explicitly allowed by config
+        if (roundOpt.isPresent() && roundOpt.get().isEnded() && !config.isAllowBetWhenRoundHasEnded()) {
+            GameRound round = roundOpt.get();
+            return BetDecision.reject(
+                    round.getId() + " already ended",
+                    RoundAlreadyEndedException.class
+            );
+        }
 
         // Reject if this is a multiple bet and multiple bets are not allowed
         if (isMultipleBet && !config.isAllowMultipleBet()) {

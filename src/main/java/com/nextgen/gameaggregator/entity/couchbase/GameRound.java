@@ -237,4 +237,10 @@ public class GameRound {
         }
         return new Totals(bet, win, jackpot);
     }
+
+    @JsonIgnore
+    public boolean hasResultTransaction() {
+        return this.transactions != null && this.transactions.stream()
+                .anyMatch(txn -> (txn.isResult() || txn.isBetNResult()) && txn.isSuccess());
+    }
 }
