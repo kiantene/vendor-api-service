@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
+// TODO(GA-14579): the "/v2" suffix is a temporary version split for the v1 -> v2 migration.
+// When v1 is retired and v2 becomes the default path, remove "/v2" here (and from the other
+// spribe v2 controllers) AND update SpribeSignatureValidator.shouldValidate(), which gates
+// signature validation on the literal "/v2/" — drop/adjust that gate at the same time, or
+// Spribe signature validation will silently stop triggering.
 @RequestMapping(path = Endpoints.PATH + "/v2")
 public class BetController extends AbstractBetController<BetRequest, SuccessResponse> {
     public BetController(BetRequestMapper requestMapper,

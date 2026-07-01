@@ -12,9 +12,9 @@ import com.nextgen.gameaggregator.vendor.spribe.config.SpribeConfig;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.response.ErrorResponse;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -79,24 +79,18 @@ public class SpribeSignatureValidator extends AbstractVendorSignatureValidator {
             return ValidationResult.skipped();
         }
 
-        String path = buildPath(request);
+        String path    = buildPath(request);
+        String payload = clientTs + path + (rawBody != null ? rawBody : "");
 
         try {
             VendorCredentialAccessor acc = getCredentialAccessorByKeyValue(null, Credentials.OPERATOR, clientId);
             String clientSecret = acc.getValue(Credentials.TOKEN);
 
-            String payload  = clientTs + path + (rawBody != null ? rawBody : "");
             String computed = sign(payload, clientSecret);
 
             if (!provided.equalsIgnoreCase(computed)) {
-                log.warn("Spribe signature mismatch | clientId={} | clientTs={} | path={} | receivedSignature={} | computedPrefix={} | payloadLength={} | payloadSha256={}",
-                        clientId,
-                        clientTs,
-                        path,
-                        provided,
-                        computed.length() <= 8 ? "********" : computed.substring(0, 8) + "...",
-                        payload.length(),
-                        DigestUtils.sha256Hex(payload));
+                log.warn("Spribe signature mismatch | clientId={} | clientTs={} | path={} | receivedSignature={} | payload={}",
+                        clientId, clientTs, path, provided, payload);
                 // Monitor-only mode: log the mismatch but let the request pass instead of rejecting,
                 // until we confirm zero false positives. Re-enable the throw below to enforce.
                 return ValidationResult.skipped();
@@ -109,8 +103,9 @@ public class SpribeSignatureValidator extends AbstractVendorSignatureValidator {
             // Never let an unexpected error (missing/garbled credential, signing failure, etc.)
             // block a Spribe callback. Log and skip so the request proceeds — same fail-open
             // stance as monitor-only mode. Tighten to reject once the integration is stable.
-            log.warn("Spribe signature validation error — skipping validation | clientId={} | path={}",
-                    clientId, path, ex);
+            // Log a trimmed stack (drop the servlet/filter-chain tail) plus the payload.
+            log.warn("Spribe signature validation error — skipping validation | clientId={} | path={} | payload={} | error={}",
+                    clientId, path, payload, shortStack(ex));
             return ValidationResult.skipped();
         }
     }
@@ -120,9 +115,35 @@ public class SpribeSignatureValidator extends AbstractVendorSignatureValidator {
         return new VendorErrorResponse(HttpStatus.OK, ErrorResponse.of(ErrorCodes.INVALID_SIGNATURE));
     }
 
+    // Compact error summary: the exception plus the top few application frames, dropping the long
+    // servlet/filter-chain tail that adds no signal for these validation failures.
+    private static String shortStack(Throwable ex) {
+        StringBuilder sb = new StringBuilder(ex.toString());
+        StackTraceElement[] frames = ex.getStackTrace();
+        int limit = Math.min(5, frames.length);
+        for (int i = 0; i < limit; i++) {
+            sb.append("\n\tat ").append(frames[i]);
+        }
+        if (ex.getCause() != null) {
+            sb.append("\n\tcaused by: ").append(ex.getCause());
+        }
+        return sb.toString();
+    }
+
     private String buildPath(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        String qs   = request.getQueryString();
+        // VendorCallbackRoutingFilter internally forwards v1 -> v2, so getRequestURI() here is the
+        // rewritten /v2 path. Spribe signs the ORIGINAL path it called, which the servlet preserves
+        // in the forward attributes — use those so the HMAC is computed over the path Spribe signed.
+        String forwardedUri = (String) request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        String path;
+        String qs;
+        if (forwardedUri != null) {
+            path = forwardedUri;
+            qs   = (String) request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+        } else {
+            path = request.getRequestURI();
+            qs   = request.getQueryString();
+        }
         if (qs != null && !qs.isBlank()) {
             path += "?" + qs;
         }

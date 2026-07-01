@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Data
 public class WalletServiceTransferDto {
@@ -30,7 +31,7 @@ public class WalletServiceTransferDto {
         this.walletType = 1; //main wallet
         this.transactionType = transactionType; //1 = Deposit, 2 = withdraw
         this.tokenId = rawTransferHistory.getCurrencyId();
-        this.amount = rawTransferHistory.getTransferAmount();
+        this.amount = rawTransferHistory.getTransferAmount().setScale(8, RoundingMode.DOWN);
         this.timestamp = rawTransferHistory.getCreateTime();
 
 

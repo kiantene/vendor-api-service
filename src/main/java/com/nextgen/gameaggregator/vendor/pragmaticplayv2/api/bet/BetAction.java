@@ -72,8 +72,13 @@ public class BetAction {
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             if (promoPayoutService.isPromoTransaction(dto.getBonusCode())) {
-                // TODO: need to add this to promo transaction history
-                return promoPayoutService.getDefaultResponseForBet(traceId, vendorCurrencyCode);
+                responseVo = (BetVo) promoPayoutService.getDefaultResponseForBet(
+                        traceId,
+                        gameSession,
+                        httpRequestLog,
+                        vendorCurrencyCode
+                );
+                return responseVo;
             }
 
             // 3. Verify remaining parameters (Verify against database values)

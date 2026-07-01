@@ -67,6 +67,6 @@ public class VendorSignatureService {
             errorResponse = ResponseUtil.createDefaultErrorResponse("no response from validator");
         }
 
-        ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value());
+        ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value(),errorResponse.getHeaders());
     }
 }

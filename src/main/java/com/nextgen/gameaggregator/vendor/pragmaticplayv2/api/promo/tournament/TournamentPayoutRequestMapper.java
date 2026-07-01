@@ -16,7 +16,7 @@ public class TournamentPayoutRequestMapper implements PromoPayoutContextMapper<T
 //                .vendorGameCode(vendorRequest.getGameId())
                 // promo payout history
                 .vendorCampaignCode(vendorRequest.getCampaignId())
-                .vendorTransactionId(vendorRequest.getProviderId())
+                .vendorTransactionId(vendorRequest.getReference())
                 .vendorPayoutAmount(vendorRequest.getAmount())
                 .vendorTransactionTime(vendorRequest.getTimestamp())
                 .promoType(PromoType.TOURNAMENT)
