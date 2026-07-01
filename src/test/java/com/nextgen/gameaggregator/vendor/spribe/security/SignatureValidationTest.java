@@ -18,6 +18,8 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import jakarta.servlet.RequestDispatcher;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -245,6 +247,63 @@ class SignatureValidationTest {
         void v2WithdrawPath_shouldValidate() {
             MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/v1/spribe/v2/withdraw");
             assertThat(validator.shouldValidate(req, req.getRequestURI())).isTrue();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Forwarded path (v1 -> v2 route resolver)
+    //
+    // VendorCallbackRoutingFilter forwards /api/v1/spribe/withdraw to the /v2 handler, so
+    // getRequestURI() becomes /api/v1/spribe/v2/withdraw. Spribe signed the ORIGINAL path, which
+    // the servlet preserves in RequestDispatcher.FORWARD_REQUEST_URI — buildPath must use that.
+    // -----------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Forwarded path (v1 -> v2 route resolver)")
+    class ForwardedPath {
+
+        private static final String ORIGINAL_PATH  = "/api/v1/spribe/withdraw";
+        private static final String FORWARDED_PATH = "/api/v1/spribe/v2/withdraw";
+
+        @Test
+        @DisplayName("signature verified against original pre-forward path (FORWARD_REQUEST_URI) — passes")
+        void forwardedRequest_signedWithOriginalPath_passes() throws Exception {
+            String clientTs = "1782360774";
+            String body     = "{\"user_id\":\"bbz6wa5ctg\",\"currency\":\"BRL\",\"amount\":1000}";
+            String sig      = hmacSha256Hex(clientTs + ORIGINAL_PATH + body, CLIENT_SECRET);
+
+            stubCredentials();
+            MockHttpServletRequest request = new MockHttpServletRequest("POST", FORWARDED_PATH);
+            request.addHeader("X-Spribe-Client-ID", CLIENT_ID);
+            request.addHeader("X-Spribe-Client-TS", clientTs);
+            request.addHeader("X-Spribe-Client-Signature", sig);
+            // The servlet forward preserves the original URI here:
+            request.setAttribute(RequestDispatcher.FORWARD_REQUEST_URI, ORIGINAL_PATH);
+
+            ValidationResult result = validator.validate(request, Map.of(), body);
+
+            assertThat(result.valid()).isTrue();
+            assertThat(result.isSkipped()).isFalse();
+        }
+
+        @Test
+        @DisplayName("regression guard: without FORWARD_REQUEST_URI the /v2 path is signed and mismatches")
+        void forwardedRequest_withoutForwardAttribute_mismatchSkipped() throws Exception {
+            String clientTs = "1782360774";
+            String body     = "{\"user_id\":\"bbz6wa5ctg\",\"currency\":\"BRL\",\"amount\":1000}";
+            String sig      = hmacSha256Hex(clientTs + ORIGINAL_PATH + body, CLIENT_SECRET);
+
+            stubCredentials();
+            MockHttpServletRequest request = new MockHttpServletRequest("POST", FORWARDED_PATH);
+            request.addHeader("X-Spribe-Client-ID", CLIENT_ID);
+            request.addHeader("X-Spribe-Client-TS", clientTs);
+            request.addHeader("X-Spribe-Client-Signature", sig);
+            // No FORWARD_REQUEST_URI -> buildPath falls back to getRequestURI() (/v2) -> mismatch.
+
+            ValidationResult result = validator.validate(request, Map.of(), body);
+
+            // Monitor-only mode: the mismatch is logged and skipped (this is the bug the fix solves).
+            assertThat(result.isSkipped()).isTrue();
         }
     }
 }

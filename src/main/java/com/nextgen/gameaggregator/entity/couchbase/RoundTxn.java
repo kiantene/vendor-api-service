@@ -142,6 +142,11 @@ public class RoundTxn {
     }
 
     @JsonIgnore
+    public boolean isSuccessfulResult() {
+        return isResult() && isSuccess();
+    }
+
+    @JsonIgnore
     public boolean isSuccessfulBetOrResult() {
         return isSuccess() && (isBet() || isResult() || isBetNResult());
     }

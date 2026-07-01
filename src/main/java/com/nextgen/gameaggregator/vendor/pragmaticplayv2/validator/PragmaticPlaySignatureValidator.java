@@ -30,7 +30,7 @@ public class PragmaticPlaySignatureValidator extends AbstractVendorSignatureVali
 
         String payload = generateQueryString(formFields);
         String secretKey = getCredentialValueByUsername(username, Credentials.SECRET_KEY);
-        
+
         checkSignature(signature, payload, secretKey);
         return ValidationResult.success();
     }

@@ -7,5 +7,6 @@ public enum TxnType {
     ROLLBACK,
     DEBIT,
     CREDIT,
-    PAYOUT
+    PAYOUT,
+    ADJUSTMENT
 }

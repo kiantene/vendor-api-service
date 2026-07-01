@@ -31,16 +31,19 @@ public class VendorErrorResponse {
         }
 
         this.headers = new HttpHeaders();
-        this.headers.setContentType(MediaType.APPLICATION_JSON);
 
         for (String key : headers.keySet()) {
             if (key == null || headers.get(key) == null) {
                 continue;
             }
-
             this.headers.add(key, headers.get(key).toString());
         }
+
+        if (this.headers.getContentType() == null) {
+            this.headers.setContentType(MediaType.APPLICATION_JSON);
+        }
     }
+
 
     public boolean hasHeaders() {
         return headers != null && !headers.isEmpty();

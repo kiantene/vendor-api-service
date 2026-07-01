@@ -6,9 +6,12 @@ import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.promo.freeround.FreeRoundPayoutResponse;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.response.ErrorResponse;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 
 @Component(Endpoints.CLASS_NAME)
 public class PragmaticPlayExceptionMapper implements VendorExceptionMapper {
@@ -49,7 +52,14 @@ public class PragmaticPlayExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        return getErrorResponse(ResponseCode.SUCCESS);
+        FreeRoundPayoutResponse response = FreeRoundPayoutResponse.builder()
+                .transactionId(ex.getTransactionId())
+                .currency(ex.getCurrency())
+                .cash(ex.getBalance())
+                .bonus(BigDecimal.ZERO)
+                .build();
+
+        return new VendorErrorResponse(response);
     }
 
     @Override

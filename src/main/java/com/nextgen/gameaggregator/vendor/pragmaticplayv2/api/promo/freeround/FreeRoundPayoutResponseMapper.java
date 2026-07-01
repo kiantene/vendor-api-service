@@ -13,7 +13,7 @@ public class FreeRoundPayoutResponseMapper implements PromoPayoutVendorResponseM
     @Override
     public FreeRoundPayoutResponse toVendor(PromoPayoutContext context, PlayerBalanceData balanceData) {
         return FreeRoundPayoutResponse.builder()
-                .transactionId(context.getTraceId())
+                .transactionId(context.getTransactionId())
                 .currency(context.getVendorCurrency())
                 .cash(balanceData.getBalance())
                 .bonus(BigDecimal.ZERO)

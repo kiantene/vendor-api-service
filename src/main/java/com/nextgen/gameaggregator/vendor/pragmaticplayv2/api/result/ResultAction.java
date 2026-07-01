@@ -78,8 +78,13 @@ public class ResultAction {
             }
 
             if (promoPayoutService.isPromoTransaction(dto.getBonusCode())) {
-                // TODO: need to add this to promo transaction history
-                return promoPayoutService.getDefaultResponseForResult(traceId, gameSession.getVendorCurrencyCode());
+                responseVo = (ResultVo) promoPayoutService.getDefaultResponseForResult(
+                        traceId,
+                        gameSession,
+                        httpRequestLog,
+                        gameSession.getVendorCurrencyCode()
+                );
+                return responseVo;
             }
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());

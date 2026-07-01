@@ -57,7 +57,7 @@ public class CreditServiceDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(Integer.valueOf(this.getRoundWinDto().getWin()));
+        return new BigDecimal(this.getRoundWinDto().getWin());
     }
 
     @Override
