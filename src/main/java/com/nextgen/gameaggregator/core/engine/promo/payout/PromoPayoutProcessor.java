@@ -39,7 +39,9 @@ public class PromoPayoutProcessor {
 
     public PlayerBalanceData process(PromoPayoutContext context) {
 
-        producer.publish(context);
+        if (hasPayout(context)) {
+            producer.publish(context);
+        }
 
         PlayerBalanceData balanceData = callToOperator(context);
         TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
@@ -59,11 +61,12 @@ public class PromoPayoutProcessor {
         if (transactions.isEmpty()) return Mono.empty();
 
         return Flux.fromIterable(transactions)
-                .filter(this::hasPayout) // only process for transactions that has payout > 0
                 .flatMap(tx -> {
                     tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
                     tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
-                    producer.publish(context, tx);
+                    if (hasPayout(tx)) {
+                        producer.publish(context, tx);
+                    }
 
                     LogContext logContext = LogContextHolder.get().copy(); // create copy for this transaction
 
@@ -80,6 +83,10 @@ public class PromoPayoutProcessor {
                             });
                 }, CONCURRENCY)
                 .then();
+    }
+
+    private boolean hasPayout(PromoPayoutContext context) {
+        return context.getVendorPayoutAmount() != null && context.getVendorPayoutAmount().signum() > 0;
     }
 
     private boolean hasPayout(PayoutTransaction tx) {

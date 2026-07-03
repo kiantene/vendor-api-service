@@ -55,7 +55,7 @@ pipeline {
 
                             sh """
                                 git add .
-                                git commit -m "Update version to ${versionTag}"
+                                git diff --cached --quiet || git commit -m "Update version to ${versionTag}"
                                 git push origin HEAD:refs/heads/${BRANCH_NAME}
                                 echo '${versionTag}' > ${releaseFile}
                             """
@@ -219,7 +219,7 @@ String getVersionTagbyPom(String branchName) {
     String baseVersion
     String mavenVersion = readMavenPom().version.trim()
     String normalizedBranch = branchName
-    def matcher = mavenVersion =~ /(\d+\.\d+\.\d+(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
+    def matcher = mavenVersion =~ /(\d+\.\d+\.\d+(?:\.\d+)?(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
 
     if (matcher.find()) {
         baseVersion = matcher.group(1)
@@ -235,7 +235,7 @@ String getVersionTagbyPom(String branchName) {
 String getVersionTagbyBranch(String branchName) {
     String baseVersion
 
-    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
+    def matcher = branchName =~ /release\/(\d+\.\d+\.\d+(?:\.\d+)?(?:-(?:hotfix-?\d*|adhoc-?\d*))?)/
 
     if (matcher.find()) {
         baseVersion = matcher.group(1)
