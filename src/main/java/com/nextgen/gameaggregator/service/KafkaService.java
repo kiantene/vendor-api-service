@@ -297,11 +297,13 @@ public class KafkaService {
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
-                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
+                log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), throwable.getMessage(), throwable);
                 return null;
             });
         } catch (Exception ex) {
-            log.error(ex.getMessage() + " : " + betHistoryV3.toString());
+            log.error("BetHistoryV3: " + ex.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
+            log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), ex.getMessage(), ex);
         }
     }
 
@@ -346,12 +348,14 @@ public class KafkaService {
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
-                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+                log.error("BetHistoryV3 roundId=[{}], {}", betHistory.getRoundId(), throwable.getMessage(), throwable);
                 return null;
             });
 
         } catch (Exception e) {
             log.error("BetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            log.error("BetHistoryV3 roundId=[{}], {}", betHistory.getRoundId(), e.getMessage(), e);
         }
     }
 
