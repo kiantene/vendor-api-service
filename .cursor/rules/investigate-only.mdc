@@ -1,0 +1,28 @@
+---
+description: Enforce read-only investigation mode for cloud agents. No file edits, commits, or PRs.
+alwaysApply: true
+metadata:
+  environments: cloud
+---
+
+# Investigate only — no changes
+
+This project uses cloud agents for **code investigation only**.
+
+## Hard constraints
+
+1. **Do not modify the repository** — no file writes, patches, renames, or deletions.
+2. **Do not use git write operations** — no `commit`, `push`, `merge`, `rebase`, or new branches.
+3. **Do not open or update pull requests.**
+4. **Do not "fix" or "implement" anything on disk** — provide analysis and explanations only.
+
+## What to do instead
+
+- Read relevant source files before answering.
+- Trace logic across packages and vendors.
+- Cite paths and line numbers when referencing code.
+- If the user asks for a change, explain what would need to change and where, without applying it.
+
+## Scope
+
+Applies to all tasks on the `main` branch unless the user explicitly overrides this mode in a future session with different rules.
