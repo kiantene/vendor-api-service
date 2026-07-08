@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.service.BetIdempotentLogService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -77,6 +78,7 @@ public class ConfirmBetParlayAction {
 
             ConfirmBetParlayDto confirmBetParlayDto = dto.getMessage();
             List<ConfirmBetParlayTxnsDto> txnList = confirmBetParlayDto.getTxns();
+            List<ConfirmBetParlayTicketDetailDto> ticketDetailList = confirmBetParlayDto.getTicketDetail();
             boolean isMultipleBet = txnList.size() > 1;
 
             if (txnList.isEmpty()) {
@@ -96,7 +98,7 @@ public class ConfirmBetParlayAction {
             walletRequest.setVendorPlayerUsername(vendorPlayerUsername);
 
             if (!isMultipleBet) { // if only 1 transaction, then don't need to use threading
-                this.dataMapper(walletRequest, txnList.get(0), operationId, roundId);
+                this.dataMapper(walletRequest, txnList.get(0), operationId, roundId, ticketDetailList);
                 sportWalletService.confirmBet(walletRequest);
                 this.emitRawBetDetail(walletRequest, httpRequestLog.getRequestBody());
                 vo.setBalance(walletRequest.getBalanceAfter());
@@ -105,7 +107,7 @@ public class ConfirmBetParlayAction {
             } else {
                 for (ConfirmBetParlayTxnsDto txn : txnList) {
                     final WalletRequest newWalletRequest = new WalletRequest(walletRequest);
-                    this.dataMapper(newWalletRequest, txn, operationId, roundId);
+                    this.dataMapper(newWalletRequest, txn, operationId, roundId, ticketDetailList);
 
                     SportWalletService.THREAD_POOL.submit(() -> {
                         try {
@@ -145,7 +147,7 @@ public class ConfirmBetParlayAction {
         return vo;
     }
 
-    private void dataMapper(WalletRequest walletRequest, ConfirmBetParlayTxnsDto confirmBetParlayTxnsDto, String operationId, String roundId) {
+    private void dataMapper(WalletRequest walletRequest, ConfirmBetParlayTxnsDto confirmBetParlayTxnsDto, String operationId, String roundId, List<ConfirmBetParlayTicketDetailDto> ticketDetailList) {
         String refId = confirmBetParlayTxnsDto.getRefId();
         String externalTransactionId = VendorService.generateExtTxnId(operationId, refId);
 
@@ -158,6 +160,10 @@ public class ConfirmBetParlayAction {
         walletRequest.setNewBetAmount(confirmBetParlayTxnsDto.getActualAmount());
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
+        if (ticketDetailList != null && !ticketDetailList.isEmpty()) {
+            walletRequest.setOddsType(OddsType.convertToSportOddsCode(ticketDetailList.get(0).getOddsType()));
+            walletRequest.setOdds(confirmBetParlayTxnsDto.getOdds());
+        }
     }
 
     private String getRoundId(List<ConfirmBetParlayTxnsDto> txnList) {

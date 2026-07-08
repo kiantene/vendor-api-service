@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RedissonService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -156,5 +157,7 @@ public class PlaceBetAction {
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetDto.getUserId());
         walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
+        walletRequest.setOddsType(OddsType.convertToSportOddsCode(placeBetDto.getOddsType()));
+        walletRequest.setOdds(placeBetDto.getOdds());
     }
 }

@@ -25,6 +25,8 @@ public class SportBetDto {
     private String gameCode;
     private String currency;
     private Integer betType;
+    private Integer oddsType;
+    private BigDecimal odds;
     private Long timestamp;
     private List<MultipleBetDto> multipleBetIds;
 
@@ -39,6 +41,12 @@ public class SportBetDto {
         this.currency = walletRequest.getCurrencyCode();
         this.gameCode = walletRequest.getGameCode();
         this.timestamp = walletRequest.getVendorBetTime();
+
+        // Optional param for operator
+        if (walletRequest.getOddsType() != null && walletRequest.getOdds() != null) {
+            this.oddsType = walletRequest.getOddsType();
+            this.odds = walletRequest.getOdds();
+        }
 
         if (conversionRate == null) conversionRate = BigDecimal.ONE;
 

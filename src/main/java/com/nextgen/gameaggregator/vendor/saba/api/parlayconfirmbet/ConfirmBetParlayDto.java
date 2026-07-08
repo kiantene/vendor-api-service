@@ -20,4 +20,5 @@ public class ConfirmBetParlayDto extends GeneralDto {
     private BigDecimal debitAmount;
     private String transactionTime;
     private List<ConfirmBetParlayTxnsDto> txns;
+    private List<ConfirmBetParlayTicketDetailDto> ticketDetail;
 }

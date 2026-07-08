@@ -29,6 +29,7 @@ public class PlaceBetParlayDto extends GeneralDto implements SportBetResultData 
     private String vendorTransId;
     private List<PlaceBetParlayTxnsDto> txns;
     //    private List<String> ticketDetail;
+    private List<PlaceBetParlayTicketDetailDto> ticketDetail;
 
     private String refId;
     private BigDecimal betAmount;

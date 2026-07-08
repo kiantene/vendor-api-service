@@ -39,7 +39,7 @@ public class PromoPayoutProcessor {
 
     public PlayerBalanceData process(PromoPayoutContext context) {
 
-        if (hasPayout(context)) {
+        if (shouldPublish(context)) {
             producer.publish(context);
         }
 
@@ -64,7 +64,7 @@ public class PromoPayoutProcessor {
                 .flatMap(tx -> {
                     tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
                     tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
-                    if (hasPayout(tx)) {
+                    if (shouldPublish(tx)) {
                         producer.publish(context, tx);
                     }
 
@@ -83,14 +83,6 @@ public class PromoPayoutProcessor {
                             });
                 }, CONCURRENCY)
                 .then();
-    }
-
-    private boolean hasPayout(PromoPayoutContext context) {
-        return context.getVendorPayoutAmount() != null && context.getVendorPayoutAmount().signum() > 0;
-    }
-
-    private boolean hasPayout(PayoutTransaction tx) {
-        return tx.getVendorPayoutAmount() != null && tx.getVendorPayoutAmount().signum() > 0;
     }
 
     private PlayerBalanceData callToOperator(PromoPayoutContext context) {
@@ -156,6 +148,10 @@ public class PromoPayoutProcessor {
                 })
                 // retry handling: enqueue failed request
                 .onErrorResume(handleErrorWithRetry);
+    }
+
+    private boolean shouldPublish(PayoutTransaction tx) {
+        return tx.getVendorPayoutAmount() != null && tx.getVendorPayoutAmount().signum() >= 0;
     }
 
     private OperatorApiRequest toApiRequest(PromoPayoutContext context, PromoPayoutDto dto) {

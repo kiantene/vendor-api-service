@@ -5,8 +5,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.core.service.AgentFeatureService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -36,11 +38,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SportBetAction {
 
     private final AgentApiCredentialService agentApiCredentialService;
+    private final AgentFeatureService agentFeatureService;
 
     @Autowired
-    public SportBetAction(AgentApiCredentialService agentApiCredentialService) {
+    public SportBetAction(AgentApiCredentialService agentApiCredentialService,
+                          AgentFeatureService agentFeatureService) {
 
         this.agentApiCredentialService = agentApiCredentialService;
+        this.agentFeatureService = agentFeatureService;
     }
 
     public WalletRequest callToOperator(WalletRequest walletRequest, VendorCurrency vendorCurrency)
@@ -55,6 +60,15 @@ public class SportBetAction {
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         SportBetDto dto = new SportBetDto(walletRequest, fromVendorRate);
+
+        // odds fields are agent-feature gated; strip before the payload is signed and sent
+        if (dto.getOdds() != null || dto.getOddsType() != null) {
+            Integer oddsFeatureStatus = agentFeatureService.getStatus(agentId, Features.SPORT_ODDS);
+            if (oddsFeatureStatus == null || oddsFeatureStatus != 1) {
+                dto.setOdds(null);
+                dto.setOddsType(null);
+            }
+        }
 
         try {
             String signature = AuthenticationService.generateSignatureWithJson(new ObjectMapper().writeValueAsString(dto), agentApiCredential.getApiSecret());

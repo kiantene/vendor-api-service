@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationExceptio
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -137,5 +138,7 @@ public class ConfirmBetAction {
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setBetStatus(BetStatus.UNSETTLED);
         walletRequest.setNewBetAmount(dto.getTxns().get(0).getActualAmount());
+        walletRequest.setOddsType(OddsType.convertToSportOddsCode(dto.getTxns().get(0).getOddsType()));
+        walletRequest.setOdds(dto.getTxns().get(0).getOdds());
     }
 }

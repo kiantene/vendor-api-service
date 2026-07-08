@@ -22,7 +22,7 @@ public class ActionsWagerInfoDto {
     private String type;
     private Long betTypes;
     private BigDecimal odds;
-    private Long oddsFormat;
+    private Integer oddsFormat;
     private BigDecimal toWin;
     private BigDecimal toRisk;
     private BigDecimal stake;
