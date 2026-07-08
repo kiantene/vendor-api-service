@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -122,6 +123,12 @@ public class PlaceBetParlayAction {
         walletRequest.setBetType(BetType.PARLAY_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetParlayDto.getUserId());
         walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
+        if (placeBetParlayDto.getTicketDetail() != null && !placeBetParlayDto.getTicketDetail().isEmpty()) {
+            walletRequest.setOddsType(OddsType.convertToSportOddsCode(placeBetParlayDto.getTicketDetail().get(0).getOddsType()));
+        }
+        if ((placeBetParlayDto.getTxns().get(0).getDetail() != null && !placeBetParlayDto.getTxns().get(0).getDetail().isEmpty())) {
+            walletRequest.setOdds(placeBetParlayDto.getTxns().get(0).getDetail().get(0).getOdds());
+        }
 
         if (isMultipleBet(placeBetParlayDto)) {
             List<String> refIdList = new LinkedList<>();
@@ -135,6 +142,7 @@ public class PlaceBetParlayAction {
                 multipleBetList.add(multipleBetDto);
                 refIdList.add(placeBetParlayTxnsDto.getRefId());
             }
+
             // generate md5 vendorBetId and roundId for masterUnsettleBet using joinedRefId
             String md5RefId = VendorService.generateMultipleBetRoundId(refIdList);
             walletRequest.setVendorBetId(md5RefId);

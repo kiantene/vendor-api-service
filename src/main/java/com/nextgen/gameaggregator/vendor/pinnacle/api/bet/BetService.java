@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.operator.dto.MultipleBetDto;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
@@ -103,6 +104,9 @@ public class BetService {
         if (this.isMultipleBet(wagerInfoDto)) {
             walletRequest.setBetIds(getMultipleBetDtos(wagerInfoDto, walletRequest.getExternalTransactionId()));
         }
+
+        walletRequest.setOddsType(OddsType.convertToSportOddsCode(wagerInfoDto.getOddsFormat()));
+        walletRequest.setOdds(wagerInfoDto.getOdds());
     }
 
     private boolean isMultipleBet(ActionsWagerInfoDto wagerInfoDto) {

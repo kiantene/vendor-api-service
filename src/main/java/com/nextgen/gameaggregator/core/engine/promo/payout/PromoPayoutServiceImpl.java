@@ -89,15 +89,4 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         );
     }
 
-    private boolean hasPayout(PromoPayoutContext context) {
-        if (context.getPayoutTransactions() == null || context.getPayoutTransactions().isEmpty()) {
-            return context.getVendorPayoutAmount() != null && context.getVendorPayoutAmount().signum() > 0;
-        }
-
-        return context.getPayoutTransactions()
-                .stream()
-                .anyMatch(transaction ->
-                        transaction.getVendorPayoutAmount() != null && transaction.getVendorPayoutAmount().signum() > 0);
-
-    }
 }

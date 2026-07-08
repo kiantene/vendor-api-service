@@ -27,7 +27,7 @@ class TournamentPayoutRequestMapperTest {
         assertThat(context.getIdempotencyKey()).isEqualTo("reference123");
         assertThat(context.getVendorPlayerUsername()).isEqualTo("player123");
         assertThat(context.getVendorCampaignCode()).isEqualTo("campaign-123");
-        assertThat(context.getVendorTransactionId()).isEqualTo("provider-transaction-id");
+        assertThat(context.getVendorTransactionId()).isEqualTo("reference123");
         assertThat(context.getVendorPayoutAmount()).isEqualByComparingTo("10.50");
         assertThat(context.getVendorTransactionTime()).isEqualTo(1754373936436L);
         assertThat(context.getPromoType()).isEqualTo(PromoType.TOURNAMENT);

@@ -47,6 +47,10 @@ public class SportUpdateBetDto {
     @NotBlank(message = "currency cannot be blank")
     private String currency;
 
+    // Optional field
+    private Integer oddsType;
+    private BigDecimal odds;
+
     @NotNull(message = "timestamp cannot be null")
     private Long timestamp;
 
@@ -68,5 +72,11 @@ public class SportUpdateBetDto {
         this.betAmount = new BigDecimal(betAmt.multiply(conversionRate).stripTrailingZeros().toPlainString());
         this.newBetAmount = new BigDecimal(newBetAmt.multiply(conversionRate).stripTrailingZeros().toPlainString());
         this.creditAmount = new BigDecimal(creditAmt.multiply(conversionRate).stripTrailingZeros().toPlainString());
+
+        // Optional param for operator
+        if (walletRequest.getOddsType() != null && walletRequest.getOdds() != null) {
+            this.oddsType = walletRequest.getOddsType();
+            this.odds = walletRequest.getOdds();
+        }
     }
 }
