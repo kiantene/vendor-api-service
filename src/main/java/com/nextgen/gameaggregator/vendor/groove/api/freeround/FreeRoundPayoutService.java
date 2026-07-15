@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.groove.api.freeround;
 
+import com.nextgen.gameaggregator.core.engine.promo.campaign.CampaignResolveStrategy;
 import com.nextgen.gameaggregator.core.engine.promo.payout.AbstractPromoPayoutController;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutConfig;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
 import com.nextgen.gameaggregator.vendor.groove.api.result.BetResultRequest;
 import com.nextgen.gameaggregator.vendor.groove.api.result.BetResultResponse;
@@ -22,5 +24,10 @@ public class FreeRoundPayoutService extends AbstractPromoPayoutController<BetRes
 
     private void enrichResponse(BetResultResponse response, BetResultRequest request) {
         response.setApiversion(request.getApiversion());
+    }
+
+    @Override
+    protected void configure(PromoPayoutConfig config, BetResultRequest request) {
+        config.campaignResolveStrategy(CampaignResolveStrategy.USERNAME_AND_BONUS_ID);
     }
 }

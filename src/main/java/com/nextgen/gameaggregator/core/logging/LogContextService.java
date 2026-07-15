@@ -98,7 +98,7 @@ public class LogContextService {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
-        httpRequestLog.setRequestBody(logContext.getBody().toString());
+        httpRequestLog.setRequestBody(logContext.getBody() == null ? "" : logContext.getBody().toString());
         httpRequestLog.setBetStart(System.currentTimeMillis());
         httpRequestLog.setStatus(PROCESSING);
         return httpRequestLog;

@@ -10,6 +10,8 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.habanero.api.bonus.HabaneroBonusPayoutProcessor;
+import com.nextgen.gameaggregator.vendor.habanero.api.bonus.HabaneroRegularBonusSupport;
 import com.nextgen.gameaggregator.vendor.habanero.api.pokerbet.PokerBetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.pokerresult.PokerResultService;
 import com.nextgen.gameaggregator.vendor.habanero.api.refund.RefundService;
@@ -45,6 +47,7 @@ public class TransferAction {
     private final PokerResultService pokerResultService;
     private final RefundService refundService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final HabaneroBonusPayoutProcessor habaneroBonusPayoutProcessor;
 
     @Autowired
     public TransferAction(HttpService httpService,
@@ -57,7 +60,8 @@ public class TransferAction {
                           PokerBetService pokerBetService,
                           PokerResultService pokerResultService,
                           RefundService refundService,
-                          RequestIdempotentLogService requestIdempotentLogService) {
+                          RequestIdempotentLogService requestIdempotentLogService,
+                          HabaneroBonusPayoutProcessor habaneroBonusPayoutProcessor) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
@@ -68,6 +72,7 @@ public class TransferAction {
         this.pokerResultService = pokerResultService;
         this.refundService = refundService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.habaneroBonusPayoutProcessor = habaneroBonusPayoutProcessor;
     }
 
     @PostMapping(path = EndPoints.TRANSFER)
@@ -120,7 +125,9 @@ public class TransferAction {
             this.doVerification(transferDto, gameSession);
             
             //handle transfer action
-            if (transferDto.getFundTransferRequestDto().getIsRefund()) {
+            if (HabaneroRegularBonusSupport.isRegularBonusPayout(transferDto)) {
+                responseVo = habaneroBonusPayoutProcessor.process(transferDto, traceId);
+            } else if (transferDto.getFundTransferRequestDto().getIsRefund()) {
                 //handle refund condition
                 responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
             } else if (gameSession.getGameCategoryId().equals(Formats.POKER)) {

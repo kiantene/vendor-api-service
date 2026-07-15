@@ -5,6 +5,7 @@ import com.nextgen.core.api.ApiResult;
 import com.nextgen.core.api.BlockingApiAdapter;
 import com.nextgen.gameaggregator.core.engine.promo.campaign.FetchCampaignByPlayerRequest;
 import com.nextgen.gameaggregator.core.engine.promo.campaign.FetchCampaignRequest;
+import com.nextgen.gameaggregator.core.engine.promo.campaign.ResolveCampaignRequest;
 import com.nextgen.gameaggregator.core.engine.promo.player.FindActivePlayerCampaignRequest;
 import com.nextgen.gameaggregator.core.util.OperatorSignatureUtil;
 import com.nextgen.gameaggregator.promoengine.PromoEngineProperties;
@@ -43,6 +44,10 @@ public class PromoEngineApiAdapter extends BlockingApiAdapter<ApiRequest, ApiRes
 
     public ApiRequest ofFetchCampaignByPlayer(String traceId, FetchCampaignByPlayerRequest request) {
         return buildRequest(traceId, EndPoints.FETCH_CAMPAIGN_BY_PLAYER, request);
+    }
+
+    public ApiRequest ofResolveCampaign(String traceId, ResolveCampaignRequest request) {
+        return buildRequest(traceId, EndPoints.RESOLVE_CAMPAIGN, request);
     }
 
     public ApiRequest ofFetchPlayerActiveCampaign(String traceId, FindActivePlayerCampaignRequest request) {

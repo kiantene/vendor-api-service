@@ -90,6 +90,7 @@ public class SettleAction {
         } catch (BetResultIdempotentViolationException e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.DUPLICATE);
+            vo.setBalance(e.getBalance().toBigInteger());
 
         } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);

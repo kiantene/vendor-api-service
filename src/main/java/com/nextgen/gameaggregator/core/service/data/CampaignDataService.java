@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.core.service.data;
 
 import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.gameaggregator.core.engine.promo.campaign.CampaignResolveStrategy;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -22,5 +24,10 @@ public class CampaignDataService {
     public Campaign getByPlayerUuid(String playerUuid) {
         return Optional.ofNullable(this.cache.getByPlayerUuid(playerUuid))
                 .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "playerUuid", playerUuid));
+    }
+
+    public Campaign getByRef(CampaignResolveStrategy strategy, Map<String, String> params) {
+        return Optional.ofNullable(this.cache.getByRef(strategy, params))
+                .orElseThrow(() -> new EntityNotFoundException(Campaign.class, "resolveCampaign", strategy, params));
     }
 }

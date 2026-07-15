@@ -2,10 +2,9 @@ package com.nextgen.gameaggregator.vendor.lucky365.api.rollback;
 
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContext;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackContextMapper;
+import com.nextgen.gameaggregator.vendor.lucky365.util.LoginIds;
 import com.nextgen.gameaggregator.vendor.lucky365.util.TimeStamp;
 import org.springframework.stereotype.Component;
-
-import java.util.Locale;
 
 @Component
 public class RollbackRequestMapper implements BetRollbackContextMapper<RollbackRequest> {
@@ -17,7 +16,7 @@ public class RollbackRequestMapper implements BetRollbackContextMapper<RollbackR
                 .idempotencyKey(vendorRequest.getId())
                 .vendorBetId(vendorRequest.getOrderCode())
                 .roundId(vendorRequest.getOrderCode())
-                .vendorPlayerUsername(vendorRequest.getLoginId().toLowerCase(Locale.ROOT))
+                .vendorPlayerUsername(LoginIds.forLookup(vendorRequest.getLoginId()))
                 .timestamp(TimeStamp.convertTimeStamp(vendorRequest.getActionDate()))
                 .build();
     }

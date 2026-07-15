@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.groove.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.groove.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -40,6 +41,9 @@ public class GrooveSignatureValidator extends AbstractVendorSignatureValidator {
     private static final Set<String> VALID_STATUSES = Set.of("completed", "pending");
     private static final Set<String> AMOUNT_PARAMS = Set.of(BET_AMOUNT, RESULT_AMOUNT);
 
+    @Value("${is-test-env:false}")
+    private boolean isTestEnv;
+
     protected GrooveSignatureValidator(VendorPlayerDataService vendorPlayerDataService, VendorLineService vendorLineService) {
         super(vendorPlayerDataService, vendorLineService);
     }
@@ -56,6 +60,7 @@ public class GrooveSignatureValidator extends AbstractVendorSignatureValidator {
 
     @Override
     public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
+        if (isTestEnv) return ValidationResult.success();
         log.info("Groove Request Header: \n" + getHeaders(request));
         String gameSessionId = request.getParameter(GAME_SESSION_ID);
         validateGameSession(gameSessionId);

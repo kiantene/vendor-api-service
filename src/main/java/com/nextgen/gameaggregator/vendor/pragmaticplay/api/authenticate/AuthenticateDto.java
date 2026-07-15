@@ -29,8 +29,8 @@ public class AuthenticateDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String providerId;
 
-    // Id of the game.
-    @NotBlank
+    // Id of the game. Optional per PP spec §3.4 — PP omits it on re-authenticate
+    // (e.g. re-entry after Feature Buy); when absent, the game on the session is used.
     @Size(min = 1, max = 32)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String gameId;
