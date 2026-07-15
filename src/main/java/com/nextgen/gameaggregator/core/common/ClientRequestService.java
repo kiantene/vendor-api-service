@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.core.webclient.ClientApiResponse;
 import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.enums.SeamlessType;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,7 +60,9 @@ public class ClientRequestService {
         validateInputs(agentId, path, requestObject);
         validateRequestObject(requestObject);
 
-        AgentApiCredential credential = loadCredential(agentId);
+        ResolvedCredential resolved = loadCredential(agentId);
+        AgentApiCredential credential = resolved.credential();
+        stripRollbackMetaForNonTransferWallet(requestObject, resolved.transferWallet());
 
         return OperatorApiRequest.builder()
                 .traceId(traceId)
@@ -80,7 +83,9 @@ public class ClientRequestService {
         validateInputs(agentId, context.endpoint(), context.request());
         validateRequestObject(context.request());
 
-        AgentApiCredential credential = loadCredential(agentId);
+        ResolvedCredential resolved = loadCredential(agentId);
+        AgentApiCredential credential = resolved.credential();
+        stripRollbackMetaForNonTransferWallet(context.request(), resolved.transferWallet());
 
         return OperatorApiRequest.builder()
                 .traceId(context.request().getTraceId())
@@ -146,7 +151,22 @@ public class ClientRequestService {
         }
     }
 
-    private AgentApiCredential loadCredential(Integer agentId) {
+    /**
+     * RollbackMeta (operator-POV amounts) is only meant for the internal transfer wallet. The gate
+     * is the authoritative seamless-transfer flag (agent's seamlessType == SEAMLESS_TRANSFER),
+     * resolved in {@link #loadCredential}: for any other operator we drop the meta, since operators
+     * decide their own reversal and must not receive an amount.
+     */
+    void stripRollbackMetaForNonTransferWallet(Object requestObject, boolean transferWallet) {
+        if (!transferWallet && requestObject instanceof WalletRollbackDto rollbackDto) {
+            rollbackDto.setMeta(null);
+        }
+    }
+
+    /** A loaded credential together with whether its agent is a seamless-transfer (transfer wallet) agent. */
+    private record ResolvedCredential(AgentApiCredential credential, boolean transferWallet) {}
+
+    private ResolvedCredential loadCredential(Integer agentId) {
         AgentApiCredential credential = credentialService.getActiveCredential(agentId);
 
         if (credential == null) {
@@ -155,8 +175,11 @@ public class ClientRequestService {
             );
         }
 
-        Agent agent = agentService.get(agentId);
-        if (SeamlessType.isSeamlessTransfer(agent.getSeamlessType())) {
+        // The credential carries its agent (eager @ManyToOne, cached with it), so reuse it and avoid
+        // a second cache lookup. Fall back to the agent cache only if the FK is absent (optional).
+        Agent agent = credential.getAgent() != null ? credential.getAgent() : agentService.get(agentId);
+        boolean transferWallet = SeamlessType.isSeamlessTransfer(agent.getSeamlessType());
+        if (transferWallet) {
             credential.setCallbackUrl(transferWalletProps.getCallbackUrl());
         }
 
@@ -165,7 +188,7 @@ public class ClientRequestService {
         requireNonEmpty(credential.getApiSecret(), "API secret", agentId);
         requireNonEmpty(credential.getCallbackUrl(), "callback URL", agentId);
 
-        return credential;
+        return new ResolvedCredential(credential, transferWallet);
     }
 
     private void requireNonEmpty(String value, String fieldName, Integer agentId) {
