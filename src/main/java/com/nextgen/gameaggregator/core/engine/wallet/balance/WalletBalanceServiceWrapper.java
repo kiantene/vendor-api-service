@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.GameSessionDataService;
+import com.nextgen.gameaggregator.core.validator.BetValidator;
 import com.nextgen.gameaggregator.core.validator.VendorRequestValidator;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -27,6 +28,7 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
     private final WalletService walletService;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final VendorRequestValidator vendorRequestValidator;
+    private final BetValidator betValidator;
 
     public PlayerBalanceData process(BalanceContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
@@ -34,6 +36,9 @@ public class WalletBalanceServiceWrapper implements WalletBalanceService {
 
         try {
             GameSession gameSession = gameSessionDataService.getGameSession(context);
+
+            // Validate gameSession status
+            betValidator.validateSession(gameSession, context);
 
             enrichByGameSession(context, gameSession);
             //validate vendor request

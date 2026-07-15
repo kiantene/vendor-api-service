@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.core.WalletRequestServiceImpl;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -24,6 +25,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +38,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
+@Slf4j
 public class RefundAction {
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
@@ -47,6 +50,9 @@ public class RefundAction {
     private final WalletRequestService walletRequestService;
     private final WalletTransactionService walletTransactionService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final VendorPlayerService vendorPlayerService;
+    private final GameService gameService;
+    private final VendorCurrencyService vendorCurrencyService;
 
     public RefundAction(GameSessionService gameSessionService,
                         HttpService httpService,
@@ -57,7 +63,10 @@ public class RefundAction {
                         OperatorWalletServiceImpl operatorWalletService,
                         WalletRequestServiceImpl walletRequestService,
                         WalletTransactionServiceImpl walletTransactionService,
-                        RequestIdempotentLogService requestIdempotentLogService) {
+                        RequestIdempotentLogService requestIdempotentLogService,
+                        VendorPlayerService vendorPlayerService,
+                        GameServiceImpl gameService,
+                        VendorCurrencyService vendorCurrencyService) {
 
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
@@ -69,6 +78,9 @@ public class RefundAction {
         this.walletRequestService = walletRequestService;
         this.walletTransactionService = walletTransactionService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.vendorPlayerService = vendorPlayerService;
+        this.gameService = gameService;
+        this.vendorCurrencyService = vendorCurrencyService;
     }
 
     @PostMapping(path = EndPoints.REFUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -122,15 +134,14 @@ public class RefundAction {
                     commonVo.setBalance(walletRequest.getBalanceAfter());
                     commonVo.setCurrency(walletRequest.getCurrencyCode());
                 } else {
-                    throw new BetNotFoundException();
+                    // GA-14520: no UnsettledBet and no WalletTransaction -> the bet was never accepted by GA
+                    // (rollout rejected or never received; 0% had a successful rollout, so no debit occurred).
+                    // Nothing to reverse -> ack the refund as success so CQ9 stops resending, instead of 1014.
+                    this.acknowledgeUnactionableRefund(traceId, vendorId, refundDto, commonVo, httpRequestLog);
                 }
             }
 
             responseVo.setData(commonVo);
-
-        } catch (BetNotFoundException betNotFoundException) {
-            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
-            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             //if found the bet in settled status
@@ -164,7 +175,10 @@ public class RefundAction {
         } catch (AuthenticationException |
                  CredentialNotFoundException |
                  InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
                  InvalidVendorLineException playerNotFoundException) {
+            // InvalidPlayerException: the GA-14520 no-bet ack resolves the player by account; an unknown player
+            // returns a deliberate PLAYER_NOT_FOUND (1006), not a generic 1100 that CQ9 would resend (mirrors BalanceAction).
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
             httpService.logError(httpRequestLog, playerNotFoundException);
 
@@ -229,6 +243,46 @@ public class RefundAction {
         walletRequest.setVendorBetTime(walletTransaction.getTimestamp());
         walletRequest.setVendorSettleTime(walletTransaction.getTimestamp());
         walletRequest.setBetId(walletTransaction.getBetId());
+    }
+
+    /**
+     * GA-14520: acknowledge a refund whose bet GA never accepted (absent from BOTH the unsettled-bet and
+     * wallet-transaction tables) as success, so CQ9 stops resending an un-actionable refund. No debit ever
+     * occurred, so the player's balance is returned unchanged. Resolves the vendor-facing currency at the
+     * account level (the refund carries no game code) and logs a warning for observability — this is a no-op,
+     * NOT a bet-not-found marker, so it must not be written to the bet_not_found_logs dedup collection.
+     */
+    private void acknowledgeUnactionableRefund(String traceId, Integer vendorId, RefundDto refundDto,
+                                               CommonVo commonVo, HttpRequestLog httpRequestLog)
+            throws InvalidPlayerException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException {
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(refundDto.getAccount());
+        commonVo.setBalance(currentBalanceOrZero(traceId, refundDto.getAccount(), httpRequestLog));
+        // Vendor-facing currency (≠ GA-internal) resolved at the account level — a currency-service concern.
+        commonVo.setCurrency(vendorCurrencyService.getVendorCurrencyCode(vendorId, vendorPlayer.getCurrencyId()));
+        log.warn("CQ9 refund acked as success with no bet to reverse (force-success) - traceId={}, vendorPlayerId={}, mtcode={}",
+                traceId, vendorPlayer.getId(), refundDto.getMtcode());
+    }
+
+    /**
+     * The player's current operator balance, or ZERO if they have no live game session (typical days after the
+     * rejected rollout). Balance is account-level (per-player wallet), so any of the player's sessions returns
+     * the same balance. No debit occurred here, so ZERO is a correct fallback.
+     */
+    private BigDecimal currentBalanceOrZero(String traceId, String account, HttpRequestLog httpRequestLog)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
+        try {
+            // The refund carries no game context, so we use the player's LAST session to fetch the balance.
+            // Trade-off (accepted): for agent-API v3, WalletBalanceAction sends this session's gameCode on the
+            // operator balance call (WalletBalanceAction.newWalletBalanceDto). That game may differ from the
+            // refunded one, but the balance is account-level (per-player wallet) so the operator returns the
+            // correct wallet balance regardless of which game's code rides along. This mirrors BalanceAction,
+            // which already resolves the balance from the player's last session for the CQ9 balance endpoint.
+            GameSession balanceSession = gameService.getGameSessionByUsername(account);
+            return walletService.getBalance(traceId, balanceSession, httpRequestLog);
+        } catch (AuthenticationException noActiveSession) {
+            return BigDecimal.ZERO;
+        }
     }
 
     private void doRollback(String traceId, Integer vendorId, String wToken, RefundDto refundDto, CommonVo commonVo, HttpRequestLog httpRequestLog) throws

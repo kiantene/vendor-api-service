@@ -4,11 +4,11 @@ import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextMapper;
 import com.nextgen.gameaggregator.vendor.lucky365.constant.GameStatus;
 import com.nextgen.gameaggregator.vendor.lucky365.constant.Mode;
+import com.nextgen.gameaggregator.vendor.lucky365.util.LoginIds;
 import com.nextgen.gameaggregator.vendor.lucky365.util.TimeStamp;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.Locale;
 
 @Component
 public class BetResultRequestMapper implements BetResultContextMapper<BetResultRequest> {
@@ -38,7 +38,7 @@ public class BetResultRequestMapper implements BetResultContextMapper<BetResultR
         return BetResultContext.builder()
                 .idempotencyKey(request.getId())
                 .vendorBetId(request.getOrderCode())
-                .vendorPlayerUsername(request.getLoginId().toLowerCase(Locale.ROOT))
+                .vendorPlayerUsername(LoginIds.forLookup(request.getLoginId()))
                 .vendorGameCode(request.getGameCode())
                 .roundId(request.getOrderCode())
                 .betAmount(betAmount)

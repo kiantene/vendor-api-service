@@ -13,8 +13,9 @@ public class FreeRoundPayoutRequestMapper implements PromoPayoutContextMapper<Be
     public PromoPayoutContext toInternal(BetResultRequest request) {
         return PromoPayoutContext.builder()
                 .idempotencyKey(request.getTransactionid())
+                .vendorTransactionId(request.getTransactionid())
                 .token(VendorUtil.extractTokenFromSessionId(request.getGamesessionid()))
-                .vendorCampaignCode(request.getFrbid())
+                .vendorFreeRoundBonusId(request.getFrbid())
                 .vendorPlayerUsername(request.getAccountid())
                 .vendorPayoutAmount(request.getResult())
                 .promoType(PromoType.FREE_ROUND)

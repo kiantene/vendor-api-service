@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -63,5 +65,30 @@ class CampaignServiceImplTest {
         verify(apiAdapter).ofFetchCampaignByPlayer(any(),
                 argThat(req -> playerUuid.equals(req.getPlayerUuid()) && traceId.equals(req.getTraceId())));
         verify(apiAdapter, never()).ofFetchCampaign(any(), any());
+    }
+
+    @Test
+    void getCampaignByRef_buildsResolveRequestWithStrategyAndParamsAndReturnsCampaign() {
+        Map<String, String> params = Map.of("username", "user-1", "freeRoundBonusId", "frb-1");
+        ApiRequest apiRequest = mock(ApiRequest.class);
+        ApiResult apiResult = mock(ApiResult.class);
+        FetchCampaignResponse response = new FetchCampaignResponse();
+        Campaign expected = Campaign.builder().uuid("campaign-uuid").campaignName("Free Rounds").build();
+
+        when(apiAdapter.ofResolveCampaign(any(),
+                argThat(req -> req.getStrategy() == CampaignResolveStrategy.USERNAME_AND_BONUS_ID
+                        && params.equals(req.getParams())
+                        && traceId.equals(req.getTraceId())))).thenReturn(apiRequest);
+        when(apiAdapter.execute(eq(apiRequest), any())).thenReturn(apiResult);
+        when(apiResult.parseTo(FetchCampaignResponse.class)).thenReturn(response);
+        when(responseMapper.responseToCampaign(response)).thenReturn(expected);
+
+        Campaign result = campaignService.getCampaignByRef(CampaignResolveStrategy.USERNAME_AND_BONUS_ID, params);
+
+        assertEquals(expected, result);
+        verify(apiAdapter).ofResolveCampaign(any(),
+                argThat(req -> req.getStrategy() == CampaignResolveStrategy.USERNAME_AND_BONUS_ID
+                        && params.equals(req.getParams())));
+        verify(apiAdapter, never()).ofFetchCampaignByPlayer(any(), any());
     }
 }
