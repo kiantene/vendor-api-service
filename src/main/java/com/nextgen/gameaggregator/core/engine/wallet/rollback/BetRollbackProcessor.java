@@ -16,8 +16,10 @@ import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackMeta;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
+import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
@@ -68,7 +70,7 @@ class BetRollbackProcessor {
 
         onBeforeSendBetRollback(context, round, betTxn, rollbackTxn);
 
-        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId(), betTxn.getTransactionId());
+        PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId(), betTxn.getTransactionId(), betTxn);
 
         onAfterSendBetRollback(context, round, betTxn, rollbackTxn, balanceData);
 
@@ -76,7 +78,7 @@ class BetRollbackProcessor {
     }
 
     private void deferRollbackToRetryQueue(BetRollbackContext context, GameRound round, GameTransaction betTxn) {
-        WalletRollbackDto requestDto = mapToClientRequest(context, round, betTxn.getGaBetId(), betTxn.getTransactionId());
+        WalletRollbackDto requestDto = mapToClientRequest(context, round, betTxn.getGaBetId(), betTxn.getTransactionId(), betTxn);
         OperatorApiRequest apiRequest = operatorApiAdapter.toApiRequest(requestDto, round.getAgentMeta().getAgentId());
 
         retryQueueService
@@ -122,7 +124,7 @@ class BetRollbackProcessor {
             // Use the original bet txn's id as external id for rollback.
             // TODO: to revisit later if we want to use a different external id for round rollback
             // TODO: Exception Handling for Rollback by Round?
-            balanceData = callToOperator(context, round, gaBetId, context.getTransactionId());
+            balanceData = callToOperator(context, round, gaBetId, context.getTransactionId(), null);
 
             // 2. Update every txn in this group
             entry.getValue().forEach(t -> {
@@ -137,9 +139,9 @@ class BetRollbackProcessor {
         return balanceData;
     }
 
-    private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId, String transactionId) {
+    private PlayerBalanceData callToOperator(BetRollbackContext context, GameRound round, String gaBetId, String transactionId, GameTransaction betTxn) {
         // any exception thrown here is considered internal error
-        WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId, transactionId);
+        WalletRollbackDto requestDto = mapToClientRequest(context, round, gaBetId, transactionId, betTxn);
         OperatorApiRequest apiRequest = operatorApiAdapter.toApiRequest(requestDto, round.getAgentMeta().getAgentId());
 
         try {
@@ -180,7 +182,7 @@ class BetRollbackProcessor {
         );
     }
 
-    private WalletRollbackDto mapToClientRequest(BetRollbackContext context, GameRound round, String betId, String transactionId) {
+    private WalletRollbackDto mapToClientRequest(BetRollbackContext context, GameRound round, String betId, String transactionId, GameTransaction betTxn) {
         WalletRollbackDto dto = new WalletRollbackDto();
 
         dto.setTraceId(context.getTraceId());
@@ -193,7 +195,96 @@ class BetRollbackProcessor {
         dto.setCurrency(round.getAgentMeta().getCurrency());
         dto.setTimestamp(context.getTimestamp());
 
+        // Transfer wallet (seamless transfer) no longer has settled_bet/unsettled_bet to read the
+        // reversal amount from, so we attach the operator-POV per-bet amounts. This meta is stripped
+        // for normal operators in ClientRequestService (only the transfer-wallet callback keeps it),
+        // so non-transfer operators never receive an amount — they decide their own reversal.
+        dto.setMeta(buildRollbackMeta(round, betId, betTxn, context.getFromVendorRate()));
+
         return dto;
+    }
+
+    /**
+     * Build operator-POV reversal amounts for a single bet (gaBetId).
+     *
+     * <p>The amounts stored on GameTransaction / RoundTxn are VENDOR-POV (denominated in the vendor
+     * currency). The transfer wallet expects OPERATOR-POV, so each amount is converted with
+     * {@code fromVendorRate} — the same conversion the seamless wallet previously applied itself.</p>
+     *
+     * <p>Per the GA-14599 contract: BET supplies the stake ({@code betAmount}); RESULT and BET_N_RESULT
+     * supply the winnings, jackpot folded into {@code winAmount}.</p>
+     *
+     * <p>Amounts are included regardless of the txn's {@code status}. GA's status is GA's own view:
+     * on an ambiguous timeout/error GA may record a failure even though the transfer wallet actually
+     * moved the money. We therefore always report what was bet/won and let the transfer wallet
+     * reconcile against its own ledger and decide whether to reverse — same principle as any operator
+     * (GA provides the info, the consumer decides). Bet txns upsert by a deterministic id, so there
+     * is one BET txn per gaBetId and this does not double-count.</p>
+     */
+    static RollbackMeta buildRollbackMeta(GameRound round, String gaBetId, GameTransaction betTxn, BigDecimal fromVendorRate) {
+        // Without the rate we can't express operator-POV -> send no meta (fail-safe).
+        if (fromVendorRate == null) {
+            return null;
+        }
+
+        // Fast path (the norm): an UNSETTLED bet has no RESULT txn yet — settlement is what creates
+        // it — so only the stake is reversed and there is nothing to scan for. Settled-bet rollback
+        // is opt-in (allowRollbackForSettledBet, default false); those need the RESULT's win/jackpot,
+        // which lives on a separate txn, so they fall through to the scan below.
+        if (betTxn != null && betTxn.isUnsettled()) {
+            return operatorMeta(zeroIfNull(betTxn.getBetAmount()), BigDecimal.ZERO, fromVendorRate);
+        }
+
+        if (gaBetId == null) {
+            return null;
+        }
+
+        // Settled (or by-round): a bet's stake and winnings can live on separate BET and RESULT txns,
+        // so aggregate by gaBetId. betAmount is taken only from BET/BET_N_RESULT (the RESULT txn also
+        // carries a copy) to avoid double-counting the stake.
+        BigDecimal vendorBet = BigDecimal.ZERO;
+        BigDecimal vendorWin = BigDecimal.ZERO; // winnings + jackpot, combined
+        if (round.getTransactions() != null) {
+            for (RoundTxn t : round.getTransactions()) {
+                if (!gaBetId.equals(t.getGaBetId())) continue;
+                switch (t.getType()) {
+                    case BET -> vendorBet = vendorBet.add(zeroIfNull(t.getBetAmount()));
+                    case RESULT -> vendorWin = vendorWin.add(zeroIfNull(t.getWinAmount())).add(zeroIfNull(t.getJackpotAmount()));
+                    case BET_N_RESULT -> {
+                        vendorBet = vendorBet.add(zeroIfNull(t.getBetAmount()));
+                        vendorWin = vendorWin.add(zeroIfNull(t.getWinAmount())).add(zeroIfNull(t.getJackpotAmount()));
+                    }
+                    default -> { /* ROLLBACK/DEBIT/CREDIT/PAYOUT are not bet financials */ }
+                }
+            }
+        }
+
+        // Nothing matched the gaBetId (data inconsistency, non-bet round, or a future caller): we have
+        // no amount info to report. Send no meta rather than a misleading {betAmount:0, winAmount:0}, which
+        // the wallet would treat as a zero-amount reversal. Consistent with the fromVendorRate == null
+        // and gaBetId == null fail-safes above — a real bet always carries a non-zero stake, so this
+        // never suppresses a genuine reversal.
+        if (vendorBet.signum() == 0 && vendorWin.signum() == 0) {
+            return null;
+        }
+        return operatorMeta(vendorBet, vendorWin, fromVendorRate);
+    }
+
+    /**
+     * Convert vendor-POV amounts to operator-POV via the codebase's canonical converter
+     * ({@link TxnAmount}, the same one used by the operator-response path
+     * {@code PlayerBalanceData.toVendorView}) so rounding/scale stays consistent — deliberately no
+     * ad-hoc {@code setScale}, since operator currencies here can exceed 2 dp (e.g. IDR(K)).
+     */
+    private static RollbackMeta operatorMeta(BigDecimal vendorBet, BigDecimal vendorWin, BigDecimal fromVendorRate) {
+        RollbackMeta meta = new RollbackMeta();
+        meta.setBetAmount(TxnAmount.of(vendorBet, fromVendorRate).amount());
+        meta.setWinAmount(TxnAmount.of(vendorWin, fromVendorRate).amount());
+        return meta;
+    }
+
+    private static BigDecimal zeroIfNull(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 
     private void onBeforeSendBetRollback(BetRollbackContext context,
