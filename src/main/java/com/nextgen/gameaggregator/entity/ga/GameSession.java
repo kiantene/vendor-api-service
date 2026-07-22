@@ -55,4 +55,47 @@ public class GameSession {
         this.vendorId = endRoundSettledBet.getVendorId();
         this.currencyId = endRoundSettledBet.getCurrencyId();
     }
+
+    /**
+     * Copy constructor. All fields are scalar (immutable String/Integer/Long/Boolean),
+     * so a field-by-field copy is a safe deep copy.
+     * <p>
+     * Used to build a short-lived, request-local validation view of a shared/cached
+     * session without mutating the original (see {@code BetValidator}). This keeps
+     * concurrent requests on the same session from corrupting each other.
+     */
+    public GameSession(GameSession other) {
+        this.id = other.id;
+        this.token = other.token;
+        this.vendorToken = other.vendorToken;
+        this.agentId = other.agentId;
+        this.agentPlayerId = other.agentPlayerId;
+        this.agentPlayerUsername = other.agentPlayerUsername;
+        this.vendorPlayerUsername = other.vendorPlayerUsername;
+        this.vendorPlayerId = other.vendorPlayerId;
+        this.productCode = other.productCode;
+        this.productId = other.productId;
+        this.productGameId = other.productGameId;
+        this.vendorId = other.vendorId;
+        this.vendorLineId = other.vendorLineId;
+        this.gameCode = other.gameCode;
+        this.vendorGameId = other.vendorGameId;
+        this.vendorGameCode = other.vendorGameCode;
+        this.vendorCurrencyCode = other.vendorCurrencyCode;
+        this.gameCategoryId = other.gameCategoryId;
+        this.languageId = other.languageId;
+        this.language = other.language;
+        this.vendorLanguageCode = other.vendorLanguageCode;
+        this.currencyId = other.currencyId;
+        this.currencyCode = other.currencyCode;
+        this.vendorPlatformCode = other.vendorPlatformCode;
+        this.platformId = other.platformId;
+        this.traceId = other.traceId;
+        this.status = other.status;
+        this.lobbyUrl = other.lobbyUrl;
+        this.ipAddress = other.ipAddress;
+        this.createTime = other.createTime;
+        this.terminateTime = other.terminateTime;
+        this.isLaunchByProductGame = other.isLaunchByProductGame;
+    }
 }
