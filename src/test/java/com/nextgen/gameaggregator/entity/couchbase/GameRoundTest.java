@@ -99,6 +99,56 @@ class GameRoundTest {
         assertEquals(BigDecimal.ZERO, totals.jackpot());
     }
 
+    // ---- computeCappedTotals (agent max-payout) ----
+
+    /** OVI-2391: capped total uses the per-slot capped win, not the raw vendor win. */
+    @Test
+    void computeCappedTotals_usesCappedWin_whenSlotIsCapped() {
+        BigDecimal bet = new BigDecimal("2167");
+        BigDecimal vendorWin = new BigDecimal("2100");
+        BigDecimal cappedWin = new BigDecimal("2000");
+
+        RoundTxn betTxn = txn(TxnType.BET, TxnStatus.SUCCESS, GameRoundState.UNSETTLED, bet, null, null);
+        RoundTxn resultTxn = txn(TxnType.RESULT, TxnStatus.SUCCESS, GameRoundState.SETTLED, null, vendorWin, null);
+        resultTxn.setCappedWinAmount(cappedWin);
+
+        GameRound round = new GameRound();
+        round.setTransactions(List.of(betTxn, resultTxn));
+
+        // capped total = capped win; vendor total stays uncapped
+        assertEquals(cappedWin, round.computeCappedTotals().win());
+        assertEquals(vendorWin, round.computeTotals().win());
+        // win_loss derived downstream: capped -167 vs uncapped -67
+        assertEquals(new BigDecimal("-167"), round.computeCappedTotals().win().subtract(round.computeCappedTotals().bet()));
+        assertEquals(new BigDecimal("-67"),  round.computeTotals().win().subtract(round.computeTotals().bet()));
+    }
+
+    /** No cap recorded on the slot → capped total coalesces to the vendor amount. */
+    @Test
+    void computeCappedTotals_coalescesToVendor_whenSlotUncapped() {
+        GameRound round = new GameRound();
+        round.setTransactions(List.of(
+                txn(TxnType.BET,    TxnStatus.SUCCESS, GameRoundState.UNSETTLED, TEN, null, null),
+                txn(TxnType.RESULT, TxnStatus.SUCCESS, GameRoundState.SETTLED,   null, FIVE, TWO)
+        ));
+
+        assertEquals(FIVE, round.computeCappedTotals().win());
+        assertEquals(TWO,  round.computeCappedTotals().jackpot());
+    }
+
+    /** Jackpot is capped independently of win. */
+    @Test
+    void computeCappedTotals_capsJackpotIndependently() {
+        RoundTxn resultTxn = txn(TxnType.RESULT, TxnStatus.SUCCESS, GameRoundState.SETTLED, null, FIVE, TEN);
+        resultTxn.setCappedJackpotAmount(TWO);
+
+        GameRound round = new GameRound();
+        round.setTransactions(List.of(resultTxn));
+
+        assertEquals(FIVE, round.computeCappedTotals().win());     // win untouched (no cappedWin set → coalesce)
+        assertEquals(TWO,  round.computeCappedTotals().jackpot()); // jackpot capped
+    }
+
     private static RoundTxn txn(TxnType type, TxnStatus status, GameRoundState state,
                                 BigDecimal bet, BigDecimal win, BigDecimal jackpot) {
         RoundTxn t = new RoundTxn();

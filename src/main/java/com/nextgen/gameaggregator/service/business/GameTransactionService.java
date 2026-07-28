@@ -111,6 +111,8 @@ public class GameTransactionService {
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getJackpotAmount(),
+                txn.getCappedWinAmount(),
+                txn.getCappedJackpotAmount(),
                 txn.getEffectiveTurnover(),
                 txn.getDoneAt(),
                 isSettled(txn, isEnded),

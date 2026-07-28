@@ -57,6 +57,22 @@ public class RoundTxn {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     protected BigDecimal jackpotAmount;
 
+    /**
+     * Capped (agent max-payout applied) counterparts of {@link #winAmount}/{@link #jackpotAmount},
+     * in the same vendor units. Null when this txn was never capped (no cap config, within cap, or
+     * a non-WIN / pre-feature txn) — read via {@link #cappedWinAmountOrVendor()} /
+     * {@link #cappedJackpotAmountOrVendor()} which fall back to the uncapped vendor amount.
+     */
+    @JsonProperty("cappedWinAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal cappedWinAmount;
+
+    @JsonProperty("cappedJackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal cappedJackpotAmount;
+
     public RoundTxn() {
         this.state = GameRoundState.UNSETTLED;
     }
@@ -77,8 +93,25 @@ public class RoundTxn {
         roundTxn.setBetAmount(txn.getBetAmount());
         roundTxn.setWinAmount(txn.getWinAmount());
         roundTxn.setJackpotAmount(txn.getJackpotAmount());
+        // Secondary append-time copy (e.g. BET_N_RESULT already carries the cap). For the
+        // SettleByRound WIN result the cap runs AFTER the slice is appended, so the
+        // authoritative persistence is TxnDelta.finalizeSuccess -> applyTxnDelta.
+        roundTxn.setCappedWinAmount(txn.getCappedWinAmount());
+        roundTxn.setCappedJackpotAmount(txn.getCappedJackpotAmount());
 
         return roundTxn;
+    }
+
+    /** Capped win, falling back to the uncapped vendor amount when no cap was recorded. */
+    @JsonIgnore
+    public BigDecimal cappedWinAmountOrVendor() {
+        return cappedWinAmount != null ? cappedWinAmount : winAmount;
+    }
+
+    /** Capped jackpot, falling back to the uncapped vendor amount when no cap was recorded. */
+    @JsonIgnore
+    public BigDecimal cappedJackpotAmountOrVendor() {
+        return cappedJackpotAmount != null ? cappedJackpotAmount : jackpotAmount;
     }
 
     @JsonIgnore

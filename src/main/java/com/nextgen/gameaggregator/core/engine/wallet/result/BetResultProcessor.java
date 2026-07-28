@@ -19,6 +19,9 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
+import com.nextgen.gameaggregator.service.business.maxpayout.AgentMaxPayoutService;
+import com.nextgen.gameaggregator.service.business.maxpayout.CapRequest;
+import com.nextgen.gameaggregator.service.business.maxpayout.ResultAmounts;
 import com.nextgen.gameaggregator.service.data.producer.BetHistoryProducer;
 import com.nextgen.gameaggregator.service.data.producer.endround.RoundEndedTriggerProducer;
 import com.nextgen.gameaggregator.service.data.producer.transactionhistory.BetTransactionHistoryProducer;
@@ -50,6 +53,7 @@ class BetResultProcessor {
     private final BetAndResultOperatorBetResultRequestMapper betAndResultOperatorBetResultRequestMapper;
     private final BetResultOperatorWalletAdapter betResultOperatorWalletAdapter;
     private final RoundEndedTriggerProducer roundEndedTriggerProducer;
+    private final AgentMaxPayoutService agentMaxPayoutService;
 
     public PlayerBalanceData processResultTransaction(
             BetResultContext context,
@@ -78,6 +82,16 @@ class BetResultProcessor {
             // TODO: this logic is not implemented yet
             gameTransactionService.markPending(resultTxn);
             return PlayerBalanceData.getDefault(context.getVendorPlayerUsername(), context.getVendorCurrency());
+        }
+
+        /**
+         * Apply the agent max-payout cap on win-bearing results (the txn that credits the player).
+         * {@link ResultType#isWin()} covers WIN and BET_WIN so the combined bet+result path is not
+         * missed. Records the capped amounts on resultTxn so markSuccess persists them to the round
+         * slice, from which bet history (and the SettleByRound round-end summary) is derived.
+         */
+        if (resultType.isWin()) {
+            applyPayoutCapToResult(context, round, resultTxn);
         }
 
         Optional<RoundTxn> betTxn = onBeforeSendResult(context, gameSession, resultTxn, httpRequestLog, config, round);
@@ -122,6 +136,42 @@ class BetResultProcessor {
         onAfterSendResult(context, resultTxn, betFullTxn, round, balanceData, config);
 
         return balanceData;
+    }
+
+    /**
+     * Cap the WIN result per the agent max-payout config and stash the capped amounts on the txn
+     * (vendor units). Each capped field is set ONLY when it is strictly lower than the vendor amount,
+     * so a non-null {@code cappedWinAmount} always means "win was actually reduced" (and likewise for
+     * jackpot). Readers coalesce a null capped field back to the uncapped vendor amount.
+     */
+    private void applyPayoutCapToResult(BetResultContext context, GameRound round, GameTransaction resultTxn) {
+        ResultAmounts capped = agentMaxPayoutService.applyPayoutCap(
+                new CapRequest(
+                        round.getAgentMeta().getAgentId(),
+                        context.getVendorId(),
+                        context.getGameCategoryId(),
+                        context.getCurrencyId(),
+                        resultTxn.getBetAmount(),
+                        resultTxn.getWinAmount(),
+                        resultTxn.getJackpotAmount()
+                ),
+                context.getToVendorRate()
+        );
+
+        if (!capped.capped()) return;
+
+        // Set each field only when it was genuinely reduced (e.g. a jackpot-only cap must not
+        // stamp cappedWinAmount == winAmount, which would read as "win reduced" downstream).
+        if (isReduced(capped.cappedWin(), resultTxn.getWinAmount())) {
+            resultTxn.setCappedWinAmount(capped.cappedWin());
+        }
+        if (isReduced(capped.cappedJackpot(), resultTxn.getJackpotAmount())) {
+            resultTxn.setCappedJackpotAmount(capped.cappedJackpot());
+        }
+    }
+
+    private static boolean isReduced(BigDecimal capped, BigDecimal vendor) {
+        return capped != null && vendor != null && capped.compareTo(vendor) < 0;
     }
 
     private Optional<RoundTxn> onBeforeSendResult(
@@ -212,6 +262,12 @@ class BetResultProcessor {
             com.nextgen.gameaggregator.exception.BetNotFoundException {
 
         GameRound round = onBeforeSendBetAndResult(context, gameSession, txn);
+
+        // Cap the win portion of the combined bet+result. This path's ResultType is BET_WIN, which
+        // ResultType.isWin() covers (a bare == WIN check would wrongly skip it).
+        if (resultType.isWin()) {
+            applyPayoutCapToResult(context, round, txn);
+        }
 
         // TODO: Verify when we migrate an existing BetAndResult Vendor
         if (vendorConfigService.isWalletServiceLegacyEnabled(context.getVendorClassName())) {
