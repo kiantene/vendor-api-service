@@ -32,6 +32,10 @@ public class RollbackPolicy {
             return RollbackDecision.defer("Defer Rollback as Bet is still Pending");
         }
 
+        if (betTxn.isRefunded()) {
+            return RollbackDecision.noop("Already refunded");
+        }
+
         if (betTxn.isSettled() && !config.isAllowRollbackForSettledBet()) {
             return RollbackDecision.reject("Transaction already settled", BetAlreadySettledException.class);
         }

@@ -88,4 +88,15 @@ public class CouchbaseCacheConfig {
     public Collection httpRetryJobsCollection(@Qualifier("retryScope") Scope scope) {
         return scope.collection("http_retry_jobs");
     }
+
+    // ---------------- For Migration Purpose -----------
+    @Bean("migrationScope")
+    public Scope migrationScope(@Qualifier("gaBucket") Bucket bucket) {
+        return bucket.scope("migration");
+    }
+
+    @Bean
+    public Collection migrationRoundCollection(@Qualifier("migrationScope") Scope scope) {
+        return scope.collection("migration_round");
+    }
 }
