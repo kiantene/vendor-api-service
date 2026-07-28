@@ -162,30 +162,24 @@ public class GameTransactionService {
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
         rollbackTxn.setState(GameRoundState.COMPLETED);
         txnDataService.updateStatus(rollbackTxn, balance, TxnStatus.SUCCESS);
-        gameRoundService.updateRoundTxn(rollbackTxn, GameRoundState.COMPLETED);
+
+        // OVI-2519: finalize the rollback on the round doc in a single mutation —
+        // mark the rollback txn slot COMPLETED and refresh the round-level lastBalance
+        // with the operator's post-rollback (refunded) balance. The balance is folded
+        // into the existing round-txn mutation rather than issued as a separate
+        // post-success write: that keeps the round-doc failure surface unchanged, so a
+        // failed mutation can neither report success with a stale balance nor add a new
+        // way to invert an already-successful operator refund. A null balance leaves
+        // lastBalance untouched so it never clobbers the last known value. Round-level
+        // bet/win/jackpot totals need no adjustment — the rolled-back BET is already
+        // marked REFUNDED and GameRound.computeTotals() excludes it.
+        gameRoundService.updateTxnStateAndBalance(rollbackTxn, GameRoundState.COMPLETED, balance);
 
         /**
          * to revisit this logic: to consider removing state at GameRound level and
          * change GameRoundState to TxnState
          */
 //        gameRoundService.updateRoundState(round.getId(), GameRoundState.REFUNDED);
-
-        // TODO: to deduct amounts from GameRound after rollback
-//        TxnDelta delta = TxnDelta.finalizeSuccess(
-//                betTxn.getRoundDocId(),
-//                betTxn.getIdx(),
-//                betTxn.getType(),
-//                betTxn.getGaBetId(),
-//                balance,
-//                betTxn.getBetAmount().negate(),
-//                betTxn.getWinAmount().negate(),
-//                betTxn.getJackpotAmount().negate(),
-//                betTxn.getDoneAt(),
-//                GameRoundState.SETTLED == betTxn.getState(),
-//                true
-//        );
-//
-//        gameRoundService.applyTxnDelta(delta);
     }
 
     public void markRefunded(String docId) {

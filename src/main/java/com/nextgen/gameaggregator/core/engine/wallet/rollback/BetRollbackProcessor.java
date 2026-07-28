@@ -58,7 +58,13 @@ class BetRollbackProcessor {
         decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {
-            return PlayerBalanceData.getDefault(betTxn.getUsername(), betTxn.getCurrency());
+            // Already refunded (idempotent/duplicate rollback): the bet's funds are
+            // back in the wallet, so the player's balance is the round's last-known
+            // balance — which OVI-2519 now keeps current after a rollback. Returning
+            // the round balance (mirroring the deferred branch below) instead of a
+            // hardcoded ZERO avoids reporting a bogus 0 balance to the vendor.
+            return PlayerBalanceData.getDefaultWithBalance(
+                    betTxn.getUsername(), betTxn.getCurrency(), round.getLastBalanceWithDefault());
         }
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
