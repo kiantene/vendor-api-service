@@ -12,12 +12,13 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.data.MigrationRoundDataService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.koolbet.api.cancelsessionbet.CancelSessionBetDto;
-import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
+import com.nextgen.gameaggregator.vendor.koolbet.config.KoolbetConfig;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.Formats;
 import com.nextgen.gameaggregator.vendor.koolbet.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.koolbet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.koolbet.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,21 +40,25 @@ public class SessionBetNSettleAction {
 
     private final VendorService vendorService;
 
-
     private final ValidationService validationService;
+
     private final RequestIdempotentLogService requestIdempotentLogService;
+
+    private final MigrationRoundDataService migrationRoundDataService;
 
     @Autowired
     public SessionBetNSettleAction(HttpService httpService, GameSessionService gameSessionService,
                                    WalletService walletService, VendorService vendorService,
                                    ValidationService validationService,
-                                   RequestIdempotentLogService requestIdempotentLogService) {
+                                   RequestIdempotentLogService requestIdempotentLogService,
+                                   MigrationRoundDataService migrationRoundDataService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.vendorService = vendorService;
         this.validationService = validationService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.migrationRoundDataService = migrationRoundDataService;
     }
 
     @PostMapping(path = EndPoints.SESSION_BET)
@@ -91,6 +96,11 @@ public class SessionBetNSettleAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(sessionBetNSettleDto, gameSession);
 
+            // Write-ahead v1 round marker (OVI-2153): same rationale as BetNSettleAction.
+            // Pins the session to v1 before the wallet op, so a persist-then-throw cannot
+            // split the round to v2 after cutover. markAsV1 swallows its own failures.
+            migrationRoundDataService.markAsV1(KoolbetConfig.CLASS_NAME, sessionBetNSettleDto.getRoundId());
+
             switch (sessionBetNSettleDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetNSettleDto,
@@ -110,21 +120,21 @@ public class SessionBetNSettleAction {
             }
 
             //Set Response Data
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_SUCCESS);
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
 
         } catch (BetResultIdempotentViolationException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_ALREADY_ACCEPTED);
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_ACCEPTED);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(e.getBalance());
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_TOKEN_EXPIRED);
+            responseVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_INSUFFICIENT_BALANCE);
+            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
             responseVo.setBalance(BigDecimal.ZERO);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -132,19 +142,19 @@ public class SessionBetNSettleAction {
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                responseVo.setResponseCode(ResponseCode.BET_INSUFFICIENT_BALANCE);
+                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
             } else {
-                responseVo.setResponseCode(ResponseCode.BET_OTHER_ERROR);
+                responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
             }
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_INVALID_PARAMETER);
+            responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_BET_OTHER_ERROR);
+            responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
 
