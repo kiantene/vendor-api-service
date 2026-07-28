@@ -11,14 +11,16 @@ public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.G
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
-    private class dObject{
+    private class dObject {
         private String url;
     }
 
     @Override
     public String getGameUrl() {
-
         return this.d.getUrl();
+    }
 
+    public void setGameUrl(String url) {
+        this.d.setUrl(url);
     }
 }
