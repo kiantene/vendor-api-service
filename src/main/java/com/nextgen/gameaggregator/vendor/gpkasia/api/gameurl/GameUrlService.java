@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Platforms;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,10 @@ import static com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType.SE
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
+
+    private static final String HOME_URL_SNAKE_CASE = "home_url";
+    private static final String HOME_URL_CAMEL_CASE = "homeUrl";
+
     @Autowired
     RequestService requestService;
 
@@ -56,7 +61,14 @@ public class GameUrlService implements GameUrl {
         formData.add("platform", credentials.get(Credentials.platform_id));//use platform
         formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode", vendorGameCode);
-        formData.add("home_url", gameSession.getLobbyUrl());
+
+        // Provider-specific home url param name - see OFRF-19: Booming Games
+        // expects camelCase "homeUrl", while other providers on this shared
+        // integration (e.g. Bgaming) expect snake_case "home_url".
+        String platformId = credentials.get(Credentials.platform_id);
+        String homeUrlKey = PlatformType.BOOMING.equals(platformId) ? HOME_URL_CAMEL_CASE : HOME_URL_SNAKE_CASE;
+        formData.add(homeUrlKey, gameSession.getLobbyUrl());
+
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
         formData.add("ip", gameSession.getIpAddress());
