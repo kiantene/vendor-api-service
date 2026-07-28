@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.groove.util;
 
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,9 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -107,5 +111,23 @@ public class VendorUtil extends BaseVendorService {
 
     public static BigDecimal formatBalance(BigDecimal balance) {
         return Objects.requireNonNullElse(balance, BigDecimal.ZERO).setScale(2, RoundingMode.DOWN);
+    }
+
+    public static String getGameCode(IBetDetailUrlInfo iBetDetailUrlInfo) {
+        String fullGameCode = iBetDetailUrlInfo.getGameCode();
+        String gameCode = "";
+        if (fullGameCode != null) {
+            int underscoreIndex = fullGameCode.indexOf("_");
+            gameCode = (underscoreIndex != -1) ? fullGameCode.substring(underscoreIndex + 1) : fullGameCode;
+        }
+        return gameCode;
+    }
+
+    public static String getDateTime(Long time) {
+        LocalDate date = Instant.ofEpochMilli(time)
+                .atZone(ZoneOffset.UTC)
+                .toLocalDate();
+
+        return date.toString();
     }
 }
