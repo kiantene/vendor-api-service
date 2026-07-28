@@ -4,6 +4,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class EndPoints {
+    public static final String CLASS_NAME = "koolbet";
 
     public static final String PATH = "api/v1/koolbet";
 
