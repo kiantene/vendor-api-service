@@ -81,6 +81,13 @@ public class GameRoundService {
         data.setRoundState(docId, state);
     }
 
+    // Update a txn slot's state and the round-level lastBalance in a single
+    // mutation (see GameRoundRepository#updateTxnStateAndBalance). Takes the txn
+    // object so idx unboxing stays here, mirroring updateRoundTxn(txn, state).
+    public void updateTxnStateAndBalance(GameTransaction txn, GameRoundState state, BigDecimal balance) {
+        data.updateTxnStateAndBalance(txn.getRoundDocId(), txn.getIdx(), state, balance);
+    }
+
     public Mono<Void> markTxnErrorAsync(GameTransaction txn, RuntimeException ex) {
         return Mono.fromRunnable(() -> markTxnError(txn, ex))
                 .subscribeOn(Schedulers.boundedElastic())

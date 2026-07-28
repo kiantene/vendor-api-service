@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +75,7 @@ public class GameRoundRepository {
     public void updateTxn(String docId, int idx, Map<String, Object> updates) {
         if (updates.isEmpty()) return;
 
-        final String base = "transactions[" + idx + "]";
+        final String base = txnPath(idx);
         var specs = new ArrayList<MutateInSpec>();
 
         updates.forEach((k, v) -> specs.add(MutateInSpec.upsert(base + "." + k, v)));
@@ -118,8 +119,27 @@ public class GameRoundRepository {
         }
     }
 
+    // Update a txn slot's state and the round-level lastBalance in ONE atomic
+    // mutation. Combining both into a single mutateIn (rather than two writes)
+    // keeps the round-doc failure surface identical to a plain slot-state update.
+    // A null balance is skipped so it never clobbers the last known lastBalance.
+    // Serialized to String to preserve BigDecimal precision, matching applyTxnDelta.
+    public void updateTxnStateAndBalance(String docId, int idx, GameRoundState state, BigDecimal balance) {
+        var specs = new ArrayList<MutateInSpec>();
+        specs.add(MutateInSpec.upsert(txnPath(idx) + ".state", state.name()));
+        if (balance != null) {
+            specs.add(MutateInSpec.upsert("lastBalance", balance.toPlainString()));
+        }
+        collection.mutateIn(docId, specs);
+    }
+
+    /** Subdocument path to the {@code idx}-th entry of the round's transactions array. */
+    private static String txnPath(int idx) {
+        return "transactions[" + idx + "]";
+    }
+
     private void addTransactionFieldUpdates(List<MutateInSpec> specs, TxnDelta d) {
-        final String basePath = "transactions[" + d.idx() + "]";
+        final String basePath = txnPath(d.idx());
 
         // Always update gaBetId
         specs.add(MutateInSpec.upsert(basePath + ".gaBetId", d.gaBetId()));
@@ -153,7 +173,7 @@ public class GameRoundRepository {
     }
 
     private void addPerSlotAmounts(List<MutateInSpec> specs, TxnDelta d) {
-        final String basePath = "transactions[" + d.idx() + "]";
+        final String basePath = txnPath(d.idx());
         d.betDelta().ifPresent(v ->
                 specs.add(MutateInSpec.upsert(basePath + ".betAmount", v.toPlainString())));
         d.winDelta().ifPresent(v ->
