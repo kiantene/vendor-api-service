@@ -78,8 +78,8 @@ public class WalletBetAction {
         this.vendorsWithTwoPointFiveSecondTimeout.add(38);
         //jili
         this.vendorsWithThreePointFiveSecondTimeout.add(4);
-        //koolbet
-        this.vendorsWithFourSecondTimeout.add(76);
+        //koolbet,live22
+        this.vendorsWithFourSecondTimeout.addAll(Set.of(76, 56));
         //gpk
         this.vendorsWithTwoPointTwoSecondTimeout.addAll(Set.of(45, 46, 49, 52, 54, 75, 85));
 
