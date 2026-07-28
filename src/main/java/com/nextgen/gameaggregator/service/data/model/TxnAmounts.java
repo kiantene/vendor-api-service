@@ -58,6 +58,36 @@ public class TxnAmounts extends TxnAmount {
         );
     }
 
+    /** CAPPED counterpart of {@link #of(GameTransaction, GameTransaction, BigDecimal)} — reads the
+     *  agent max-payout capped win/jackpot off the result txn (falling back to vendor when uncapped).
+     *  <p>NOTE: coalesces via the txn's own getters rather than {@code RoundTxn.cappedWinAmountOrVendor()}
+     *  because {@link GameTransaction} shadows {@code winAmount}/{@code jackpotAmount}, so the parent
+     *  accessor would read the (unset) superclass fields on a GameTransaction. */
+    public static TxnAmounts ofCapped(GameTransaction betTxn, GameTransaction resultTxn, BigDecimal fromVendorRate) {
+        return new TxnAmounts(
+                betTxn.getBetAmount(),
+                cappedOrVendor(resultTxn.getCappedWinAmount(), resultTxn.getWinAmount()),
+                cappedOrVendor(resultTxn.getCappedJackpotAmount(), resultTxn.getJackpotAmount()),
+                resultTxn.getEffectiveTurnover(),
+                fromVendorRate
+        );
+    }
+
+    /** CAPPED counterpart of {@link #of(GameTransaction, BigDecimal)} for a single (BET_N_RESULT) txn. */
+    public static TxnAmounts ofCapped(GameTransaction txn, BigDecimal fromVendorRate) {
+        return new TxnAmounts(
+                txn.getBetAmount(),
+                cappedOrVendor(txn.getCappedWinAmount(), txn.getWinAmount()),
+                cappedOrVendor(txn.getCappedJackpotAmount(), txn.getJackpotAmount()),
+                txn.getEffectiveTurnover(),
+                fromVendorRate
+        );
+    }
+
+    private static BigDecimal cappedOrVendor(BigDecimal capped, BigDecimal vendor) {
+        return capped != null ? capped : vendor;
+    }
+
     public static TxnAmounts of(GameRound round, GameTransaction resultTxn, BigDecimal fromVendorRate) {
         // Round totals + the additional resultTxn (not yet folded into transactions[*]).
         var totals = round.computeTotals();

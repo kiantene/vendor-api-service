@@ -146,7 +146,14 @@ public class BetHistoryProducer {
 
         VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
 
-        TxnAmounts txnAmounts = TxnAmounts.of(round, vendorCurrency.getFromVendorRate());
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+
+        // MAIN record uses the CAPPED round totals (agent max-payout applied at the WIN result);
+        // turnover keeps the same source as the uncapped path (round.getEffectiveTurnover()).
+        GameRound.Totals capped = round.computeCappedTotals();
+        GameRound.Totals vendor = round.computeTotals();
+        TxnAmounts txnAmounts   = new TxnAmounts(capped.bet(), capped.win(), capped.jackpot(), round.getEffectiveTurnover(), fromVendorRate);
+        TxnAmounts vendorAmounts = new TxnAmounts(vendor.bet(), vendor.win(), vendor.jackpot(), round.getEffectiveTurnover(), fromVendorRate);
 
         betHistoryMapper.mapTransactionFields(
                 betHistory,
@@ -157,11 +164,23 @@ public class BetHistoryProducer {
                 resultTxn.getSettleTime()
         );
 
-//        if (publishToCoalescingTable) {
-//            kafkaService.produceBetHistoryToCoalescingTable(betHistory);
-//        } else {
-            publish(betHistory);
-//        }
+        publish(betHistory);
+
+        // If the cap actually reduced the payout, emit the uncapped counterpart record.
+        emitUncapIfCapped(betHistory, txnAmounts, vendorAmounts);
+    }
+
+    /**
+     * Emit the uncapped (vendor POV) bet-history counterpart of a capped bet/round. The main record
+     * fields (already capped) are copied; only the uncap* fields carry the vendor amounts.
+     */
+    private void produceUncap(BetHistoryV3 betHistory, TxnAmounts vendorAmounts) {
+        BetHistoryUncap uncap = BetHistoryUncap.copyOf(betHistory);
+        uncap.setUncapWinAmount(vendorAmounts.getWin());
+        uncap.setUncapJackpotAmount(vendorAmounts.getJackpot());
+        uncap.setUncapWinLoss(vendorAmounts.getWinLoss());
+        uncap.setUncapEffectiveTurnover(vendorAmounts.getTurnover());
+        kafkaService.produceBetHistoryUncap(uncap);
     }
 
     public void publishBetHistoryForRollback(BetRollbackContext rollbackContext, GameRound round, GameTransaction txn) {
@@ -202,7 +221,8 @@ public class BetHistoryProducer {
 
         VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
 
-        TxnAmounts txnAmounts = TxnAmounts.of(betTxn, resultTxn, vendorCurrency.getFromVendorRate());
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(betTxn, resultTxn, fromVendorRate);
 
         betHistoryMapper.mapTransactionFields(
                 betHistory,
@@ -214,6 +234,8 @@ public class BetHistoryProducer {
         );
 
         publish(betHistory);
+
+        emitUncapIfCapped(betHistory, txnAmounts, TxnAmounts.of(betTxn, resultTxn, fromVendorRate));
     }
 
     public void publishBetHistoryForBetAndResult(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
@@ -222,7 +244,8 @@ public class BetHistoryProducer {
 
         VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
 
-        TxnAmounts txnAmounts = TxnAmounts.of(txn, vendorCurrency.getFromVendorRate());
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(txn, fromVendorRate);
 
         betHistoryMapper.mapTransactionFields(
                 betHistory,
@@ -234,6 +257,15 @@ public class BetHistoryProducer {
         );
 
         publish(betHistory);
+
+        emitUncapIfCapped(betHistory, txnAmounts, TxnAmounts.of(txn, fromVendorRate));
+    }
+
+    /** Emit the uncapped counterpart record when the capped amounts differ from the vendor amounts. */
+    private void emitUncapIfCapped(BetHistoryV3 betHistory, TxnAmounts capped, TxnAmounts vendor) {
+        if (capped.getWin().compareTo(vendor.getWin()) != 0 || capped.getJackpot().compareTo(vendor.getJackpot()) != 0) {
+            produceUncap(betHistory, vendor);
+        }
     }
 
     private VendorCurrency mapReferenceFields(GameRound round, BetHistoryContext context, BetHistoryV3 betHistory) {

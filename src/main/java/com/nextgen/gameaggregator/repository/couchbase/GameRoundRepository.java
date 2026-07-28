@@ -160,6 +160,10 @@ public class GameRoundRepository {
                 specs.add(MutateInSpec.upsert(basePath + ".winAmount", v.toPlainString())));
         d.jackpotDelta().ifPresent(v ->
                 specs.add(MutateInSpec.upsert(basePath + ".jackpotAmount", v.toPlainString())));
+        d.cappedWinDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".cappedWinAmount", v.toPlainString())));
+        d.cappedJackpotDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".cappedJackpotAmount", v.toPlainString())));
     }
 
     private void addTimeFieldUpdate(List<MutateInSpec> specs, String base, TxnDelta d) {
