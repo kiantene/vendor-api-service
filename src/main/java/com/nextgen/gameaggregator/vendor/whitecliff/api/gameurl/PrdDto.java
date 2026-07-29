@@ -24,4 +24,6 @@ public class PrdDto {
     @NotBlank
     @Size(max = 255)
     private String table_id;
+
+    private String category;
 }

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -24,6 +25,8 @@ public class VendorService extends BaseVendorService {
 
     private GameSessionService gameSessionService;
 
+    private static final Integer CATEGORY_LOBBY_SUBCATEGORY_ID = 111;
+
     @Autowired
     public VendorService(GameSessionService gameSessionService) {
         this.gameSessionService = gameSessionService;
@@ -40,16 +43,20 @@ public class VendorService extends BaseVendorService {
         return userDto;
     }
 
-    public static PrdDto setPrdDto(GameSession gameSession, String productId) {
+    public static PrdDto setPrdDto(GameSession gameSession, String productId, GameLaunchDataService.GameSubcategoryInfo subcategoryInfo) {
         PrdDto prdDto = new PrdDto();
         prdDto.setId(Integer.valueOf(productId));
 
         // default lobby code
         String lobbyCode = "0";
 
-        // if is live game and not lobby game then map to table id
+        // if is live game and not lobby game then map to table id (or category, for category-launch games)
         if (gameSession.getGameCategoryId() == 5 && !gameSession.getVendorGameCode().equals(lobbyCode)) {
-            prdDto.setTable_id(gameSession.getVendorGameCode());
+            if (subcategoryInfo != null && CATEGORY_LOBBY_SUBCATEGORY_ID.equals(subcategoryInfo.id())) {
+                prdDto.setCategory(gameSession.getVendorGameCode());
+            } else {
+                prdDto.setTable_id(gameSession.getVendorGameCode());
+            }
         } else {
             prdDto.setType(Integer.valueOf(gameSession.getVendorGameCode()));
         }
