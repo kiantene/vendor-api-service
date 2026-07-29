@@ -5,9 +5,9 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.GeoIpUtil;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.booongo.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,13 +33,14 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
+        String country = GeoIpUtil.getCountryCode(gameSession.getIpAddress());
         formData.add("platform", gameSession.getVendorPlatformCode());
         if (!isLobbyGame(gameCode)) {
             formData.add("game", gameCode);
         }
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("token", gameSession.getToken());
+        formData.add("country", country);
         return formData;
     }
 
