@@ -28,7 +28,7 @@ public class SettleByRoundOperatorBetResultRequestMapper extends AbstractOperato
          */
         request.setIsEndRound(0);
 
-        TxnAmounts txnAmounts = TxnAmounts.of(scenario.getBetTxn(), apiContext.getTransaction(), apiContext.getContext().getFromVendorRate());
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(scenario.getBetTxn(), apiContext.getTransaction(), apiContext.getContext().getFromVendorRate());
 
         request.setBetAmount(getBetAmount(resultType, txnAmounts.getBet()));
         request.setWinAmount(txnAmounts.getWin());

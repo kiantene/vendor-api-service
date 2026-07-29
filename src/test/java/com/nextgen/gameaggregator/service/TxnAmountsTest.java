@@ -279,6 +279,58 @@ class TxnAmountsTest {
     // Denomination with combined sources
     // -------------------------------------------------------
 
+    // -------------------------------------------------------
+    // ofCapped — agent max-payout (reads capped, coalesces to vendor)
+    // -------------------------------------------------------
+
+    @Test
+    void ofCapped_transaction_usesCappedWinWhenSet() {
+        GameTransaction txn = txn(new BigDecimal("2167"), new BigDecimal("2100"), BigDecimal.ZERO);
+        txn.setCappedWinAmount(new BigDecimal("2000"));
+
+        TxnAmounts amounts = TxnAmounts.ofCapped(txn, RATE_ONE);
+
+        assertEquals(new BigDecimal("2000"), amounts.getWin());
+        assertEquals(new BigDecimal("-167"), amounts.getWinLoss());
+        // plain of() still reads the uncapped vendor win
+        assertEquals(new BigDecimal("2100"), TxnAmounts.of(txn, RATE_ONE).getWin());
+    }
+
+    @Test
+    void ofCapped_transaction_coalescesToVendorWhenUncapped() {
+        GameTransaction txn = txn(new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("5"));
+        // no cappedWinAmount/cappedJackpotAmount set
+
+        TxnAmounts amounts = TxnAmounts.ofCapped(txn, RATE_ONE);
+
+        assertEquals(new BigDecimal("40"), amounts.getWin());
+        assertEquals(new BigDecimal("5"), amounts.getJackpot());
+    }
+
+    @Test
+    void ofCapped_betAndResultTxn_usesCappedResultWin() {
+        GameTransaction betTxn = txn(new BigDecimal("2167"), BigDecimal.ZERO, BigDecimal.ZERO);
+        GameTransaction resultTxn = txn(BigDecimal.ZERO, new BigDecimal("2100"), BigDecimal.ZERO);
+        resultTxn.setCappedWinAmount(new BigDecimal("2000"));
+
+        TxnAmounts amounts = TxnAmounts.ofCapped(betTxn, resultTxn, RATE_ONE);
+
+        assertEquals(new BigDecimal("2167"), amounts.getBet());
+        assertEquals(new BigDecimal("2000"), amounts.getWin());
+        assertEquals(new BigDecimal("-167"), amounts.getWinLoss());
+    }
+
+    @Test
+    void ofCapped_capsJackpotIndependently() {
+        GameTransaction txn = txn(new BigDecimal("100"), new BigDecimal("40"), new BigDecimal("3000"));
+        txn.setCappedJackpotAmount(new BigDecimal("2000"));
+
+        TxnAmounts amounts = TxnAmounts.ofCapped(txn, RATE_ONE);
+
+        assertEquals(new BigDecimal("40"), amounts.getWin());       // coalesces (no cappedWin)
+        assertEquals(new BigDecimal("2000"), amounts.getJackpot()); // capped
+    }
+
     @Test
     void of_roundAndResultTxn_shouldApplyDenominationAfterAggregation() {
         GameRound round = round(

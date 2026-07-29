@@ -22,64 +22,101 @@ public class AgentMaxPayoutService {
     private final AgentPayoutSettingDataService payoutSettingsDataService;
     private final VendorFeatureDataService vendorFeatureDataService;
 
-    public BetInformation applyPayoutCap(BetInformation betInfo, BigDecimal toVendorRate) {
-
-        if (!vendorFeatureDataService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, betInfo.getVendorId())) {
-            return betInfo;
-        }
-
-        return getPayoutCapAmount(betInfo, toVendorRate)
-                .filter(cap -> shouldApplyCap(betInfo, cap.amount()))
-                .map(cap -> applyCalculation(betInfo, cap.amount()))
-                .orElse(betInfo);
+    private static BigDecimal normalize(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 
-    private Optional<TxnAmount> getPayoutCapAmount(BetInformation betInfo, BigDecimal toVendorRate) {
-        Optional<TxnAmount> empty = Optional.empty();
+    // ---------------------------------------------------------------------
+    // Core: framework-agnostic, no BetInformation. Usable by the new engine.
+    // ---------------------------------------------------------------------
 
-        BigDecimal winAmount = betInfo.getWinAmount();
-        BigDecimal jackpotAmount = betInfo.getJackpotAmount();
-
-        if ((winAmount == null || winAmount.signum() == 0) && (jackpotAmount == null || jackpotAmount.signum() == 0)) {
-            return empty;
+    /**
+     * Apply the agent max-payout cap to raw vendor-unit amounts.
+     *
+     * <p>No-ops (returns {@link ResultAmounts#uncapped}) when the vendor is not enabled for
+     * {@link Features#AGENT_MAX_PAYOUT}, no cap config exists, or the amounts are within the cap.
+     *
+     * @param toVendorRate rate to convert the operator-currency cap config into vendor units,
+     *                     so the comparison happens in the same space as {@link CapRequest} amounts.
+     */
+    public ResultAmounts applyPayoutCap(CapRequest req, BigDecimal toVendorRate) {
+        if (!vendorFeatureDataService.isVendorEnabled(Features.AGENT_MAX_PAYOUT, req.vendorId())) {
+            return ResultAmounts.uncapped(req.betAmount(), req.winAmount(), req.jackpotAmount());
         }
 
-        Optional<Agent> agent = getAgent(betInfo.getAgentId());
-        if (agent.isEmpty()) return empty;
+        return resolveCapAmount(req, toVendorRate)
+                .filter(cap -> exceedsCap(req, cap))
+                .map(cap -> capAmounts(req, cap))
+                .orElseGet(() -> ResultAmounts.uncapped(req.betAmount(), req.winAmount(), req.jackpotAmount()));
+    }
+
+    private Optional<BigDecimal> resolveCapAmount(CapRequest req, BigDecimal toVendorRate) {
+        BigDecimal winAmount = req.winAmount();
+        BigDecimal jackpotAmount = req.jackpotAmount();
+
+        if ((winAmount == null || winAmount.signum() == 0) && (jackpotAmount == null || jackpotAmount.signum() == 0)) {
+            return Optional.empty();
+        }
+
+        Optional<Agent> agent = getAgent(req.agentId());
+        if (agent.isEmpty()) return Optional.empty();
 
         BigDecimal configCapAmount = payoutSettingsDataService.getMaxPayoutAmount(
                 agent.get().getMasterAgentId(),
                 agent.get().getId(),
-                betInfo.getVendorId(),
-                betInfo.getGameCategoryId(),
-                betInfo.getCurrencyId()
+                req.vendorId(),
+                req.gameCategoryId(),
+                req.currencyId()
         );
 
-        if (configCapAmount == null || configCapAmount.signum() <= 0) return empty;
+        if (configCapAmount == null || configCapAmount.signum() <= 0) return Optional.empty();
 
-        TxnAmount capAmount = TxnAmount.of(configCapAmount, toVendorRate);
-
-        return Optional.of(capAmount);
+        // Config is in operator currency; convert into vendor units to compare against vendor-unit amounts.
+        return Optional.of(TxnAmount.of(configCapAmount, toVendorRate).amount());
     }
 
-    private boolean shouldApplyCap(BetInformation betInfo, BigDecimal cap) {
-        if (cap == null || betInfo.getWinAmount() == null || betInfo.getJackpotAmount() == null) {
-            return false;
-        }
-
-        return betInfo.getWinAmount().compareTo(cap) > 0 || betInfo.getJackpotAmount().compareTo(cap) > 0;
+    private boolean exceedsCap(CapRequest req, BigDecimal cap) {
+        if (cap == null) return false;
+        return normalize(req.winAmount()).compareTo(cap) > 0
+                || normalize(req.jackpotAmount()).compareTo(cap) > 0;
     }
 
-    private BetInformation applyCalculation(BetInformation betInfo, BigDecimal cappedAmount) {
-        final BigDecimal bet        = normalize(betInfo.getBetAmount());
-        final BigDecimal jackpot    = normalize(betInfo.getJackpotAmount());
-        final BigDecimal win        = normalize(betInfo.getWinAmount());
+    private ResultAmounts capAmounts(CapRequest req, BigDecimal cap) {
+        final BigDecimal bet = normalize(req.betAmount());
+        final BigDecimal jackpot = normalize(req.jackpotAmount());
+        final BigDecimal win = normalize(req.winAmount());
 
-        final BigDecimal cappedJackpot = jackpot.min(cappedAmount).max(BigDecimal.ZERO);
-        final BigDecimal cappedWin = win.min(cappedAmount).max(BigDecimal.ZERO);
+        final BigDecimal cappedJackpot = jackpot.min(cap).max(BigDecimal.ZERO);
+        final BigDecimal cappedWin = win.min(cap).max(BigDecimal.ZERO);
         final BigDecimal cappedWinLoss = cappedWin.subtract(bet);
 
-        return this.applyUpdatedAmount(betInfo, cappedWin, cappedWinLoss, cappedJackpot);
+        return new ResultAmounts(cappedWin, cappedJackpot, cappedWinLoss, true);
+    }
+
+    // ---------------------------------------------------------------------
+    // Legacy adapter: unchanged signature, delegates to the core. Only mutates
+    // the BetInformation (and stashes uncap* fields) when a cap actually applies,
+    // preserving the original behaviour.
+    // ---------------------------------------------------------------------
+
+    public BetInformation applyPayoutCap(BetInformation betInfo, BigDecimal toVendorRate) {
+        ResultAmounts result = applyPayoutCap(
+                new CapRequest(
+                        betInfo.getAgentId(),
+                        betInfo.getVendorId(),
+                        betInfo.getGameCategoryId(),
+                        betInfo.getCurrencyId(),
+                        betInfo.getBetAmount(),
+                        betInfo.getWinAmount(),
+                        betInfo.getJackpotAmount()
+                ),
+                toVendorRate
+        );
+
+        if (result.capped()) {
+            applyUpdatedAmount(betInfo, result.cappedWin(), result.cappedWinLoss(), result.cappedJackpot());
+        }
+        return betInfo;
     }
 
     public BetInformation applyUpdatedAmount(BetInformation betInfo,
@@ -97,10 +134,6 @@ public class AgentMaxPayoutService {
         betInfo.setJackpotAmount(cappedJackpot);
 
         return betInfo;
-    }
-
-    private static BigDecimal normalize(BigDecimal v) {
-        return v == null ? BigDecimal.ZERO : v;
     }
 
     private Optional<Agent> getAgent(Integer agentId) {

@@ -33,8 +33,8 @@ public class CancelSessionBetAction {
     private final WalletService walletService;
 
     private final VendorService vendorService;
-    private final RequestIdempotentLogService requestIdempotentLogService;
 
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @Autowired
     public CancelSessionBetAction(HttpService httpService,
@@ -102,17 +102,17 @@ public class CancelSessionBetAction {
             responseVo.setBalance(e.getBalance());
             if (e.getStatus().equals(BetStatus.SETTLED.code)) {
                 //if found the bet in settled status
-                responseVo.setResponseCode(ResponseCode.CANCEL_BET_ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+                responseVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
             } else if (e.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //if found the bet in refunded status
-                responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_ALREADY_CANCELED);
+                responseVo.setResponseCode(ResponseCode.ALREADY_CANCELED);
             } else {
                 //if found the bet other in settled status (cancel)
                 responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
             }
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_ROUND_NOT_FOUND);
+            responseVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
             responseVo.setUsername(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBalance(BigDecimal.ZERO);
@@ -122,10 +122,10 @@ public class CancelSessionBetAction {
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_INVALID_PARAMETER);
+            responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.SESSION_CANCEL_BET_OTHER_ERROR);
+            responseVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
 

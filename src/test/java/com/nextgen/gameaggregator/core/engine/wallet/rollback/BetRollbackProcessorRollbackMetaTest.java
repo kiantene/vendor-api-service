@@ -76,6 +76,18 @@ class BetRollbackProcessorRollbackMetaTest {
     }
 
     @Test
+    void cappedWin_rollbackMetaUsesCappedNotVendorWin() {
+        // OVI-2391: RESULT vendor win 25 but capped to 15 (agent max-payout); jackpot 5 uncapped.
+        // RollbackMeta is operator-POV (what was posted to the wallet) => capped 15 + jackpot 5 = 20,
+        // not the raw vendor 25 + 5 = 30. Without the capped-aware read this would return 30.
+        RoundTxn bet = txn(TxnType.BET, TxnStatus.SUCCESS, BET_A, "10", null, null);
+        RoundTxn result = txn(TxnType.RESULT, TxnStatus.SUCCESS, BET_A, null, "25", "5");
+        result.setCappedWinAmount(new BigDecimal("15"));
+        GameRound round = round(List.of(bet, result));
+        assertAmounts(BetRollbackProcessor.buildRollbackMeta(round, BET_A, null, RATE_ONE), "10", "20");
+    }
+
+    @Test
     void betNResult_singleTxn_foldsJackpotIntoWinAmount() {
         // win 30 + jackpot 7 => winAmount 37
         GameRound round = round(List.of(

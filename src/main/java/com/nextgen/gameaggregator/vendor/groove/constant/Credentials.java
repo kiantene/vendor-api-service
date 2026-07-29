@@ -10,4 +10,6 @@ public class Credentials {
     public static final String COUNTRY = "country";
     public static final String LICENSE = "license";
     public static final String SECURITY_KEY = "securityKey";
+    public static final String EMAIL = "backOfficeEmail";
+    public static final String PASS = "backOfficePassword";
 }

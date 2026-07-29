@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -67,6 +68,11 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     public void setRoundState(String docId, GameRoundState state) {
         Duration ttl = Duration.ofHours(3);
         repo.updateRoundState(docId, state, ttl);
+    }
+
+    @Override
+    public void updateTxnStateAndBalance(String docId, int idx, GameRoundState state, BigDecimal balance) {
+        repo.updateTxnStateAndBalance(docId, idx, state, balance);
     }
 
     @Override
