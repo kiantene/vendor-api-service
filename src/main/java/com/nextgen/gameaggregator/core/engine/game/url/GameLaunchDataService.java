@@ -19,7 +19,12 @@ public class GameLaunchDataService {
     public Optional<GameSubcategoryInfo> getBackfacingGameSubcategoryByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) {
         VendorGame vendorGame = vendorGameDataService.getByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
 
-        GameSubcategory subcategory = gameSubcategoryDataService.get(vendorGame.getBackfacingGameSubCategoryId());
+        Integer subcategoryId = vendorGame.getBackfacingGameSubCategoryId();
+        if (subcategoryId == null) {
+            return Optional.empty();
+        }
+
+        GameSubcategory subcategory = gameSubcategoryDataService.get(subcategoryId);
 
         return Optional.ofNullable(subcategory)
                 .map(sub -> new GameSubcategoryInfo(
