@@ -1,8 +1,13 @@
 package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -40,6 +45,8 @@ public class SessionBetAction {
     private SettledBetService settledBetService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.SESSION_BET)
     public SessionBetVo SessionBetAction(HttpServletRequest request) {
@@ -48,14 +55,23 @@ public class SessionBetAction {
 
         SessionBetVo sessionBetVo = new SessionBetVo();
         String traceId = httpRequestLog.getId();
-
+        boolean isRequestExists = false;
+        SessionBetDto sessionBetDto = new SessionBetDto();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            SessionBetDto sessionBetDto = HttpService.convertJsonToDto(body, SessionBetDto.class);
+            sessionBetDto = HttpService.convertJsonToDto(body, SessionBetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(sessionBetDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(sessionBetDto, sessionBetDto.getUserId()) == null) {
+                requestIdempotentLogService.create(sessionBetDto, sessionBetDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession;
@@ -73,7 +89,7 @@ public class SessionBetAction {
                 gameSession.setToken(sessionBetDto.getToken());
                 gameSession.setVendorToken(sessionBetDto.getToken());
             }
-            
+
             // 3. Verify request parameters
             this.doVerification(sessionBetDto, gameSession);
 
@@ -88,6 +104,11 @@ public class SessionBetAction {
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
                     // Get result type
                     ResultType resultType = this.getResultType(sessionBetDto);
+
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(sessionBetDto.getBetStatus().code));
 
                     // Process bet
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, resultType, vendorService, httpRequestLog);
@@ -149,6 +170,9 @@ public class SessionBetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(sessionBetDto, sessionBetDto.getUserId());
+            }
             httpService.end(httpRequestLog, sessionBetVo);
         }
         return sessionBetVo;

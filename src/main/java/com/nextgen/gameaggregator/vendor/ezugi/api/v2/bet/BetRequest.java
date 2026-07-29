@@ -12,22 +12,18 @@ import java.math.BigInteger;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetRequest {
     @NotBlank
-    @Size(min = 1, max = 50)
     @JsonProperty("uid")
     private String uid;
 
     @NotBlank
-    @Size(min = 1, max = 100)
     @JsonProperty("transactionId")
     private String transactionId;
 
     @NotNull
-    @Digits(integer = 18, fraction = 0)
     @JsonProperty("roundId")
     private BigInteger roundId;
 
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     @JsonProperty("gameId")
     private Integer gameId;
 
@@ -41,12 +37,10 @@ public class BetRequest {
     private BigDecimal debitAmount;
 
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     @JsonProperty("betTypeID")
     private Integer betTypeID;
 
     @NotBlank
-    @Size(min = 1, max = 5)
     @JsonProperty("currency")
     private String currency;
 

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.inout.service;
 
+import com.couchbase.client.core.error.AmbiguousTimeoutException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -128,7 +130,8 @@ public class VendorService extends BaseVendorService {
                 e instanceof DisabledGameException ||
                 e instanceof DisabledAgentPlayerException) {
             responseVo.setError(ResponseCode.GAME_DISABLED);
-        } else if (e instanceof InternalServerTimeoutRetryException) {
+        } else if (e instanceof InternalServerTimeoutRetryException ||
+                e instanceof AmbiguousTimeoutException || e instanceof ExhaustedRetryException) {
             responseVo.setError(ResponseCode.TEMPORARY_ERROR);
         } else {
             responseVo.setError(ResponseCode.UNKNOWN_ERROR);

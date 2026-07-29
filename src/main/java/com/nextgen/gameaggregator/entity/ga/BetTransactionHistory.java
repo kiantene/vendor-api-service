@@ -9,8 +9,6 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class BetTransactionHistory {
-//    @JsonProperty("id")
-//    private String id;
 
     // Vendor Information
     @JsonProperty("external_transaction_id")
@@ -87,15 +85,11 @@ public class BetTransactionHistory {
     @JsonProperty("timestamp")
     private Long timestamp;
 
-    //    @JsonProperty("is_freespin")
-//    private Integer isFreespin;
-//
-//    @JsonProperty("resettle_num")
-//    private Integer resettleNum;
-//
-//    @JsonProperty("status")
-//    private Integer status;
-//
-//    @JsonProperty("game_session_token")
-//    private String gameSessionToken;
+    // Operator Response
+    @JsonProperty("operator_response_status")
+    private Integer operatorResponseStatus;
+
+    @JsonProperty("operator_transaction_id")
+    private String operatorTransactionId;
+
 }

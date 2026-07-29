@@ -5,6 +5,8 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EndPoints {
 
+    public static final String VENDOR = "dreamgaming";
+    public static final String BODY_FORMAT = "json";
     public static final String PATH = "/api/v1/dg";
 
     public static final String TRANSFER = "/v2/specification/account/transfer/{agentName}";

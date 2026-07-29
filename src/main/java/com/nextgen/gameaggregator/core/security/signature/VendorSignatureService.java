@@ -39,7 +39,7 @@ public class VendorSignatureService {
 
             return result;
         } catch (SignatureValidationException ex) {
-            handleException(validator, request, response, ex);
+            handleException(validator, request, response, ex, parsedFields);
             return ValidationResult.failure();
         }
     }
@@ -47,16 +47,17 @@ public class VendorSignatureService {
     private void handleException(VendorSignatureValidator validator,
                                  ResettableRequestWrapper request,
                                  HttpServletResponse response,
-                                 SignatureValidationException ex) throws IOException {
+                                 SignatureValidationException ex,
+                                 Map<String, String> parsedFields) throws IOException {
 
         LogContextHolder.get().setException(ex);
         VendorErrorResponse errorResponse = null;
 
         if (ex.getCause() instanceof PlayerNotFoundException) {
-            errorResponse = validator.onPlayerNotFound(ex);
+            errorResponse = validator.onPlayerNotFound(ex, parsedFields);
         } else {
             if (validator.useNewEvents()) {
-                errorResponse = validator.onInvalidSignature(ex);
+                errorResponse = validator.onInvalidSignature(ex, parsedFields);
             } else {
                 errorResponse = validator.onInvalidSignature(request);
             }
@@ -66,6 +67,6 @@ public class VendorSignatureService {
             errorResponse = ResponseUtil.createDefaultErrorResponse("no response from validator");
         }
 
-        ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value());
+        ResponseUtil.writeErrorResponse(response, errorResponse.getBody(), errorResponse.getStatusCode().value(),errorResponse.getHeaders());
     }
 }

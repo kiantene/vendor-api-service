@@ -86,9 +86,16 @@ public class SportUnsettledBetService {
 
     @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
     public SportUnsettledBet getByVendorPlayerUsernameAndVendorBetId(String vendorPlayerUsername, String vendorBetId) throws BetNotFoundException {
-        SportUnsettledBet sportUnsettledBet = null;
+        // KV get by document key (== generateId()) first: hits the data nodes directly and is immune to
+        // query-service rescaling / config churn that intermittently parks N1QL with BUCKET_OPEN_IN_PROGRESS.
+        SportUnsettledBet sportUnsettledBet = sportUnsettledBetRepository
+                .findById(vendorPlayerUsername + '_' + vendorBetId).orElse(null);
 
-        sportUnsettledBet = sportUnsettledBetRepository.findByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        // Fallback to N1QL only on a KV miss (e.g. a legacy doc stored under a non-standard key).
+        if (sportUnsettledBet == null) {
+            sportUnsettledBet = sportUnsettledBetRepository.findByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        }
+
         if (sportUnsettledBet == null) { // No matching bet record
             throw new BetNotFoundException("Cannot find Id from SportUnsettledBetCouchbase getByVendorPlayerUsernameAndVendorBetId: " + vendorPlayerUsername + ", " + vendorBetId);
         }
@@ -97,13 +104,13 @@ public class SportUnsettledBetService {
     }
 
     public SportUnsettledBet findByVendorPlayerUsernameAndVendorBetIdOrById(String vendorPlayerUsername, String vendorBetId) {
-        SportUnsettledBet sportUnsettledBet;
+        // getByVendorPlayerUsernameAndVendorBetId already does KV-first with an N1QL fallback,
+        // so a miss here is a genuine not-found -> return null instead of propagating.
         try {
-            sportUnsettledBet = this.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+            return this.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
         } catch (BetNotFoundException betNotFoundException) {
-            sportUnsettledBet = this.getById(vendorPlayerUsername + '_' + vendorBetId).orElse(null);
+            return null;
         }
-        return sportUnsettledBet;
     }
 
 //    public SportUnsettledBet idempotentCheck(String vendorPlayerUsername, String roundId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {

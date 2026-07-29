@@ -1,19 +1,22 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.betresult;
 
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.whitecliff.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.whitecliff.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.whitecliff.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.whitecliff.constant.ResponseError;
 import com.nextgen.gameaggregator.vendor.whitecliff.service.VendorService;
 import com.nextgen.gameaggregator.vendor.whitecliff.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.whitecliff.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,23 +36,24 @@ public class CreditAction {
     private final WalletService walletService;
     private final GameSessionService gameSessionService;
     private final VendorService vendorService;
-    private final ValidationService validationService;
     private final VendorLineService vendorLineService;
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final SettledBetService settledBetService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
+
 
     @Autowired
-    public CreditAction(HttpService httpService, WalletService walletService, GameSessionService gameSessionService, VendorService vendorService, ValidationService validationService, VendorLineService vendorLineService, UnsettledBetCachingService unsettledBetCachingService, AutowireCapableBeanFactory autowireCapableBeanFactory, SettledBetService settledBetService) {
+    public CreditAction(HttpService httpService, WalletService walletService, GameSessionService gameSessionService, VendorService vendorService, ValidationService validationService, VendorLineService vendorLineService, UnsettledBetCachingService unsettledBetCachingService, AutowireCapableBeanFactory autowireCapableBeanFactory, SettledBetService settledBetService, RequestIdempotentLogService requestIdempotentLogService) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
         this.vendorService = vendorService;
-        this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.settledBetService = settledBetService;
+        this.requestIdempotentLogService = requestIdempotentLogService;
     }
 
     @PostMapping(path = EndPoints.CREDIT)
@@ -64,24 +68,35 @@ public class CreditAction {
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
 
+        boolean isRequestExists = false;
+        CreditDto creditDto = null;
+        GameSession gameSession = null;
+
         //Get header for Validation
         String secretKey = request.getHeader("secret-key");
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
+            creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             //Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
             String newToken = (creditDto.getSid() != null) ? creditDto.getSid() : traceId;
             //Verify session token
-            GameSession gameSession = this.verifyTokenAndCheckGameSession(creditDto, newToken);
+            gameSession = this.verifyTokenAndCheckGameSession(creditDto, newToken);
 
             this.doVerification(creditDto, gameSession, secretKey);
 
             //If is cancel, process cancel bet
             if (creditDto.getIsCancel() == 1) {
+                //check for rollback idempotent request
+                if (requestIdempotentLogService.checkExists((RollbackData) creditDto, gameSession.getVendorPlayerUsername()) == null) {
+                    requestIdempotentLogService.create((RollbackData) creditDto, gameSession.getVendorPlayerUsername());
+                } else {
+                    isRequestExists = true;
+                    throw new TransactionStillProcessingException();
+                }
 
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
                 if (idempotentCheckAfterSettle == 1) {
@@ -90,6 +105,14 @@ public class CreditAction {
 
                 balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
             } else {
+                //check for bet result idempotent request
+                if (requestIdempotentLogService.checkExists((BetResultData) creditDto, gameSession.getVendorPlayerUsername()) == null) {
+                    requestIdempotentLogService.create((BetResultData) creditDto, gameSession.getVendorPlayerUsername());
+                } else {
+                    isRequestExists = true;
+                    throw new TransactionStillProcessingException();
+                }
+
                 Integer idempotentCheckAfterSettle = this.settledBetIdempotentCheckCredit(gameSession, creditDto);
                 if (idempotentCheckAfterSettle == 1) {
                     throw new BetResultIdempotentViolationException();
@@ -104,9 +127,6 @@ public class CreditAction {
             responseVo.setStatus(ResponseCodes.SUCCESS);
 
         } catch (GameNotSupportedException |
-                 DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
                  InvalidAgentApiCredentialException |
                  BetNotFoundException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -133,6 +153,13 @@ public class CreditAction {
             responseVo.setError(ResponseError.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
+            if (!isRequestExists && gameSession != null) {
+                if (creditDto.getIsCancel() == 1) {
+                    requestIdempotentLogService.delete((RollbackData) creditDto, gameSession.getVendorPlayerUsername());
+                } else {
+                    requestIdempotentLogService.delete((BetResultData) creditDto, gameSession.getVendorPlayerUsername());
+                }
+            }
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
@@ -148,26 +175,14 @@ public class CreditAction {
 
     private void doVerification(CreditDto creditDto, GameSession gameSession, String secretKey)
             throws
-            AuthenticationException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            GameNotSupportedException,
             InvalidPlayerException,
             CredentialNotFoundException,
             InvalidRequestException,
             InvalidSignatureException {
 
-        //Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(String.valueOf(gameSession.getVendorGameCode()), String.valueOf(creditDto.getGameId()), GameNotSupportedException::new);
-
         //Validate secret key from header
         String credentialKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(credentialKey, secretKey, InvalidSignatureException::new);
-
-        //Verify UserId
-        String vendorToken = String.valueOf(creditDto.getUserId());
-        ValidationUtils.isEquals(vendorToken, gameSession.getVendorToken(), InvalidPlayerException::new);
 
         //Validate Prd_id
         String prdId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PRODUCT_ID);
@@ -202,13 +217,15 @@ public class CreditAction {
         try {
             gameSession = gameSessionService.verifyToken(creditDto.getSid());
             creditDto.setGameCategory(gameSession.getGameCategoryId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            if (creditDto.getGameId() != null) {
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getGameId(), gameSession);
+            }
 
         } catch (AuthenticationException authenticationException) {
             UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(creditDto.getRoundId());
+            if (unsettledBet == null) throw new BetNotFoundException();
             gameSession = gameSessionService.generateNewSessionTokenByVendorPlayerId(unsettledBet.getVendorPlayerId());
-            creditDto.setGameCategory(unsettledBet.getGameCategoryId());
-            gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(newToken);
             gameSession.setVendorToken(newToken);

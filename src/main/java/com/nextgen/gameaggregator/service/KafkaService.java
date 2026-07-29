@@ -3,12 +3,14 @@ package com.nextgen.gameaggregator.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
+import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.data.producer.endround.RoundEndedTriggerMessage;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.util.StackTraceUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -295,11 +297,13 @@ public class KafkaService {
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
-                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
+                log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), throwable.getMessage(), throwable);
                 return null;
             });
         } catch (Exception ex) {
-            log.error(ex.getMessage() + " : " + betHistoryV3.toString());
+            log.error("BetHistoryV3: " + ex.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
+            log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), ex.getMessage(), ex);
         }
     }
 
@@ -344,12 +348,14 @@ public class KafkaService {
             CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
 
             future.exceptionally(throwable -> {
-                log.error("Error sending BetHistoryV3 to Kafka: ", throwable);
+                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+                log.error("BetHistoryV3 roundId=[{}], {}", betHistory.getRoundId(), throwable.getMessage(), throwable);
                 return null;
             });
 
         } catch (Exception e) {
             log.error("BetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            log.error("BetHistoryV3 roundId=[{}], {}", betHistory.getRoundId(), e.getMessage(), e);
         }
     }
 
@@ -391,6 +397,16 @@ public class KafkaService {
         }
     }
 
+    public void produceSettledBetDlq(SettledBet settledBet) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_SETTLED_BET_DLQ, settledBet.getRoundId(), settledBet);
+
+        } catch (Exception e) {
+            log.error("produceSettledBetDlq failed : " + e.getMessage() + " -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
     public void produceBetTransactionHistory(BetTransactionHistory betTransactionHistory) {
         try {
             String json = OBJECT_MAPPER.writeValueAsString(betTransactionHistory);
@@ -403,6 +419,22 @@ public class KafkaService {
             });
         } catch (Exception ex) {
             log.error(ex.getMessage() + " : " + betTransactionHistory.toString());
+        }
+    }
+
+    public void produceRoundEndedTrigger(RoundEndedTriggerMessage message, String username) {
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(message);
+
+            // To use Operator Username as Kafka Key
+            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_FRAMEWORK_V2_ROUND_ENDED_TRIGGER, username, json);
+
+            future.exceptionally(throwable -> {
+                log.error("Error sending topic_framework_v2_round_ended_trigger to Kafka: ", throwable);
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error(ex.getMessage() + " : " + message.toString() + " : " + username);
         }
     }
 }

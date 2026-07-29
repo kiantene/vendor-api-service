@@ -48,10 +48,9 @@ public class BetAndResultRequest {
     @JsonProperty("game")
     private String game;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotNull
     @JsonProperty("date")
-    private String date;
+    private Long date;
 
     @NotNull
     @Digits(integer = 20, fraction = 3)

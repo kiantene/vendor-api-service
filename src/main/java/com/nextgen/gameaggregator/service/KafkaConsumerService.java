@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class KafkaConsumerService {
     private final BetHistoryProducer betHistoryProducer;
     private final VendorFeatureDataService vendorFeatureService;
     private final WalletRequestService walletRequestService;
+    private final MeterRegistry meterRegistry;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -74,7 +76,8 @@ public class KafkaConsumerService {
                                 GameSessionService gameSessionService,
                                 BetHistoryProducer betHistoryProducer,
                                 VendorFeatureDataService vendorFeatureService,
-                                WalletRequestService walletRequestService) {
+                                WalletRequestService walletRequestService,
+                                MeterRegistry meterRegistry) {
 
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -93,6 +96,7 @@ public class KafkaConsumerService {
         this.betHistoryProducer = betHistoryProducer;
         this.vendorFeatureService = vendorFeatureService;
         this.walletRequestService = walletRequestService;
+        this.meterRegistry = meterRegistry;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
@@ -307,7 +311,12 @@ public class KafkaConsumerService {
         });
     }
 
-    @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    @KafkaListener(
+            id = "rawSettledBetListener",
+            topics = KafkaConstant.TOPIC_RAW_SETTLED_BET,
+            groupId = KafkaConstant.GROUP_ID,
+            containerFactory = "customKafkaListenerContainerFactory",
+            autoStartup = "${kafka.listener.raw-settled-bet.enabled:false}")
     public void consumeRawSettledBet(String message) {
         String traceId = UUID.randomUUID().toString();
         HttpRequestLog httpRequestLog = httpService.startInternalConsumerForRawSettledBet();
@@ -335,6 +344,10 @@ public class KafkaConsumerService {
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
+            // Alertable metric: tag by exception so a Couchbase timeout (AmbiguousTimeoutException /
+            // BUCKET_OPEN_IN_PROGRESS) on this consumer is immediately visible in Prometheus/Grafana.
+            meterRegistry.counter("sport.rawsettledbet.consume.failure",
+                    "exception", e.getClass().getSimpleName()).increment();
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             e.printStackTrace();
 
@@ -490,7 +503,7 @@ public class KafkaConsumerService {
 
             // process Rollback or BetResult
             if (endRoundSettledBetForPatching.isRefund()) {
-                processRollbackCase(endRoundSettledBetForPatching, session, log);
+                processRollbackCase(traceId, endRoundSettledBetForPatching, session, log);
             } else {
                 processSettleCase(traceId, endRoundSettledBetForPatching, session, log);
             }
@@ -558,7 +571,7 @@ public class KafkaConsumerService {
                 : gameSessionService.generateNewSessionToken(username);
     }
 
-    private void processRollbackCase(EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException, GameNotSupportedException {
+    private void processRollbackCase(String traceId, EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, BetRefundIdempotentViolationException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidFormatException, GameNotSupportedException {
         UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(
                 session.getVendorId(),
                 betData.getExternalTransactionId()
@@ -574,7 +587,7 @@ public class KafkaConsumerService {
         dto.setRollbackId(unsettledBet.getExternalTransactionId());
         dto.setVendorSettledTime(betData.getVendorSettleTime());
 
-        walletService.processRollback(dto, session, new GeneralVendorService(), log);
+        walletService.processRollback(traceId, dto, session, new GeneralVendorService(), log, betData.isCallToOperator());
     }
 
     private void processSettleCase(String traceId, EndRoundSettledBetForPatching betData, GameSession session, HttpRequestLog log) throws InvalidAgentApiCredentialException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InternalServerTimeoutRetryException, GameNotSupportedException {
@@ -596,7 +609,7 @@ public class KafkaConsumerService {
         ResultType resultType = determineResultType(totalBetAmount, betData.getBetAmount());
 
         GeneralSettleDto dto = generateGeneralSettleDto(betData, totalBetAmount, unsettledBetList.get(0).getVendorBetTime());
-        walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log);
+        walletService.processBetResult(traceId, session, dto, resultType, new GeneralVendorService(), log, betData.isCallToOperator());
     }
 
     private BigDecimal calculateTotalBetAmount(List<UnsettledBet> unsettledBetList) {

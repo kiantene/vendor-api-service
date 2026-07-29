@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.credit;
 
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -44,6 +47,8 @@ public class CreditAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private RawBetDetailsProducer rawBetDetailsProducer;
 
     @PostMapping(path = EndPoints.DEPOSIT)
     public ResponseEntity<ResponseVo> credit(HttpServletRequest request) {
@@ -75,14 +80,7 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
-
-            // check db game code is stg or not
-            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
-                creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
-            }
-
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(), gameSession);
+            gameSession = this.getGameSession(traceId, creditDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, body);
@@ -92,6 +90,8 @@ public class CreditAction {
                 ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
 
                 balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+
+                this.emitRawBetDetail(gameSession, creditDto, httpRequestLog.getGaBetId(), body);
 
                 // set vo
                 responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
@@ -123,7 +123,6 @@ public class CreditAction {
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
         } catch (VendorCurrencyNotSupportException |
-                 AuthenticationException |
                  InsufficientBalanceException |
                  InvalidOperatorResponseException |
                  DisabledVendorLineException |
@@ -202,6 +201,33 @@ public class CreditAction {
         ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
     }
 
+    private void emitRawBetDetail(GameSession gameSession, CreditDto creditDto, String gaBetId, String body) {
+        String vendorBetId = creditDto.getVendorBetId();
+        String roundId = creditDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
+    }
+
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
         BigDecimal balance = BigDecimal.ZERO;
 
@@ -213,5 +239,27 @@ public class CreditAction {
         }
 
         return balance;
+    }
+
+    private GameSession getGameSession(String traceId, CreditDto creditDto) throws GameNotSupportedException, InvalidPlayerException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
+
+            // check db game code is stg or not
+            if (gameSession.getVendorGameCode().toLowerCase().contains("_stg")) {
+                creditDto.getBetsDto().setGameid(creditDto.getBetsDto().getGameid() + "_stg");
+            }
+
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getBetsDto().getGameid(), gameSession);
+
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(creditDto.getUsername());
+            gameSessionService.updateByVendorGameCode(gameSession, creditDto.getGameId());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

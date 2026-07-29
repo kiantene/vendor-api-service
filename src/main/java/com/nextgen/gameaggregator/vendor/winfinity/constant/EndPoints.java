@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.winfinity.constant;
 
 public class EndPoints {
+    public static final String VENDOR = "winfinity";
+    public static final String BODY_FORMAT = "json";
     public static final String PATH = "api/v1/winfinity";
     public static final String TOKEN = "connect/token";
     public static final String TABLE = "partners/tables?partnerSiteId=";

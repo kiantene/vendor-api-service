@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.wallet.bet;
 
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
@@ -21,8 +22,13 @@ class BetContextEnricher extends BaseEnricher<BetContext> {
 
     @Override
     protected void doEnrich(BetContext context) {
+        LogContext logContext = LogContextHolder.get();
+
+        if (context.getTraceId() == null) {
+            context.setTraceId(logContext.getTraceId());
+        }
         if (context.getTimestamp() == null) {
-            context.setTimestamp(LogContextHolder.get().getStart());
+            context.setTimestamp(logContext.getStart());
         }
         if (context.getVendorBetId() == null) {
             context.setVendorBetId(context.getIdempotencyKey());

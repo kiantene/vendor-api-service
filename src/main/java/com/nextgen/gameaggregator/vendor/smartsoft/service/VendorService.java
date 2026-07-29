@@ -34,8 +34,7 @@ public class VendorService extends BaseVendorService {
     public GameSession checkGameSession(String traceId, String userName, String vendorGameCode) throws VendorCurrencyNotSupportException, InvalidPlayerException, GameNotSupportedException {
         GameSession gameSession;
         try {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(userName);
-            this.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(userName, vendorGameCode);
         } catch (AuthenticationException authenticationException) {
             gameSession = gameSessionService.generateNewSessionToken(userName);
             gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);

@@ -61,5 +61,13 @@ public enum ResultType {
         return ResultType.END;
     }
 
+    /**
+     * A win-bearing (cash-in) result: the player is credited if winAmount &gt; 0. Covers the
+     * standalone {@link #WIN} and the combined {@link #BET_WIN}. NOTE: add JACKPOT / BET_JACKPOT
+     * here if/when those values are enabled (they also cash in on winAmount &gt; 0).
+     */
+    public boolean isWin() {
+        return this == WIN || this == BET_WIN;
+    }
 
 }

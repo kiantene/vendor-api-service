@@ -13,6 +13,9 @@ public class RefundDto implements RollbackData {
     @Size(min = 1, max = 70)
     private String mtcode;
 
+    @NotBlank
+    private String account;
+
     @Override
     public String getRollbackId() {
         return this.mtcode;

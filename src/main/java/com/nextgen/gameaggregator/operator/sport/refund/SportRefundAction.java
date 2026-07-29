@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.sport.SportsBaseAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +31,7 @@ public class SportRefundAction extends SportsBaseAction {
     private final AuthenticationService authenticationService;
     private final RequestService requestService;
     private final CurrencyConversionService currencyConversionService;
-    private final VendorGameRepository vendorGameRepository;
+    private final VendorGameService vendorGameService;
     private final BetResultRetryLogService betResultRetryLogService;
     private final CurrencyService currencyService;
     @Value("${spring.profiles.active}")
@@ -42,7 +41,7 @@ public class SportRefundAction extends SportsBaseAction {
                              AuthenticationService authenticationService,
                              RequestService requestService,
                              CurrencyConversionService currencyConversionService,
-                             VendorGameRepository vendorGameRepository,
+                             VendorGameService vendorGameService,
                              BetResultRetryLogService betResultRetryLogService,
                              CurrencyService currencyService) {
 
@@ -52,7 +51,7 @@ public class SportRefundAction extends SportsBaseAction {
         this.authenticationService = authenticationService;
         this.requestService = requestService;
         this.currencyConversionService = currencyConversionService;
-        this.vendorGameRepository = vendorGameRepository;
+        this.vendorGameService = vendorGameService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.currencyService = currencyService;
     }
@@ -68,7 +67,11 @@ public class SportRefundAction extends SportsBaseAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
-        String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
+        // GA-14768: resolve the vendor game via the cached VendorGameService instead of hitting the
+        // writer datasource directly (previously done twice). Falls back to null if the game is not found,
+        // preserving the prior null-tolerant behaviour.
+        VendorGame vendorGame = vendorGameService.findVendorGameById(betInformation.getVendorGameId());
+        String gameCode = (vendorGame != null) ? vendorGame.getCode() : null;
 
         Integer currencyId = vendorCurrency.getCurrencyId();
         String currencyCode = vendorCurrency.getVendorCurrencyCode();
@@ -85,8 +88,7 @@ public class SportRefundAction extends SportsBaseAction {
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
         headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
-        VendorGame vendorGame = vendorGameRepository.findById(betInformation.getVendorGameId()).orElse(null);
-        httpRequestLog.setVendorGameCode(vendorGame.getVendorGameCode());
+        httpRequestLog.setVendorGameCode((vendorGame != null) ? vendorGame.getVendorGameCode() : null);
         httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
 
         long startTime = System.currentTimeMillis();

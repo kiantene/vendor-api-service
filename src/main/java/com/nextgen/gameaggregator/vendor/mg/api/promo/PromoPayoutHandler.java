@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.mg.api.promo;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.promo.payout.AbstractPromoPayoutController;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.vendor.mg.api.betresult.UpdateBalanceDto;
 import com.nextgen.gameaggregator.vendor.mg.api.betresult.UpdateBalanceVo;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;

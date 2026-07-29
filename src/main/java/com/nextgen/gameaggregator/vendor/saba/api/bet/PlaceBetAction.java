@@ -3,6 +3,9 @@ package com.nextgen.gameaggregator.vendor.saba.api.bet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawSportsBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -15,6 +18,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RedissonService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -37,18 +41,24 @@ public class PlaceBetAction {
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
     private final RedissonService redissonService;
+    private final RawSportsBetDetailsProducer rawSportsBetDetailsProducer;
+
+    private static final String VENDOR = "saba";
+    private static final String EVENT_FAMILY = "placebet";
 
     public PlaceBetAction(GameSessionService gameSessionService,
                           HttpService httpService,
                           SportWalletService sportWalletService,
                           WalletRequestService walletRequestService,
-                          RedissonService redissonService) {
+                          RedissonService redissonService,
+                          RawSportsBetDetailsProducer rawSportsBetDetailsProducer) {
 
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
         this.redissonService = redissonService;
+        this.rawSportsBetDetailsProducer = rawSportsBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.PLACE_BET)
@@ -82,8 +92,9 @@ public class PlaceBetAction {
 
             this.dataMapper(walletRequest, dto.getMessage());
 
-
             walletRequest = sportWalletService.placeBet(walletRequest);
+
+            this.emitRawBetDetail(walletRequest, dto.getMessage(), httpRequestLog.getRequestBody());
 
             vo.setResponseCode(ResponseCode.SUCCESS);
             vo.setRefId(walletRequest.getRoundId());
@@ -111,6 +122,29 @@ public class PlaceBetAction {
         return vo;
     }
 
+    private void emitRawBetDetail(WalletRequest walletRequest, PlaceBetDto dto, String requestBody) {
+        try {
+            if (dto == null || dto.getRefId() == null) {
+                log.warn("Skipping SABA placebet emit: missing refId traceId={}", walletRequest == null ? null : walletRequest.getTraceId());
+                return;
+            }
+            rawSportsBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(VENDOR)
+                    .eventFamily(EVENT_FAMILY)
+                    .eventKind(EventKind.PLACE_BET)
+                    .vendorBetId(dto.getRefId())
+                    .gaBetId(walletRequest.getBetId())
+                    .roundId(dto.getRefId())
+                    .vendorPlayerUsername(walletRequest.getVendorPlayerUsername())
+                    .agentId(walletRequest.getAgentId())
+                    .requestBody(requestBody)
+                    .build());
+        } catch (Exception e) {
+            // emit-only — never block the wallet path
+            log.warn("SABA placebet emit failed refId={}: {}", dto == null ? null : dto.getRefId(), e.getMessage());
+        }
+    }
+
     private void dataMapper(WalletRequest walletRequest, PlaceBetDto placeBetDto) {
         String externalTransactionId = VendorService.generateExtTxnId(placeBetDto.getOperationId(), placeBetDto.getRefId());
 
@@ -123,5 +157,7 @@ public class PlaceBetAction {
         walletRequest.setBetType(BetType.NORMAL_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetDto.getUserId());
         walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
+        walletRequest.setOddsType(OddsType.convertToSportOddsCode(placeBetDto.getOddsType()));
+        walletRequest.setOdds(placeBetDto.getOdds());
     }
 }

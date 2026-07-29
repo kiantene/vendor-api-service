@@ -47,6 +47,6 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public String getRoundId() {
-        return null;
+        return this.serialnumber;
     }
 }

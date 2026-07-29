@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.sport.SportsBaseAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,7 @@ public class SportSettleAction extends SportsBaseAction {
     @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
-    private VendorGameRepository vendorGameRepository;
+    private VendorGameService vendorGameService;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
     @Autowired
@@ -66,7 +65,11 @@ public class SportSettleAction extends SportsBaseAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
-        String gameCode = vendorGameRepository.findById(sportUnsettledBet.getVendorGameId()).map(VendorGame::getCode).orElse(null);
+        // GA-14768: resolve the vendor game via the cached VendorGameService instead of hitting the
+        // writer datasource directly. This lookup runs on the async settle consumer path and was an
+        // un-cached writer-pool query contributing to the ~30s DB connection-timeout failures.
+        VendorGame vendorGame = vendorGameService.findVendorGameById(sportUnsettledBet.getVendorGameId());
+        String gameCode = (vendorGame != null) ? vendorGame.getCode() : null;
 
         Integer currencyId = vendorCurrency.getCurrencyId();
         String currencyCode = vendorCurrency.getVendorCurrencyCode();

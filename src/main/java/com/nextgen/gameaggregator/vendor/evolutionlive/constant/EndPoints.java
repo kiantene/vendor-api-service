@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.constant;
 
 public class EndPoints {
+    public static final String VENDOR = "evolive";
+    public static final String BODY_FORMAT = "json";
     public static final Integer TIMEOUT = 10000;
     public static final Integer RETRY = 3;
 

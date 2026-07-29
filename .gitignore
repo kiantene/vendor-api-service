@@ -8,6 +8,7 @@ logs
 *.pem
 application-*.yml
 application-*.properties
+.java-version
 
 ### STS ###
 .apt_generated
@@ -17,6 +18,7 @@ application-*.properties
 .settings
 .springBeans
 .sts4-cache
+.java-version
 
 ### IntelliJ IDEA ###
 .idea

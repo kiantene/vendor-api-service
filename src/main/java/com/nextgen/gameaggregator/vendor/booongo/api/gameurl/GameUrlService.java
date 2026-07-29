@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.booongo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class GameUrlService implements GameUrl {
 
     @Autowired
     RequestService requestService;
+    private static final String LOBBY = "lobby";
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -32,30 +35,51 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
         formData.add("platform", gameSession.getVendorPlatformCode());
-        formData.add("gameCode", gameCode);
+        if (!isLobbyGame(gameCode)) {
+            formData.add("game", gameCode);
+        }
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("token", gameSession.getToken());
-//        formData.add("wl", credentials.get(Credentials.WL));
         return formData;
     }
 
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
-            throws InvalidVendorLineException{
+            throws InvalidVendorLineException {
 
         GameUrlVo gameUrlVo = new GameUrlVo();
 
-        String API_URL = credentials.get(Credentials.API_URL);
-        String PROJECT_NAME = credentials.get(Credentials.PROJECT_NAME);
-        String WL = credentials.get(Credentials.WL);
-        String token = formData.get("token").get(0);
-        String platform = formData.get("platform").get(0);
-        String gameCode = formData.get("gameCode").get(0);
-        String lang = formData.get("lang").get(0);
+        String apiUrl = credentials.get(Credentials.API_URL);
+        String projectName = credentials.get(Credentials.PROJECT_NAME);
+        String vendorPagePath = resolveVendorPagePath(projectName, gameSession);
+
+        formData.add("WL", credentials.get(Credentials.WL));
 
         //combine all string and generate game url
-        gameUrlVo.setGameUrl(VendorService.generateGameUrl(API_URL, PROJECT_NAME, token, platform, gameCode, lang, WL));
+        gameUrlVo.setGameUrl(generateGameUrl(apiUrl, vendorPagePath, formData));
 
         return gameUrlVo;
+    }
+
+    public static String generateGameUrl(
+            String apiUrl,
+            String vendorPagePath,
+            MultiValueMap<String, String> formData
+    ) {
+        return UriComponentsBuilder
+                .fromHttpUrl(apiUrl)
+                .path(vendorPagePath)
+                .queryParams(formData)   // converts formData → query string
+                .build()
+                .encode()                // URL-encode safely
+                .toUriString();
+    }
+
+    private String resolveVendorPagePath(String projectName, GameSession gameSession) {
+        return projectName + (isLobbyGame(gameSession.getVendorGameCode()) ? EndPoints.LOBBY_PAGE : EndPoints.GAME_PAGE);
+    }
+
+    private boolean isLobbyGame(String vendorGameCode) {
+        return LOBBY.equalsIgnoreCase(vendorGameCode);
     }
 }

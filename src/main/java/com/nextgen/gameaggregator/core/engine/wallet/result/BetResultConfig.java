@@ -37,6 +37,7 @@ public class BetResultConfig {
     private boolean returnSuccessOnDuplicate = false;
     private boolean rejectResultIfRefunded = false;
     private boolean publishBetHistoryOnRoundEnded = true;
+    private boolean regenSessionIfInvalid = true;
 
     // Chaining methods
     public BetResultConfig betAndResult(boolean flag) {
@@ -81,6 +82,11 @@ public class BetResultConfig {
 
     public BetResultConfig publishBetHistoryOnRoundEnded(boolean flag) {
         this.publishBetHistoryOnRoundEnded = flag;
+        return this;
+    }
+
+    public BetResultConfig regenSessionIfInvalid(boolean flag) {
+        this.regenSessionIfInvalid = flag;
         return this;
     }
 

@@ -2,9 +2,12 @@ package com.nextgen.gameaggregator.core.idempotency;
 
 import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.ga.RequestIdempotentLog;
 import com.nextgen.gameaggregator.enums.TxnType;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class DuplicateRequestGuard {
@@ -19,8 +22,13 @@ public class DuplicateRequestGuard {
     }
 
     public void ensureNotDuplicate(String vendor, String action, String key) {
-        if (service.isDuplicateRequest(vendor, action, key)) {
-            throw new DuplicateRequestException(RequestIdempotencyService.key(vendor, action, key) + " already processed");
+        Optional<RequestIdempotentLog> exist = service.isDuplicateRequest(vendor, action, key);
+
+        if (exist.isPresent()) {
+            throw new DuplicateRequestException(
+                    RequestIdempotencyService.key(vendor, action, key) + " already processed",
+                    exist.get()
+            );
         }
     }
 

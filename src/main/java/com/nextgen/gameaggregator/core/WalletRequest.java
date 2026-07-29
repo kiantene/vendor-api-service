@@ -96,6 +96,10 @@ public class WalletRequest {
     //call operator timeout timing
     private Integer operatorTimeoutTiming;
 
+    //sport odds (optional)
+    private Integer oddsType;
+    private BigDecimal odds;
+
     public WalletRequest() {
         this.init(UUID.randomUUID().toString());
     }

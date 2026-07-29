@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
@@ -61,6 +62,9 @@ public class AcceptService {
 
         // if dto contains "Transaction" , update new bet amount value = (old bet amount - transaction[amount])
         this.updateNewBetAmount(walletRequest, transactionDto, wagerInfoDto);
+
+        walletRequest.setOddsType(OddsType.convertToSportOddsCode(wagerInfoDto.getOddsFormat()));
+        walletRequest.setOdds(wagerInfoDto.getOdds());
     }
 
     private void updateBetAmount(WalletRequest walletRequest) throws BetNotFoundException {

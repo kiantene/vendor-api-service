@@ -61,6 +61,7 @@ public class Gpkv2GameLauncher extends AbstractGameLaunchHandler<GameLaunchReque
                 .ip(context.getIpAddress())
                 .country(country)
                 .return_url(context.getLobbyUrl())
+                .client_type(context.getVendorPlatformCode())
                 .build();
     }
 

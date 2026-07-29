@@ -5,10 +5,10 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
-import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.scheduler.betaction.GeneralSettleDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bglive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bglive.constant.GameCode;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ThreadSize;
@@ -24,6 +25,7 @@ import com.nextgen.gameaggregator.vendor.bglive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bglive.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bglive.vo.ResultVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 @Service
+@Slf4j
 public class SettlementService {
     private final AgentPlayerService agentPlayerService;
     private final VendorLineService vendorLineService;
@@ -48,6 +51,8 @@ public class SettlementService {
     private final UnsettledBetCachingService unsettledBetCachingService;
     private final WalletTransactionService walletTransactionService;
     private final WalletRequestService walletRequestService;
+    private final VendorGameService vendorGameService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     public SettlementService(HttpService httpService,
                              WalletService walletService,
@@ -60,7 +65,9 @@ public class SettlementService {
                              OperatorWalletService operatorWalletService,
                              UnsettledBetCachingService unsettledBetCachingService,
                              WalletTransactionService walletTransactionService,
-                             WalletRequestService walletRequestService) {
+                             WalletRequestService walletRequestService,
+                             VendorGameService vendorGameService,
+                             RawBetDetailsProducer rawBetDetailsProducer) {
         this.httpService = httpService;
         this.walletService = walletService;
         this.gameSessionService = gameSessionService;
@@ -73,6 +80,8 @@ public class SettlementService {
         this.unsettledBetCachingService = unsettledBetCachingService;
         this.walletTransactionService = walletTransactionService;
         this.walletRequestService = walletRequestService;
+        this.vendorGameService = vendorGameService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     public CommonVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
@@ -86,14 +95,8 @@ public class SettlementService {
             int orderCount = settleDto.getParamsDto().getOrders().size();
             executor = vendorService.createThreadPool(orderCount);
             this.doValidation(settleDto);
-            try {
-                gameSession = this.getGameSession(settleDto.getParamsDto().getLoginId());
 
-            } catch (AuthenticationException authenticationException) {
-                //regenerate token
-                gameSession = regenerateSession(settleDto, traceId);
-
-            }
+            gameSession = this.getGameSession(settleDto, traceId);
 
             this.doVerification(settleDto, gameSession);
 
@@ -176,10 +179,6 @@ public class SettlementService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 
-    private GameSession getGameSession(String loginId) throws AuthenticationException {
-        return gameSessionService.getGameSessionByVendorPlayerUsername(loginId);
-    }
-
     //Concurrent process orders
     private ResultVo processData(ParamsDto paramsDto, OrdersDto ordersDto, HttpServletRequest httpServletRequest,
                                  GameSession gameSession) {
@@ -204,6 +203,7 @@ public class SettlementService {
             }
 
             boolean isBullBullGame = ordersDto.getGameId().equals(GameCode.BULL_BULL);
+            String gaBetId;
             if (isBullBullGame) {
                 walletRequest = WalletRequestService.init(httpRequestLog);
                 // add request idempotent check
@@ -211,6 +211,7 @@ public class SettlementService {
                 vendorService.dataCreditMapper(currentWalletRequest, ordersDto, gameSession);
                 walletRequest = operatorWalletService.betCredit(currentWalletRequest);
                 resultVo = new ResultVo(walletRequest.getBalanceAfter());
+                gaBetId = walletRequest.getBetId();
             } else {
                 // Process Result
                 resultType = vendorService.calculateResultType(ordersDto.getBetAmount(), ordersDto.getAmount().abs(),
@@ -218,7 +219,10 @@ public class SettlementService {
                 balance = walletService.processBetResult(traceId, gameSession, ordersDto, resultType, vendorService,
                         httpRequestLog);
                 resultVo = new ResultVo(balance);
+                gaBetId = httpRequestLog.getGaBetId();
             }
+
+            this.emitRawBetDetail(gameSession, ordersDto, gaBetId, httpRequestLog.getRequestBody());
 
         } catch (InsufficientBalanceException |
                  InvalidRequestException |
@@ -250,6 +254,33 @@ public class SettlementService {
         return resultVo;
     }
 
+
+    private void emitRawBetDetail(GameSession gameSession, OrdersDto ordersDto, String gaBetId, String body) {
+        String vendorBetId = ordersDto.getVendorBetId();
+        String roundId = ordersDto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(EventKind.RESULT_UPDATE)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, vendorBetId, roundId, e.getMessage());
+        }
+    }
 
     @ExceptionHandler({InvalidRequestException.class, InvalidPlayerException.class,
             AuthenticationException.class, Exception.class})
@@ -323,8 +354,7 @@ public class SettlementService {
     }
 
     private GameSession getVendorPlayerId(UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
-            InvalidPlayerException,
-            AuthenticationException {
+            InvalidPlayerException {
 
         GameSession gameSession = null;
         if (unsettledBet != null) {
@@ -332,43 +362,62 @@ public class SettlementService {
         }
 
         if (walletTransaction != null) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(walletTransaction.getVendorPlayerUsername());
+            gameSession = gameSessionService.generateNewSessionToken(walletTransaction.getVendorPlayerUsername());
         }
 
         return gameSession;
     }
 
-    private GameSession regenerateSession(SettleDto settleDto, String traceId) throws
-            BetNotFoundException,
+    private GameSession regenerateSession(String traceId, UnsettledBet unsettledBet, WalletTransaction walletTransaction) throws
             InvalidPlayerException,
-            AuthenticationException,
             GameNotSupportedException,
             VendorCurrencyNotSupportException {
 
-        String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
-        String loginId = settleDto.getParamsDto().getLoginId();
         GameSession session;
-
-        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
-        WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, loginId);
-
-        if (unsettledBet == null && walletTransaction == null) {
-            throw new BetNotFoundException("Cannot find round Id: " + roundId);
-        }
-
         session = getVendorPlayerId(unsettledBet, walletTransaction);
-
-        if (session == null) {
-            session = gameSessionService.generateNewSessionToken(loginId);
-        }
 
         if (unsettledBet != null) {
             gameSessionService.updateByVendorGameId(session, unsettledBet.getVendorGameId());
+        } else {
+            gameSessionService.updateByVendorGameCode(session, walletTransaction.getVendorGameCode());
         }
         gameSessionService.updateByVendorCurrencyId(session);
         session.setToken(traceId);
         session.setVendorToken(traceId);
 
         return session;
+    }
+
+    private GameSession getGameSession(SettleDto settleDto, String traceId) throws
+            BetNotFoundException,
+            InvalidPlayerException,
+            GameNotSupportedException,
+            VendorCurrencyNotSupportException {
+
+        String roundId = settleDto.getParamsDto().getOrders().get(0).getRoundId();
+        String vendorPlayerUsername = settleDto.getParamsDto().getLoginId();
+        GameSession gameSession;
+        String vendorGameCode;
+
+
+        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(roundId);
+        WalletTransaction walletTransaction = walletTransactionService.getByRoundIdAndVendorPlayerUsername(roundId, vendorPlayerUsername);
+        if (unsettledBet == null && walletTransaction == null) {
+            throw new BetNotFoundException("Cannot find round Id: " + roundId);
+        }
+        if (unsettledBet != null) {
+            VendorGame vendorGame = vendorGameService.getByVendorGameId(unsettledBet.getVendorGameId());
+            vendorGameCode = vendorGame.getVendorGameCode();
+        } else {
+            vendorGameCode = walletTransaction.getVendorGameCode();
+        }
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayerUsername);
+            vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+        } catch (AuthenticationException authenticationException) {
+            //regenerate token
+            gameSession = regenerateSession(traceId, unsettledBet, walletTransaction);
+        }
+        return gameSession;
     }
 }

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import com.nextgen.gameaggregator.core.validator.VendorRequestValidator;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WalletBetResultServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "result";
+    private static final String REQUEST_TYPE = "WalletBetResultAction"; // For HttpRequestLog backward compatability
     private final DuplicateRequestGuard guard;
     private final BetResultContextEnricher enricher;
     private final BetResultProcessor processor;
@@ -40,6 +42,7 @@ public class WalletBetResultServiceWrapper {
     private final WalletBetResultValidator validator;
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final FrameworkMigrationService frameworkMigrationService;
+    private final VendorRequestValidator vendorRequestValidator;
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
@@ -50,6 +53,12 @@ public class WalletBetResultServiceWrapper {
         GameTransaction txn = null;
 
         try {
+            /**
+             * Enriching HttpRequestLog for backward compatability
+             * TO BE REMOVED when HttpRequestLog is completely removed
+             */
+            enrichHttpRequestLog(httpRequestLog, context);
+
             validator.validateRequestContext(context, state().getConfig());
 
             txn = guard.ensureNotDuplicate(
@@ -70,9 +79,13 @@ public class WalletBetResultServiceWrapper {
             BetResultDecision decision = BetResultPolicy.decide(roundOpt, config);
             decision.throwIfRejected(context, config);
 
-            GameSession gameSession = gameSessionDataService.getOrCreate(context);
+            GameSession gameSession = config.isRegenSessionIfInvalid() ?
+                    gameSessionDataService.getOrCreate(context) :
+                    gameSessionDataService.getGameSession(context);
 
             enricher.enrichByGameSession(context, gameSession, config);
+            //validate vendor request
+            vendorRequestValidator.validateVendorRequestWithGameSession(gameSession, context);
 
             ResultType resultType = getResultType(context, config);
 
@@ -165,6 +178,15 @@ public class WalletBetResultServiceWrapper {
             return (hasWin || hasJackpot) ? ResultType.BET_WIN : ResultType.BET_LOSE;
         } else {
             return (hasWin || hasJackpot) ? ResultType.WIN : ResultType.END;
+        }
+    }
+
+    private void enrichHttpRequestLog(HttpRequestLog httpRequestLog, BetResultContext context) {
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(REQUEST_TYPE);
+
+            httpRequestLog.setVendorBetId(context.getVendorBetId());
+            httpRequestLog.setRoundId(context.getRoundId());
         }
     }
 }

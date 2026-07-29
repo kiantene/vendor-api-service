@@ -1,9 +1,13 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestScope
@@ -109,15 +114,21 @@ public class CashTransferInOutAction {
             // 4. Process full bet data
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
 
-            // 5. check is settledBet is exists
+            // 5. Is End Round then set config to send topic round ended info
+            if (dto.isEndRound() == 1) {
+                BetResultContextHolder.initialise()
+                        .configure(config -> config.setSettleType(SettleType.ROUND));
+                BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(dto.getBetStatus().code));
+            }
+
+            // 6. check is settledBet is exists
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
             parentResponseVo.setData(responseVo);
-            responseVo.setBalanceAmount(balance);
+            responseVo.setBalanceAmount(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setCurrencyCode(vendorCurrencyCode);
             responseVo.setUpdatedTime(dto.getUpdatedTime());
-            if (dto.getRealTransferAmount() != null) {
-                responseVo.setRealTransferAmount(dto.getRealTransferAmount());
-            }
+            responseVo.setRealTransferAmount(dto.getRealTransferAmount());
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             parentResponseVo.setError(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
@@ -125,14 +136,18 @@ public class CashTransferInOutAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             parentResponseVo.setData(responseVo);
+            responseVo.setRealTransferAmount(dto.getRealTransferAmount());
             responseVo.setUpdatedTime(dto.getUpdatedTime());
-            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
+            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN));
             responseVo.setCurrencyCode(vendorCurrencyCode);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException | CredentialNotFoundException |
                  InvalidSignatureException invalidRequestException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+
+            parentResponseVo.setError(dto.getRealTransferAmount() == null
+                    ? ResponseCodes.INVALID_REAL_TRANSFER_AMOUNT
+                    : ResponseCodes.INVALID_REQUEST);
             httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (GameTerminatedException | AuthenticationException gameException) {
@@ -172,7 +187,7 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (InvalidAgentApiCredentialException | DisabledVendorLineException invalidAgentApiCredentialException) {
+        } catch (DisabledVendorLineException invalidAgentApiCredentialException) {
             parentResponseVo.setError(ResponseCodes.INVALID_OPERATOR);
             httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
@@ -188,9 +203,13 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
-        } catch (BetFailedException betFailedException) {
+        } catch (BetFailedException | InvalidAgentApiCredentialException betFailedException) {
             parentResponseVo.setError(ResponseCodes.BET_FAILED_3073);
             httpService.logError(httpRequestLog, betFailedException);
+
+        } catch (InvalidGameCategoryException ex) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, ex);
 
         } catch (Exception exception) {
             parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
@@ -237,7 +256,7 @@ public class CashTransferInOutAction {
             InvalidPlayerException,
             BetNotAllowedException,
             BetFailedException,
-            IllegalArgumentException {
+            IllegalArgumentException, InvalidGameCategoryException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
@@ -253,7 +272,7 @@ public class CashTransferInOutAction {
 
         //GA-12228: Disallow transaction type 400 from betting
         if (dto.getTransactionId().contains("-400-")) {
-            throw new BetFailedException("Transaction type 400 is not allowed");
+            throw new InvalidGameCategoryException("Transaction type 400 is not allowed");
         }
     }
 

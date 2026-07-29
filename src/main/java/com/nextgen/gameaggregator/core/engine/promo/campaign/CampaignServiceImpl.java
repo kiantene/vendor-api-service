@@ -10,6 +10,8 @@ import com.nextgen.gameaggregator.entity.promo.Campaign;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 @Component
 public class CampaignServiceImpl implements CampaignService {
@@ -25,6 +27,38 @@ public class CampaignServiceImpl implements CampaignService {
         ApiRequest apiRequest = apiAdapter.ofFetchCampaign(
                 traceId,
                 requestMapper.toFetchCampaignRequest(traceId, vendorCampaignCode, vendorLineId, promoType)
+        );
+        ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
+        apiResult.throwIfError();
+        FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
+
+        return responseMapper.responseToCampaign(response);
+    }
+
+    @Override
+    public Campaign getCampaignByPlayerUuid(String playerUuid) {
+        LogContext logContext = LogContextHolder.get().copy();
+        String traceId = logContext.getTraceId();
+
+        ApiRequest apiRequest = apiAdapter.ofFetchCampaignByPlayer(
+                traceId,
+                FetchCampaignByPlayerRequest.builder().traceId(traceId).playerUuid(playerUuid).build()
+        );
+        ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
+        apiResult.throwIfError();
+        FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
+
+        return responseMapper.responseToCampaign(response);
+    }
+
+    @Override
+    public Campaign getCampaignByRef(CampaignResolveStrategy strategy, Map<String, String> params) {
+        LogContext logContext = LogContextHolder.get().copy();
+        String traceId = logContext.getTraceId();
+
+        ApiRequest apiRequest = apiAdapter.ofResolveCampaign(
+                traceId,
+                ResolveCampaignRequest.builder().traceId(traceId).strategy(strategy).params(params).build()
         );
         ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
         apiResult.throwIfError();

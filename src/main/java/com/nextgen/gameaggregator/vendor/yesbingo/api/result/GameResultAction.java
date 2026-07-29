@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -35,15 +36,26 @@ public class GameResultAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     public void gameResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
+        boolean isRequestExists = false;
+        GameResultDto dto = new GameResultDto();
         try {
-
-            GameResultDto dto = HttpService.convertJsonToDto(decryptedData, GameResultDto.class);
+            dto = HttpService.convertJsonToDto(decryptedData, GameResultDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
+
+            //check for idempotent request
+            if (requestIdempotentLogService.checkExists(dto, dto.getUid()) == null) {
+                requestIdempotentLogService.create(dto, dto.getUid());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
@@ -117,6 +129,10 @@ public class GameResultAction {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
 
+        } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(dto, dto.getUid());
+            }
         }
 
     }

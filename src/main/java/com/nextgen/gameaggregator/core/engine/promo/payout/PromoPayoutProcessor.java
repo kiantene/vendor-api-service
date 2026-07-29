@@ -39,7 +39,9 @@ public class PromoPayoutProcessor {
 
     public PlayerBalanceData process(PromoPayoutContext context) {
 
-        producer.publish(context);
+        if (shouldPublish(context)) {
+            producer.publish(context);
+        }
 
         PlayerBalanceData balanceData = callToOperator(context);
         TxnAmount playerBalance = TxnAmount.of(balanceData.getBalance(), context.getToVendorRate());
@@ -59,11 +61,12 @@ public class PromoPayoutProcessor {
         if (transactions.isEmpty()) return Mono.empty();
 
         return Flux.fromIterable(transactions)
-                .filter(this::hasPayout) // only process for transactions that has payout > 0
                 .flatMap(tx -> {
                     tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
                     tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
-                    producer.publish(context, tx);
+                    if (shouldPublish(tx)) {
+                        producer.publish(context, tx);
+                    }
 
                     LogContext logContext = LogContextHolder.get().copy(); // create copy for this transaction
 
@@ -80,10 +83,6 @@ public class PromoPayoutProcessor {
                             });
                 }, CONCURRENCY)
                 .then();
-    }
-
-    private boolean hasPayout(PayoutTransaction tx) {
-        return tx.getVendorPayoutAmount() != null && tx.getVendorPayoutAmount().signum() > 0;
     }
 
     private PlayerBalanceData callToOperator(PromoPayoutContext context) {
@@ -149,6 +148,10 @@ public class PromoPayoutProcessor {
                 })
                 // retry handling: enqueue failed request
                 .onErrorResume(handleErrorWithRetry);
+    }
+
+    private boolean shouldPublish(PayoutTransaction tx) {
+        return tx.getVendorPayoutAmount() != null && tx.getVendorPayoutAmount().signum() >= 0;
     }
 
     private OperatorApiRequest toApiRequest(PromoPayoutContext context, PromoPayoutDto dto) {

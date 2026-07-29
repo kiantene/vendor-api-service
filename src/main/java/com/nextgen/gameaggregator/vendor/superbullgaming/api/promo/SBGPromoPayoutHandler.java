@@ -29,6 +29,7 @@ public class SBGPromoPayoutHandler extends AbstractPromoPayoutController<BetNSet
         return dto.getPromoType() != null && dto.getPromoType() != 0
                 && dto.getPromoCode() != null && !dto.getPromoCode().isBlank();
     }
+
     private CommonVo mapToCommonVo(PromoPayoutResponse response) {
         CommonVo vo = new CommonVo();
         vo.setResponseCode(ResponseCode.SUCCESS);

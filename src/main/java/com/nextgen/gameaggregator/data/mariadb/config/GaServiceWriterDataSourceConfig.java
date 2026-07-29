@@ -59,6 +59,9 @@ public class GaServiceWriterDataSourceConfig {
     @Value("${spring.datasource.hikari.minimum-idle}")
     private Integer minimumIdle;
 
+    @Value("${spring.datasource.defaultTimeout:5000}")
+    private Integer defaultSeconds;
+
     @Bean
     @Value("${spring.datasource.maria-default}")
     public DataSource mariaDataSource() {
@@ -79,6 +82,7 @@ public class GaServiceWriterDataSourceConfig {
         Map<String, String> map = new HashMap<>();
         // 设置对应的数据库方言
         map.put("hibernate.dialect", mariaDialect);
+        map.put("javax.persistence.query.timeout", defaultSeconds.toString());
         jpaProperties.setProperties(map);
         Map<String, Object> properties = hibernateProperties.determineHibernateProperties(jpaProperties.getProperties(), new HibernateSettings());
         return builder

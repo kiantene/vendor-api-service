@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Platforms;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +30,18 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
+import static com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType.SEVENMOJO;
+import static com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType.SEVENMOJOLATAM;
 
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
+
+    private static final String HOME_URL_SNAKE_CASE = "home_url";
+    private static final String HOME_URL_CAMEL_CASE = "homeUrl";
+
     @Autowired
     RequestService requestService;
 
@@ -49,19 +58,29 @@ public class GameUrlService implements GameUrl {
         formData.add("api_token", credentials.get(Credentials.api_token));
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
-        formData.add("platform", credentials.get(Credentials.platform_id));
+        formData.add("platform", credentials.get(Credentials.platform_id));//use platform
         formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode", vendorGameCode);
-        formData.add("home_url", gameSession.getLobbyUrl());
+
+        // Provider-specific home url param name - see OFRF-19: Booming Games
+        // expects camelCase "homeUrl", while other providers on this shared
+        // integration (e.g. Bgaming) expect snake_case "home_url".
+        String platformId = credentials.get(Credentials.platform_id);
+        String homeUrlKey = PlatformType.BOOMING.equals(platformId) ? HOME_URL_CAMEL_CASE : HOME_URL_SNAKE_CASE;
+        formData.add(homeUrlKey, gameSession.getLobbyUrl());
+
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
         formData.add("ip", gameSession.getIpAddress());
-
+        //to use latest lobby version for SEVENMOJO, SEVENMOJOLATAM only.
+        if (Set.of(SEVENMOJO, SEVENMOJOLATAM).contains(formData.getFirst("platform"))) {
+            formData.add("lobby_v2", "1");
+        }
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException{
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
         GameUrlVo responseVo = new GameUrlVo();
 
         //construct API address
@@ -74,10 +93,10 @@ public class GameUrlService implements GameUrl {
         Map<String, Object> loginGame = VendorService.convertToHashMap(formData);
 
         // convert platform id from string into int
-        loginGame.put("platform", Integer.parseInt((String) loginGame.get("platform")));
+        loginGame.put("platform", Integer.parseInt((String) loginGame.get("platform")));//use platform
 
         // convert timestamp from string into int
-        loginGame.put("timestamp", Long.parseLong((String) loginGame.get("timestamp")));
+        loginGame.put("timestamp", Long.parseLong((String) loginGame.get("timestamp")));// convert timestamp from string into int
 
         Map<String, Object> createPlayer = new HashMap<>();
 
@@ -86,7 +105,7 @@ public class GameUrlService implements GameUrl {
         createPlayer.put("password", loginGame.get("user"));
         createPlayer.put("username", loginGame.get("user"));
         createPlayer.put("currency", gameSession.getVendorCurrencyCode());
-        createPlayer.put("platform", loginGame.get("platform"));
+        createPlayer.put("platform", loginGame.get("platform"));//use platform
         createPlayer.put("timestamp", loginGame.get("timestamp"));
 
         // Convert HashMap to JSON string using Gson
@@ -118,7 +137,7 @@ public class GameUrlService implements GameUrl {
                 EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
-        try{
+        try {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse2);
             responseVo = new Gson().fromJson(apiResponse2.getBody(), GameUrlVo.class);
@@ -138,7 +157,7 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private ResponseEntity<String> createMember(String urlScheme, String createPlayer){
+    private ResponseEntity<String> createMember(String urlScheme, String createPlayer) {
         //Construct the API to register player from vendor site
         URI uri = UriComponentsBuilder.fromUriString(urlScheme)
                 .path(EndPoints.CREATE_PLAYER)
@@ -160,7 +179,7 @@ public class GameUrlService implements GameUrl {
                 .block();
     }
 
-    private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame){
+    private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame) {
         //Construct the API to register player from vendor site
         URI uri = UriComponentsBuilder.fromUriString(urlScheme)
                 .path(EndPoints.LAUNCH_GAME)

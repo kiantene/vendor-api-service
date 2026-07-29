@@ -5,11 +5,8 @@ import com.nextgen.core.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.core.exception.*;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.exception.mapper.VendorExceptionMapper;
-import com.nextgen.gameaggregator.core.logging.LogContext;
-import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.vendor.Vendors;
 import com.nextgen.gameaggregator.vendor.mg.api.betresult.UpdateBalanceVo;
-import com.nextgen.gameaggregator.vendor.mg.common.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 

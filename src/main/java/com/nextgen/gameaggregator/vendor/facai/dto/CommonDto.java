@@ -22,8 +22,6 @@ public class CommonDto {
     private String agentCode;
 
     @NotBlank(message = ResponseCodes.CURRENCY_MISSING)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.CURRENCY_MISSING)
-    @Size(min = 3, max = 4, message = ResponseCodes.CURRENCY_MISSING)
     @JsonProperty("Currency")
     private String currency;
 

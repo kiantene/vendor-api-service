@@ -5,14 +5,16 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.service.S3Service;
+import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.util.EncryptionUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.Encryption;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.GameType;
-import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -25,6 +27,11 @@ import java.util.Map;
 @Slf4j
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
 
+    @Autowired
+    private S3Service s3Service;
+    @Autowired
+    private VendorService vendorService;
+
     private static final String AGENT_CODE = "AgentCode";
     private static final String CURRENCY = "Currency";
     private static final String PARAMS = "Params";
@@ -35,6 +42,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         this.setContentType(MediaType.APPLICATION_JSON);
         this.setCredentialApiUrl(Credentials.API_URL);
         this.setGameUrl(EndPoints.GAME_URL);
+        this.setAutoMapResponse(false);
     }
 
     @Override
@@ -42,8 +50,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
             throws InvalidVendorLineException, InvalidFormatException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
-        VendorService vendorService = new VendorService();
+        //check IP is private or public.
 
         //map request param and convert to json string
         Map<String, Object> loginParam = new HashMap<>();
@@ -51,6 +58,11 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         loginParam.put("GameID", gameSession.getVendorGameCode());
         loginParam.put("LanguageID", gameSession.getVendorLanguageCode());
         loginParam.put("JackpotStatus", GameType.ENABLE_JACKPOT);
+        loginParam.put("ClientIP",
+                vendorService.isNotPublicIp(gameSession.getIpAddress())
+                        ? vendorService.getPublicIp()
+                        : gameSession.getIpAddress()
+        );
         String jsonParamString = "";
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -85,39 +97,12 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         return formData;
     }
 
-//    @Override
-//    public GameUrlVo callToVendor(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession, HttpRequestLog httpRequestLog)
-//            throws InvalidVendorLineException, InvalidVendorResponseException, TimeoutException {
-//
-//        String apiUrl = Optional.ofNullable(credentials.get(Credentials.API_URL))
-//                .orElseThrow(InvalidVendorLineException::new);
-//
-//        GameUrlVo responseVo;
-//        AtomicBoolean isTimeout = new AtomicBoolean(false);
-//
-//        //post request to vendor API with JSON string
-//        ResponseEntity<String> response = WebClient.create(apiUrl)
-//                .post()
-//                .uri(EndPoints.GAME_URL)
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .body(BodyInserters.fromValue(formData.toSingleValueMap()))
-//                .retrieve()
-//                .toEntity(String.class)
-//                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-//                .onErrorResume(TimeoutException.class, e -> {
-//                    isTimeout.set(true);
-//                    return Mono.error(e);
-//                })
-//                .block();
-//
-//        String responseBody = GameUrl.validateResponse(response, isTimeout, httpRequestLog);
-//        try {
-//            responseVo = new ObjectMapper().readValue(responseBody, GameUrlVo.class);
-//
-//        } catch (JsonProcessingException exception) {
-//            throw new InvalidVendorResponseException(exception.getMessage());
-//        }
-//
-//        return responseVo;
-//    }
+    @Override
+    public GameUrlVo responseMapper(String responseBody, GameSession gameSession) {
+        GameUrlVo gameUrlVo = new GameUrlVo();
+        String vendorGameUrl = s3Service.generateHtmlToS3(gameSession, responseBody);
+        gameUrlVo.setUrl(vendorGameUrl);
+
+        return gameUrlVo;
+    }
 }

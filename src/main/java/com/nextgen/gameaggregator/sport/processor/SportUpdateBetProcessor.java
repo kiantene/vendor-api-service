@@ -2,10 +2,12 @@ package com.nextgen.gameaggregator.sport.processor;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.core.service.AgentFeatureService;
 import com.nextgen.gameaggregator.entity.ga.SportMasterUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.entity.ga.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -37,6 +39,7 @@ public class SportUpdateBetProcessor {
     private final VendorCurrencyService vendorCurrencyService;
     private final BetResultRetryLogService betResultRetryLogService;
     private final WalletRequestService walletRequestService;
+    private final AgentFeatureService agentFeatureService;
 
     @Autowired
     public SportUpdateBetProcessor(SportUnsettledBetService sportUnsettledBetService,
@@ -44,7 +47,8 @@ public class SportUpdateBetProcessor {
                                    KafkaService kafkaService,
                                    VendorCurrencyService vendorCurrencyService,
                                    BetResultRetryLogService betResultRetryLogService,
-                                   WalletRequestService walletRequestService) {
+                                   WalletRequestService walletRequestService,
+                                   AgentFeatureService agentFeatureService) {
 
         this.sportUnsettledBetService = sportUnsettledBetService;
         this.sportUpdateBetAction = sportUpdateBetAction;
@@ -52,6 +56,7 @@ public class SportUpdateBetProcessor {
         this.vendorCurrencyService = vendorCurrencyService;
         this.betResultRetryLogService = betResultRetryLogService;
         this.walletRequestService = walletRequestService;
+        this.agentFeatureService = agentFeatureService;
     }
 
     public WalletRequest process(WalletRequest walletRequest) throws
@@ -92,6 +97,16 @@ public class SportUpdateBetProcessor {
 
         try {
             SportUpdateBetDto dto = new SportUpdateBetDto(walletRequest, fromVendorRate);
+
+            // odds fields are agent-feature gated; strip before the payload is signed and sent
+            if (dto.getOdds() != null || dto.getOddsType() != null) {
+                Integer oddsFeatureStatus = agentFeatureService.getStatus(walletRequest.getAgentId(), Features.SPORT_ODDS);
+                if (oddsFeatureStatus == null || oddsFeatureStatus != 1) {
+                    dto.setOdds(null);
+                    dto.setOddsType(null);
+                }
+            }
+
             WalletBalanceVo walletBalanceVo = sportUpdateBetAction.callToOperator(walletRequest, dto);
 
             balance = walletRequestService.convertAmountToVendorRate(walletBalanceVo, toVendorRate);
@@ -168,6 +183,7 @@ public class SportUpdateBetProcessor {
 
         walletRequest.setVendorBetTime(unsettledBet.getVendorBetTime());
         walletRequest.setBetId(unsettledBet.getBetId());
+        walletRequest.setAgentId(unsettledBet.getAgentId());
 
         // check and verify vendor currency and vendor game
         walletRequestService.updateByVendorGameId(walletRequest, unsettledBet.getVendorGameId());

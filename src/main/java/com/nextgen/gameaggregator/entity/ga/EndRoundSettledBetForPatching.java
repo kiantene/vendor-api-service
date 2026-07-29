@@ -13,5 +13,7 @@ public class EndRoundSettledBetForPatching extends EndRoundSettledBet {
     private String vendorPlayerUsername;
     @JsonProperty("isRefund")
     private boolean isRefund;
+    @JsonProperty("isSendToOperator")
+    private boolean callToOperator = true;
 
 }

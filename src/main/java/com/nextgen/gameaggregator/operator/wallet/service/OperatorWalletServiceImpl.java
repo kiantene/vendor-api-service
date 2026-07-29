@@ -77,19 +77,27 @@ public class OperatorWalletServiceImpl implements OperatorWalletService {
             walletRequest = walletBetCreditProcessor.process(walletRequest);
 
         } catch (InvalidOperatorResponseException e) {
-            //within callToOperator and after operator response
             walletRequest.setOperatorResponseStatus(ResponseCodes.Status.checkCodeStatus(e.getOperatorStatus()));
-            if (StringUtil.isBlank(walletRequest.getErrorMessage())) {
-                walletRequest.setErrorMessage(e.toString());
-            }
-            this.createBetResultRetryLog(walletRequest);
-            this.doForceSuccessParameters(walletRequest);
+            this.setForceSuccessErrorMessageAndLog(walletRequest, e);
+
+        } catch (InsufficientBalanceException e) {
+            walletRequest.setOperatorResponseStatus(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS);
+            this.setForceSuccessErrorMessageAndLog(walletRequest, e);
+
         } finally {
             //if status is not 1, and operatorData is not null, which mean operator process request failed
             walletRequest.setBetEnd(System.currentTimeMillis());
         }
-
         return walletRequest;
+    }
+
+    //force success
+    private void setForceSuccessErrorMessageAndLog(WalletRequest walletRequest, Exception e) {
+        if (StringUtil.isBlank(walletRequest.getErrorMessage())) {
+            walletRequest.setErrorMessage(e.toString());
+        }
+        this.createBetResultRetryLog(walletRequest);
+        this.doForceSuccessParameters(walletRequest);
     }
 
     @Override

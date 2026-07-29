@@ -42,7 +42,7 @@ class PromoPayoutServiceTest {
                 .vendorTransactionId("1952611929575260160-1952611929575260160-403-0")
                 .vendorPayoutAmount(BigDecimal.TEN)
                 .vendorTransactionTime(1754373936436L)
-                .promoType(PromoType.FREE_ROUND)
+                .promoType(PromoType.TOURNAMENT)
                 .build();
     }
 

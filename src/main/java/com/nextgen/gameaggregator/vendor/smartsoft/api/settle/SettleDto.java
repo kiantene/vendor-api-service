@@ -65,6 +65,9 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
+        if (this.transactionType.equals("WinAmount")) {
+            return this.transactionInfoDto.getBetTransactionId();
+        }
         return this.transactionId;
     }
 
@@ -108,7 +111,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
@@ -118,7 +121,10 @@ public class SettleDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        if (this.transactionInfoDto == null || this.transactionInfoDto.getTransactionDate() == null) {
+            return System.currentTimeMillis();
+        }
+        return this.transactionInfoDto.getTransactionDate().toInstant().toEpochMilli();
     }
 
     @Override

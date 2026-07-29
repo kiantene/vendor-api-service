@@ -2,6 +2,9 @@ package com.nextgen.gameaggregator.vendor.yeebet.constant;
 
 public class EndPoints {
 
+    public static final String VENDOR = "yeebet";
+    public static final String BODY_FORMAT = "form";
+
     public static final Integer TIMEOUT = 10000;
 
     public static final Integer RETRY = 3;

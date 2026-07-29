@@ -32,6 +32,9 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
+    private static final String LOBBY_GAME = "MGL_GRAND_LobbyAll";
+    private static final String LOBBY = "Lobby";
+
     public GameUrlService() {
         super(GameUrlVo.class);
         this.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -42,6 +45,9 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
                                                          Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         try {
+            if (LOBBY_GAME.equals(gameSession.getVendorGameCode())) {
+                formData.add("contentType", LOBBY);
+            }
             formData.add("contentCode", gameSession.getVendorGameCode());
             formData.add("platform", gameSession.getVendorPlatformCode());
             formData.add("langCode", gameSession.getVendorLanguageCode());

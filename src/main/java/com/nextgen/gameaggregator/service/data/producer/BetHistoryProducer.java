@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -91,39 +92,95 @@ public class BetHistoryProducer {
         }
     }
 
-    public void publishCancelledBetHistory(BetRollbackContext context, GameRound round) {
+    public void publishBetHistoryForRollbackByRound(BetRollbackContext rollbackContext, GameRound round, Optional<GameTransaction> firstBetTxn, GameTransaction rollbackTxn) {
+
+        String gaBetId = firstBetTxn
+                .map(GameTransaction::getGaBetId)
+                .orElseGet(UuidUtil::newUuidV7String);
+        Long betTime = firstBetTxn
+                .map(GameTransaction::getBetTime)
+                .orElse(rollbackContext.getTimestamp());
+
+        BetHistoryContext context = BetHistoryContext.of(rollbackContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, gaBetId, context.getExternalTransactionId());
+
         Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
         GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
         Vendor vendor = vendorDataService.get(context.getVendorId());
 
-        BetHistoryV3 betHistory = buildCancelledBetHistory(context, round, agent, vendor, gameCategory);
-        publish(betHistory);
-    }
-
-    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
-        BetHistoryContext context = BetHistoryContext.of(betResultContext);
-        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
-
-        Integer vendorId = context.getVendorId();
-        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
-        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
-        Vendor vendor = vendorDataService.get(vendorId);
-        VendorCurrency vendorCurrency = vendorCurrencyService.getByVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
-
         betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
 
-        TxnAmounts txnAmounts = TxnAmounts.of(round, vendorCurrency.getFromVendorRate());
+        TxnAmounts txnAmounts = TxnAmounts.of(round, rollbackContext.getFromVendorRate());
 
         betHistoryMapper.mapTransactionFields(
                 betHistory,
                 round,
                 txnAmounts,
-                txn.getVendorBetId(),
-                txn.getBetTime(),
-                txn.getSettleTime()
+                rollbackTxn.getVendorBetId(),
+                betTime,
+                Optional.ofNullable(rollbackTxn.getSettleTime())
+                        .orElse(rollbackContext.getTimestamp())
+        );
+
+        if (round.isSettled()) {
+            betHistoryMapper.negateAmounts(betHistory);
+            betHistory.setStatus(BetStatus.CANCELLED.code);
+            betHistory.setResettleNum(1);
+        } else {
+            betHistory.setStatus(BetStatus.REFUNDED.code);
+        }
+
+        publish(betHistory);
+    }
+
+    /**
+     * @param betResultContext
+     * @param round
+     * @param resultTxn        Final/Current Result Transaction
+     * @param betTxn           First Successful Bet Transaction
+     */
+    public void publishBetHistoryByRound(BetResultContext betResultContext, GameRound round, GameTransaction resultTxn, GameTransaction betTxn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
+        // GaBetId to use First Successful Bet GA Bet Id
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, betTxn.getGaBetId(), resultTxn.getTransactionId());
+
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
+
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+
+        // MAIN record uses the CAPPED round totals (agent max-payout applied at the WIN result);
+        // turnover keeps the same source as the uncapped path (round.getEffectiveTurnover()).
+        GameRound.Totals capped = round.computeCappedTotals();
+        GameRound.Totals vendor = round.computeTotals();
+        TxnAmounts txnAmounts   = new TxnAmounts(capped.bet(), capped.win(), capped.jackpot(), round.getEffectiveTurnover(), fromVendorRate);
+        TxnAmounts vendorAmounts = new TxnAmounts(vendor.bet(), vendor.win(), vendor.jackpot(), round.getEffectiveTurnover(), fromVendorRate);
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                betTxn.getVendorBetId(), // To return First Successful Bet ID
+                betTxn.getBetTime(), // To return First Successful Bet Time
+                resultTxn.getSettleTime()
         );
 
         publish(betHistory);
+
+        // If the cap actually reduced the payout, emit the uncapped counterpart record.
+        emitUncapIfCapped(betHistory, txnAmounts, vendorAmounts);
+    }
+
+    /**
+     * Emit the uncapped (vendor POV) bet-history counterpart of a capped bet/round. The main record
+     * fields (already capped) are copied; only the uncap* fields carry the vendor amounts.
+     */
+    private void produceUncap(BetHistoryV3 betHistory, TxnAmounts vendorAmounts) {
+        BetHistoryUncap uncap = BetHistoryUncap.copyOf(betHistory);
+        uncap.setUncapWinAmount(vendorAmounts.getWin());
+        uncap.setUncapJackpotAmount(vendorAmounts.getJackpot());
+        uncap.setUncapWinLoss(vendorAmounts.getWinLoss());
+        uncap.setUncapEffectiveTurnover(vendorAmounts.getTurnover());
+        kafkaService.produceBetHistoryUncap(uncap);
     }
 
     public void publishBetHistoryForRollback(BetRollbackContext rollbackContext, GameRound round, GameTransaction txn) {
@@ -156,6 +213,70 @@ public class BetHistoryProducer {
         }
 
         publish(betHistory);
+    }
+
+    public void publishBetHistoryForResult(BetResultContext betResultContext, GameRound round, GameTransaction betTxn, GameTransaction resultTxn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, betTxn.getGaBetId(), resultTxn.getTransactionId());
+
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
+
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(betTxn, resultTxn, fromVendorRate);
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                betTxn.getVendorBetId(),
+                betTxn.getBetTime(),
+                resultTxn.getSettleTime()
+        );
+
+        publish(betHistory);
+
+        emitUncapIfCapped(betHistory, txnAmounts, TxnAmounts.of(betTxn, resultTxn, fromVendorRate));
+    }
+
+    public void publishBetHistoryForBetAndResult(BetResultContext betResultContext, GameRound round, GameTransaction txn) {
+        BetHistoryContext context = BetHistoryContext.of(betResultContext);
+        BetHistoryV3 betHistory = betHistoryMapper.initialise(context, txn.getGaBetId(), txn.getTransactionId());
+
+        VendorCurrency vendorCurrency = mapReferenceFields(round, context, betHistory);
+
+        BigDecimal fromVendorRate = vendorCurrency.getFromVendorRate();
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(txn, fromVendorRate);
+
+        betHistoryMapper.mapTransactionFields(
+                betHistory,
+                round,
+                txnAmounts,
+                txn.getVendorBetId(),
+                txn.getBetTime(),
+                txn.getSettleTime()
+        );
+
+        publish(betHistory);
+
+        emitUncapIfCapped(betHistory, txnAmounts, TxnAmounts.of(txn, fromVendorRate));
+    }
+
+    /** Emit the uncapped counterpart record when the capped amounts differ from the vendor amounts. */
+    private void emitUncapIfCapped(BetHistoryV3 betHistory, TxnAmounts capped, TxnAmounts vendor) {
+        if (capped.getWin().compareTo(vendor.getWin()) != 0 || capped.getJackpot().compareTo(vendor.getJackpot()) != 0) {
+            produceUncap(betHistory, vendor);
+        }
+    }
+
+    private VendorCurrency mapReferenceFields(GameRound round, BetHistoryContext context, BetHistoryV3 betHistory) {
+        Integer vendorId = context.getVendorId();
+        Agent agent = agentDataService.get(round.getAgentMeta().getAgentId());
+        GameCategory gameCategory = gameCategoryDataService.get(context.getGameCategoryId());
+        Vendor vendor = vendorDataService.get(vendorId);
+        VendorCurrency vendorCurrency = vendorCurrencyService.getByVendorIdAndCurrencyId(vendorId, context.getCurrencyId());
+
+        betHistoryMapper.mapReferenceFields(betHistory, agent, vendor, gameCategory);
+        return vendorCurrency;
     }
 
     private PlayerUsernames getUsernamesIfNull(BetHistoryPublishContext context,
@@ -265,65 +386,6 @@ public class BetHistoryProducer {
             betHistory.setVendorBetTime(settledBet.getVendorBetTime());
             produceBetHistory(betHistory, context, usernames);
         });
-    }
-
-    // TODO: refactor
-    private BetHistoryV3 buildCancelledBetHistory(BetRollbackContext context,
-                                                  GameRound round,
-                                                  Agent agent,
-                                                  Vendor vendor,
-                                                  GameCategory gameCategory) {
-
-        BigDecimal bet      = round.getBetAmount();
-        BigDecimal win      = round.getWinAmount();
-        BigDecimal winLoss  = win.subtract(bet);
-        BigDecimal turnover = bet;
-        BigDecimal jackpot  = round.getJackpotAmount();
-
-        // TODO: conversion rate
-
-        BetHistoryV3 betHistory = new BetHistoryV3();
-
-        betHistory.setId(UuidUtil.newUuidV7String());
-        betHistory.setExternalTransactionId(context.getIdempotencyKey());
-        betHistory.setVendorBetId(context.getVendorBetId());
-        betHistory.setRoundId(round.getRoundId());
-        betHistory.setProductId(vendor.getProductId());
-        betHistory.setProductCode("");
-        betHistory.setProductGameId(0);
-        betHistory.setVendorGameId(context.getVendorGameId());
-        betHistory.setVendorPlayerId(context.getVendorPlayerId());
-        betHistory.setVendorId(round.getVendorId());
-        betHistory.setVendorCode(vendor.getCode());
-        betHistory.setVendorLineId(context.getVendorLineId());
-        betHistory.setAgentPlayerId(context.getAgentPlayerId());
-        betHistory.setHouseId(agent.getHouseId());
-        betHistory.setMasterAgentId(agent.getMasterAgentId());
-        betHistory.setAgentId(agent.getId());
-        betHistory.setOperatorStatus(0);
-        betHistory.setGameCategoryId(gameCategory.getId());
-        betHistory.setCurrencyId(context.getCurrencyId());
-        betHistory.setCurrencyCode(round.getAgentMeta().getCurrency());
-        betHistory.setBetAmount(bet.negate());
-        betHistory.setWinAmount(win.negate());
-        betHistory.setWinLoss(winLoss.negate());
-        betHistory.setEffectiveTurnover(turnover.negate());
-        betHistory.setJackpotAmount(jackpot.negate());
-        betHistory.setResultType(BetResultType.BET.code);
-        betHistory.setBetType(BetType.NORMAL_BET.code);
-        betHistory.setIsFreespin(0);
-        betHistory.setResettleNum(1);
-        betHistory.setStatus(BetStatus.CANCELLED.code);
-        betHistory.setGameSessionToken(round.getAgentMeta().getSession());
-        betHistory.setVendorBetTime(context.getTimestamp());
-        betHistory.setVendorSettleTime(context.getTimestamp());
-        betHistory.setResultTime(System.currentTimeMillis());
-        betHistory.setGameCode(round.getAgentMeta().getGameCode());
-        betHistory.setVendorPlayerUsername(round.getUsername());
-        betHistory.setAgentPlayerUsername(round.getAgentMeta().getUsername());
-        betHistory.setGameCategoryCode(gameCategory.getCode());
-
-        return betHistory;
     }
 
     private record PlayerUsernames(String agentPlayer, String vendorPlayer) {

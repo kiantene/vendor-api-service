@@ -64,7 +64,9 @@ public class AuthenticateAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            if (dto.getGameId() != null) {
+                gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            }
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -157,8 +159,10 @@ public class AuthenticateAction {
         // 4. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 5. Verify vendor game is supported
-        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        // 5. Verify vendor game is supported (gameId is optional; the session's game was verified at launch)
+        if (dto.getGameId() != null) {
+            vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        }
 
     }
 

@@ -11,8 +11,8 @@ import com.nextgen.gameaggregator.core.vendor.routing.VendorCallbackRouteResolve
 import com.nextgen.gameaggregator.core.vendor.routing.VendorRouteContext;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.TxnType;
-import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
+import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
 
 import java.util.Optional;
 import java.util.Set;
@@ -22,20 +22,17 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
 
     private final ObjectMapper objectMapper;
     private final VendorCallbackRouteResolver v1ToV2Resolver = new DefaultV1ToV2RouteResolver();
-    private final AgentApiVersionService agentApiVersionService;
     private final AgentPlayerDataService agentPlayerDataService;
     private final VendorPlayerDataService vendorPlayerDataService;
     private final GameTransactionService gameTransactionService;
     private final SpribeConfig spribeConfig;
 
     public SpribeRouteResolver(ObjectMapper objectMapper,
-                               AgentApiVersionService agentApiVersionService,
                                AgentPlayerDataService agentPlayerDataService,
                                VendorPlayerDataService vendorPlayerDataService,
                                GameTransactionService gameTransactionService,
                                SpribeConfig spribeConfig) {
         this.objectMapper = objectMapper;
-        this.agentApiVersionService = agentApiVersionService;
         this.agentPlayerDataService = agentPlayerDataService;
         this.vendorPlayerDataService = vendorPlayerDataService;
         this.gameTransactionService = gameTransactionService;
@@ -64,20 +61,15 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
         try {
             VendorPlayer vendorPlayer = vendorPlayerDataService.getByUsername(requiredValues.get().username);
             AgentPlayer agentPlayer = agentPlayerDataService.get(vendorPlayer.getAgentPlayerId());
-            int apiVersion = agentApiVersionService.getAgentApiVersion(agentPlayer.getAgentId());
 
-            if (apiVersion == 3) {
-                if (needToCheckGameTransaction(context)) {
-                    return resolveByGameTransaction(context, requiredValues.get());
-                } else {
-                    return v1ToV2Resolver.resolveTargetUri(context);
-                }
+            if (needToCheckGameTransaction(context)) {
+                return resolveByGameTransaction(context, requiredValues.get());
+            } else {
+                return v1ToV2Resolver.resolveTargetUri(context);
             }
         } catch (Exception ex) {
             return Optional.empty();
         }
-
-        return Optional.empty();
     }
 
     private boolean needToCheckGameTransaction(VendorRouteContext context) {
@@ -88,6 +80,11 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
     private Optional<String> resolveByGameTransaction(VendorRouteContext context, RequiredValues requiredValues) {
 
         if (requiredValues.vendorBetId.isEmpty()) {
+            // Freebet deposits have no prior /withdraw, so withdraw_provider_tx_id is absent.
+            // Route directly to v2 for known no-prior-bet action types.
+            if (FreeBetAction.NO_BET_ACTIONS.contains(requiredValues.action)) {
+                return v1ToV2Resolver.resolveTargetUri(context);
+            }
             return Optional.empty();
         }
 
@@ -105,6 +102,7 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
     private Optional<RequiredValues> extractRequiredValues(String rawBody) {
 
         final String USER_NAME = "user_id";
+        final String ACTION = "action";
 
         try {
             JsonNode root = objectMapper.readTree(rawBody);
@@ -114,10 +112,10 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
             }
 
             String username = root.get(USER_NAME).asText();
-
+            String action = root.hasNonNull(ACTION) ? root.get(ACTION).asText() : null;
             Optional<String> vendorBetId = extractVendorBetId(root);
 
-            return Optional.of(new RequiredValues(username, vendorBetId));
+            return Optional.of(new RequiredValues(username, vendorBetId, action));
 
         } catch (Exception e) {
             return Optional.empty();
@@ -134,5 +132,5 @@ public class SpribeRouteResolver implements VendorCallbackRouteResolver {
                 .findFirst();
     }
 
-    private record RequiredValues(String username, Optional<String> vendorBetId) {}
+    private record RequiredValues(String username, Optional<String> vendorBetId, String action) {}
 }

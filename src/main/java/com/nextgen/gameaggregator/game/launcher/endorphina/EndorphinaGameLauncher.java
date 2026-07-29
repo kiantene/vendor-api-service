@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.core.exception.GameLaunchException;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
 import com.nextgen.gameaggregator.core.util.VendorCredentialUtils;
 import com.nextgen.gameaggregator.game.launcher.endorphina.util.VendorUtil;
-import com.nextgen.gameaggregator.vendor.Vendors;
+import com.nextgen.gameaggregator.vendor.endorphina.config.EndorphinaConfig;
 import com.nextgen.gameaggregator.vendor.endorphina.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.endorphina.constant.EndPoints;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class EndorphinaGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
 
     protected EndorphinaGameLauncher(VendorCredentialUtils credentialUtils) {
-        super(credentialUtils, Vendors.ENDORPHINA.getClassName(), SigningStrategyType.SHA1_HEX);
+        super(credentialUtils, EndorphinaConfig.CLASS_NAME, SigningStrategyType.SHA1_HEX);
     }
 
     @Override

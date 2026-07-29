@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.rollback;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -32,4 +33,13 @@ public class WalletRollbackDto {
 
     @NotNull(message = "timestamp cannot be blank")
     private Long timestamp;
+
+    /**
+     * Operator-POV reversal amounts ({@code betAmount} / {@code winAmount}, jackpot folded into winAmount).
+     * Populated ONLY for transfer-wallet (seamless transfer) agents; null for normal operators,
+     * who decide their own reversal. {@code @JsonInclude(NON_NULL)} keeps the field out of the
+     * payload entirely for normal operators (not serialized as {@code "meta": null}).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private RollbackMeta meta;
 }

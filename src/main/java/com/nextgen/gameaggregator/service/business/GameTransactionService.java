@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service.business;
 
 import com.couchbase.client.core.error.DocumentExistsException;
+import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -82,6 +83,13 @@ public class GameTransactionService {
     }
 
     public GameRound markSuccess(GameRound round, GameTransaction txn, BigDecimal balance, Boolean isEnded) {
+        // Defense-in-depth: idx must be assigned before finalizing (TxnDelta.idx is a
+        // primitive int). Fail fast with context instead of an opaque NPE on unboxing.
+        if (txn.getIdx() == null) {
+            throw new IllegalStateException(
+                    "markSuccess called with unassigned idx for txn " + txn.getId()
+                            + " — transaction was not appended to its round");
+        }
         txn.setStatus(TxnStatus.SUCCESS);
         txn.setDoneAt(getNow());
         txnDataService.updateStatus(txn, balance, TxnStatus.SUCCESS);
@@ -103,12 +111,21 @@ public class GameTransactionService {
                 txn.getBetAmount(),
                 txn.getWinAmount(),
                 txn.getJackpotAmount(),
+                txn.getCappedWinAmount(),
+                txn.getCappedJackpotAmount(),
+                txn.getEffectiveTurnover(),
                 txn.getDoneAt(),
-                GameRoundState.SETTLED == txn.getState(),
+                isSettled(txn, isEnded),
                 Optional.ofNullable(isEnded).orElse(false)
         );
 
         return gameRoundService.applyTxnDelta(delta);
+    }
+
+    private boolean isSettled(GameTransaction txn, Boolean isEnded) {
+        // If isEnded is not NULL and false, we should not update RoundState for gameRound
+        return !Boolean.FALSE.equals(isEnded)
+                && GameRoundState.SETTLED == txn.getState();
     }
 
     public void markError(GameTransaction txn, RuntimeException ex) {
@@ -117,6 +134,17 @@ public class GameTransactionService {
         String exName = getMeaningfulExceptionName(ex);
         txn.setException(exName);
         txnDataService.updateStatus(txn, null, TxnStatus.ERROR);
+
+        if (shouldCreateAliasTxn(txn)) {
+            try {
+                GameTransaction betTxn = txn.copy();
+                betTxn.setType(TxnType.BET);
+                betTxn.setTransactionId(txn.getVendorBetId());
+                txnDataService.updateStatus(betTxn, null, TxnStatus.ERROR);
+            } catch (DocumentNotFoundException e) {
+                log.warn("Alias BET " + txn.getVendorBetId() + " Txn has not been created yet");
+            }
+        }
 
         Map<String, Object> updates = Map.of(
                 "status", TxnStatus.ERROR.name(),
@@ -134,30 +162,24 @@ public class GameTransactionService {
     public void markRollback(GameRound round, GameTransaction rollbackTxn, BigDecimal balance) {
         rollbackTxn.setState(GameRoundState.COMPLETED);
         txnDataService.updateStatus(rollbackTxn, balance, TxnStatus.SUCCESS);
-        gameRoundService.updateRoundTxn(rollbackTxn, GameRoundState.COMPLETED);
+
+        // OVI-2519: finalize the rollback on the round doc in a single mutation —
+        // mark the rollback txn slot COMPLETED and refresh the round-level lastBalance
+        // with the operator's post-rollback (refunded) balance. The balance is folded
+        // into the existing round-txn mutation rather than issued as a separate
+        // post-success write: that keeps the round-doc failure surface unchanged, so a
+        // failed mutation can neither report success with a stale balance nor add a new
+        // way to invert an already-successful operator refund. A null balance leaves
+        // lastBalance untouched so it never clobbers the last known value. Round-level
+        // bet/win/jackpot totals need no adjustment — the rolled-back BET is already
+        // marked REFUNDED and GameRound.computeTotals() excludes it.
+        gameRoundService.updateTxnStateAndBalance(rollbackTxn, GameRoundState.COMPLETED, balance);
 
         /**
          * to revisit this logic: to consider removing state at GameRound level and
          * change GameRoundState to TxnState
          */
 //        gameRoundService.updateRoundState(round.getId(), GameRoundState.REFUNDED);
-
-        // TODO: to deduct amounts from GameRound after rollback
-//        TxnDelta delta = TxnDelta.finalizeSuccess(
-//                betTxn.getRoundDocId(),
-//                betTxn.getIdx(),
-//                betTxn.getType(),
-//                betTxn.getGaBetId(),
-//                balance,
-//                betTxn.getBetAmount().negate(),
-//                betTxn.getWinAmount().negate(),
-//                betTxn.getJackpotAmount().negate(),
-//                betTxn.getDoneAt(),
-//                GameRoundState.SETTLED == betTxn.getState(),
-//                true
-//        );
-//
-//        gameRoundService.applyTxnDelta(delta);
     }
 
     public void markRefunded(String docId) {
@@ -210,6 +232,8 @@ public class GameTransactionService {
         // if vendor bet id is different from transaction id
         boolean isVendorBetIdDifferent = !txn.getTransactionId().equals(txn.getVendorBetId());
 
-        return (txn.isBet() || txn.isBetNResult()) && isVendorBetIdDifferent;
+        //As Rollback searches by <classname>::BET::<vendorbetid>, we have to create an alias txn for BetNResult
+        //scenario OR Bet transaction with different vendorbetid and txnid
+        return txn.isBetNResult() || (txn.isBet() && isVendorBetIdDifferent);
     }
 }

@@ -114,7 +114,7 @@ public class CancelAction {
             responseVo.setResponseCode(ResponseCode.ACCOUNT_LOCKED);
 
         } catch (Exception e) {
-            responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);

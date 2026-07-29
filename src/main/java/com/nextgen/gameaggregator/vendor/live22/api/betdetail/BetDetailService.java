@@ -62,7 +62,7 @@ public class BetDetailService implements BetDetailUrl {
         //generate encryptString
         String encryptString = functionName + requestDateTime + operatorId + secretKey;
 
-        String tranId = iBetDetailUrlInfo.getTransactionId();
+        String tranId = iBetDetailUrlInfo.getExternalTransactionId();
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 

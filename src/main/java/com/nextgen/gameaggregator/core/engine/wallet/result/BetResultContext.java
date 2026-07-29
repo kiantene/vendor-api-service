@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
-import com.nextgen.gameaggregator.core.context.VendorGameAware;
-import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
-import com.nextgen.gameaggregator.core.context.VendorRequestContext;
+import com.nextgen.gameaggregator.core.context.VendorAwareContext;
 import com.nextgen.gameaggregator.core.engine.wallet.BetTransaction;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,7 +23,7 @@ import java.util.Optional;
 @Data
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(callSuper = true)
-public class BetResultContext extends VendorRequestContext implements VendorPlayerAware, VendorGameAware {
+public class BetResultContext extends VendorAwareContext {
     // --- Vendor mapping fields ---
     private String vendorBetId;
     private String roundId;
@@ -35,28 +33,10 @@ public class BetResultContext extends VendorRequestContext implements VendorPlay
     private BigDecimal effectiveTurnover;
     private BigDecimal jackpotAmount;
     private Integer isFreeSpin;
-    private Long vendorBetTime;
+    private Long vendorBetTime; // Usually Not Set
     private Long vendorSettleTime;
     private Boolean roundEnded;
 
-    // --- internal values ---
-
-    private Integer vendorId;
-    private Long vendorPlayerId;
-    private Integer agentId;
-    private Long agentPlayerId;
-    private String agentPlayerUsername;
-    private Integer currencyId;
-    private String currencyCode;
-    private Integer productId;
-    private String productCode;
-    private Integer productGameId;
-    private Integer vendorGameId;
-    private String gameName;
-    private String gameCode;
-    private Integer gameCategoryId;
-    private Integer vendorLineId;
-    private BigDecimal fromVendorRate;
     private Long resultTime;
 
     private List<BetTransaction> betTransactions;

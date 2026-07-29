@@ -2,8 +2,15 @@ package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -17,6 +24,7 @@ import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +41,7 @@ import static com.nextgen.gameaggregator.vendor.mg.constant.TxnType.DEBIT;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
+@Slf4j
 public class UpdateBalanceAction {
     @Autowired
     private HttpService httpService;
@@ -46,6 +55,8 @@ public class UpdateBalanceAction {
     private AutowireCapableBeanFactory autowireCapableBeanFactory;
     @Autowired
     private PromoPayoutHandler promoPayoutHandler;
+    @Autowired
+    private RawBetDetailsProducer rawBetDetailsProducer;
 
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
@@ -109,14 +120,25 @@ public class UpdateBalanceAction {
                     BigDecimal balance = betEvent.getLastBalance();
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
+
+                    this.emitRawBetDetail(gameSession, dto.getVendorBetId(), dto.getRoundId(), EventKind.PLACE_BET, betEvent.getBetInformation().getBetId(), body);
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-//                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
+                    //this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
                     ResultType resultType = preProcessWinDto(winDataDto, gameSession);
+                    // if completed true then send round ended info
+                    if (winDataDto.getCompleted()) {
+                        BetResultContextHolder.initialise()
+                                .configure(config -> config.setSettleType(SettleType.ROUND));
+                        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(winDataDto.getBetStatus().code));
+                    }
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
+
+                    this.emitRawBetDetail(gameSession, winDataDto.getVendorBetId(), winDataDto.getRoundId(), EventKind.RESULT_UPDATE, httpRequestLog.getGaBetId(), body);
                 }
                 default -> status = HttpStatus.INTERNAL_SERVER_ERROR;
             }
@@ -126,7 +148,8 @@ public class UpdateBalanceAction {
             updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 
@@ -192,13 +215,37 @@ public class UpdateBalanceAction {
         return new ResponseEntity<>(updateBalanceVo, headers, status);
     }
 
+    private void emitRawBetDetail(GameSession gameSession, String vendorBetId, String roundId, EventKind eventKind, String gaBetId, String body) {
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null eventKind={} vendorBetId={} roundId={}",
+                    Endpoints.VENDOR, eventKind, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(Endpoints.VENDOR)
+                    .eventKind(eventKind)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(Endpoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed eventKind={} vendorBetId={} roundId={}: {}",
+                    Endpoints.VENDOR, eventKind, vendorBetId, roundId, e.getMessage());
+        }
+    }
+
     private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
     private ResultType preProcessWinDto(WinDataDto dto, GameSession gameSession) {
-        
         //only for live casino calculation
         if (gameSession.getGameCategoryId() == 5) {
             ResultType resultType = dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : dto.getCompleted() ? ResultType.END : ResultType.BET_LOSE;

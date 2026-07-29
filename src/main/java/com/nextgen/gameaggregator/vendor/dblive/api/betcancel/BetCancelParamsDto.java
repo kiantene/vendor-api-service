@@ -24,7 +24,6 @@ public class BetCancelParamsDto implements RollbackData {
     @Size(max = 50)
     private String loginName;
     @NotBlank
-    @Size(max = 4)
     private String currency;
     @NotBlank
     @Size(max = 20)

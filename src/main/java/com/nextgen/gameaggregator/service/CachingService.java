@@ -121,4 +121,17 @@ public class CachingService {
     public Optional<RawBetIdempotentLog> cacheableRawBetIdempotentLogByIdToRedis(String id, Optional<RawBetIdempotentLog> rawBetIdempotentLog) {
         return rawBetIdempotentLog;
     }
+
+    @Cacheable(value = "TempIdempotency", key = "#key", cacheManager = "cacheManager", unless = "#result == null")
+    public TempIdempotency get(String key) {
+        return null;
+    }
+
+    @CachePut(value = "TempIdempotency", key = "#tempIdempotency.idempotencyKey", cacheManager = "cacheManager")
+    public TempIdempotency put(TempIdempotency tempIdempotency) {
+        return tempIdempotency;
+    }
+
+    @CacheEvict(value = "TempIdempotency", key = "#key", cacheManager = "cacheManager")
+    public void evict(String key) {}
 }

@@ -18,4 +18,5 @@ public class GameLaunchRequest {
     private String ip;
     private String country;
     private String return_url;
+    private String client_type;
 }

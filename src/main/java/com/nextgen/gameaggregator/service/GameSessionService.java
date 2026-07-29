@@ -69,11 +69,13 @@ public class GameSessionService {
 
     @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
     public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
-
-        GameSession session = rawGameSessionRepository.findByVendorToken(vendorToken);
-        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
-
-        return session;
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByVendorToken(vendorToken);
+        if (gameSessionList.isEmpty()) {
+            throw new AuthenticationException();
+        }
+        return gameSessionList.stream()
+                .max(Comparator.comparingLong(GameSession::getCreateTime))
+                .get();
     }
 
     @Caching(put = {
@@ -427,5 +429,36 @@ public class GameSessionService {
             // do nothing to suppress the error
         }
         gameSession.setCurrencyCode(currencyCode);
+    }
+
+    public GameSession generateNewGameSessionFromBetInformation(BetInformation betInformation, String vendorPlayerUsername)
+            throws GameNotSupportedException,
+            InvalidCurrencyException,
+            RecordNotFoundException {
+
+        VendorGame vendorGame = vendorGameService.getByVendorGameId(betInformation.getVendorGameId());
+        Currency currency = currencyService.get(betInformation.getCurrencyId());
+        AgentPlayer agentPlayer = agentPlayerService.get(betInformation.getAgentPlayerId());
+
+        GameSession session = new GameSession();
+
+        // base from unsettled
+        session.setAgentId(betInformation.getAgentId());
+        session.setVendorId(betInformation.getVendorId());
+        session.setVendorPlayerId(betInformation.getVendorPlayerId());
+        session.setVendorGameId(betInformation.getVendorGameId());
+        session.setVendorLineId(betInformation.getVendorLineId());
+        session.setCurrencyId(betInformation.getCurrencyId());
+        session.setToken(betInformation.getGameSessionToken());
+        session.setAgentPlayerId(betInformation.getAgentPlayerId());
+
+        // enrich
+        session.setAgentPlayerUsername(agentPlayer.getUsername());
+        session.setVendorPlayerUsername(vendorPlayerUsername);
+        session.setVendorGameCode(vendorGame.getVendorGameCode());
+        session.setGameCode(vendorGame.getCode());
+        session.setCurrencyCode(currency.getCode());
+
+        return session;
     }
 }

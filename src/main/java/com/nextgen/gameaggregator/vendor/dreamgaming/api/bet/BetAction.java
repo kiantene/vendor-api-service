@@ -1,8 +1,15 @@
 package com.nextgen.gameaggregator.vendor.dreamgaming.api.bet;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -35,19 +42,22 @@ public class BetAction {
     private final VendorService vendorService;
     private final VendorLineService vendorLineService;
     private final WalletAdjustmentService walletAdjustmentService;
+    private final RawBetDetailsProducer rawBetDetailsProducer;
 
     public BetAction(WalletService walletService,
                      HttpService httpService,
                      ValidationService validationService,
                      VendorService vendorService,
                      VendorLineService vendorLineService,
-                     WalletAdjustmentService walletAdjustmentService) {
+                     WalletAdjustmentService walletAdjustmentService,
+                     RawBetDetailsProducer rawBetDetailsProducer) {
         this.walletService = walletService;
         this.httpService = httpService;
         this.validationService = validationService;
         this.vendorService = vendorService;
         this.vendorLineService = vendorLineService;
         this.walletAdjustmentService = walletAdjustmentService;
+        this.rawBetDetailsProducer = rawBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.TRANSFER)
@@ -80,6 +90,8 @@ public class BetAction {
                     //Bet
                     betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
+                    this.emitRawBetDetail(gameSession, betDto, EventKind.PLACE_BET, betEvent.getBetInformation().getBetId(), httpRequestLog.getRequestBody());
+
                     vo.getMember().setAmount(betDto.getBetAmount().abs().negate());
                     balance = betEvent.getLastBalance();
                     break;
@@ -87,7 +99,11 @@ public class BetAction {
                 case TransferType.PAYOUT:
                     //Settle
                     ResultType updatedResultType = vendorService.calculateResultType(betDto.getBetAmount(), betDto.getWinAmount(), betDto.getJackpotAmount(), false);
+                    //GA-13341 set end round info when round end
+                    this.setEndRoundInfo(betDto);
                     balance = walletService.processBetResult(traceId, gameSession, betDto, updatedResultType, vendorService, httpRequestLog);
+
+                    this.emitRawBetDetail(gameSession, betDto, EventKind.RESULT_UPDATE, httpRequestLog.getGaBetId(), httpRequestLog.getRequestBody());
 
                     vo.getMember().setAmount(betDto.getWinAmount());
                     break;
@@ -141,6 +157,33 @@ public class BetAction {
         return vo;
     }
 
+    private void emitRawBetDetail(GameSession gameSession, BetDto dto, EventKind eventKind, String gaBetId, String body) {
+        String vendorBetId = dto.getVendorBetId();
+        String roundId = dto.getRoundId();
+        if (gameSession == null) {
+            log.warn("Skipping {} raw bet detail emit: gameSession is null eventKind={} vendorBetId={} roundId={}",
+                    EndPoints.VENDOR, eventKind, vendorBetId, roundId);
+            return;
+        }
+        try {
+            rawBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(EndPoints.VENDOR)
+                    .eventKind(eventKind)
+                    .vendorBetId(vendorBetId)
+                    .gaBetId(gaBetId)
+                    .roundId(roundId)
+                    .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                    .agentId(gameSession.getAgentId())
+                    .gameCategoryId(gameSession.getGameCategoryId())
+                    .bodyFormat(EndPoints.BODY_FORMAT)
+                    .requestBody(body)
+                    .build());
+        } catch (Exception e) {
+            log.warn("{} raw bet detail emit failed eventKind={} vendorBetId={} roundId={}: {}",
+                    EndPoints.VENDOR, eventKind, vendorBetId, roundId, e.getMessage());
+        }
+    }
+
     private void doValidation(BetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
@@ -178,5 +221,14 @@ public class BetAction {
         if ("null".equalsIgnoreCase(dto.getDetailDto().getExt())) {
             throw new InvalidRequestException();
         }
+    }
+
+    public void setEndRoundInfo(BetDto betDto) {
+        // if type payout then send round ended info
+        BetResultContextHolder.initialise()
+                .configure(config -> config.setSettleType(SettleType.ROUND));
+        BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+        betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+
     }
 }

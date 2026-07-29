@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -39,6 +40,7 @@ public class BetAction {
     private final WalletService walletService;
     private final VendorService vendorService;
     private final ValidationService validationService;
+    private final RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
@@ -47,7 +49,8 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-
+        BetDto betDto = new BetDto();
+        boolean isRequestExists = false;
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -67,10 +70,17 @@ public class BetAction {
             httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
 
             //map decrypted data(string json) into betDto
-            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
+            betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
+
+            if (requestIdempotentLogService.checkExists(betDto, betDto.getMemberAccount()) == null) {
+                requestIdempotentLogService.create(betDto, betDto.getMemberAccount());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             //calculate vendor threshold. if the time is over 4 sec, direct send error to vendor.
             this.checkVendorTimeout(betDto);
@@ -173,6 +183,9 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(betDto, betDto.getMemberAccount());
+            }
             httpService.end(httpRequestLog, commonVo);
         }
 

@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 @Service
 @Slf4j
 public class CouchbaseRetryQueueService implements RetryQueueService {
@@ -19,8 +21,15 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
 
     @Override
     public Mono<Void> enqueue(HttpCallSpec spec, RetryOrigin origin) {
-        final HttpRetryJob job = toJob(spec, origin);
+        return enqueueJob(toJob(spec, origin));
+    }
 
+    @Override
+    public Mono<Void> enqueueWithDelay(HttpCallSpec spec, RetryOrigin origin, Duration delay) {
+        return enqueueJob(toJobWithDelay(spec, origin, delay));
+    }
+
+    private Mono<Void> enqueueJob(HttpRetryJob job) {
         return Mono.fromRunnable(() -> {
                     try {
                         dataService.insert(job);
@@ -45,6 +54,12 @@ public class CouchbaseRetryQueueService implements RetryQueueService {
         job.setHeaders(spec.getHeaders());
         job.setBodyJson(spec.getBodyJson());
         job.setTransactionTime(spec.getTransactionTime());
+        return job;
+    }
+
+    private static HttpRetryJob toJobWithDelay(HttpCallSpec spec, RetryOrigin origin, Duration delay) {
+        HttpRetryJob job = toJob(spec, origin);
+        job.setNextRunAt(job.getNextRunAt() + delay.toMillis());
         return job;
     }
 

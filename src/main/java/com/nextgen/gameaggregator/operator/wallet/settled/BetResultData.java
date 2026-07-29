@@ -27,6 +27,9 @@ public interface BetResultData {
     default boolean getShouldSettleByBet() {
         return false;
     }
+    default boolean hasMultipleUnsettledBets() {
+        return true;
+    }
 
     /**
      * Logic for new framework to support backward compatibility

@@ -2,10 +2,16 @@ package com.nextgen.gameaggregator.entity.couchbase;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class RoundTxn {
@@ -36,6 +42,37 @@ public class RoundTxn {
     @JsonProperty("doneAt")
     protected String doneAt;
 
+    @JsonProperty("betAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal betAmount;
+
+    @JsonProperty("winAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal winAmount;
+
+    @JsonProperty("jackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal jackpotAmount;
+
+    /**
+     * Capped (agent max-payout applied) counterparts of {@link #winAmount}/{@link #jackpotAmount},
+     * in the same vendor units. Null when this txn was never capped (no cap config, within cap, or
+     * a non-WIN / pre-feature txn) — read via {@link #cappedWinAmountOrVendor()} /
+     * {@link #cappedJackpotAmountOrVendor()} which fall back to the uncapped vendor amount.
+     */
+    @JsonProperty("cappedWinAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal cappedWinAmount;
+
+    @JsonProperty("cappedJackpotAmount")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    protected BigDecimal cappedJackpotAmount;
+
     public RoundTxn() {
         this.state = GameRoundState.UNSETTLED;
     }
@@ -47,12 +84,34 @@ public class RoundTxn {
         roundTxn.setType(txn.getType());
         roundTxn.setGaBetId(txn.getGaBetId());
         roundTxn.setVendorBetId(txn.getVendorBetId());
+        roundTxn.setWinAmount(txn.getWinAmount());
+        roundTxn.setJackpotAmount(txn.getJackpotAmount());
         roundTxn.setException(txn.getException());
         roundTxn.setStatus(txn.getStatus());
         roundTxn.setSentAt(txn.getSentAt());
         roundTxn.setDoneAt(txn.getDoneAt());
+        roundTxn.setBetAmount(txn.getBetAmount());
+        roundTxn.setWinAmount(txn.getWinAmount());
+        roundTxn.setJackpotAmount(txn.getJackpotAmount());
+        // Secondary append-time copy (e.g. BET_N_RESULT already carries the cap). For the
+        // SettleByRound WIN result the cap runs AFTER the slice is appended, so the
+        // authoritative persistence is TxnDelta.finalizeSuccess -> applyTxnDelta.
+        roundTxn.setCappedWinAmount(txn.getCappedWinAmount());
+        roundTxn.setCappedJackpotAmount(txn.getCappedJackpotAmount());
 
         return roundTxn;
+    }
+
+    /** Capped win, falling back to the uncapped vendor amount when no cap was recorded. */
+    @JsonIgnore
+    public BigDecimal cappedWinAmountOrVendor() {
+        return cappedWinAmount != null ? cappedWinAmount : winAmount;
+    }
+
+    /** Capped jackpot, falling back to the uncapped vendor amount when no cap was recorded. */
+    @JsonIgnore
+    public BigDecimal cappedJackpotAmountOrVendor() {
+        return cappedJackpotAmount != null ? cappedJackpotAmount : jackpotAmount;
     }
 
     @JsonIgnore
@@ -106,7 +165,9 @@ public class RoundTxn {
     }
 
     @JsonIgnore
-    public boolean isRollback() { return type == TxnType.ROLLBACK; }
+    public boolean isRollback() {
+        return type == TxnType.ROLLBACK;
+    }
 
     @JsonIgnore
     public boolean isSuccessfulBet() {
@@ -114,8 +175,13 @@ public class RoundTxn {
     }
 
     @JsonIgnore
+    public boolean isSuccessfulResult() {
+        return isResult() && isSuccess();
+    }
+
+    @JsonIgnore
     public boolean isSuccessfulBetOrResult() {
-        return isSuccess() && (isBet() || isResult());
+        return isSuccess() && (isBet() || isResult() || isBetNResult());
     }
 
     @JsonIgnore

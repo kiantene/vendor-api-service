@@ -87,6 +87,7 @@ public class WalletBetResultAction {
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
+            httpRequestLog.setGaBetId(dto.getBetId());
             jsonApiResponse = new Gson().toJson(dto);
 
         }
@@ -184,14 +185,7 @@ public class WalletBetResultAction {
             //5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            if (dto.getBetAmount().compareTo(BigDecimal.ZERO) > 0) { //if bet amount exist in result
-                //operator check negative value
-                BigDecimal balance = responseVo.getData().getBalance();
-                boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-                if (isNegativeBalance) {
-                    throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-                }
-            } //else do nothing
+            this.handleNegativeBalance(responseVo, dto.getBetAmount());
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
@@ -391,5 +385,20 @@ public class WalletBetResultAction {
         if (httpRequestLog != null && httpRequestLog.getOperatorEnd() == null) {
             httpRequestLog.setOperatorEnd(System.currentTimeMillis());
         }
+    }
+
+    private void handleNegativeBalance(WalletBalanceVo responseVo, BigDecimal betAmount) throws InvalidOperatorResponseException {
+        BigDecimal balance = responseVo.getData().getBalance();
+        boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+
+        if (betAmount.compareTo(BigDecimal.ZERO) > 0) { //if bet amount exist in result
+            //operator check negative value
+            if (isNegativeBalance) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+            }
+        } else if (betAmount.compareTo(BigDecimal.ZERO) == 0 && isNegativeBalance) {
+            // GA-13023: Handle negative balance scenario to avoid duplicate bet resend from vendor
+            responseVo.getData().setBalance(BigDecimal.ZERO);
+        }//else do nothing
     }
 }

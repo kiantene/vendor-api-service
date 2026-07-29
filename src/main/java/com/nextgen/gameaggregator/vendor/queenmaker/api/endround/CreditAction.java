@@ -155,8 +155,9 @@ public class CreditAction {
             throw new InvalidRequestException();
         }
 
-        // 4. Validate Debit Transaction is exist, except txtype 590 (End Round)
-        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+        //GA-13303. Validate Debit Transaction is exist, except txtype 590 (End Round) and 560 (Cancel Bet)
+        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND) 
+                && !creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
             vendorService.verifyExistDebitTransaction(gameSession.getVendorId(),
                     gameSession.getVendorPlayerId(),
                     creditTransactionsDto.getRefptxid());

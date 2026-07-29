@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant;
 
 public class Endpoints {
 
+    public static final String VENDOR = "pragmaticplay";
+    public static final String BODY_FORMAT = "form";
     public static final Integer TIMEOUT = 10000;
 
     public static final String PATH = "api/v1/pragmaticplayv2/";

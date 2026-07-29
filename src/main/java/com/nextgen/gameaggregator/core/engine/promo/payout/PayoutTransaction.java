@@ -15,6 +15,7 @@ public class PayoutTransaction extends VendorRequestContext {
     // --- Vendor's values ---
     protected String vendorTransactionId;
     protected String vendorCampaignCode;
+    protected String vendorFreeRoundBonusId;
     protected BigDecimal vendorPayoutAmount;
     protected Long vendorTransactionTime;
 

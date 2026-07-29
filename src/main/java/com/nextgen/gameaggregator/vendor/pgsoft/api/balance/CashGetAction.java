@@ -25,6 +25,7 @@ import org.springframework.web.context.annotation.RequestScope;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 
 @RestController
@@ -77,7 +78,7 @@ public class CashGetAction {
             // Fill VO required values
             parentResponseVo.setData(responseVo);
             responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
-            responseVo.setBalanceAmount(balance);
+            responseVo.setBalanceAmount(balance.setScale(2, RoundingMode.DOWN));
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
 
         } catch (InvalidRequestException invalidRequestException) {

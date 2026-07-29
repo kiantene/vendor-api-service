@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -37,6 +38,8 @@ public class CancelBetAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private RequestIdempotentLogService requestIdempotentLogService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CancelBetVo CancelBetAction(HttpServletRequest request) {
@@ -47,14 +50,24 @@ public class CancelBetAction {
         String traceId = httpRequestLog.getId();
         String vendorPlayerUsername = null;
         String vendorCurrencyCode = null;
+        CancelBetDto cancelBetDto = new CancelBetDto();
+        boolean isRequestExists = false;
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelBetDto cancelBetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
+            cancelBetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cancelBetDto);
+
+            // Request idempotent checking.
+            if (requestIdempotentLogService.checkExists(cancelBetDto, cancelBetDto.getUserId()) == null) {
+                requestIdempotentLogService.create(cancelBetDto, cancelBetDto.getUserId());
+            } else {
+                isRequestExists = true;
+                throw new TransactionStillProcessingException();
+            }
 
             // 2. Verify session token
             GameSession gameSession;
@@ -145,6 +158,9 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if (!isRequestExists) {
+                requestIdempotentLogService.delete(cancelBetDto, cancelBetDto.getUserId());
+            }
             httpService.end(httpRequestLog, cancelBetVo);
         }
         return cancelBetVo;

@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
+import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
+import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -157,6 +161,14 @@ public class BetService {
                     betDto.setSettledByBet(true);
                 }
 
+                // if finished true then send round ended info
+                if (betDto.getFinished().equals("1")) {
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+                }
+
                 if (betDto.getIstips().equals(BetType.TIPS)) {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
@@ -248,6 +260,15 @@ public class BetService {
                 // one time settlement(normal bet) and bonus game
 
                 resultType = getResultType(betDto);
+
+                // if finished true then send round ended info
+                if (betDto.getFinished().equals("1")) {
+                    BetResultContextHolder.initialise()
+                            .configure(config -> config.setSettleType(SettleType.ROUND));
+                    BetResultContext betResultContext = BetResultContextHolder.getBetResultContext();
+                    betResultContext.setRoundEnded(BetStatus.SETTLED.isValueOf(betDto.getBetStatus().code));
+                }
+                
                 balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
             }
 

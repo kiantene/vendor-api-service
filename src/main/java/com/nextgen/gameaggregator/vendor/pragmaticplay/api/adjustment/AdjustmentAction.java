@@ -4,10 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetAdjustmentLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletAdjustmentService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -30,18 +27,20 @@ public class AdjustmentAction {
     private final VendorLineService vendorLineService;
     private final VendorService vendorService;
     private final WalletAdjustmentService walletAdjustmentService;
+    private final WalletService walletService;
 
     @Autowired
     public AdjustmentAction(HttpService httpService,
                             GameSessionService gameSessionService,
                             VendorLineService vendorLineService,
                             VendorService vendorService,
-                            WalletAdjustmentService walletAdjustmentService) {
+                            WalletAdjustmentService walletAdjustmentService, WalletService walletService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
         this.vendorService = vendorService;
         this.walletAdjustmentService = walletAdjustmentService;
+        this.walletService = walletService;
     }
 
     public ResponseVo adjustmentRequest(HttpServletRequest request) {
@@ -75,6 +74,16 @@ public class AdjustmentAction {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
+
+            // 3.1. Due to processAdjustment will force success Insufficient , a validation added for Insufficient balance
+            if (dto.getAmount().signum() < 0) {
+                BigDecimal adjustmentAmount = dto.getAmount().abs();
+                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+                if (balance.compareTo(adjustmentAmount) < 0) {
+                    throw new InsufficientBalanceException("Insufficient balance");
+                }
+            }
 
             // 4. Pass data to wallet service process adjustment
             BigDecimal balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);

@@ -35,7 +35,6 @@ public class AppendDto implements AdjustmentData {
     @NotNull
     private Map<String, Double> betPayoutMap;
     @NotBlank
-    @Size(max = 255)
     private String currency;
     @NotBlank
     @Size(max = 255)

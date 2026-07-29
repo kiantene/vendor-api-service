@@ -23,4 +23,8 @@ public interface TransactionHistoryContext {
     Integer currencyId();
     Long timestamp();
 
+    // Operator Response
+    Integer status();
+    default String walletTxnId() { return null; }
+
 }

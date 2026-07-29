@@ -3,6 +3,9 @@ package com.nextgen.gameaggregator.vendor.saba.api.parlaybet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.data.kafka.betdetails.BetDetailEmitRequest;
+import com.nextgen.gameaggregator.data.kafka.betdetails.EventKind;
+import com.nextgen.gameaggregator.data.kafka.betdetails.RawSportsBetDetailsProducer;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -14,6 +17,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.OddsType;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -38,17 +42,23 @@ public class PlaceBetParlayAction {
     private final HttpService httpService;
     private final SportWalletService sportWalletService;
     private final WalletRequestService walletRequestService;
+    private final RawSportsBetDetailsProducer rawSportsBetDetailsProducer;
+
+    private static final String VENDOR = "saba";
+    private static final String EVENT_FAMILY = "parlaybet";
 
     @Autowired
     public PlaceBetParlayAction(GameSessionService gameSessionService,
                                 HttpService httpService,
                                 SportWalletService sportWalletService,
-                                WalletRequestService walletRequestService) {
+                                WalletRequestService walletRequestService,
+                                RawSportsBetDetailsProducer rawSportsBetDetailsProducer) {
 
         this.gameSessionService = gameSessionService;
         this.httpService = httpService;
         this.sportWalletService = sportWalletService;
         this.walletRequestService = walletRequestService;
+        this.rawSportsBetDetailsProducer = rawSportsBetDetailsProducer;
     }
 
     @PostMapping(path = EndPoints.PLACE_BET_PARLAY)
@@ -75,6 +85,8 @@ public class PlaceBetParlayAction {
             } else {
                 walletRequest = sportWalletService.placeBet(walletRequest);
             }
+
+            this.emitRawBetDetail(walletRequest, httpRequestLog.getRequestBody());
 
             this.buildResponseVo(walletRequest, vo);
 
@@ -111,6 +123,12 @@ public class PlaceBetParlayAction {
         walletRequest.setBetType(BetType.PARLAY_BET.code);
         walletRequest.setVendorPlayerUsername(placeBetParlayDto.getUserId());
         walletRequest.setOperatorTimeoutTiming(EndPoints.BET_TIMEOUT);
+        if (placeBetParlayDto.getTicketDetail() != null && !placeBetParlayDto.getTicketDetail().isEmpty()) {
+            walletRequest.setOddsType(OddsType.convertToSportOddsCode(placeBetParlayDto.getTicketDetail().get(0).getOddsType()));
+        }
+        if ((placeBetParlayDto.getTxns().get(0).getDetail() != null && !placeBetParlayDto.getTxns().get(0).getDetail().isEmpty())) {
+            walletRequest.setOdds(placeBetParlayDto.getTxns().get(0).getDetail().get(0).getOdds());
+        }
 
         if (isMultipleBet(placeBetParlayDto)) {
             List<String> refIdList = new LinkedList<>();
@@ -124,6 +142,7 @@ public class PlaceBetParlayAction {
                 multipleBetList.add(multipleBetDto);
                 refIdList.add(placeBetParlayTxnsDto.getRefId());
             }
+
             // generate md5 vendorBetId and roundId for masterUnsettleBet using joinedRefId
             String md5RefId = VendorService.generateMultipleBetRoundId(refIdList);
             walletRequest.setVendorBetId(md5RefId);
@@ -131,6 +150,34 @@ public class PlaceBetParlayAction {
             walletRequest.setBetIds(multipleBetList);
         } else {
             walletRequest.setExternalTransactionId(VendorService.generateExtTxnId(operationId, refId));
+        }
+    }
+
+    private void emitRawBetDetail(WalletRequest walletRequest, String requestBody) {
+        try {
+            if (walletRequest == null || walletRequest.getVendorBetId() == null || walletRequest.getRoundId() == null) {
+                log.warn("Skipping SABA parlaybet emit: missing required fields vendorBetId={} roundId={}",
+                        walletRequest == null ? null : walletRequest.getVendorBetId(),
+                        walletRequest == null ? null : walletRequest.getRoundId());
+                return;
+            }
+            rawSportsBetDetailsProducer.emit(BetDetailEmitRequest.builder()
+                    .vendor(VENDOR)
+                    .eventFamily(EVENT_FAMILY)
+                    .eventKind(EventKind.PLACE_BET)
+                    .vendorBetId(walletRequest.getVendorBetId())
+                    .gaBetId(walletRequest.getBetId())
+                    .roundId(walletRequest.getRoundId())
+                    .vendorPlayerUsername(walletRequest.getVendorPlayerUsername())
+                    .agentId(walletRequest.getAgentId())
+                    .requestBody(requestBody)
+                    .build());
+        } catch (Exception e) {
+            // emit-only — never block the wallet path
+            log.warn("SABA parlaybet emit failed vendorBetId={} roundId={}: {}",
+                    walletRequest == null ? null : walletRequest.getVendorBetId(),
+                    walletRequest == null ? null : walletRequest.getRoundId(),
+                    e.getMessage());
         }
     }
 

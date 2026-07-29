@@ -4,10 +4,12 @@ import com.nextgen.gameaggregator.constant.RedisKeyConstant;
 import com.nextgen.gameaggregator.constant.WalletServiceConstant;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.core.service.AgentFeatureService;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.enums.Features;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -38,6 +40,12 @@ public class GameRoundService {
     private final ThreadPoolTaskScheduler taskScheduler;
     private final RedisTemplate<String, Object> redisTemplate;
     private final GameRoundProducer gameRoundProducer;
+    private final AgentFeatureService agentFeatureService;
+
+    // to exclude vendors not using unsettled bets (eg. PGSoft)
+    private final List<Integer> asyncEndRoundVendorExclusionList = List.of(
+            2 // PGSoft
+    );
 
     @Value("${endround-process.retry-interval-in-seconds:5}")
     private long retryIntervalInSecondsValue;
@@ -67,14 +75,18 @@ public class GameRoundService {
             return false;
         }
 
-        // only api version 3 will run below logic
-        Integer agentApiVersion = agentApiVersionService.getAgentApiVersion(gameSession.getAgentId());
-        return agentApiVersion != null && agentApiVersion == 3;
+        // only agent feature for Features. will run below logic
+        Integer status = agentFeatureService.getStatus(gameSession.getAgentId(), Features.AGENT_END_ROUND);
+        return status == 1;
     }
 
     public void notifyEndRoundAsync(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         String settledBetRoundId = settledBet.getRoundId();
         Integer settledBetVendorId = settledBet.getVendorId();
+
+        if (asyncEndRoundVendorExclusionList.contains(gameSession.getVendorId())) {
+            return;
+        }
 
         loggingService.logDataFlowByVendor("Inside notifyEndRoundAsync 1", settledBetVendorId, settledBetRoundId, settledBet);
         taskScheduler.schedule(() -> {
@@ -126,36 +138,40 @@ public class GameRoundService {
     }
 
     public void executeRetryEndRound(SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId, int remainingAttempts) {
-        remainingAttempts--;
+        try {
+            remainingAttempts--;
 
-        String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
-        loggingService.logDataFlowByVendor("Inside executeRetryEndRound 1", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
+            String redisKey = String.format(RedisKeyConstant.END_ROUND_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+            List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 1", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
 
-        if (remainingAttempts <= 0) {
-            redisTemplate.delete(redisKey);
-            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 2", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
-            processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
-            return;
-        }
+            if (remainingAttempts <= 0) {
+                redisTemplate.delete(redisKey);
+                loggingService.logDataFlowByVendor("Inside executeRetryEndRound 2", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
+                processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
+                return;
+            }
 
-        int redisUnsettledBetCount = Objects.requireNonNullElse(redisTemplate.opsForSet().size(redisKey), 0L).intValue();
-        loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis value", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForSet().members(redisKey));
-        boolean isMatched = redisUnsettledBetCount != 0 && redisUnsettledBetCount == unsettledBetList.size();
+            int redisUnsettledBetCount = Objects.requireNonNullElse(redisTemplate.opsForSet().size(redisKey), 0L).intValue();
+            loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis value", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForSet().members(redisKey));
+            boolean isMatched = redisUnsettledBetCount != 0 && redisUnsettledBetCount == unsettledBetList.size();
 
-        // if redisUnsettledBetCount is null, mean vendor send endRound after 2 hours of redis key TTL (will proceed to process endRound)
-        if (redisUnsettledBetCount == 0 || isMatched) {
-            redisTemplate.delete(redisKey);
-            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 3", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
-            processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
-        } else {
-            String endRoundRetryCounterRedisKey = String.format(RedisKeyConstant.END_ROUND_RETRY_COUNTER_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
-            redisTemplate.opsForValue().increment(endRoundRetryCounterRedisKey);
-            redisTemplate.expire(endRoundRetryCounterRedisKey, 5L, TimeUnit.MINUTES);
-            final int finalRetryCount = remainingAttempts;
-            loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis retry count", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForValue().get(endRoundRetryCounterRedisKey));
-            loggingService.logDataFlowByVendor("Inside executeRetryEndRound 4", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
-            taskScheduler.schedule(() -> executeRetryEndRound(settledBet, vendorService, gameSession, traceId, finalRetryCount), Instant.now().plusSeconds(this.retryIntervalInSecondsValue));
+            // if redisUnsettledBetCount is null, mean vendor send endRound after 2 hours of redis key TTL (will proceed to process endRound)
+            if (redisUnsettledBetCount == 0 || isMatched) {
+                redisTemplate.delete(redisKey);
+                loggingService.logDataFlowByVendor("Inside executeRetryEndRound 3", settledBet.getVendorId(), settledBet.getRoundId(), unsettledBetList);
+                processEndRound(settledBet, unsettledBetList, vendorService, gameSession, traceId);
+            } else {
+                String endRoundRetryCounterRedisKey = String.format(RedisKeyConstant.END_ROUND_RETRY_COUNTER_REDIS_KEY, settledBet.getRoundId(), settledBet.getVendorGameId(), settledBet.getVendorPlayerId());
+                redisTemplate.opsForValue().increment(endRoundRetryCounterRedisKey);
+                redisTemplate.expire(endRoundRetryCounterRedisKey, 5L, TimeUnit.MINUTES);
+                final int finalRetryCount = remainingAttempts;
+                loggingService.logDataFlowByVendor("Inside executeRetryEndRound redis retry count", settledBet.getVendorId(), settledBet.getRoundId(), redisTemplate.opsForValue().get(endRoundRetryCounterRedisKey));
+                loggingService.logDataFlowByVendor("Inside executeRetryEndRound 4", settledBet.getVendorId(), settledBet.getRoundId(), settledBet);
+                taskScheduler.schedule(() -> executeRetryEndRound(settledBet, vendorService, gameSession, traceId, finalRetryCount), Instant.now().plusSeconds(this.retryIntervalInSecondsValue));
+            }
+        } catch (Exception exception) {
+            log.error("[{}] executeRetryEndRound -> {}", traceId, exception.getMessage());
         }
     }
 

@@ -4,6 +4,7 @@ import com.couchbase.client.core.error.DocumentNotFoundException;
 import com.couchbase.client.java.Collection;
 import com.couchbase.client.java.kv.GetResult;
 import com.couchbase.client.java.kv.MutateInOptions;
+import com.couchbase.client.java.kv.MutateInResult;
 import com.couchbase.client.java.kv.MutateInSpec;
 import com.couchbase.client.java.kv.MutationResult;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
@@ -49,20 +50,32 @@ public class GameRoundRepository {
         return new KvDoc<>(id, res.cas(), content);
     }
 
-    public void appendTxn(String docId, RoundTxn roundTxn, long cas) {
-        collection.mutateIn(docId,
+    // Spec order matters: index 1 is the txnCount increment whose post-mutation
+    // value we read back. The arrayAppend at index 0 places the new RoundTxn at
+    // (newCount - 1) atomically with the increment.
+    //
+    // No CAS is used here because both ops are concurrency-safe on their own:
+    // arrayAppend is order-tolerant, and the counter increment is atomic and
+    // returns each caller its own post-increment value. CAS would only produce
+    // spurious mismatches under contention without preventing any real anomaly.
+    private static final int APPEND_TXN_SPEC_INDEX_TXN_COUNT = 1;
+
+    public int appendTxn(String docId, RoundTxn roundTxn) {
+        MutateInResult result = collection.mutateIn(docId,
                 List.of(
                         MutateInSpec.arrayAppend("transactions", List.of(roundTxn)),
                         MutateInSpec.increment("txnCount", 1)
-                ),
-                MutateInOptions.mutateInOptions().cas(cas)
+                )
         );
+
+        long newCount = result.contentAs(APPEND_TXN_SPEC_INDEX_TXN_COUNT, Long.class);
+        return Math.toIntExact(newCount - 1L);
     }
 
     public void updateTxn(String docId, int idx, Map<String, Object> updates) {
         if (updates.isEmpty()) return;
 
-        final String base = "transactions[" + idx + "]";
+        final String base = txnPath(idx);
         var specs = new ArrayList<MutateInSpec>();
 
         updates.forEach((k, v) -> specs.add(MutateInSpec.upsert(base + "." + k, v)));
@@ -73,25 +86,24 @@ public class GameRoundRepository {
     public GameRound applyTxnDelta(TxnDelta d, Duration ttl) {
         var specs = new ArrayList<MutateInSpec>();
 
+        // Per-slot writes — single-writer per transactions[idx], no contention.
         addTransactionFieldUpdates(specs, d);
+        addPerSlotAmounts(specs, d);
 
+        // Round-level writes — all idempotent upserts, atomic counters, or
+        // monotonic flags. No read-modify-write, so no CAS is needed.
         addGameStateUpdates(specs, d);
 
-        var gr = collection.get(d.docId());
-        var round = gr.contentAs(GameRound.class);
-        var updatedAmounts = calculateUpdatedAmounts(round, d);
-
-        addAmountsUpdate(specs, updatedAmounts);
-
-        var opts = MutateInOptions.mutateInOptions().cas(gr.cas());
-
+        var opts = MutateInOptions.mutateInOptions();
         if (d.isEnded()) {
             opts.expiry(ttl);
         }
 
         collection.mutateIn(d.docId(), specs, opts);
 
-        return round;
+        // Read post-mutation state for the return value. Not in any critical
+        // section — it's just a fresh snapshot for the caller.
+        return collection.get(d.docId()).contentAs(GameRound.class);
     }
 
     public void updateRoundState(String docId, GameRoundState state, Duration ttl) {
@@ -107,8 +119,27 @@ public class GameRoundRepository {
         }
     }
 
+    // Update a txn slot's state and the round-level lastBalance in ONE atomic
+    // mutation. Combining both into a single mutateIn (rather than two writes)
+    // keeps the round-doc failure surface identical to a plain slot-state update.
+    // A null balance is skipped so it never clobbers the last known lastBalance.
+    // Serialized to String to preserve BigDecimal precision, matching applyTxnDelta.
+    public void updateTxnStateAndBalance(String docId, int idx, GameRoundState state, BigDecimal balance) {
+        var specs = new ArrayList<MutateInSpec>();
+        specs.add(MutateInSpec.upsert(txnPath(idx) + ".state", state.name()));
+        if (balance != null) {
+            specs.add(MutateInSpec.upsert("lastBalance", balance.toPlainString()));
+        }
+        collection.mutateIn(docId, specs);
+    }
+
+    /** Subdocument path to the {@code idx}-th entry of the round's transactions array. */
+    private static String txnPath(int idx) {
+        return "transactions[" + idx + "]";
+    }
+
     private void addTransactionFieldUpdates(List<MutateInSpec> specs, TxnDelta d) {
-        final String basePath = "transactions[" + d.idx() + "]";
+        final String basePath = txnPath(d.idx());
 
         // Always update gaBetId
         specs.add(MutateInSpec.upsert(basePath + ".gaBetId", d.gaBetId()));
@@ -136,6 +167,23 @@ public class GameRoundRepository {
 
         d.lastBalance().ifPresent(balance ->
                 specs.add(MutateInSpec.upsert("lastBalance", balance.toPlainString())));
+
+        d.effectiveTurnover().ifPresent(effectiveTurnover ->
+                specs.add(MutateInSpec.upsert("effectiveTurnover", effectiveTurnover.toPlainString())));
+    }
+
+    private void addPerSlotAmounts(List<MutateInSpec> specs, TxnDelta d) {
+        final String basePath = txnPath(d.idx());
+        d.betDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".betAmount", v.toPlainString())));
+        d.winDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".winAmount", v.toPlainString())));
+        d.jackpotDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".jackpotAmount", v.toPlainString())));
+        d.cappedWinDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".cappedWinAmount", v.toPlainString())));
+        d.cappedJackpotDelta().ifPresent(v ->
+                specs.add(MutateInSpec.upsert(basePath + ".cappedJackpotAmount", v.toPlainString())));
     }
 
     private void addTimeFieldUpdate(List<MutateInSpec> specs, String base, TxnDelta d) {
@@ -153,35 +201,4 @@ public class GameRoundRepository {
         });
     }
 
-    private void addAmountsUpdate(List<MutateInSpec> specs, AggregateAmounts amounts) {
-        specs.add(MutateInSpec.upsert("betAmount", amounts.bet().toPlainString()));
-        specs.add(MutateInSpec.upsert("winAmount", amounts.win().toPlainString()));
-        specs.add(MutateInSpec.upsert("jackpotAmount", amounts.jackpot().toPlainString()));
-    }
-
-    private AggregateAmounts calculateUpdatedAmounts(GameRound gameRound, TxnDelta d) {
-        BigDecimal bet = Optional.ofNullable(gameRound.getBetAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal win = Optional.ofNullable(gameRound.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal jackpot = Optional.ofNullable(gameRound.getJackpotAmount()).orElse(BigDecimal.ZERO);
-
-        // Apply deltas
-        if (d.betDelta().isPresent()) {
-            bet = bet.add(d.betDelta().get());
-        }
-        if (d.winDelta().isPresent()) {
-            win = win.add(d.winDelta().get());
-        }
-        if (d.jackpotDelta().isPresent()) {
-            jackpot = jackpot.add(d.jackpotDelta().get());
-        }
-
-        // Update the GameRound object in-place
-        gameRound.setBetAmount(bet);
-        gameRound.setWinAmount(win);
-        gameRound.setJackpotAmount(jackpot);
-
-        return new AggregateAmounts(bet, win, jackpot);
-    }
-
-    private record AggregateAmounts(BigDecimal bet, BigDecimal win, BigDecimal jackpot) {}
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.config;
 
+import com.nextgen.gameaggregator.data.kafka.betdetails.DropAndCountRejectionPolicy;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
@@ -34,6 +35,67 @@ public class AsyncConfig {
                 ex.getThreadPoolExecutor(),
                 "endround.executor",
                 Tags.of("executor", "endRound")
+        );
+    }
+
+    /**
+     * Async executor for {@code RawSportsBetDetailsProducer.emit}. Pipeline-isolated
+     * from the livecasino executor so a stuck topic in one pipeline cannot starve
+     * the other.
+     *
+     * <p>Saturation behaviour is non-blocking by design: {@link DropAndCountRejectionPolicy}
+     * silently drops + counts, never throws, never runs the task on the caller. With
+     * {@code @Async} on a {@code void} method this means the betting-request thread
+     * is never affected by Kafka back-pressure.
+     */
+    @Bean(name = "rawSportsBetDetailsExecutor")
+    public Executor rawSportsBetDetailsExecutor(MeterRegistry registry) {
+        // Sized for ~10k QPS of bet-detail emits. Note the JDK ThreadPoolExecutor quirk:
+        // with a bounded LinkedBlockingQueue, threads beyond corePoolSize are only spun up
+        // once the queue is FULL — so the queue absorbs sub-second bursts and maxPoolSize
+        // engages only under sustained pressure. 5000-slot queue = ~0.5s buffering at 10k QPS,
+        // small enough that DropAndCountRejectionPolicy fires quickly when something is wrong.
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(8);
+        ex.setMaxPoolSize(32);
+        ex.setQueueCapacity(5000);
+        ex.setThreadNamePrefix("raw-sports-bet-details-emit-");
+        ex.setRejectedExecutionHandler(new DropAndCountRejectionPolicy("raw_sports_bet_details", registry));
+        ex.setWaitForTasksToCompleteOnShutdown(true);
+        ex.setAwaitTerminationSeconds(5);
+        ex.initialize();
+
+        return ExecutorServiceMetrics.monitor(
+                registry,
+                ex.getThreadPoolExecutor(),
+                "raw_sports_bet_details.executor",
+                Tags.of("pipeline", "raw_sports_bet_details")
+        );
+    }
+
+    /**
+     * Async executor for {@code RawBetDetailsProducer.emit} (livecasino). Pipeline-isolated
+     * from the sports executor: separate threads, separate queue, separate metrics — a stuck
+     * topic in one pipeline cannot consume the workers or queue slots of the other.
+     */
+    @Bean(name = "rawBetDetailsExecutor")
+    public Executor rawBetDetailsExecutor(MeterRegistry registry) {
+        // Same sizing as rawSportsBetDetailsExecutor — see that bean for the rationale.
+        ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
+        ex.setCorePoolSize(8);
+        ex.setMaxPoolSize(32);
+        ex.setQueueCapacity(5000);
+        ex.setThreadNamePrefix("raw-bet-details-emit-");
+        ex.setRejectedExecutionHandler(new DropAndCountRejectionPolicy("raw_bet_details", registry));
+        ex.setWaitForTasksToCompleteOnShutdown(true);
+        ex.setAwaitTerminationSeconds(5);
+        ex.initialize();
+
+        return ExecutorServiceMetrics.monitor(
+                registry,
+                ex.getThreadPoolExecutor(),
+                "raw_bet_details.executor",
+                Tags.of("pipeline", "raw_bet_details")
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.playtech.api.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -37,6 +38,9 @@ public class CommonGameRoundDto extends CommonDto implements BetResultData, Roll
     @Size(max = 255)
     @JsonProperty("gameCodeName")
     private String gameCodeName;
+
+    @JsonIgnore
+    private Long timeStamp = System.currentTimeMillis();
 
 
     @Override
@@ -101,7 +105,7 @@ public class CommonGameRoundDto extends CommonDto implements BetResultData, Roll
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return this.getVendorSettleTime();
     }
 
     @Override
@@ -116,7 +120,7 @@ public class CommonGameRoundDto extends CommonDto implements BetResultData, Roll
         } else if (gameRoundClose != null && gameRoundClose.getDate() != null) {
             return VendorService.convertStringToMillis(gameRoundClose.getDate());
         }
-        return System.currentTimeMillis();
+        return timeStamp;
     }
 
     @Override

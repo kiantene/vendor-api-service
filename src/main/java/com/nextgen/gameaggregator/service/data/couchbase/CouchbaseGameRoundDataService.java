@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service.data.couchbase;
 
-import com.couchbase.client.core.error.CasMismatchException;
 import com.couchbase.client.core.error.DocumentExistsException;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.KvDoc;
@@ -12,6 +11,7 @@ import com.nextgen.gameaggregator.service.data.model.TxnDelta;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -53,8 +53,10 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     }
 
     @Override
-    public void appendTxn(String docId, RoundTxn roundTxn, long cas) {
-        runWithCasRetry(() -> repo.appendTxn(docId, roundTxn, cas));
+    public int appendTxn(String docId, RoundTxn roundTxn) {
+        // No CAS retry needed — appendTxn is concurrency-safe at the server
+        // (commutative arrayAppend + atomic counter increment).
+        return repo.appendTxn(docId, roundTxn);
     }
 
     @Override
@@ -69,19 +71,12 @@ public class CouchbaseGameRoundDataService implements GameRoundDataService {
     }
 
     @Override
-    public GameRound applyTxnDelta(TxnDelta delta, Duration ttl) {
-        return repo.applyTxnDelta(delta, ttl);
+    public void updateTxnStateAndBalance(String docId, int idx, GameRoundState state, BigDecimal balance) {
+        repo.updateTxnStateAndBalance(docId, idx, state, balance);
     }
 
-    private static void runWithCasRetry(Runnable op) {
-        int attempts = 0;
-        while (true) {
-            try {
-                op.run();
-                return;
-            } catch (CasMismatchException e) {
-                if (++attempts >= 3) throw e;
-            }
-        }
+    @Override
+    public GameRound applyTxnDelta(TxnDelta delta, Duration ttl) {
+        return repo.applyTxnDelta(delta, ttl);
     }
 }

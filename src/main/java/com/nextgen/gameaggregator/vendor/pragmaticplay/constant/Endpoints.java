@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.constant;
 
 public class Endpoints {
+    public static final String VENDOR = "pragmaticplay";
+    public static final String BODY_FORMAT = "form";
     public static final String CLASS_NAME = "pragmaticplay";
     public static final Integer TIMEOUT = 10000;
 

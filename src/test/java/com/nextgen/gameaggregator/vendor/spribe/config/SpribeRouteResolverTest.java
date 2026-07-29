@@ -7,13 +7,14 @@ import com.nextgen.gameaggregator.core.service.AgentPlayerDataService;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.vendor.routing.VendorRouteContext;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
-import com.nextgen.gameaggregator.service.AgentApiVersionService;
 import com.nextgen.gameaggregator.service.business.GameTransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.Optional;
 import java.util.Set;
@@ -22,10 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SpribeRouteResolverTest {
 
-    @Mock
-    private AgentApiVersionService agentApiVersionService;
     @Mock
     private AgentPlayerDataService agentPlayerDataService;
     @Mock
@@ -48,7 +48,6 @@ class SpribeRouteResolverTest {
     void setUp() {
         resolver = new SpribeRouteResolver(
                 new ObjectMapper(),
-                agentApiVersionService,
                 agentPlayerDataService,
                 vendorPlayerDataService,
                 gameTransactionService,
@@ -64,6 +63,7 @@ class SpribeRouteResolverTest {
                 contextWithContentType("text/plain", VALID_BODY)
         );
         assertThat(result).isEmpty();
+        verifyPlayerLookupSkipped();
     }
 
     @Test
@@ -72,6 +72,7 @@ class SpribeRouteResolverTest {
                 contextWithContentType("application/json", " ")
         );
         assertThat(result).isEmpty();
+        verifyPlayerLookupSkipped();
     }
 
     @Test
@@ -81,6 +82,7 @@ class SpribeRouteResolverTest {
                 contextWithContentType("application/json", body)
         );
         assertThat(result).isEmpty();
+        verifyPlayerLookupSkipped();
     }
 
     @Test
@@ -89,41 +91,30 @@ class SpribeRouteResolverTest {
                 contextWithContentType("application/json", "{invalid-json")
         );
         assertThat(result).isEmpty();
-    }
-
-    // ---------------- API Version ----------------
-
-    @Test
-    void shouldReturnEmpty_whenAgentApiVersionNot3() {
-        mockAgentLookup(2);
-
-        Optional<String> result = resolver.resolveTargetUri(
-                contextWithOriginalUri("/withdraw", VALID_BODY)
-        );
-        assertThat(result).isEmpty();
+        verifyPlayerLookupSkipped();
     }
 
     // ---------------- Normal Routing (not special endpoint) ----------------
 
     @Test
     void shouldRouteViaV1ToV2_whenNotSpecialEndpoint() {
-        mockAgentLookup(3);
-
+        mockAgentLookup();
         when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of()); // empty → not special
 
         Optional<String> result = resolver.resolveTargetUri(
                 contextWithOriginalUri("/withdraw", VALID_BODY)
         );
 
-        // result may be empty depending on DefaultV1ToV2RouteResolver
+        // Not a special endpoint → routed via the v1→v2 resolver, never the txn store.
         assertThat(result).isInstanceOf(Optional.class);
+        verify(gameTransactionService, never()).get(any(String.class));
     }
 
     // ---------------- Special Routing ----------------
 
     @Test
     void shouldReturnEmpty_whenGameTransactionNotFound() {
-        mockAgentLookup(3);
+        mockAgentLookup();
         when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/withdraw"));
         when(spribeConfig.getVendorClassName()).thenReturn("VENDOR");
 
@@ -133,13 +124,14 @@ class SpribeRouteResolverTest {
                 contextWithOriginalUri("/withdraw", VALID_BODY)
         );
 
+        // Legacy-framework bet (no txn) → not routed to v2.
         assertThat(result).isEmpty();
         verify(gameTransactionService).get("VENDOR::BET::tx123");
     }
 
     @Test
     void shouldRouteViaV1ToV2_whenGameTransactionFound() {
-        mockAgentLookup(3);
+        mockAgentLookup();
         when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/withdraw"));
         when(spribeConfig.getVendorClassName()).thenReturn("VENDOR");
 
@@ -149,9 +141,47 @@ class SpribeRouteResolverTest {
                 contextWithOriginalUri("/withdraw", VALID_BODY)
         );
 
-        // Just verify the branch executes
+        // New-framework bet (txn present) → delegated to the v1→v2 resolver.
         assertThat(result).isInstanceOf(Optional.class);
         verify(gameTransactionService).get("VENDOR::BET::tx123");
+    }
+
+    // ---------------- Freebet Routing ----------------
+
+    @Test
+    void shouldBypassGameTransactionCheck_whenActionIsFreebetAndVendorBetIdAbsent() {
+        mockAgentLookup(3);
+        when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/deposit"));
+
+        String freebetBody = """
+                {
+                  "user_id": "u1",
+                  "action": "freebet"
+                }
+                """;
+
+        resolver.resolveTargetUri(contextWithOriginalUri("/deposit", freebetBody));
+
+        // Route resolver must not consult game transaction store for freebet deposits.
+        verify(gameTransactionService, never()).get(any(String.class));
+    }
+
+    @Test
+    void shouldReturnEmpty_whenNoVendorBetIdAndActionIsNotFreebet() {
+        mockAgentLookup(3);
+        when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/deposit"));
+
+        String unknownBody = """
+                {
+                  "user_id": "u1",
+                  "action": "unknownaction"
+                }
+                """;
+
+        Optional<String> result = resolver.resolveTargetUri(contextWithOriginalUri("/deposit", unknownBody));
+
+        assertThat(result).isEmpty();
+        verify(gameTransactionService, never()).get(any(String.class));
     }
 
     // ---------------- Exception Handling ----------------
@@ -170,11 +200,11 @@ class SpribeRouteResolverTest {
 
     @Test
     void shouldReturnEmpty_whenGameTransactionServiceThrows() {
-        mockAgentLookup(3);
+        mockAgentLookup();
         when(spribeConfig.getRoutingEndPoints()).thenReturn(Set.of("/withdraw"));
         when(spribeConfig.getVendorClassName()).thenReturn("VENDOR");
 
-        when(gameTransactionService.get((String)any()))
+        when(gameTransactionService.get((String) any()))
                 .thenThrow(new RuntimeException("CB down"));
 
         Optional<String> result = resolver.resolveTargetUri(
@@ -182,6 +212,7 @@ class SpribeRouteResolverTest {
         );
 
         assertThat(result).isEmpty();
+        verify(gameTransactionService).get("VENDOR::BET::tx123");
     }
 
     // ---------------- Helpers ----------------
@@ -206,15 +237,24 @@ class SpribeRouteResolverTest {
         );
     }
 
-    private void mockAgentLookup(int apiVersion) {
+    private void mockAgentLookup() {
         VendorPlayer vendorPlayer = mock(VendorPlayer.class);
         AgentPlayer agentPlayer = mock(AgentPlayer.class);
 
         when(vendorPlayer.getAgentPlayerId()).thenReturn(10L);
-        when(agentPlayer.getAgentId()).thenReturn(99);
 
         when(vendorPlayerDataService.getByUsername("u1")).thenReturn(vendorPlayer);
         when(agentPlayerDataService.get(10L)).thenReturn(agentPlayer);
-        when(agentApiVersionService.getAgentApiVersion(99)).thenReturn(apiVersion);
+    }
+
+    // Added due to conflict with other branchs
+    @Deprecated
+    private void mockAgentLookup(int version) {
+        mockAgentLookup();
+    }
+
+    private void verifyPlayerLookupSkipped() {
+        verify(vendorPlayerDataService, never()).getByUsername(any());
+        verify(gameTransactionService, never()).get(any(String.class));
     }
 }

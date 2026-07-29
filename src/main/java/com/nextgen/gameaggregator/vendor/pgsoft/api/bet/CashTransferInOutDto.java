@@ -113,6 +113,7 @@ public class CashTransferInOutDto implements BetResultData {
     private Integer bonusId;
     private BigDecimal bonusBalanceAmount;
     private BigDecimal bonusRatioAmount;
+    @NotNull
     private BigDecimal realTransferAmount;
 
     @Override

@@ -13,7 +13,9 @@ import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.core.service.GameSessionDataService;
 import com.nextgen.gameaggregator.core.service.SettledBetDataService;
+import com.nextgen.gameaggregator.core.validator.VendorRequestValidator;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -41,6 +43,7 @@ import java.util.function.Consumer;
 public class WalletRollbackServiceWrapper {
     private static final String LOG_GROUP = "wallet";
     private static final String ACTION = "rollback";
+    private static final String REQUEST_TYPE = "WalletRollbackAction"; // For HttpRequestLog Backward Compatability
     private static final long DEFAULT_DELAY_MILLISECONDS = 1000L;
     private final DuplicateRequestGuard guard;
     private final BetRollbackContextEnricher enricher;
@@ -53,6 +56,8 @@ public class WalletRollbackServiceWrapper {
     private final WalletExceptionTranslator walletExceptionTranslator;
     private final LogContextService logContextService;
     private final GameTransactionService gameTransactionService;
+    private final GameSessionDataService gameSessionDataService;
+    private final VendorRequestValidator vendorRequestValidator;
 
     public PlayerBalanceData process() {
         LogContext logContext = LogContextHolder.get();
@@ -61,6 +66,12 @@ public class WalletRollbackServiceWrapper {
         GameTransaction txn = null;
 
         try {
+            /**
+             * Enriching HttpRequestLog for backward compatability
+             * TO BE REMOVED when HttpRequestLog is completely removed
+             */
+            enrichHttpRequestLog(httpRequestLog, context);
+
             txn = guard.ensureNotDuplicate(
                     TxnType.ROLLBACK,
                     logContext.getVendorClassName(),
@@ -136,6 +147,12 @@ public class WalletRollbackServiceWrapper {
     private PlayerBalanceData processRollback(BetRollbackContext context, GameTransaction txn) {
         BetRollbackConfig config = state().getConfig();
 
+        if (context.getVendorSessionToken() != null && config.isValidateSessionToken()) {
+            GameSession gameSession = gameSessionDataService.getByVendorToken(context.getVendorSessionToken(), context);
+            //validate vendor request
+            vendorRequestValidator.validateVendorRequestWithGameSession(gameSession, context);
+        }
+
         if (config.isRollbackByRound()) {
             return processor.processRollbackByRound(context, txn, config);
         }
@@ -148,7 +165,8 @@ public class WalletRollbackServiceWrapper {
             try {
                 GameRound round = gameRoundService.getOrThrow(txn.getRoundDocId());
 
-                return balanceProcessor.process(context.getTraceId(), round);
+                // TODO: get Balance from GameTransaction?
+                return balanceProcessor.process(logContext.getTraceId(), round);
             } catch (Exception exception) {
                 logContext.setException(exception);
                 return PlayerBalanceData.getDefault(
@@ -169,7 +187,7 @@ public class WalletRollbackServiceWrapper {
 
         RuntimeException runtimeException = translateException(ex, context);
         markTransactionErrorAsync(txn, runtimeException);
-        
+
         return runtimeException;
     }
 
@@ -248,5 +266,14 @@ public class WalletRollbackServiceWrapper {
                 balance,
                 httpRequestLog.getOperatorEnd()
         );
+    }
+
+    private void enrichHttpRequestLog(HttpRequestLog httpRequestLog, BetRollbackContext context) {
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(REQUEST_TYPE);
+
+            httpRequestLog.setVendorBetId(context.getVendorBetId());
+            httpRequestLog.setRoundId(context.getRoundId());
+        }
     }
 }

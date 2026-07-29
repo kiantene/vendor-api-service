@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.lucky365.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.lucky365.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.lucky365.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.lucky365.response.ErrorResponse;
+import com.nextgen.gameaggregator.vendor.lucky365.util.LoginIds;
 import com.nextgen.gameaggregator.vendor.lucky365.util.Lucky365Exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
@@ -37,13 +38,19 @@ public class Lucky365SignatureValidator extends AbstractVendorSignatureValidator
     @Override
     public ValidationResult validate(HttpServletRequest request, Map<String, String> formFields, String rawBody) throws SignatureValidationException {
         String vendorSignature = requireField(this.resolveField("Signature", rawBody, formFields), "signature").toLowerCase(Locale.ROOT);
-        String username = requireField(this.resolveField("LoginId", rawBody, formFields), "loginId");
+        String loginId = requireField(this.resolveField("LoginId", rawBody, formFields), "loginId");
         String id = requireField(this.resolveField("ID", rawBody, formFields), "id");
         String method = requireField(this.resolveField("Method", rawBody, formFields), "method");
 
-        String secretKey = getCredentialValueByUsername(username, Credentials.SECRET_KEY);
-        String sn = getCredentialValueByUsername(username, Credentials.SERIAL_NUM);
-        String encryptString = id + method + sn + username + secretKey;
+        // Look up the player with the normalised (lower-cased) LoginId: the username column is
+        // case-sensitive and stored lower-case, so a raw upper-cased LoginId misses on a cache miss.
+        String lookupUsername = LoginIds.forLookup(loginId);
+        String secretKey = getCredentialValueByUsername(lookupUsername, Credentials.SECRET_KEY);
+        String sn = getCredentialValueByUsername(lookupUsername, Credentials.SERIAL_NUM);
+
+        // Sign with the RAW LoginId (exact case as received): MD5 is byte-sensitive and the vendor
+        // computes its signature over the same value it sends.
+        String encryptString = id + method + sn + loginId + secretKey;
         String signature = sign(encryptString, "");
 
         checkSecret(vendorSignature, signature);

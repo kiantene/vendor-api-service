@@ -15,8 +15,10 @@ public class TournamentPayoutResponse {
     private BigDecimal cash;        // Real balance of the player
     private BigDecimal bonus;       // Bonus balance of the player
 
-    private Integer error;      // Response status
-    private String description; // Response status short description
+    @Builder.Default
+    private Integer error = ResponseCode.SUCCESS.code;      // Response status
+    @Builder.Default
+    private String description = ResponseCode.SUCCESS.description; // Response status short description
 
     @JsonIgnore
     private ResponseCode responseCode;

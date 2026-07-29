@@ -8,10 +8,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.nextgen.gameaggregator.enums.GameRoundState;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+
+import static java.math.BigDecimal.ZERO;
+import static java.util.Objects.requireNonNullElse;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,20 +52,33 @@ public class GameRound {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal lastBalance;
 
+    // Legacy stored aggregates. No longer written by applyTxnDelta — kept as
+    // private fields purely so Jackson can deserialize legacy JSON without
+    // failing. Lombok's auto-getter is suppressed (see @Getter(AccessLevel.NONE))
+    // and the manual getters below delegate to computeTotals() so any straggling
+    // caller of round.getBetAmount() etc. receives the live derived total.
     @JsonProperty("betAmount")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    @Getter(AccessLevel.NONE)
     private BigDecimal betAmount;
 
     @JsonProperty("winAmount")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    @Getter(AccessLevel.NONE)
     private BigDecimal winAmount;
 
     @JsonProperty("jackpotAmount")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    @Getter(AccessLevel.NONE)
     private BigDecimal jackpotAmount;
+
+    @JsonProperty("effectiveTurnover")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    private BigDecimal effectiveTurnover;
 
     @JsonProperty("agentMeta")
     private AgentMeta agentMeta;
@@ -136,6 +155,11 @@ public class GameRound {
         return Boolean.TRUE.equals(isEnded);
     }
 
+    @JsonIgnore
+    public BigDecimal getLastBalanceWithDefault() {
+        return Optional.ofNullable(lastBalance).orElse(BigDecimal.ZERO);
+    }
+
     public void setBetAmount(BigDecimal betAmount) {
         this.betAmount = (betAmount == null) ? BigDecimal.ZERO : betAmount;
     }
@@ -149,5 +173,108 @@ public class GameRound {
 
         this.transactions = transactions;
         this.txnCount = transactions.size();
+    }
+
+    /**
+     * Per-slot amount aggregates derived from transactions[]. Replaces the
+     * previous read-modify-write on the round-level betAmount/winAmount/
+     * jackpotAmount, which contended under concurrent settles.
+     */
+    public record Totals(BigDecimal bet, BigDecimal win, BigDecimal jackpot) {}
+
+    /**
+     * @deprecated The stored round-level betAmount is no longer maintained.
+     * Use {@link #computeTotals()} for correctness on new rounds.
+     */
+    @Deprecated
+    @JsonIgnore
+    public BigDecimal getBetAmount() { return computeTotals().bet(); }
+
+    /**
+     * @deprecated The stored round-level winAmount is no longer maintained.
+     * Use {@link #computeTotals()} for correctness on new rounds.
+     */
+    @Deprecated
+    @JsonIgnore
+    public BigDecimal getWinAmount() { return computeTotals().win(); }
+
+    /**
+     * @deprecated The stored round-level jackpotAmount is no longer maintained.
+     * Use {@link #computeTotals()} for correctness on new rounds.
+     */
+    @Deprecated
+    @JsonIgnore
+    public BigDecimal getJackpotAmount() { return computeTotals().jackpot(); }
+
+    @JsonIgnore
+    public Totals computeTotals() {
+        BigDecimal bet = ZERO, win = ZERO, jackpot = ZERO;
+        if (transactions != null) {
+            for (RoundTxn t : transactions) {
+                if (!t.isSuccess()) continue;
+                switch (t.getType()) {
+                    case BET -> {
+                        // A refunded BET has been cancelled by a ROLLBACK — exclude from totals.
+                        if (!t.isRefunded()) {
+                            bet = bet.add(requireNonNullElse(t.getBetAmount(), ZERO));
+                        }
+                    }
+                    case RESULT -> {
+                        win     = win.add(requireNonNullElse(t.getWinAmount(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.getJackpotAmount(), ZERO));
+                    }
+                    case BET_N_RESULT -> {
+                        bet     = bet.add(requireNonNullElse(t.getBetAmount(),     ZERO));
+                        win     = win.add(requireNonNullElse(t.getWinAmount(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.getJackpotAmount(), ZERO));
+                    }
+                    // ROLLBACK is a no-op here — the BET it targets is already marked REFUNDED
+                    // (markRefunded runs before the rollback reaches SUCCESS) and excluded above.
+                    // DEBIT, CREDIT, PAYOUT are wallet-level ops — not part of bet/win/jackpot.
+                    case ROLLBACK, DEBIT, CREDIT, PAYOUT -> {}
+                }
+            }
+        }
+        return new Totals(bet, win, jackpot);
+    }
+
+    /**
+     * Same aggregation as {@link #computeTotals()} but using the per-slot CAPPED win/jackpot
+     * (falling back to the uncapped vendor amount when a slot was never capped). Bet is never
+     * capped, so it matches {@code computeTotals().bet()}. Feeds the MAIN bet-history record;
+     * {@link #computeTotals()} feeds the uncapped bet-history record.
+     */
+    @JsonIgnore
+    public Totals computeCappedTotals() {
+        BigDecimal bet = ZERO, win = ZERO, jackpot = ZERO;
+        if (transactions != null) {
+            for (RoundTxn t : transactions) {
+                if (!t.isSuccess()) continue;
+                switch (t.getType()) {
+                    case BET -> {
+                        if (!t.isRefunded()) {
+                            bet = bet.add(requireNonNullElse(t.getBetAmount(), ZERO));
+                        }
+                    }
+                    case RESULT -> {
+                        win     = win.add(requireNonNullElse(t.cappedWinAmountOrVendor(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.cappedJackpotAmountOrVendor(), ZERO));
+                    }
+                    case BET_N_RESULT -> {
+                        bet     = bet.add(requireNonNullElse(t.getBetAmount(),     ZERO));
+                        win     = win.add(requireNonNullElse(t.cappedWinAmountOrVendor(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.cappedJackpotAmountOrVendor(), ZERO));
+                    }
+                    case ROLLBACK, DEBIT, CREDIT, PAYOUT -> {}
+                }
+            }
+        }
+        return new Totals(bet, win, jackpot);
+    }
+
+    @JsonIgnore
+    public boolean hasResultTransaction() {
+        return this.transactions != null && this.transactions.stream()
+                .anyMatch(txn -> (txn.isResult() || txn.isBetNResult()) && txn.isSuccess());
     }
 }

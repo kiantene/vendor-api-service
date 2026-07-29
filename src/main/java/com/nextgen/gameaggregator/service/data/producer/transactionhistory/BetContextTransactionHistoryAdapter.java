@@ -5,9 +5,11 @@ import com.nextgen.gameaggregator.core.engine.wallet.bet.BetContext;
 public final class BetContextTransactionHistoryAdapter implements TransactionHistoryContext {
 
     private final BetContext ctx;
+    private final Exception ex;
 
-    public BetContextTransactionHistoryAdapter(BetContext ctx) {
+    public BetContextTransactionHistoryAdapter(BetContext ctx, Exception ex) {
         this.ctx = ctx;
+        this.ex = ex;
     }
 
     @Override public String externalTransactionId() {
@@ -68,5 +70,9 @@ public final class BetContextTransactionHistoryAdapter implements TransactionHis
 
     @Override public Long timestamp() {
         return ctx.getTimestamp();
+    }
+
+    @Override public Integer status() {
+        return ex == null ? 0 : 1;
     }
 }

@@ -1,24 +1,30 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplayv2.api.gameurl;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.enums.Region;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.BaseGameUrlService;
+import com.nextgen.gameaggregator.util.GeoIpUtil;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplayv2.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 @Slf4j
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
+    @Value("${region:}")
+    private String region;
 
     public GameUrlService() {
         super(GameUrlVo.class);
@@ -44,6 +50,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("technology", "H5");
         formData.add("token", gameSession.getToken());
         formData.add("externalPlayerId", gameSession.getVendorPlayerUsername());
+        formData.add("country", this.getByCountryCode(gameSession.getIpAddress()).toUpperCase());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
         formData.add("lobbyUrl", gameSession.getLobbyUrl());
@@ -51,5 +58,22 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("hash", hash);
 
         return formData;
+    }
+
+    private String getByCountryCode(String ip) {
+
+        //TEMPORARY FIXES GA-13725
+        if (region.equalsIgnoreCase("CIS")) {
+            return "FI";
+        }
+
+        String countryCode = GeoIpUtil.getCountryCode(ip);
+        if (countryCode == null || countryCode.isBlank()) {
+            countryCode = Region.getCountryCodeByRegion(region);
+        }
+        if (countryCode == null || countryCode.isBlank()) {
+            countryCode = Locale.getDefault().getCountry();
+        }
+        return countryCode.isBlank() ? "US" : countryCode;
     }
 }

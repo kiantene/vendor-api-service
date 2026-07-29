@@ -1,12 +1,15 @@
 package com.nextgen.gameaggregator.core.engine.wallet.result;
 
+import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
+import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.enums.GameRoundState;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -34,10 +37,18 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         BetResultWrapperContext wrapperContext = BetResultContextHolder.getRequired();
         if (wrapperContext.getVendorService() == null) {
             wrapperContext.setVendorService(InternalVendorService.getInstance(applicationContext));
+            try {
+                wrapperContext.getVendorService().verifyIsPreProcessingVendorGame(context.getVendorGameId());
+            } catch (GameNotSupportedException e) {
+                throw new InternalServerException(e.getMessage(), e);
+            }
         }
 
         // populateLogContext must be run in doEnrich so that context object will contain all required fields
-        LogContextService.populateLogContext(LogContextHolder.get(), context);
+        LogContext logContext = LogContextHolder.get();
+        LogContextService.populateLogContext(logContext, context);
+
+        context.setTraceId(logContext.getTraceId());
     }
 
     public void enrichByGameSession(BetResultContext context, GameSession gameSession, BetResultConfig config) {
@@ -71,6 +82,7 @@ class BetResultContextEnricher extends BaseEnricher<BetResultContext> {
         txn.setBetAmount(context.getBetAmount());
         txn.setWinAmount(context.getWinAmount());
         txn.setJackpotAmount(context.getJackpotAmount());
+        txn.setEffectiveTurnover(context.getEffectiveTurnover());
         txn.setBetTime(context.getVendorBetTime());
         txn.setSettleTime(context.getVendorSettleTime());
         txn.setState(GameRoundState.SETTLED);

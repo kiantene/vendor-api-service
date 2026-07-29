@@ -2,12 +2,14 @@ package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
+import com.nextgen.gameaggregator.core.idempotency.RequestIdempotencyService;
 import com.nextgen.gameaggregator.core.logging.LogContext;
 import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.function.Consumer;
 
 @Service
@@ -18,35 +20,38 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private final DuplicateRequestGuard guard;
     private final PromoPayoutContextEnricher enricher;
     private final PromoPayoutProcessor processor;
+    private final RequestIdempotencyService requestIdempotencyService;
 
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
 
         try {
-            guard.ensureNotDuplicate(logContext.getVendorClassName(), ACTION, context.getIdempotencyKey());
-
-            if (!hasPayout(context)) { // if no payout amount, then skip and return default value to vendor
-                return PlayerBalanceData.getDefault(
-                        context.getVendorPlayerUsername(),
-                        context.getVendorCurrency()
-                );
-            }
+            guard.ensureNotDuplicate(
+                    logContext.getVendorClassName(),
+                    ACTION,
+                    context.getIdempotencyKey()
+            );
 
             enricher.enrich(context);
 
             PromoPayoutConfig config = state().getConfig();
 
+            // normal flow
             if (!config.isBatch()) {
-                return processor.process(context);
+                PlayerBalanceData result = processor.process(context);
+                rememberResponseData(context, result);
+                return result;
             }
 
             processor.processBatch(context).subscribe(); // fire and forget
 
-            return PlayerBalanceData.getDefault(
+            PlayerBalanceData result = PlayerBalanceData.getDefault(
                     context.getVendorPlayerUsername(),
                     context.getVendorCurrency()
             );
+            rememberResponseData(context, result);
+            return result;
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());
@@ -75,15 +80,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
         PromoPayoutContextHolder.clear();
     }
 
-    private boolean hasPayout(PromoPayoutContext context) {
-        if (context.getPayoutTransactions() == null || context.getPayoutTransactions().isEmpty()) {
-            return context.getVendorPayoutAmount() != null && context.getVendorPayoutAmount().signum() > 0;
-        }
-
-        return context.getPayoutTransactions()
-                .stream()
-                .anyMatch(transaction ->
-                transaction.getVendorPayoutAmount() != null && transaction.getVendorPayoutAmount().signum() > 0);
-
+    private void rememberResponseData(PromoPayoutContext context, PlayerBalanceData result) {
+        BigDecimal balance = result.getBalance() != null ? result.getBalance() : BigDecimal.ZERO;
+        requestIdempotencyService.enrichIdempotentLog(
+                context.getTransactionId(),
+                context.getVendorCurrency(),
+                balance
+        );
     }
+
 }

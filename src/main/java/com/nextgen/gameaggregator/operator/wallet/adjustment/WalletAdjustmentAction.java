@@ -2,18 +2,12 @@ package com.nextgen.gameaggregator.operator.wallet.adjustment;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.BetInformation;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.CurrencyConversionService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +37,10 @@ public class WalletAdjustmentAction {
     RequestService requestService;
     @Autowired
     CurrencyConversionService currencyConversionService;
+    @Autowired
+    BetResultRetryLogService betResultRetryLogService;
+    @Autowired
+    HttpService httpService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -51,7 +49,7 @@ public class WalletAdjustmentAction {
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBalanceVo responseVo;
+        WalletBalanceVo responseVo = null;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
@@ -70,37 +68,40 @@ public class WalletAdjustmentAction {
         httpRequestLog.setOperatorData(jsonApiResponse);
         httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_ADJUSTMENT);
 
+        boolean isError = false;
+        ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
         // if match useStub and username prefix will skip call to stub
         if (requestService.shouldSkipStubCall(dto.getUsername())) {
             return requestService.responseOperatorSub();
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-
-        if (apiResponse != null) {
-            httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
-        }
-        httpRequestLog.setOperatorEnd(endTime);
-
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_ADJUSTMENT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
-
         try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
+            }
+            httpRequestLog.setOperatorEnd(endTime);
+
+            requestService.createRequestLogVo(
+                    EndPoints.WALLET_ADJUSTMENT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+
             log.info("Response [" + apiUrl + EndPoints.WALLET_ADJUSTMENT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
@@ -128,23 +129,38 @@ public class WalletAdjustmentAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            //RequestService.successResponseLog(requestLogVo);
-
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            isError = true;
+            operatorStatus = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+            isError = true;
+            operatorStatus = ResponseCodes.Status.checkCodeStatus(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            //RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            isError = true;
+
+        } finally {
+            if (isError) {
+                //GA-12667 add force success to vendor and retry to operator.
+                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+
+                //log error
+                httpService.logError(httpRequestLog, new InvalidOperatorResponseException(operatorStatus.description));
+                //send retry to operator
+                betResultRetryLogService.create(httpRequestLog.getOperatorData(),
+                        gameSession.getVendorId(),
+                        betInformation.getAgentId(),
+                        betInformation.getBetId(),
+                        betInformation.getRoundId(),
+                        betInformation.getInternalTransactionId(),
+                        EndPoints.WALLET_ADJUSTMENT);
+
+            }
+
         }
         return responseVo;
     }
@@ -164,5 +180,24 @@ public class WalletAdjustmentAction {
         walletAdjustmentDto.setTimestamp(betInformation.getVendorBetTime());
 
         return walletAdjustmentDto;
+    }
+
+    private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId, BetInformation settledBet) {
+
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+        BigDecimal balance = (settledBet.getBalance() == null) ? BigDecimal.ZERO : settledBet.getBalance();
+
+        data.setBalance(balance);
+        data.setUsername(gameSession.getAgentPlayerUsername());
+        data.setCurrency(gameSession.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
+
+        responseVo.setTraceId(traceId);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
+
+        return responseVo;
     }
 }

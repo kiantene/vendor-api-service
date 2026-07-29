@@ -166,7 +166,7 @@ public class TransferService {
                         (balanceBeforeAfterVo.getData().getBalanceAfter() == null) ||
                         (balanceBeforeAfterVo.getData().getBalanceBefore() == null)
                 )) {
-            throw new InvalidResponseException("Invalid Wallet Service Response Value for withdrawal insufficient funds ");
+            throw new InvalidResponseException("Invalid Wallet Service Response Value for withdrawal insufficient funds " +  balanceBeforeAfterVo.getStatus());
 
             //validate response username and currency is match with request
         } else if ((!balanceBeforeAfterVo.getData().getUsername().equals(rawTransferHistory.getAgentPlayerUsername())) ||

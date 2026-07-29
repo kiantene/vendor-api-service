@@ -3,11 +3,10 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.dotconnections.api.result.EndWagerDto;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -46,6 +46,8 @@ public class CancelWagerAction {
     private SettledBetService settledBetService;
     @Autowired
     private UnsettledBetCachingService unsettledBetCachingService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -58,6 +60,7 @@ public class CancelWagerAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = null;
         CancelWagerDto dto = null;
+        AtomicBoolean checkBetStatus = new AtomicBoolean(false);
 
         try {
 
@@ -71,8 +74,8 @@ public class CancelWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = this.getGameSession(traceId, dto);
-            
+            gameSession = this.getGameSession(traceId, dto, checkBetStatus);
+
             // Verify data
             this.doVerification(dto, gameSession);
 
@@ -84,7 +87,7 @@ public class CancelWagerAction {
             responseVo.setData(responseDataVo);
             responseDataVo.setBalance(balance);
 
-        } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
+        } catch (InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
@@ -99,10 +102,6 @@ public class CancelWagerAction {
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
-
-        } catch (DisabledGameException disabledGameException) {
-            responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
-            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -122,25 +121,24 @@ public class CancelWagerAction {
             }
             httpService.logError(httpRequestLog, invalidRequestException);
 
+            vendorService.scheduleTempSessionTokenDeletion(dto.getBrandUid(), dto.getRoundId());
+
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
         } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            vendorService.errorResponseBetNotFound(dto, responseVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
             httpService.logError(httpRequestLog, betRecordNotExistException);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
             httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
 
-        } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 CredentialNotFoundException |
+        } catch (CredentialNotFoundException |
                  InvalidAgentApiCredentialException |
                  JsonProcessingException |
                  RecordNotFoundException systemErrorException) {
@@ -149,8 +147,8 @@ public class CancelWagerAction {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // if bet already refunded
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid(dto.getBrandUid());
+            responseDataVo.setCurrency(dto.getCurrency());
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
@@ -187,14 +185,8 @@ public class CancelWagerAction {
             throws
             InvalidPlayerException,
             CurrencyNotSupportedException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidVendorLineException,
             CredentialNotFoundException,
-            AuthenticationException,
             InvalidSignatureException,
-            InvalidRequestException,
             InvalidProviderException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
@@ -219,17 +211,27 @@ public class CancelWagerAction {
 
     }
 
-    private GameSession getGameSession(String traceId, CancelWagerDto dto) throws BetNotFoundException, InvalidPlayerException, VendorCurrencyNotSupportException, GameNotSupportedException {
+    private GameSession getGameSession(String traceId, CancelWagerDto dto, AtomicBoolean checkBetStatus)
+            throws InvalidPlayerException,
+            VendorCurrencyNotSupportException,
+            GameNotSupportedException,
+            AuthenticationException,
+            BetResultIdempotentViolationException,
+            BetNotFoundException {
         GameSession gameSession;
+
+        String token = cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(dto.getBrandUid(), dto.roundId, null);
+
         try {
-            gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
-            if (gameSession == null) {
-                throw new AuthenticationException("getLastGameSessionByVendorPlayerUsername Failed");
+            if (token == null) {
+                throw new AuthenticationException("Token not found");
+            } else {
+                gameSession = gameSessionService.verifyToken(token);
             }
         } catch (AuthenticationException e) {
-            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+            VendorGame vendorGame = vendorService.verifyBetStatusAndGetVendorGameId(dto.getBrandUid(), dto.getRoundId(), dto.getRollbackId(), checkBetStatus);
             gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
-            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+            gameSessionService.updateByVendorGameCode(gameSession, vendorGame.getVendorGameCode());
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(traceId);
             gameSession.setVendorToken(traceId);

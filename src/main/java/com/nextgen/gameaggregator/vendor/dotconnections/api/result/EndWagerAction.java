@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -29,32 +26,34 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class EndWagerAction {
 
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final CachingService cachingService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private GameServiceImpl gameServiceImpl;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private UnsettledBetService unsettledBetService;
-    @Autowired
-    private BetIdempotentLogService betIdempotentLogService;
-    @Autowired
-    private UnsettledBetCachingService unsettledBetCachingService;
-    @Autowired
-    private CachingService cachingService;
+    public EndWagerAction(HttpService httpService,
+                          GameSessionService gameSessionService,
+                          VendorLineService vendorLineService,
+                          WalletService walletService,
+                          VendorService vendorService,
+                          CachingService cachingService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+        this.cachingService = cachingService;
+    }
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -67,7 +66,7 @@ public class EndWagerAction {
         String traceId = httpRequestLog.getId();
         GameSession gameSession = null;
         EndWagerDto dto = null;
-
+        AtomicBoolean checkBetStatus = new AtomicBoolean(false);
         try {
 
             // Get request body
@@ -80,10 +79,10 @@ public class EndWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = this.getGameSession(traceId, dto);
+            gameSession = this.getGameSession(traceId, dto, checkBetStatus);
 
             // Verify data
-            this.doVerification(dto, gameSession);
+            this.doVerification(dto, gameSession, checkBetStatus);
 
             BetResultContextHolder.initialise()
                     .configure(config -> config.setSettleType(SettleType.ROUND));
@@ -103,15 +102,13 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
-            cachingService.deleteTokenByRoundIdAndVendorPlayerUsernameToRedis(gameSession.getVendorPlayerUsername(), dto.getRoundId());
+            if (dto.getBetStatus().code.equals(BetStatus.SETTLED.code)) {
+                vendorService.scheduleTempSessionTokenDeletion(dto.getBrandUid(), dto.getRoundId());
+            }
 
-        } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
+        } catch (InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
-
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
-            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
@@ -121,10 +118,6 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (DisabledGameException disabledGameException) {
-            responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
-            httpService.logError(httpRequestLog, disabledGameException);
-
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
@@ -133,7 +126,7 @@ public class EndWagerAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            vendorService.errorResponseBetNotFound(dto, responseVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
             httpService.logError(httpRequestLog, betNotFoundException);
 
@@ -168,9 +161,7 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
-        } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 CredentialNotFoundException |
+        } catch (CredentialNotFoundException |
                  InvalidAgentApiCredentialException |
                  JsonProcessingException |
                  TransactionStillProcessingException systemErrorException) {
@@ -206,21 +197,15 @@ public class EndWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(EndWagerDto dto, GameSession gameSession)
+    private void doVerification(EndWagerDto dto, GameSession gameSession, AtomicBoolean checkBetStatus)
             throws
             InvalidPlayerException,
             CurrencyNotSupportedException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidVendorLineException,
             CredentialNotFoundException,
-            AuthenticationException,
             InvalidSignatureException,
-            InvalidRequestException,
-            InvalidProviderException,
             BetResultIdempotentViolationException,
-            BetNotFoundException {
+            BetNotFoundException,
+            InvalidProviderException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -241,47 +226,34 @@ public class EndWagerAction {
 
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify this round have place bet or not for VAT test (because this resultType is BET_WIN/BET_LOSE)
-        this.verifyBetStatus(dto);
+        //GA-12099 Verify this round have place bet or not for VAT test (because this resultType is BET_WIN/BET_LOSE)
+        if (!checkBetStatus.get()) {
+            vendorService.verifyBetStatus(dto);
+        }
     }
 
-    private GameSession getGameSession(String traceId, EndWagerDto dto) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
+    private GameSession getGameSession(String traceId, EndWagerDto dto, AtomicBoolean checkBetStatus) throws BetNotFoundException, InvalidPlayerException, GameNotSupportedException, VendorCurrencyNotSupportException, BetResultIdempotentViolationException {
 
         GameSession gameSession;
         try {
             String token = cachingService.cacheableTokenByRoundIdAndVendorPlayerUsernameToRedis(dto.getBrandUid(), dto.roundId, null);
 
             if (token == null) {
-                gameSession = gameSessionService.getLastGameSessionByVendorPlayerUsername(dto.getBrandUid());
-                if (gameSession == null) {
-                    throw new AuthenticationException("getLastGameSessionByVendorPlayerUsername Failed");
-                }
+                throw new AuthenticationException("Token not found");
             } else {
                 gameSession = gameSessionService.verifyToken(token);
+
             }
         } catch (AuthenticationException e) {
-            UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
+            VendorGame vendorGame = vendorService.verifyBetStatusAndGetVendorGameId(dto.getBrandUid(),
+                    dto.getRoundId(), dto.getExternalTransactionId(), checkBetStatus);
             gameSession = gameSessionService.generateNewSessionToken(dto.getBrandUid());
-            gameSessionService.updateByVendorGameId(gameSession, unsettledBet.getVendorGameId());
+            gameSessionService.updateByVendorGameCode(gameSession, vendorGame.getVendorGameCode());
             gameSessionService.updateByVendorCurrencyId(gameSession);
             gameSession.setToken(traceId);
             gameSession.setVendorToken(traceId);
         }
         return gameSession;
     }
-
-    private void verifyBetStatus(EndWagerDto dto) throws BetNotFoundException, BetResultIdempotentViolationException {
-        UnsettledBet unsettledBet = unsettledBetCachingService.getTop1UnsettledBetWithRoundId(dto.getRoundId());
-
-        if (unsettledBet == null) {
-            RawBetIdempotentLog rawBetIdempotentLog = betIdempotentLogService.checkExists(dto.getVendorBetId(), dto.getRoundId(), dto.getBrandUid());
-            if (rawBetIdempotentLog == null) {
-                throw new BetNotFoundException();
-            } else {
-                throw new BetResultIdempotentViolationException(rawBetIdempotentLog);
-            }
-
-        }
-    }
 }
+

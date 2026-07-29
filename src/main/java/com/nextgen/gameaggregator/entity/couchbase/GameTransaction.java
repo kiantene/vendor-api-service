@@ -70,6 +70,11 @@ public class GameTransaction extends RoundTxn {
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
     private BigDecimal jackpotAmount;
 
+    @JsonProperty("effectiveTurnover")
+    @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
+    @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
+    private BigDecimal effectiveTurnover;
+
     @JsonProperty("balance")
     @JsonSerialize(using = ToStringSerializer.class) // to avoid loss of precision
     @JsonDeserialize(using = NumberDeserializers.BigDecimalDeserializer.class)
@@ -124,6 +129,11 @@ public class GameTransaction extends RoundTxn {
         copy.currency = this.currency;
         copy.betAmount = this.betAmount;
         copy.winAmount = this.winAmount;
+        copy.jackpotAmount = this.jackpotAmount;
+        copy.effectiveTurnover = this.effectiveTurnover;
+        // capped* live on RoundTxn (inherited); copy them so a copied capped txn stays capped
+        copy.setCappedWinAmount(this.getCappedWinAmount());
+        copy.setCappedJackpotAmount(this.getCappedJackpotAmount());
         copy.balance = this.balance;
         copy.gaBetId = this.gaBetId;
         copy.status = this.status;
@@ -143,6 +153,23 @@ public class GameTransaction extends RoundTxn {
     @JsonIgnore
     public String getId() {
         return createDocId(className, type, transactionId);
+    }
+
+    /**
+     * Overridden because GameTransaction shadows winAmount/jackpotAmount with its own private fields;
+     * the RoundTxn version would read the (unset) superclass fields on a GameTransaction. Read via the
+     * getters so the coalesce uses this instance's own amounts.
+     */
+    @Override
+    @JsonIgnore
+    public BigDecimal cappedWinAmountOrVendor() {
+        return getCappedWinAmount() != null ? getCappedWinAmount() : getWinAmount();
+    }
+
+    @Override
+    @JsonIgnore
+    public BigDecimal cappedJackpotAmountOrVendor() {
+        return getCappedJackpotAmount() != null ? getCappedJackpotAmount() : getJackpotAmount();
     }
 
     @JsonIgnore

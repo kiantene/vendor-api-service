@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.core.engine.game.url.*;
+import com.nextgen.gameaggregator.core.engine.game.url.AbstractGameLaunchHandler;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchContext;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchService;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLauncherRegistry;
 import com.nextgen.gameaggregator.core.exception.VendorApiException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
@@ -44,6 +47,8 @@ public class GameUrlService {
     private final GameLauncherRegistry gameLauncherRegistry;
     private final GameLaunchService gameLaunchService;
     private final GameSessionService gameSessionService;
+    private final MaintenanceGameService maintenanceGameService;
+    private final GameUrlEncodingFixer gameUrlEncodingFixer;
 
     //remove request service
     @Autowired
@@ -64,7 +69,9 @@ public class GameUrlService {
                           TestSupportService testSupportService,
                           GameLauncherRegistry gameLauncherRegistry,
                           GameLaunchService gameLaunchService,
-                          GameSessionService gameSessionService) {
+                          GameSessionService gameSessionService,
+                          MaintenanceGameService maintenanceGameService,
+                          GameUrlEncodingFixer gameUrlEncodingFixer) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -84,6 +91,8 @@ public class GameUrlService {
         this.gameLauncherRegistry = gameLauncherRegistry;
         this.gameLaunchService = gameLaunchService;
         this.gameSessionService = gameSessionService;
+        this.maintenanceGameService = maintenanceGameService;
+        this.gameUrlEncodingFixer = gameUrlEncodingFixer;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -129,11 +138,16 @@ public class GameUrlService {
                         .build();
 
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
-                gameUrlData.setGameUrl(gameLaunchContext.getGameUrl());
+
+                String gameUrl = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameLaunchContext.getGameUrl());
+                gameUrl = gameUrlEncodingFixer.normalize(gameUrl, gameSession.getVendorId());
+                gameUrlData.setGameUrl(gameUrl);
                 httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
 
                 boolean shouldReplaceWithVendorToken = !gameLaunchContext.getVendorToken().equals(gameSession.getToken());
                 if (shouldReplaceWithVendorToken) {
+                    // TODO : maybe need remove old game session
+                    //  if have repeated VendorToken from vendor side.
                     gameSessionService.regenerateVendorToken(gameSession, gameLaunchContext.getVendorToken());
                 }
 
@@ -148,9 +162,9 @@ public class GameUrlService {
                 GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
 
                 if (gameUrlVo == null) throw new InvalidVendorResponseException();
-
                 //token will be replaced if vendor's token is needed to verify for action files.
                 String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                gameUrlText = gameUrlEncodingFixer.normalize(gameUrlText, gameSession.getVendorId());
                 gameUrlData.setGameUrl(gameUrlText);
 
                 gameUrlData.setToken(gameSession.getToken());
@@ -294,6 +308,9 @@ public class GameUrlService {
         gameLaunchDto.setVendorLine(vendorLine);
         gameLaunchDto.setVendorLineId(vendorLineId);
 
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(productGame.getVendorGameId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
+
         VendorGameCode vendorGameCode = vendorGameCodeService.getByProductGame(productGameId, vendorId, platformId, gameLaunchDto.getLanguageId());
         vendorGameCodeService.checkGameStatus(vendorGameCode);
 
@@ -322,6 +339,9 @@ public class GameUrlService {
         gameLaunchDto.setVendorId(vendorId);
         gameLaunchDto.setVendorGameId(vendorGame.getId());
         gameLaunchDto.setGameCategoryId(gameCategoryId);
+
+        MaintenanceGame maintenanceGame = maintenanceGameService.findByVendorGameIdWithActiveStatus(vendorGame.getId());
+        maintenanceGameService.checkMaintenanceGameStatus(maintenanceGame);
 
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGame(vendorGameId, platformId, languageId);
         vendorGameCodeService.checkGameStatus(vendorGameCode);

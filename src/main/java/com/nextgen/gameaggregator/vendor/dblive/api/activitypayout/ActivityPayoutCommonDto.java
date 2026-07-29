@@ -29,6 +29,5 @@ public class ActivityPayoutCommonDto {
     @Size(max = 50)
     private String loginName;
     @NotBlank
-    @Size(max = 3)
     private String currency;
 }

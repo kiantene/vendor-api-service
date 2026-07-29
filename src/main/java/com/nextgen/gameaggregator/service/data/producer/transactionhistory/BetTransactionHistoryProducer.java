@@ -37,8 +37,8 @@ public class BetTransactionHistoryProducer {
     private final RollbackTransactionIntentResolver rollbackResolver;
     private final TransactionHistoryMapper transactionHistoryMapper;
 
-    public void publishTransactionHistoryForBet(BetContext context, GameRound round, GameTransaction txn) {
-        publish(new BetContextTransactionHistoryAdapter(context), betResolver.resolve(context, txn), round);
+    public void publishTransactionHistoryForBet(BetContext context, GameRound round, GameTransaction txn, Exception ex) {
+        publish(new BetContextTransactionHistoryAdapter(context, ex), betResolver.resolve(context, txn), round);
     }
 
     public void publishTransactionHistoryForResult(BetResultContext context, GameRound round, GameTransaction txn) {

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -119,5 +120,32 @@ public class GameSessionDataService {
         // TODO: change to use Couchbase collection mutateIn
         gameSessionService.regenerateVendorToken(gameSession, newToken);
     }
-}
 
+    public GameSession createNewGameSession(GameSession gameSession) {
+        try {
+            String newToken = UUID.randomUUID().toString();
+            gameSession.setId(newToken);
+            gameSession.setToken(newToken);
+            gameSession.setVendorToken(newToken);
+
+            return gameSessionService.updateSession(gameSession);
+
+        } catch (Exception ex) {
+            throw new InternalServerException(
+                    "Failed to create new game session for user: " + gameSession.getVendorPlayerUsername(), ex
+            );
+        }
+    }
+
+    public void terminateGameSession(GameSession session) {
+        //session already terminated if status = 0
+        if (session.getStatus() == 0) {
+            return;
+        }
+        gameSessionService.clearGameSession(
+                session,
+                session.getAgentPlayerUsername(),
+                session.getVendorGameCode()
+        );
+    }
+}

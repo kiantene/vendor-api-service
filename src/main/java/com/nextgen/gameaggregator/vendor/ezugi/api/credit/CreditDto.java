@@ -19,22 +19,17 @@ import java.math.BigInteger;
 public class CreditDto extends CommonDto implements BetResultData, RollbackData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 50)
     private String transactionId;
     @NotBlank(message = "Transaction not found")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Transaction not found")
-    @Size(min = 0, max = 50)
     private String debitTransactionId;
     @NotNull
-    @Digits(integer = 18, fraction = 0)
     @JsonProperty("roundId")
     private BigInteger vendorRoundId;
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     @JsonProperty("gameId")
     private Integer vendorGameId;
     @NotNull
@@ -44,15 +39,11 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     @Digits(integer = 25, fraction = 2, message = "Invalid amount")
     private Double creditAmount;
     @NotNull
-    @Min(value = 0)
-    @Max(value = 2)
     private Integer returnReason;
     @NotNull
-    @Digits(integer = 4, fraction = 0)
     private Integer betTypeID;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 4)
     private String currency;
     private String gameDataString;
     private GameDataStringDto gameDataStringDto;

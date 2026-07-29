@@ -21,6 +21,6 @@ public class BetNSettleVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return true;
+        return this.error != null;
     }
 }

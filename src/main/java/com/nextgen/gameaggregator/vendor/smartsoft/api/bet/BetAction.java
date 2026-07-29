@@ -70,7 +70,7 @@ public class BetAction {
             this.doValidation(betDto);
 
             // Verify session
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUserName());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getUserName(), betDto.getTransactionInfoDto().getGameName());
 
             // Verify parameters (Verify against database values)
             this.doVerification(betDto, gameSession, body, method);

@@ -8,6 +8,7 @@ public enum ErrorCodes {
     INVALID_TOKEN               (401, "User token is invalid"),
     INSUFFICIENT_FUND           (402, "Insufficient fund"),
     EXPIRED_TOKEN               (403, "User token is expired"),
+    INVALID_SIGNATURE           (413, "Invalid Client-Signature"),
     INTERNAL_ERROR_NO_RETRY     (405, "Internal error with no retry"),
     TRANSACTION_NOT_FOUND       (408, "Transaction does not found"),
     DUPLICATE_TRANSACTION       (409, "Duplicate transaction"),

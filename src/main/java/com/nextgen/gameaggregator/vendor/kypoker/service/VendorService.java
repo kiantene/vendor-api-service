@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.kypoker.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
@@ -128,7 +129,7 @@ public class VendorService extends BaseVendorService {
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
     }
 
-    public void dataCreditMapper(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession) {
+    public void dataCreditMapper(WalletRequest walletRequest, SettleDto settleDto, GameSession gameSession, BigDecimal debitAmount) {
 
         walletRequestService.updateByGameSession(walletRequest, gameSession);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
@@ -141,9 +142,26 @@ public class VendorService extends BaseVendorService {
         walletRequest.setTakeAll(0);
         walletRequest.setTransferAmount(settleDto.getMoney());
         walletRequest.setBetAmount(settleDto.getValidBet());
-        ResultType resultType = this.calculateResultType(settleDto.getBetAmount(), settleDto.getWinAmount(), settleDto.getJackpotAmount(),
-                false);
-        walletRequest.setWinAmount(settleDto.getWinAmount());
+
+        // Calculate winAmount using: winAmount = betAmount + (creditAmount - debitAmount)
+        // This ensures accuracy instead of relying on totalWithdraw
+        BigDecimal creditAmount = settleDto.getMoney();
+        BigDecimal winLoss = creditAmount.subtract(debitAmount);
+        BigDecimal winAmount = settleDto.getValidBet().add(winLoss);
+
+        // Ensure the winAmount is not negative
+        if (winAmount.compareTo(BigDecimal.ZERO) < 0) {
+            winAmount = BigDecimal.ZERO;
+        }
+
+        ResultType resultType = this.calculateResultType(
+                settleDto.getBetAmount(),
+                winAmount,
+                settleDto.getJackpotAmount(),
+                false
+        );
+
+        walletRequest.setWinAmount(winAmount);
         walletRequest.setEffectiveTurnover(settleDto.getValidBet());
         walletRequest.setJackpotAmount(BigDecimal.ZERO);
         walletRequest.setResultType(resultType.code);
@@ -162,4 +180,16 @@ public class VendorService extends BaseVendorService {
         return true;
     }
 
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //especially set for bet's effective turnover.(GA-13536)
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = BigDecimal.ZERO;
+        }
+
+        return effectiveTurnover;
+    }
 }
