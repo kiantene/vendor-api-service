@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.data.MigrationRoundDataService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.api.authenticate.InitService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceIncreaseService;
@@ -13,6 +14,8 @@ import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinDto;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.refund.RefundService;
+import com.nextgen.gameaggregator.vendor.evoplay.config.EvoplayConfig;
+import com.nextgen.gameaggregator.vendor.evoplay.constant.ActionName;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,6 +62,8 @@ public class CallbackAction {
     private BalanceIncreaseService balanceIncreaseService;
     @Autowired
     private UnsettledBetCachingService unsettledBetCachingService;
+    @Autowired
+    private MigrationRoundDataService migrationRoundDataService;
 
     // Handle incoming API requests
     @PostMapping
@@ -111,6 +117,14 @@ public class CallbackAction {
                 verifySignature(gameSession, rawData, callbackDto);
             }
 
+            // Shadow-write the v1 round marker (OVI-2153) BEFORE processing (write-ahead):
+            // the request is authenticated and validated here, but the operator/wallet call
+            // has not run yet. Recording intent up-front pins the round to v1 even if
+            // processing later throws after persisting state — closing the persist-then-throw
+            // split-brain window. Only for routing-relevant actions, symmetric with
+            // EvoplayRouteResolver#shouldRouteToV1. markAsV1 swallows its own failures, so it
+            // never breaks the v1 callback.
+            markRoundAsV1IfRelevant(callbackDto);
 
             switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
@@ -186,6 +200,28 @@ public class CallbackAction {
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
+    }
+
+    /**
+     * Tags the round as handled by v1 in Couchbase so in-flight rounds finish on v1 after
+     * the v2 cutover. Scoped to the routing-relevant actions ({@code bet}, {@code win},
+     * {@code refund}) so the write side stays symmetric with the read side in
+     * {@link com.nextgen.gameaggregator.vendor.evoplay.config.EvoplayRouteResolver}.
+     * {@code markAsV1} swallows its own failures, so this never breaks the v1 callback.
+     */
+    private void markRoundAsV1IfRelevant(CallbackDto callbackDto) {
+        if (callbackDto == null || callbackDto.getName() == null || callbackDto.getData() == null) {
+            return;
+        }
+        String action = callbackDto.getName().toLowerCase(Locale.ROOT);
+        if (!ActionName.getActionNamesRelevantForRouting().contains(action)) {
+            return;
+        }
+        String roundId = callbackDto.getData().getRound_id();
+        if (roundId == null || roundId.isBlank()) {
+            return;
+        }
+        migrationRoundDataService.markAsV1(EvoplayConfig.CLASS_NAME, roundId);
     }
 
     private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo, HttpRequestLog httpRequestLog) {

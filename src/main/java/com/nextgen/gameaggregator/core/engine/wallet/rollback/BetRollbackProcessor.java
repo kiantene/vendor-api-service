@@ -58,7 +58,13 @@ class BetRollbackProcessor {
         decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {
-            return PlayerBalanceData.getDefault(betTxn.getUsername(), betTxn.getCurrency());
+            // Already refunded (idempotent/duplicate rollback): the bet's funds are
+            // back in the wallet, so the player's balance is the round's last-known
+            // balance — which OVI-2519 now keeps current after a rollback. Returning
+            // the round balance (mirroring the deferred branch below) instead of a
+            // hardcoded ZERO avoids reporting a bogus 0 balance to the vendor.
+            return PlayerBalanceData.getDefaultWithBalance(
+                    betTxn.getUsername(), betTxn.getCurrency(), round.getLastBalanceWithDefault());
         }
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
@@ -248,11 +254,15 @@ class BetRollbackProcessor {
             for (RoundTxn t : round.getTransactions()) {
                 if (!gaBetId.equals(t.getGaBetId())) continue;
                 switch (t.getType()) {
+                    // Winnings use the CAPPED (agent max-payout) amount when the txn was capped —
+                    // RollbackMeta is operator-POV ("the values actually posted to the wallet"), and a
+                    // capped win posted the capped amount, not the raw vendor win. cappedWinAmountOrVendor()
+                    // coalesces to the vendor amount when uncapped. Stake (betAmount) is never capped.
                     case BET -> vendorBet = vendorBet.add(zeroIfNull(t.getBetAmount()));
-                    case RESULT -> vendorWin = vendorWin.add(zeroIfNull(t.getWinAmount())).add(zeroIfNull(t.getJackpotAmount()));
+                    case RESULT -> vendorWin = vendorWin.add(zeroIfNull(t.cappedWinAmountOrVendor())).add(zeroIfNull(t.cappedJackpotAmountOrVendor()));
                     case BET_N_RESULT -> {
                         vendorBet = vendorBet.add(zeroIfNull(t.getBetAmount()));
-                        vendorWin = vendorWin.add(zeroIfNull(t.getWinAmount())).add(zeroIfNull(t.getJackpotAmount()));
+                        vendorWin = vendorWin.add(zeroIfNull(t.cappedWinAmountOrVendor())).add(zeroIfNull(t.cappedJackpotAmountOrVendor()));
                     }
                     default -> { /* ROLLBACK/DEBIT/CREDIT/PAYOUT are not bet financials */ }
                 }

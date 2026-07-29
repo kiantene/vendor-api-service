@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
+    private static final String JUMP_TYPE_PARAM = "jumpType=1";
 
     public GameUrlService() {
         super(GameUrlVo.class);
@@ -65,7 +66,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         String encodedParam;
         try {
             aesString = VendorService.aesEncrypt(queryString, AesKey);
-            encodedParam =  URLEncoder.encode(aesString, "UTF-8");
+            encodedParam = URLEncoder.encode(aesString, "UTF-8");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -74,11 +75,11 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         param.add("agent", AgentId);
         param.add("timestamp", TimeStamp);
         param.add("param", encodedParam);
-        param.add("key", VendorService.MD5Encrypt(AgentId+TimeStamp+Md5Key));
-
+        param.add("key", VendorService.MD5Encrypt(AgentId + TimeStamp + Md5Key));
 
         return param;
     }
+
     @Override
     protected ResponseEntity<String> doGet(String baseUrl, String uri, MultiValueMap<String, String> formData, AtomicBoolean isTimeout) {
 
@@ -100,6 +101,17 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
                 .block();
     }
 
+    @Override
+    protected GameUrlVo onResponseSuccess(GameUrlVo responseVo, GameSession gameSession) {
+        // always append jumpType=1 to hide "Return to Lobby" /
+        // Home buttons in KY Poker games for all operators.
+        String url = responseVo.getGameUrl();
+        if (url != null && !url.isBlank()) {
+            String separator = url.contains("?") ? "&" : "?";
+            responseVo.setGameUrl(url + separator + JUMP_TYPE_PARAM);
+        }
+        return responseVo;
+    }
 }
 
 

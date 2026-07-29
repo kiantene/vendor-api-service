@@ -48,6 +48,7 @@ public class GameUrlService {
     private final GameLaunchService gameLaunchService;
     private final GameSessionService gameSessionService;
     private final MaintenanceGameService maintenanceGameService;
+    private final GameUrlEncodingFixer gameUrlEncodingFixer;
 
     //remove request service
     @Autowired
@@ -69,7 +70,8 @@ public class GameUrlService {
                           GameLauncherRegistry gameLauncherRegistry,
                           GameLaunchService gameLaunchService,
                           GameSessionService gameSessionService,
-                          MaintenanceGameService maintenanceGameService) {
+                          MaintenanceGameService maintenanceGameService,
+                          GameUrlEncodingFixer gameUrlEncodingFixer) {
 
         this.agentService = agentService;
         this.agentProductService = agentProductService;
@@ -90,6 +92,7 @@ public class GameUrlService {
         this.gameLaunchService = gameLaunchService;
         this.gameSessionService = gameSessionService;
         this.maintenanceGameService = maintenanceGameService;
+        this.gameUrlEncodingFixer = gameUrlEncodingFixer;
     }
 
     public GameUrlData getGameUrl(String gameCode, GameSession gameSession, Map<String, String> credentials,
@@ -137,6 +140,7 @@ public class GameUrlService {
                 gameLaunchService.processLaunchRequest(gameLaunchContext, vendorGameLauncher);
 
                 String gameUrl = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameLaunchContext.getGameUrl());
+                gameUrl = gameUrlEncodingFixer.normalize(gameUrl, gameSession.getVendorId());
                 gameUrlData.setGameUrl(gameUrl);
                 httpRequestLog.setRequestBody(gameLaunchContext.getVendorFormData());
 
@@ -158,9 +162,9 @@ public class GameUrlService {
                 GameUrlVo gameUrlVo = gameUrl.callToVendor(formData, credentials, gameSession, httpRequestLog);
 
                 if (gameUrlVo == null) throw new InvalidVendorResponseException();
-
                 //token will be replaced if vendor's token is needed to verify for action files.
                 String gameUrlText = agentVendorProxyService.applyProxy(gameSession.getAgentId(), gameSession.getVendorId(), gameUrlVo.getGameUrl());
+                gameUrlText = gameUrlEncodingFixer.normalize(gameUrlText, gameSession.getVendorId());
                 gameUrlData.setGameUrl(gameUrlText);
 
                 gameUrlData.setToken(gameSession.getToken());

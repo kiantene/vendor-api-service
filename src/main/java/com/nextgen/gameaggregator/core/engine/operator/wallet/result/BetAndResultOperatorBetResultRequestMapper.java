@@ -19,7 +19,7 @@ public class BetAndResultOperatorBetResultRequestMapper extends AbstractOperator
         request.setBetTime(context.getResultTime());
         request.setResultType(scenario.getResultType());
 
-        TxnAmounts txnAmounts = TxnAmounts.of(operatorApiContext.getTransaction(), context.getFromVendorRate());
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(operatorApiContext.getTransaction(), context.getFromVendorRate());
 
         request.setBetAmount(txnAmounts.getBet());
         request.setWinAmount(txnAmounts.getWin());

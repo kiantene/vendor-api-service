@@ -128,4 +128,9 @@ public class VendorService extends BaseVendorService {
         return settledBet;
     }
 
+    // vendor timeout timing is 5 sec, if operator not response within the timeout, will trigger retry.
+    @Override
+    public Integer operatorTimeoutTiming() {
+        return 4000;
+    }
 }

@@ -12,5 +12,6 @@ public class GameLaunchRequest {
     private String back;
     private String token;
     private String id;
+    private String lang;
     private String closeBack;
 }
