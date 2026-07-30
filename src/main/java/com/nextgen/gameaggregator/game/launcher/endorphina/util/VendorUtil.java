@@ -41,9 +41,10 @@ public class VendorUtil {
         return combined;
     }
 
-    public static Map<String, String> buildSortedParams(String exitUrl, String token, String nodeId) {
+    public static Map<String, String> buildSortedParams(String exitUrl,String lang, String token, String nodeId) {
         Map<String, String> sortedParams = new TreeMap<>();
         sortedParams.put("exit", exitUrl);
+        sortedParams.put("lang", lang);
         sortedParams.put("nodeId", nodeId);
         sortedParams.put("token", token);
         return sortedParams;

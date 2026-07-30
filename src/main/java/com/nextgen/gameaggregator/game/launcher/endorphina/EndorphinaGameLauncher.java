@@ -39,12 +39,13 @@ public class EndorphinaGameLauncher extends QueryStringUrlGameLauncher<GameLaunc
         String salt = accessor.getValue(Credentials.SALT);
         context.setVendorToken(VendorUtil.removeDash(context.getToken()));
         // sort params by sequence "abc"
-        Map<String, String> sortedParams = VendorUtil.buildSortedParams(context.getLobbyUrl(), context.getVendorToken(), nodeId);
+        Map<String, String> sortedParams = VendorUtil.buildSortedParams(context.getLobbyUrl(), context.getVendorLanguageCode(), context.getVendorToken(), nodeId);
         String queryParams = VendorUtil.getSignature(sortedParams, salt);
         String finalSign = sign(queryParams, "");
         try {
             return GameLaunchRequest.builder()
                     .exit(context.getLobbyUrl())
+                    .lang(context.getVendorLanguageCode())
                     .nodeId(accessor.getValue(Credentials.NODE_ID))
                     .token(context.getVendorToken())
                     .sign(finalSign)
