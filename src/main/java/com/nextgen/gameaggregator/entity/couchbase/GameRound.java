@@ -238,6 +238,40 @@ public class GameRound {
         return new Totals(bet, win, jackpot);
     }
 
+    /**
+     * Same aggregation as {@link #computeTotals()} but using the per-slot CAPPED win/jackpot
+     * (falling back to the uncapped vendor amount when a slot was never capped). Bet is never
+     * capped, so it matches {@code computeTotals().bet()}. Feeds the MAIN bet-history record;
+     * {@link #computeTotals()} feeds the uncapped bet-history record.
+     */
+    @JsonIgnore
+    public Totals computeCappedTotals() {
+        BigDecimal bet = ZERO, win = ZERO, jackpot = ZERO;
+        if (transactions != null) {
+            for (RoundTxn t : transactions) {
+                if (!t.isSuccess()) continue;
+                switch (t.getType()) {
+                    case BET -> {
+                        if (!t.isRefunded()) {
+                            bet = bet.add(requireNonNullElse(t.getBetAmount(), ZERO));
+                        }
+                    }
+                    case RESULT -> {
+                        win     = win.add(requireNonNullElse(t.cappedWinAmountOrVendor(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.cappedJackpotAmountOrVendor(), ZERO));
+                    }
+                    case BET_N_RESULT -> {
+                        bet     = bet.add(requireNonNullElse(t.getBetAmount(),     ZERO));
+                        win     = win.add(requireNonNullElse(t.cappedWinAmountOrVendor(),     ZERO));
+                        jackpot = jackpot.add(requireNonNullElse(t.cappedJackpotAmountOrVendor(), ZERO));
+                    }
+                    case ROLLBACK, DEBIT, CREDIT, PAYOUT -> {}
+                }
+            }
+        }
+        return new Totals(bet, win, jackpot);
+    }
+
     @JsonIgnore
     public boolean hasResultTransaction() {
         return this.transactions != null && this.transactions.stream()

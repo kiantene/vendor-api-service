@@ -25,6 +25,7 @@ public class VplusGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequ
     private static final String APP_URL = "apiUrl";
     private static final String TIME_STAMP = "timestamp";
     private static final String USERNAME = "username";
+    private static final String CLOSE_BACK = "1";
     private final MemberCreateService memberCreateService;
     private final MemberLoginService memberLoginService;
 
@@ -61,28 +62,39 @@ public class VplusGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequ
         VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
         // prepare params
         Map<String, String> params = this.prepareRequestParams(context.getVendorPlayerUsername(), accessor);
+
+        String lang = context.getVendorLanguageCode();
+
         // sort params by sequence "abc"
-        Map<String, String> sortedParams = this.buildSortedParams(params, TokenHolder.getToken(), context);
+        Map<String, String> sortedParams = this.buildSortedParams(params, TokenHolder.getToken(), context, lang);
         // arrange the sortedParams to query string
         String queryParams = VendorUtil.generateSign(sortedParams);
 
-        return GameLaunchRequest.builder()
+        GameLaunchRequest.GameLaunchRequestBuilder requestBuilder = GameLaunchRequest.builder()
                 .appId(params.get(APP_ID))
                 .timestamp(params.get(TIME_STAMP))
                 .sign(sign(queryParams, params.get(APP_SECRET)))
                 .token(TokenHolder.getToken())
                 .id(context.getVendorGameCode())
-                .closeBack("1")
-                .build();
+                .closeBack(CLOSE_BACK);
+
+        if (lang != null) {
+            requestBuilder.lang(lang);
+        }
+
+        return requestBuilder.build();
     }
 
-    private Map<String, String> buildSortedParams(Map<String, String> params, String loginToken, GameLaunchContext context) {
+    private Map<String, String> buildSortedParams(Map<String, String> params, String loginToken, GameLaunchContext context, String lang) {
         Map<String, String> sortedParams = new TreeMap<>();
         sortedParams.put(APP_ID, params.get(APP_ID));
         sortedParams.put(TIME_STAMP, params.get(TIME_STAMP));
         sortedParams.put("token", loginToken);
         sortedParams.put("id", context.getVendorGameCode());
-        sortedParams.put("closeBack", "1");
+        sortedParams.put("closeBack", CLOSE_BACK);
+        if (lang != null) {
+            sortedParams.put("lang", lang);
+        }
         return sortedParams;
     }
 

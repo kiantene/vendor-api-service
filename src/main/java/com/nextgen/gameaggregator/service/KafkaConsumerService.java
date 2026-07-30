@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,7 @@ public class KafkaConsumerService {
     private final BetHistoryProducer betHistoryProducer;
     private final VendorFeatureDataService vendorFeatureService;
     private final WalletRequestService walletRequestService;
+    private final MeterRegistry meterRegistry;
 
     public KafkaConsumerService(WalletBetResultAction walletBetResultAction,
                                 WalletRollbackAction walletRollbackAction,
@@ -74,7 +76,8 @@ public class KafkaConsumerService {
                                 GameSessionService gameSessionService,
                                 BetHistoryProducer betHistoryProducer,
                                 VendorFeatureDataService vendorFeatureService,
-                                WalletRequestService walletRequestService) {
+                                WalletRequestService walletRequestService,
+                                MeterRegistry meterRegistry) {
 
         this.walletBetResultAction = walletBetResultAction;
         this.walletRollbackAction = walletRollbackAction;
@@ -93,6 +96,7 @@ public class KafkaConsumerService {
         this.betHistoryProducer = betHistoryProducer;
         this.vendorFeatureService = vendorFeatureService;
         this.walletRequestService = walletRequestService;
+        this.meterRegistry = meterRegistry;
         this.skipVendorList = new HashSet<>(Set.of(2, 7)); //PGSOFT, SPADEGAMING
     }
 
@@ -340,6 +344,10 @@ public class KafkaConsumerService {
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
+            // Alertable metric: tag by exception so a Couchbase timeout (AmbiguousTimeoutException /
+            // BUCKET_OPEN_IN_PROGRESS) on this consumer is immediately visible in Prometheus/Grafana.
+            meterRegistry.counter("sport.rawsettledbet.consume.failure",
+                    "exception", e.getClass().getSimpleName()).increment();
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             e.printStackTrace();
 

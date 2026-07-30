@@ -28,7 +28,7 @@ public class OperatorBetRequestMapper implements OperatorRequestMapper<BetContex
         dto.setUsername(context.getAgentPlayerUsername());
         dto.setCurrency(round.getAgentMeta().getCurrency());
         dto.setToken(round.getAgentMeta().getSession());
-        dto.setExternalTransactionId(context.getVendorBetId());
+        dto.setExternalTransactionId(context.getIdempotencyKey());
         dto.setGameCode(context.getGameCode());
         dto.setRoundId(context.getRoundId());
         dto.setTimestamp(context.getTimestamp());

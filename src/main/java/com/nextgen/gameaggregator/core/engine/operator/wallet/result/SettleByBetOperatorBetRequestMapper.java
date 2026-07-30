@@ -18,7 +18,7 @@ public class SettleByBetOperatorBetRequestMapper extends AbstractOperatorBetResu
         request.setBetTime(scenario.getBetTxn().getBetTime());
         request.setResultType(scenario.getResultType());
 
-        TxnAmounts txnAmounts = TxnAmounts.of(scenario.getBetTxn(), operatorApiContext.getTransaction(), operatorApiContext.getContext().getFromVendorRate());
+        TxnAmounts txnAmounts = TxnAmounts.ofCapped(scenario.getBetTxn(), operatorApiContext.getTransaction(), operatorApiContext.getContext().getFromVendorRate());
 
         request.setBetAmount(getBetAmount(scenario.getResultType(), txnAmounts.getBet()));
         request.setWinAmount(txnAmounts.getWin());

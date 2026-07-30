@@ -48,6 +48,30 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // Why so many by-id lookups?
+    // These accreted one call site at a time. We currently have FIVE near-duplicate "get a VendorGame by
+    // id" methods (verifyGameStatus, getByVendorGameId, getByGameId, getByVendorGameIdIgnoreStatus,
+    // findVendorGameById) that differ only in three orthogonal axes: (a) cache key, (b) not-found
+    // behaviour (throw vs null), and (c) whether a status/disabled gate is applied. Nobody consolidated
+    // them, so each new need spawned another variant.
+    //
+    // The sharp edge: getByVendorGameId (status-gated) and getByVendorGameIdIgnoreStatus (no gate) share
+    // the SAME cache key ("VendorGames" / {#vendorGameId}). Because @Cacheable returns the cached value
+    // without running the method body, a disabled game cached by the no-gate variant is returned to the
+    // gated variant on a cache hit WITHOUT its status==0 check. findVendorGameById was added (GA-14768)
+    // with a distinct key to avoid feeding that shared slot.
+    //
+    // TODO(tech-debt): consolidate to ONE raw cached lookup — return Optional<VendorGame> (or null), a
+    // single well-namespaced key, no status logic — and move the status/disabled gates into thin,
+    // non-cached wrappers (or the callers). Then migrate all call sites, delete the redundant variants,
+    // and remove the shared-key hazard. Track under its own cleanup ticket; changing the cache keys/return
+    // types touches many callers, so it must not ride a hotfix.
+    // ------------------------------------------------------------------------------------------------
+
+    // Status-gated by-id lookup (throws GameNotSupportedException if status==0).
+    // NOTE: shares the "VendorGames"/{#vendorGameId} cache key with getByVendorGameIdIgnoreStatus below —
+    // on a cache hit populated by that no-gate variant, the status check here is skipped. See TODO above.
     @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameId(Integer vendorGameId) throws GameNotSupportedException {
         VendorGame vendorGame = vendorGameRepository.findById(vendorGameId).orElseThrow(GameNotSupportedException::new);
@@ -78,9 +102,26 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    // Raw by-id lookup, NO status gate. NOTE: shares the SAME "VendorGames"/{#vendorGameId} cache key as
+    // getByVendorGameId above — caching a disabled game here can leak to that gated caller on a cache hit.
+    // Prefer findVendorGameById for new code (distinct key, returns null). See TODO above.
     @Cacheable(value = "VendorGames", key = "{#vendorGameId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameIdIgnoreStatus(Integer vendorGameId) throws GameNotSupportedException {
         return vendorGameRepository.findById(vendorGameId).orElseThrow(GameNotSupportedException::new);
 
+    }
+
+    /**
+     * GA-14768: cached by-id lookup that returns the raw game (or null) without any status gate.
+     * Preferred variant for new code — the yet-another duplicate that exists specifically to avoid the
+     * shared-cache-key hazard on the two above (see TODO above). Uses a distinct cache key ('byId_' + id)
+     * so it does NOT share the "{#vendorGameId}" slot used by {@link #getByVendorGameId} /
+     * {@link #getByVendorGameIdIgnoreStatus} — otherwise caching a disabled game here could be served to
+     * getByVendorGameId callers on a cache hit, bypassing their status check. Nulls are not cached,
+     * matching the prior always-query-on-miss behaviour of the raw repository call.
+     */
+    @Cacheable(value = "VendorGames", key = "'byId_' + #vendorGameId", cacheManager = "cacheManager", unless = "#result == null")
+    public VendorGame findVendorGameById(Integer vendorGameId) {
+        return vendorGameRepository.findById(vendorGameId).orElse(null);
     }
 }

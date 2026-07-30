@@ -345,9 +345,22 @@ public class SportWalletServiceImpl implements SportWalletService {
             betEvent = new BetEvent(sportUnsettledBet, balanceVo.getData().getBalance());
 
         } catch (Exception e) {
+            // GA-14768: preserve the real failure instead of masking it as a bare InvalidOperatorResponseException.
+            // The underlying cause (e.g. CannotCreateTransactionException from a DB connection-pool timeout) was
+            // being discarded, so OpenSearch only showed the generic exception with no message/cause.
+            log.error("Sport refund failed [round={}, vendorBetId={}]",
+                    sportUnsettledBet.getRoundId(), sportUnsettledBet.getVendorBetId(), e);
             sportUnsettledBet.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportUnsettledBetService.save(sportUnsettledBet);
-            throw new InvalidOperatorResponseException();
+            if (e instanceof InvalidOperatorResponseException) {
+                throw (InvalidOperatorResponseException) e;
+            }
+            InvalidOperatorResponseException wrapped =
+                    new InvalidOperatorResponseException(e.toString(), e, ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            // message carries the immediate cause (with class name) for the persisted error field;
+            // rootCause carries the deepest cause so the two fields hold distinct information.
+            wrapped.setRootCause(org.springframework.core.NestedExceptionUtils.getMostSpecificCause(e).toString());
+            throw wrapped;
 
         }
 
@@ -496,10 +509,16 @@ public class SportWalletServiceImpl implements SportWalletService {
             }
 
         } catch (Exception e) {
+            // GA-14768: preserve the real cause instead of masking it as a bare InvalidOperatorResponseException.
+            log.error("Sport unsettle failed [round={}, vendorBetId={}]",
+                    sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId(), e);
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBet.setInternalTransactionId(internalTransactionId);
             sportSettledBetService.save(sportSettledBet);
-            throw new InvalidOperatorResponseException();
+            InvalidOperatorResponseException wrapped =
+                    new InvalidOperatorResponseException(e.toString(), e, ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            wrapped.setRootCause(org.springframework.core.NestedExceptionUtils.getMostSpecificCause(e).toString());
+            throw wrapped;
 
         }
 
@@ -584,9 +603,18 @@ public class SportWalletServiceImpl implements SportWalletService {
             //resettle will insert into resettlement date change
             kafkaService.produceSportResettleDateChange(betHistory);
         } catch (Exception e) {
+            // GA-14768: preserve the real cause instead of masking it as a bare InvalidOperatorResponseException.
+            log.error("Sport resettle failed [round={}, vendorBetId={}]",
+                    sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId(), e);
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBetService.save(sportSettledBet);
-            throw new InvalidOperatorResponseException();
+            if (e instanceof InvalidOperatorResponseException) {
+                throw (InvalidOperatorResponseException) e;
+            }
+            InvalidOperatorResponseException wrapped =
+                    new InvalidOperatorResponseException(e.toString(), e, ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            wrapped.setRootCause(org.springframework.core.NestedExceptionUtils.getMostSpecificCause(e).toString());
+            throw wrapped;
 
         }
 
@@ -658,7 +686,13 @@ public class SportWalletServiceImpl implements SportWalletService {
         } catch (GameNotSupportedException gameNotSupportedException) {
             throw gameNotSupportedException;
         } catch (Exception e) {
-            throw new InvalidOperatorResponseException();
+            // GA-14768: preserve the real cause instead of masking it as a bare InvalidOperatorResponseException.
+            log.error("Sport adjustment failed [vendorUsername={}, externalTransactionId={}]",
+                    sportAdjustmentData.getVendorUsername(), sportAdjustmentData.getExternalTransactionId(), e);
+            InvalidOperatorResponseException wrapped =
+                    new InvalidOperatorResponseException(e.toString(), e, ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            wrapped.setRootCause(org.springframework.core.NestedExceptionUtils.getMostSpecificCause(e).toString());
+            throw wrapped;
 
         }
 

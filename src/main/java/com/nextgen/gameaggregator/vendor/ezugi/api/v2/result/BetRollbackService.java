@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.v2.result;
 
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.*;
+import com.nextgen.gameaggregator.core.engine.wallet.rollback.enums.RollbackType;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,7 +25,7 @@ public class BetRollbackService extends AbstractBetRollbackController<BetResultR
 
     @Override
     public void configure(BetRollbackConfig config, BetResultRequest request) {
-        config.isRollbackByBet();
+        config.rollbackType(RollbackType.BY_BET);
     }
 
     private void enrichResponse(BetResultResponse response, BetResultRequest request) {
