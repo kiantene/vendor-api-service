@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
@@ -33,14 +34,23 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        String country = GeoIpUtil.getCountryCode(gameSession.getIpAddress());
+
+        String ipAddress = gameSession.getIpAddress();
+        String country = GeoIpUtil.getCountryCode(ipAddress);
+
         formData.add("platform", gameSession.getVendorPlatformCode());
         if (!isLobbyGame(gameCode)) {
             formData.add("game", gameCode);
         }
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("token", gameSession.getToken());
-        formData.add("country", country);
+        
+        if (StringUtils.hasText(country)) {
+            formData.add("country", country);
+        } else {
+            log.warn("GeoIP lookup failed or returned null for IP: [{}]. Skipping 'country' parameter in Booongo launch request.", ipAddress);
+        }
+
         return formData;
     }
 
@@ -56,7 +66,7 @@ public class GameUrlService implements GameUrl {
 
         formData.add("WL", credentials.get(Credentials.WL));
 
-        //combine all string and generate game url
+        // combine all strings and generate game url
         gameUrlVo.setGameUrl(generateGameUrl(apiUrl, vendorPagePath, formData));
 
         return gameUrlVo;
