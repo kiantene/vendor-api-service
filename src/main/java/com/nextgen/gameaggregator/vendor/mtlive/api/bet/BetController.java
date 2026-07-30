@@ -1,13 +1,8 @@
 package com.nextgen.gameaggregator.vendor.mtlive.api.bet;
 
-import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.AbstractBetController;
 import com.nextgen.gameaggregator.core.engine.wallet.bet.WalletBetService;
-import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.mtlive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.mtlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.mtlive.response.SuccessResponse;
 import com.nextgen.gameaggregator.vendor.mtlive.util.VendorUtil;
@@ -21,14 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class BetController extends AbstractBetController<BetRequest, SuccessResponse> {
-    private final VendorLineService vendorLineService;
+    private final VendorUtil vendorUtil;
 
     protected BetController(BetRequestMapper requestMapper,
                             BetResponseMapper responseMapper,
                             WalletBetService walletBetService,
-                            VendorLineService vendorLineService) {
+                            VendorUtil vendorUtil) {
         super(requestMapper, responseMapper, walletBetService);
-        this.vendorLineService = vendorLineService;
+        this.vendorUtil = vendorUtil;
     }
 
     @PostMapping(path = EndPoints.BET)
@@ -36,13 +31,6 @@ public class BetController extends AbstractBetController<BetRequest, SuccessResp
     public ResponseEntity<String> bet(
             @Valid @ModelAttribute BetRequest request) {
         SuccessResponse response = processRequest(request);
-        VendorCredentialAccessor accessor;
-        try {
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.SYSTEM_CODE, request.getSystem_code());
-            accessor = new VendorCredentialAccessor(vendorLineService.mapCredentialsByName(vendorLineId));
-        } catch (CredentialNotFoundException ex) {
-            throw new InternalConfigurationException(Credentials.SYSTEM_CODE + " not found", ex);
-        }
-        return VendorUtil.encryptResponse(response, accessor);
+        return vendorUtil.encryptResponse(response, request.getUser_id());
     }
 }
