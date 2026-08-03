@@ -207,15 +207,15 @@ class EndorphinaGameLauncherTest {
         when(context.getVendorCredentials()).thenReturn(credentialMap);
         when(credentialUtils.of(credentialMap)).thenReturn(accessor);
 
-        // First call outside try block returns "node_123", second call inside try block throws exception
-        when(accessor.getValue(Credentials.NODE_ID))
-                .thenReturn("node_123")
-                .thenThrow(new RuntimeException("Error accessing node credential during object build"));
-
+        when(accessor.getValue(Credentials.NODE_ID)).thenReturn("node_123");
         when(accessor.getValue(Credentials.SALT)).thenReturn("secret_salt");
 
         when(context.getToken()).thenReturn("token-123");
-        when(context.getLobbyUrl()).thenReturn("https://lobby.com");
+        // First invocation succeeds outside try block, second invocation inside try block throws
+        when(context.getLobbyUrl())
+                .thenReturn("https://lobby.com")
+                .thenThrow(new RuntimeException("Error accessing lobby URL during request building"));
+
         when(context.getVendorLanguageCode()).thenReturn("en");
         when(context.getVendorToken()).thenReturn("token123");
 
@@ -225,7 +225,7 @@ class EndorphinaGameLauncherTest {
                 () -> launcher.buildRequestBody(context)
         );
 
-        assertEquals("Error accessing node credential during object build", exception.getMessage());
+        assertEquals("Error accessing lobby URL during request building", exception.getMessage());
         assertInstanceOf(RuntimeException.class, exception.getCause());
     }
 }
