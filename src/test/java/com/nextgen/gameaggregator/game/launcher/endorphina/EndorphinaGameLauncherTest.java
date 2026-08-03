@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -108,6 +111,90 @@ class EndorphinaGameLauncherTest {
         // Assert signature field exists and is non-blank
         assertNotNull(request.getSign());
         assertFalse(request.getSign().isBlank());
+    }
+
+    @Test
+    @DisplayName("buildRequestBody should default null vendorLanguageCode to 'en' in request, sorted params, and signature payload")
+    void buildRequestBody_WhenLanguageCodeIsNull_ShouldFallbackToEn() {
+        // Arrange
+        Map<String, VendorLineCredential> credentialMap = new HashMap<>();
+        VendorCredentialAccessor accessor = mock(VendorCredentialAccessor.class);
+
+        when(context.getVendorCredentials()).thenReturn(credentialMap);
+        when(credentialUtils.of(credentialMap)).thenReturn(accessor);
+
+        when(accessor.getValue(Credentials.NODE_ID)).thenReturn("node_123");
+        when(accessor.getValue(Credentials.SALT)).thenReturn("secret_salt");
+
+        when(context.getToken()).thenReturn("token-123-abc");
+        when(context.getLobbyUrl()).thenReturn("https://lobby.com");
+        when(context.getVendorLanguageCode()).thenReturn(null); // Explicit null
+        when(context.getVendorToken()).thenReturn("token123abc");
+
+        // Act
+        GameLaunchRequest request = launcher.buildRequestBody(context);
+
+        // Assert language fallback in request body
+        assertNotNull(request);
+        assertEquals("en", request.getLang());
+
+        // Assert language fallback in VendorUtil.buildSortedParams
+        Map<String, String> sortedParams = VendorUtil.buildSortedParams(
+                "https://lobby.com", null, "token123abc", "node_123"
+        );
+        assertEquals("en", sortedParams.get("lang"));
+
+        // Assert payload calculation uses 'en' instead of null or empty string
+        String signaturePayload = VendorUtil.getSignature(sortedParams, "secret_salt");
+        String expectedPayload = "https://lobby.comennode_123token123abcsecret_salt";
+        assertEquals(expectedPayload, signaturePayload);
+    }
+
+    @Test
+    @DisplayName("buildRequestBody should default blank vendorLanguageCode to 'en' in request, sorted params, and signature payload")
+    void buildRequestBody_WhenLanguageCodeIsBlank_ShouldFallbackToEn() {
+        // Arrange
+        Map<String, VendorLineCredential> credentialMap = new HashMap<>();
+        VendorCredentialAccessor accessor = mock(VendorCredentialAccessor.class);
+
+        when(context.getVendorCredentials()).thenReturn(credentialMap);
+        when(credentialUtils.of(credentialMap)).thenReturn(accessor);
+
+        when(accessor.getValue(Credentials.NODE_ID)).thenReturn("node_123");
+        when(accessor.getValue(Credentials.SALT)).thenReturn("secret_salt");
+
+        when(context.getToken()).thenReturn("token-123-abc");
+        when(context.getLobbyUrl()).thenReturn("https://lobby.com");
+        when(context.getVendorLanguageCode()).thenReturn("   "); // Explicit blank string
+        when(context.getVendorToken()).thenReturn("token123abc");
+
+        // Act
+        GameLaunchRequest request = launcher.buildRequestBody(context);
+
+        // Assert language fallback in request body
+        assertNotNull(request);
+        assertEquals("en", request.getLang());
+
+        // Assert language fallback in VendorUtil.buildSortedParams
+        Map<String, String> sortedParams = VendorUtil.buildSortedParams(
+                "https://lobby.com", "   ", "token123abc", "node_123"
+        );
+        assertEquals("en", sortedParams.get("lang"));
+
+        // Assert payload calculation uses 'en' instead of whitespace/empty string
+        String signaturePayload = VendorUtil.getSignature(sortedParams, "secret_salt");
+        String expectedPayload = "https://lobby.comennode_123token123abcsecret_salt";
+        assertEquals(expectedPayload, signaturePayload);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"  ", "\t\n"})
+    @DisplayName("VendorUtil.buildSortedParams should substitute null or blank language code with 'en'")
+    void buildSortedParams_WhenLangIsNullOptionallyOrBlank_ShouldDefaultToEn(String inputLang) {
+        Map<String, String> params = VendorUtil.buildSortedParams("https://lobby.com", inputLang, "token123", "node_1");
+
+        assertEquals("en", params.get("lang"));
     }
 
     @Test
