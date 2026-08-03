@@ -13,9 +13,12 @@ import com.nextgen.gameaggregator.vendor.endorphina.constant.EndPoints;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class EndorphinaGameLauncher extends QueryStringUrlGameLauncher<GameLaunchRequest> {
+
+    private static final String DEFAULT_LANGUAGE = "en";
 
     protected EndorphinaGameLauncher(VendorCredentialUtils credentialUtils) {
         super(credentialUtils, EndorphinaConfig.CLASS_NAME, SigningStrategyType.SHA1_HEX);
@@ -37,16 +40,24 @@ public class EndorphinaGameLauncher extends QueryStringUrlGameLauncher<GameLaunc
         VendorCredentialAccessor accessor = credentials(context.getVendorCredentials());
         String nodeId = accessor.getValue(Credentials.NODE_ID);
         String salt = accessor.getValue(Credentials.SALT);
+
+        String lang = Objects.toString(context.getVendorLanguageCode(), DEFAULT_LANGUAGE);
+        if (lang.isBlank()) {
+            lang = DEFAULT_LANGUAGE;
+        }
+
         context.setVendorToken(VendorUtil.removeDash(context.getToken()));
-        // sort params by sequence "abc"
-        Map<String, String> sortedParams = VendorUtil.buildSortedParams(context.getLobbyUrl(), context.getVendorLanguageCode(), context.getVendorToken(), nodeId);
+
+        // Sort params by sequence "abc"
+        Map<String, String> sortedParams = VendorUtil.buildSortedParams(context.getLobbyUrl(), lang, context.getVendorToken(), nodeId);
         String queryParams = VendorUtil.getSignature(sortedParams, salt);
         String finalSign = sign(queryParams, "");
+
         try {
             return GameLaunchRequest.builder()
                     .exit(context.getLobbyUrl())
-                    .lang(context.getVendorLanguageCode())
-                    .nodeId(accessor.getValue(Credentials.NODE_ID))
+                    .lang(lang)
+                    .nodeId(nodeId)
                     .token(context.getVendorToken())
                     .sign(finalSign)
                     .build();
