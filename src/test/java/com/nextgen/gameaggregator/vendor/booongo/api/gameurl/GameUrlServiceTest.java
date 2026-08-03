@@ -177,4 +177,26 @@ class GameUrlServiceTest {
             assertEquals("https://game.booongo.com/project/launch?token=abc%20123&lang=en", url);
         }
     }
+
+    @Test
+    @DisplayName("Should omit 'country' param when GeoIpUtil returns null")
+    void formDataBuilder_NullCountry_OmitsCountryParam() throws InvalidVendorLineException, InvalidFormatException {
+        // Arrange
+        GameSession gameSession = new GameSession();
+        gameSession.setIpAddress("192.168.1.1");
+        gameSession.setVendorPlatformCode("desktop");
+        gameSession.setVendorLanguageCode("en");
+        gameSession.setToken("session-token-123");
+
+        geoIpUtilMockedStatic.when(() -> GeoIpUtil.getCountryCode("192.168.1.1"))
+                .thenReturn(null);
+
+        // Act
+        MultiValueMap<String, String> formData = gameUrlService.formDataBuilder("game_123", gameSession, new HashMap<>());
+
+        // Assert
+        assertNotNull(formData);
+        assertNull(formData.getFirst("country"));
+        assertFalse(formData.containsKey("country"));
+    }
 }
