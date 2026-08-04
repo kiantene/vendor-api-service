@@ -301,6 +301,7 @@ public class CashTransferInOutAction {
             gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         }
 
+        boolean verificationPassed = false;
         try {
             //1. validate vendor username, agent vendor line, player status, and requested game status
             validationService.isBetAllowed(gameSession, dto.getPlayerName());
@@ -320,16 +321,14 @@ public class CashTransferInOutAction {
             loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
             ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
 
-        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException |
-                 AuthenticationException | GameTerminatedException | CurrencyNotSupportedException |
-                 CredentialNotFoundException | InvalidSignatureException exception) {
-            if (isUsingDifferentGame) {
+            verificationPassed = true;
+        } finally {
+            if (!verificationPassed && isUsingDifferentGame) {
                 gameSession.setVendorGameId(originalVendorGameId);
                 gameSession.setVendorGameCode(originalVendorGameCode);
                 gameSession.setGameCode(originalGameCode);
                 gameSession.setGameCategoryId(originalGameCategoryId);
             }
-            throw exception;
         }
 
         //persist session game update after requested game validation passed.
