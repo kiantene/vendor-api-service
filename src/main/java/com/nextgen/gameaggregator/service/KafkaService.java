@@ -10,11 +10,14 @@ import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.entity.warehouse.PromoPayoutHistory;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.kafka.KafkaDlqService;
+import com.nextgen.gameaggregator.service.kafka.KafkaSerializerType;
 import com.nextgen.gameaggregator.service.data.producer.endround.RoundEndedTriggerMessage;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.util.StackTraceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -27,34 +30,41 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class KafkaService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Gson GSON = new Gson();
     private final KafkaTemplate<String, String> stringKafkaTemplate;
     private final KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
+    private final KafkaTemplate<String, Object> apiRequestLogKafkaTemplate;
     private final CurrencyConversionService currencyConversionService;
     private final WarehouseBetHistoryService warehouseBetHistoryService;
     private final AgentPlayerService agentPlayerService;
     private final VendorPlayerService vendorPlayerService;
     private final S3BetService s3BetService;
+    private final KafkaDlqService kafkaDlqService;
 
     @Value("${logging.log-to-kafka:true}")
     private boolean logToKafka;
 
     @Autowired
     public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
-                        KafkaTemplate<String, Object> jsonSchemaKafkaTemplate,
+                        @Qualifier("jsonSchemaKafkaTemplate") KafkaTemplate<String, Object> jsonSchemaKafkaTemplate,
+                        @Qualifier("apiRequestLogKafkaTemplate") KafkaTemplate<String, Object> apiRequestLogKafkaTemplate,
                         CurrencyConversionService currencyConversionService,
                         WarehouseBetHistoryService warehouseBetHistoryService,
                         AgentPlayerService agentPlayerService,
                         VendorPlayerService vendorPlayerService,
-                        S3BetService s3BetService
+                        S3BetService s3BetService,
+                        KafkaDlqService kafkaDlqService
     ) {
 
         this.stringKafkaTemplate = stringKafkaTemplate;
         this.jsonSchemaKafkaTemplate = jsonSchemaKafkaTemplate;
+        this.apiRequestLogKafkaTemplate = apiRequestLogKafkaTemplate;
         this.currencyConversionService = currencyConversionService;
         this.warehouseBetHistoryService = warehouseBetHistoryService;
         this.agentPlayerService = agentPlayerService;
         this.vendorPlayerService = vendorPlayerService;
         this.s3BetService = s3BetService;
+        this.kafkaDlqService = kafkaDlqService;
     }
 
     public void produceBetHistory(BetHistory betHistory, String vendorPlayerUsername, BigDecimal conversionRate) {
@@ -190,7 +200,10 @@ public class KafkaService {
             BetHistoryV3 betHistoryV3 = new BetHistoryV3(betHistory, null, null, null, agentPlayerUsername,
                     vendorPlayerUsername, warehouseFutureEntity);
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V3, betHistoryV3);
+            // GA-14578: send with durable fallback (keyless — preserve current partitioning).
+            String dedupKey = betHistory.getVendorId() + "::" + betHistory.getId() + "::" + betHistory.getRoundId();
+            kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V3, null, dedupKey,
+                    betHistoryV3, KafkaSerializerType.JSON_SCHEMA);
 
         } catch (Exception e) {
             log.error("PreprocessingBetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
@@ -257,14 +270,20 @@ public class KafkaService {
     public void produceApiRequestLog(ApiRequestLog apiRequestLog) {
         if (this.logToKafka) {
             try {
-                jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog);
+                apiRequestLogKafkaTemplate
+                        .send(KafkaConstant.TOPIC_API_REQUEST_LOG, apiRequestLog.getUsername(), apiRequestLog)
+                        .whenComplete((result, ex) -> {
+                            if (ex != null) {
+                                log.error("ApiRequestLog delivery failed roundId=[{}], {}, {}", apiRequestLog.getRoundId(), ex.getMessage(), StackTraceUtils.getStackTraceAsString(ex));
+                                log.info(GSON.toJson(apiRequestLog));
+                            }
+                        });
             } catch (Exception e) {
-                log.error("ApiRequestLog roundId=[{}], {}, {}", apiRequestLog.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
-                log.info(new Gson().toJson(apiRequestLog));
-
+                log.error("ApiRequestLog delivery failed roundId=[{}], {}, {}", apiRequestLog.getRoundId(), e.getMessage(), StackTraceUtils.getStackTraceAsString(e));
+                log.info(GSON.toJson(apiRequestLog));
             }
         } else {
-            log.info(new Gson().toJson(apiRequestLog));
+            log.info(GSON.toJson(apiRequestLog));
         }
     }
 
@@ -294,13 +313,10 @@ public class KafkaService {
         try {
             String json = OBJECT_MAPPER.writeValueAsString(betHistoryV3);
 
-            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
-
-            future.exceptionally(throwable -> {
-                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
-                log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), throwable.getMessage(), throwable);
-                return null;
-            });
+            // GA-14578: send with durable fallback (keyless — preserve current partitioning).
+            String dedupKey = betHistoryV3.getVendorId() + "::" + betHistoryV3.getId() + "::" + betHistoryV3.getRoundId();
+            kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_V4, null, dedupKey,
+                    json, KafkaSerializerType.STRING);
         } catch (Exception ex) {
             log.error("BetHistoryV3: " + ex.getMessage() + " -> vendorBetId = " + betHistoryV3.getVendorBetId() + "& roundId = " + betHistoryV3.getRoundId());
             log.error("BetHistoryV3 roundId=[{}], {}", betHistoryV3.getRoundId(), ex.getMessage(), ex);
@@ -345,13 +361,10 @@ public class KafkaService {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(betHistoryV3);
 
-            CompletableFuture<SendResult<String, String>> future = stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V4, json);
-
-            future.exceptionally(throwable -> {
-                log.error("BetHistoryV3: " + throwable.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
-                log.error("BetHistoryV3 roundId=[{}], {}", betHistory.getRoundId(), throwable.getMessage(), throwable);
-                return null;
-            });
+            // GA-14578: send with durable fallback (keyless — preserve current partitioning).
+            String dedupKey = betHistory.getVendorId() + "::" + betHistory.getId() + "::" + betHistory.getRoundId();
+            kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_V4, null, dedupKey,
+                    json, KafkaSerializerType.STRING);
 
         } catch (Exception e) {
             log.error("BetHistoryV3: " + e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());

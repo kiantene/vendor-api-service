@@ -23,7 +23,7 @@ public class GameUrlDto {
 
     @NotBlank(message = "gameCode cannot be blank")
     @Size(min = 3, max = 200, message = "gameCode must be between 3 and 200 characters")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_AT_REGEX, message = "gameCode must be alphanumeric and may include '-', '_', or '@'")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_DOT_AT_SEMICOLON_REGEX, message = "gameCode must be alphanumeric and may include '-', '_', '.', '@', or ';'")
     private String gameCode;
 
     @NotBlank(message = "2 alphanumeric")

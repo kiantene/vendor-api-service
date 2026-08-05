@@ -19,7 +19,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
-@Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
+// GA-14893 (interim): Evoplay is intentionally NOT registered as a new-framework game-launch
+// handler. With no "evoplay" entry in GameLauncherRegistry, operator/game/url/GameUrlService falls
+// through to the legacy vendor/evoplay/api/gameurl/GameUrlService, whose
+// BaseGameUrlService.doGet().encode() correctly handles operator lobby URLs that contain a '#'
+// fragment. The new-framework path fragment-splits/double-encodes such URLs (SC_VENDOR_ERROR).
+//
+// DO NOT simply uncomment @Service to switch back: getPath() below still uses .build(false) (no
+// encoding), so re-registering this launcher WITHOUT the framework fix reintroduces the GA-14893
+// bug (raw '#' fragment-splits the query -> denomination/currency dropped -> SC_VENDOR_ERROR).
+// Re-enabling is owned by OVI-2598 and requires ALL of: the URI-aware shared caller, getPath()
+// using .build().encode(), isUrlPreEncoded()=true, and the wire-level regression test.
+// @Service(EndPoints.CLASS_NAME + GameLaunchHandler.NAME)
 public class EvoplayGameLauncher extends AbstractGameLaunchHandler<String, GameLaunchResponse> {
 
     protected EvoplayGameLauncher(VendorCredentialUtils credentialUtils) {

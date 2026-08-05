@@ -33,6 +33,7 @@ public class LoggingManager {
         LogContext logContext = LogContextHolder.get();
         if (logContext != null) {
             // for backward compatibility with httpRequestLog/apiRequestLog, will be removed in the future
+            // logApiRequest builds on this (request) thread and publishes off it (GA-14750)
             logContextService.logApiRequest(logContext, responseBody);
             this.logAsync(logContext, responseBody, ex);
         }
