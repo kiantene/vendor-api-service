@@ -119,12 +119,13 @@ public class ResettleTransactionDto implements SportResettleData {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ExtraInfoDto {
-        private Boolean isOnlyWinlostDateChanged;
+        @JsonProperty("isOnlyWinlostDateChanged")
+        private Boolean isOnlyWinLostDateChanged;
     }
 
-    public boolean isOnlyWinlostDateChanged() {
+    public boolean isOnlyWinLostDateChanged() {
         return extraInfo != null
-                && extraInfo.getIsOnlyWinlostDateChanged() != null
-                && extraInfo.getIsOnlyWinlostDateChanged();
+                && extraInfo.getIsOnlyWinLostDateChanged() != null
+                && extraInfo.getIsOnlyWinLostDateChanged();
     }
 }
