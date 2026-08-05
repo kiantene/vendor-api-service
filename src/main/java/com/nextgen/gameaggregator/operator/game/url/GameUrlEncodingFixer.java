@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @Component
 public class GameUrlEncodingFixer {
 
-    private static final Set<String> NESTED_URL_PARAM_NAMES = Set.of("homepage", "lobbyUrl", "lobby_url", "return_url");
+    private static final Set<String> NESTED_URL_PARAM_NAMES = Set.of("homepage", "lobbyUrl", "lobby_url", "return_url", "leaveUrl");
 
     private static final Pattern TOP_LEVEL_QUERY_PARAM =
             Pattern.compile("([^&=?]+)=([^&]*)");

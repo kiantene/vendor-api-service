@@ -170,6 +170,28 @@ class GameUrlEncodingFixerTest {
     }
 
     @Test
+    void repairsUnencodedLeaveUrlParam_cq9RealExample() {
+        // Real CQ9 gameUrl (GA-ticket "Add leaveUrl support to GameUrlEncodingFixer for CQ9"):
+        // leaveUrl is returned completely unencoded, with its own raw '?' and '=' embedded in the
+        // outer query string. Unlike the other test cases (over-encoded), this exercises the
+        // opposite direction: percentDecode is a no-op here, and percentEncode does the real work.
+        String url = "https://h5cq.cqgame.games/h5/181/?token=1ace4c149a7c127d0ed95efa48d42894" +
+                "&language=en&dollarsign=Y&app=N&detect=N" +
+                "&leaveUrl=https://clientsapi22.ibbf55-resources.com/casino/getReturnPage?gameId=260427";
+
+        String result = enabled().normalize(url, TEST_VENDOR_ID);
+
+        assertThat(result).contains(
+                "leaveUrl=https%3A%2F%2Fclientsapi22.ibbf55-resources.com%2Fcasino%2FgetReturnPage%3FgameId%3D260427");
+        // Every other param must survive untouched, including the unencoded '&' boundaries around leaveUrl.
+        assertThat(result).contains("token=1ace4c149a7c127d0ed95efa48d42894&");
+        assertThat(result).contains("&language=en&");
+        assertThat(result).contains("&dollarsign=Y&");
+        assertThat(result).contains("&app=N&");
+        assertThat(result).contains("&detect=N&");
+    }
+
+    @Test
     void urlFragment_isNotAbsorbedIntoWhitelistedParamValue() {
         // fragment after the query string must survive untouched,
         // not get pulled into the last whitelisted param's value and percent-encoded as %23.
