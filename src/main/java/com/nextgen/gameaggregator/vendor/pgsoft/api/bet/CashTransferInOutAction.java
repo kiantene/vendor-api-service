@@ -195,9 +195,13 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
-        } catch (GameNotSupportedException | DisabledGameException gameNotSupportedException) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, gameNotSupportedException);
+
+        } catch (DisabledGameException disabledGameException) {
+            parentResponseVo.setError(ResponseCodes.BET_FAILED);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
