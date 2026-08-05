@@ -47,6 +47,7 @@ public class ApiAction {
         // Switch statement to determine which action to take based on the API request header
         switch (apiAction) {
             case Headers.HEADER_VALUE_AUTHENTICATE:
+            case Headers.HEADER_VALUE_GET_AUTHORIZE:
                 return authenticateService.authenticate(request);
 
             case Headers.HEADER_VALUE_BALANCE:
