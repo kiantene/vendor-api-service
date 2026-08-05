@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.saba.api.resettle;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -98,24 +95,19 @@ class ResettleActionTest {
         when(vendorService.generateBatchProcessId(anyString(), anyString())).thenReturn("batch_4200500_1_25");
         when(rawBatchProcessIdempotentLogService.checkExists("batch_4200500_1_25")).thenReturn(null);
 
-        // Act & Assert static ObjectMapper method deserialization
-        try (MockedStatic<HttpService> mockedHttpService = mockStatic(HttpService.class)) {
-            mockedHttpService.when(() -> HttpService.convertJsonToDto(eq(jsonPayload), any(TypeReference.class)))
-                    .thenCallRealMethod();
+        // Act
+        GeneralVo response = resettleAction.action(httpServletRequest);
 
-            GeneralVo response = resettleAction.action(httpServletRequest);
+        // Assertions
+        assertNotNull(response);
+        assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
+        assertFalse(response.hasError());
 
-            // Assertions using ResponseCode.SUCCESS.status field directly
-            assertNotNull(response);
-            assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
-            assertFalse(response.hasError());
+        // Key assertion: ensure wallet service resettle is NOT invoked
+        verify(sportWalletService, never()).resettle(anyString(), any(ResettleTransactionDto.class), any(HttpRequestLog.class));
 
-            // Key assertion: ensure wallet service resettle is NOT invoked
-            verify(sportWalletService, never()).resettle(anyString(), any(ResettleTransactionDto.class), any(HttpRequestLog.class));
-
-            // Verify batch log created
-            verify(rawBatchProcessIdempotentLogService).create(any());
-        }
+        // Verify batch log created
+        verify(rawBatchProcessIdempotentLogService).create(any());
     }
 
     @Test
@@ -154,18 +146,61 @@ class ResettleActionTest {
         when(vendorService.generateBatchProcessId(anyString(), anyString())).thenReturn("batch_4200500_1_25");
         when(rawBatchProcessIdempotentLogService.checkExists("batch_4200500_1_25")).thenReturn(null);
 
-        try (MockedStatic<HttpService> mockedHttpService = mockStatic(HttpService.class)) {
-            mockedHttpService.when(() -> HttpService.convertJsonToDto(eq(jsonPayload), any(TypeReference.class)))
-                    .thenCallRealMethod();
+        // Act
+        GeneralVo response = resettleAction.action(httpServletRequest);
 
-            GeneralVo response = resettleAction.action(httpServletRequest);
+        // Assertions
+        assertNotNull(response);
+        assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
+        assertFalse(response.hasError());
 
-            assertNotNull(response);
-            assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
-            assertFalse(response.hasError());
+        // Assert resettle WAS executed exactly once
+        verify(sportWalletService).resettle(eq("trace-12345"), any(ResettleTransactionDto.class), eq(httpRequestLog));
+    }
 
-            // Assert resettle WAS executed exactly once
-            verify(sportWalletService).resettle(eq("trace-12345"), any(ResettleTransactionDto.class), eq(httpRequestLog));
-        }
+    @Test
+    @DisplayName("When extraInfo is null (backward compatibility), should call sportWalletService.resettle()")
+    void action_WhenExtraInfoIsNull_ShouldProcessResettle() throws Exception {
+        // Legacy payload omitting extraInfo completely
+        String jsonPayload = """
+                {
+                  "key": "test_key",
+                  "message": {
+                    "action": "Resettle",
+                    "operationId": "4200500_1_25",
+                    "txns": [
+                      {
+                        "userId": "player01",
+                        "refId": "4200500_555",
+                        "txId": 339482738748,
+                        "updateTime": "2021-09-08T04:49:32.383-04:00",
+                        "winlostDate": "2021-09-08T00:00:00.000-04:00",
+                        "status": "won",
+                        "payout": 3.5600,
+                        "creditAmount": 3.5600,
+                        "debitAmount": 0.0,
+                        "extraStatus": "",
+                        "settlementTime": "2021-09-08T04:49:26.3"
+                      }
+                    ]
+                  }
+                }
+                """;
+
+        httpRequestLog.setRequestBody(jsonPayload);
+
+        when(vendorService.generateBatchProcessId(anyString(), anyString())).thenReturn("batch_4200500_1_25");
+        when(rawBatchProcessIdempotentLogService.checkExists("batch_4200500_1_25")).thenReturn(null);
+
+        // Act
+        GeneralVo response = resettleAction.action(httpServletRequest);
+
+        // Assertions
+        assertNotNull(response);
+        assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
+        assertFalse(response.hasError());
+
+        // Assert resettle WAS executed for legacy payloads without extraInfo
+        verify(sportWalletService).resettle(eq("trace-12345"), any(ResettleTransactionDto.class), eq(httpRequestLog));
     }
 }
