@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.action;
 
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.*;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -13,7 +15,9 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping(EndPoints.PATH)
 public class ApiAction {
@@ -35,7 +39,10 @@ public class ApiAction {
 
     // Handle incoming API requests
     @PostMapping
-    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction, HttpServletRequest request) {
+    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction,
+                                    @RequestHeader Map<String, String> requestHeaders,
+                                    HttpServletRequest request) {
+        log.info("SpadeGaming request headers: {}", requestHeaders);
 
         // Switch statement to determine which action to take based on the API request header
         switch (apiAction) {
