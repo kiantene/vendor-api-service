@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.playtech.constant.Format;
+import com.nextgen.gameaggregator.vendor.playtech.dto.LiveTableDetailsDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -81,5 +82,13 @@ public class VendorService extends BaseVendorService {
 
     public String getExtractToken(String token) {
         return token.substring(token.lastIndexOf("_") + 1);
+    }
+
+
+    public static String resolveVendorGameCode(String gameCodeName, LiveTableDetailsDto liveTableDetails) {
+        if (liveTableDetails != null && liveTableDetails.getLaunchAlias() != null && !liveTableDetails.getLaunchAlias().isBlank()) {
+            return gameCodeName + ";" + liveTableDetails.getLaunchAlias();
+        }
+        return gameCodeName;
     }
 }

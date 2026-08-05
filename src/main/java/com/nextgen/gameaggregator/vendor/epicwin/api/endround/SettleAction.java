@@ -67,7 +67,7 @@ public class SettleAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getPlayerId(), dto.getGameCode());
+            GameSession gameSession = this.getGameSession(dto, traceId);
 
             this.doVerification(dto, gameSession);
 
@@ -77,13 +77,6 @@ public class SettleAction {
             vo.setResponseDateTime(dto.getRequestDateTime());
             vo.setOldBalance((balance.subtract(dto.getWinAmount())).setScale(4, RoundingMode.DOWN));
             vo.setNewBalance(balance.setScale(4, RoundingMode.DOWN));
-
-        } catch (AuthenticationException e) {
-            vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
-            vo.setOldBalance(BigDecimal.ZERO);
-            vo.setNewBalance(BigDecimal.ZERO);
-            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
@@ -188,5 +181,20 @@ public class SettleAction {
             throw new InvalidRequestException(String.valueOf(ResponseCodes.INTERNAL_SERVER_ERROR.Status));
         }
 
+    }
+
+    private GameSession getGameSession(SettleDto settleDto, String traceId) throws InvalidPlayerException,
+            GameNotSupportedException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getPlayerId(), settleDto.getGameId());
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(settleDto.getPlayerId());
+            gameSessionService.updateByVendorGameCode(gameSession, settleDto.getGameCode());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

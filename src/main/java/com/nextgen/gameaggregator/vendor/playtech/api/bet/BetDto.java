@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playtech.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.playtech.dto.LiveTableDetailsDto;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
@@ -46,6 +47,10 @@ public class BetDto extends CommonDto implements BetResultData {
     @Size(max = 255)
     @JsonProperty("gameCodeName")
     private String gameCodeName;
+
+
+    @JsonProperty("liveTableDetails")
+    private LiveTableDetailsDto liveTableDetails;
 
     @Override
     public String getExternalTransactionId() {

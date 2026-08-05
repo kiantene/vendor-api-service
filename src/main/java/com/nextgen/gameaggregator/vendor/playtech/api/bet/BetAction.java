@@ -67,8 +67,9 @@ public class BetAction {
             // 3. Verify session token
             gameSession = gameSessionService.verifyToken(removedPrefix);
 
-            if (!(betDto.getGameCodeName()).equals(gameSession.getVendorGameCode())) {
-                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameCodeName(), gameSession);
+            String vendorGameCode = VendorService.resolveVendorGameCode(betDto.getGameCodeName(), betDto.getLiveTableDetails());
+            if (!vendorGameCode.equals(gameSession.getVendorGameCode())) {
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
             }
 
             // 4. Verify remaining parameters (Verify against database values)
