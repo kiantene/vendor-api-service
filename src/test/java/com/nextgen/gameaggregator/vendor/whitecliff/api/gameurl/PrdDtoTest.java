@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -77,5 +79,29 @@ class PrdDtoTest {
         dto.setCategory("x".repeat(256));
 
         assertThat(validator.validate(dto)).isNotEmpty();
+    }
+
+    @Test
+    void bothTableIdAndCategoryBlank_isTreatedAsNotSet() {
+        // "" must mean "not set", same as null - not a mutual-exclusivity violation.
+        PrdDto dto = validBase();
+        dto.setTable_id("");
+        dto.setCategory("");
+
+        assertThat(validator.validate(dto)).isEmpty();
+    }
+
+    @Test
+    void serializedJson_doesNotLeakAssertTrueMethodAsProperty() throws Exception {
+        // isTableIdAndCategoryMutuallyExclusive() is a JavaBean-style isXxx() getter, which
+        // Jackson auto-detects as a property unless @JsonIgnore is present. This DTO is
+        // serialized as the actual WhiteCliff launch request body, so a regression here would
+        // send a phantom "tableIdAndCategoryMutuallyExclusive" field to the vendor on every launch.
+        PrdDto dto = validBase();
+        dto.setTable_id("12345");
+
+        JsonNode json = new ObjectMapper().valueToTree(dto);
+
+        assertThat(json.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "is_mobile", "type", "table_id");
     }
 }

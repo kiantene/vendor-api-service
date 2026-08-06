@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -31,8 +32,16 @@ public class PrdDto {
     @Size(max = 255)
     private String category;
 
+    // Jackson auto-detects isXxx() as a getter for a "tableIdAndCategoryMutuallyExclusive"
+    // property - without @JsonIgnore this phantom boolean gets sent to the vendor on every
+    // WhiteCliff launch request (this DTO is serialized as the outbound payload).
+    @JsonIgnore
     @AssertTrue(message = "table_id and category must not both be set")
     public boolean isTableIdAndCategoryMutuallyExclusive() {
-        return table_id == null || category == null;
+        return isBlank(table_id) || isBlank(category);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
