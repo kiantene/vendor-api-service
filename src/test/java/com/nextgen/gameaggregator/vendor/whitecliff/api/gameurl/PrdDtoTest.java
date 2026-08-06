@@ -13,11 +13,16 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * table_id and category are mutually exclusive by construction in VendorService.setPrdDto
- * (category-lobby launches use category, everything else that isn't a plain "type" launch uses
- * table_id) - these tests lock that invariant in so a future change can't silently set both.
+ * Exactly one of type/table_id/category is set by construction in VendorService.setPrdDto: the
+ * live-game branch sets table_id or category and never touches type (so type is null on every
+ * such launch - matches the OAS-5003 sample body {"id":1,"is_mobile":false,"table_id":"top_games"}
+ * with no "type" key); every other launch sets only type. validBase() intentionally leaves all
+ * three unset, mirroring the DTO's state before that branch runs, so no test accidentally
+ * exercises a shape ("type=0" alongside table_id/category) production never produces.
  */
 class PrdDtoTest {
+    private static final String INVARIANT_MESSAGE = "exactly one of type, table_id or category must be set";
+
     private static Validator validator;
 
     @BeforeAll
@@ -29,13 +34,15 @@ class PrdDtoTest {
         PrdDto dto = new PrdDto();
         dto.setId(1);
         dto.setIs_mobile(false);
-        dto.setType(0);
         return dto;
     }
 
     @Test
     void typeOnly_hasNoViolations() {
-        assertThat(validator.validate(validBase())).isEmpty();
+        PrdDto dto = validBase();
+        dto.setType(0);
+
+        assertThat(validator.validate(dto)).isEmpty();
     }
 
     @Test
@@ -62,7 +69,27 @@ class PrdDtoTest {
 
         Set<ConstraintViolation<PrdDto>> violations = validator.validate(dto);
 
-        assertThat(violations).anyMatch(v -> v.getMessage().equals("table_id and category must not both be set"));
+        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
+    }
+
+    @Test
+    void typeAndTableIdBothSet_isRejected() {
+        PrdDto dto = validBase();
+        dto.setType(0);
+        dto.setTable_id("12345");
+
+        Set<ConstraintViolation<PrdDto>> violations = validator.validate(dto);
+
+        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
+    }
+
+    @Test
+    void noneOfTypeTableIdCategorySet_isRejected() {
+        // Matches what @NotNull on type used to catch, but for the right reason: nothing was
+        // ever supposed to be entirely absent, not specifically "type must always be present".
+        Set<ConstraintViolation<PrdDto>> violations = validator.validate(validBase());
+
+        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
     }
 
     @Test
@@ -82,9 +109,11 @@ class PrdDtoTest {
     }
 
     @Test
-    void bothTableIdAndCategoryBlank_isTreatedAsNotSet() {
-        // "" must mean "not set", same as null - not a mutual-exclusivity violation.
+    void blankTableIdAndCategory_withTypeSet_hasNoViolations() {
+        // "" must mean "not set", same as null - but something else (type) must still be set,
+        // since blank table_id/category don't count towards the exactly-one tally.
         PrdDto dto = validBase();
+        dto.setType(0);
         dto.setTable_id("");
         dto.setCategory("");
 
@@ -93,15 +122,16 @@ class PrdDtoTest {
 
     @Test
     void serializedJson_doesNotLeakAssertTrueMethodAsProperty() throws Exception {
-        // isTableIdAndCategoryMutuallyExclusive() is a JavaBean-style isXxx() getter, which
+        // isExactlyOneOfTypeTableIdCategorySet() is a JavaBean-style isXxx() getter, which
         // Jackson auto-detects as a property unless @JsonIgnore is present. This DTO is
         // serialized as the actual WhiteCliff launch request body, so a regression here would
-        // send a phantom "tableIdAndCategoryMutuallyExclusive" field to the vendor on every launch.
+        // send a phantom field to the vendor on every launch. Matches the OAS-5003 sample body
+        // exactly: {"id":1,"is_mobile":false,"table_id":"top_games"} - no "type" key.
         PrdDto dto = validBase();
         dto.setTable_id("12345");
 
         JsonNode json = new ObjectMapper().valueToTree(dto);
 
-        assertThat(json.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "is_mobile", "type", "table_id");
+        assertThat(json.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "is_mobile", "table_id");
     }
 }

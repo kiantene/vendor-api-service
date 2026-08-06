@@ -21,8 +21,9 @@ public class PrdDto {
     private Boolean is_mobile;
 
     // type=0 is a legitimate value (VendorService.setPrdDto's default lobbyCode is "0"), so
-    // PositiveOrZero - not Positive - matches the established typeOnly_hasNoViolations case.
-    @NotNull
+    // PositiveOrZero - not Positive. Not @NotNull: VendorService.setPrdDto's live-game branch
+    // sets table_id or category instead and never touches type, so type is null on every such
+    // launch - the real invariant (exactly one of type/table_id/category) is enforced below.
     @PositiveOrZero
     private Integer type;
 
@@ -32,13 +33,23 @@ public class PrdDto {
     @Size(max = 255)
     private String category;
 
-    // Jackson auto-detects isXxx() as a getter for a "tableIdAndCategoryMutuallyExclusive"
+    // Jackson auto-detects isXxx() as a getter for a "exactlyOneOfTypeTableIdCategorySet"
     // property - without @JsonIgnore this phantom boolean gets sent to the vendor on every
     // WhiteCliff launch request (this DTO is serialized as the outbound payload).
     @JsonIgnore
-    @AssertTrue(message = "table_id and category must not both be set")
-    public boolean isTableIdAndCategoryMutuallyExclusive() {
-        return isBlank(table_id) || isBlank(category);
+    @AssertTrue(message = "exactly one of type, table_id or category must be set")
+    public boolean isExactlyOneOfTypeTableIdCategorySet() {
+        int setCount = 0;
+        if (type != null) {
+            setCount++;
+        }
+        if (!isBlank(table_id)) {
+            setCount++;
+        }
+        if (!isBlank(category)) {
+            setCount++;
+        }
+        return setCount == 1;
     }
 
     private static boolean isBlank(String value) {
