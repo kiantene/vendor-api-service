@@ -2,8 +2,9 @@ package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -11,14 +12,17 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PrdDto {
 
+    // id is a real product id (VendorService.setPrdDto: Integer.valueOf(productId)), never 0.
     @NotNull
-    @Digits(integer = 50, fraction = 0)
+    @Positive
     private Integer id;
 
     private Boolean is_mobile;
 
+    // type=0 is a legitimate value (VendorService.setPrdDto's default lobbyCode is "0"), so
+    // PositiveOrZero - not Positive - matches the established typeOnly_hasNoViolations case.
     @NotNull
-    @Digits(integer = 50, fraction = 0)
+    @PositiveOrZero
     private Integer type;
 
     @Size(max = 255)
