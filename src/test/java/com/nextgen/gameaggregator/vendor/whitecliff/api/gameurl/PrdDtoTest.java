@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -121,17 +121,17 @@ class PrdDtoTest {
     }
 
     @Test
-    void serializedJson_doesNotLeakAssertTrueMethodAsProperty() throws Exception {
-        // isExactlyOneOfTypeTableIdCategorySet() is a JavaBean-style isXxx() getter, which
-        // Jackson auto-detects as a property unless @JsonIgnore is present. This DTO is
-        // serialized as the actual WhiteCliff launch request body, so a regression here would
-        // send a phantom field to the vendor on every launch. Matches the OAS-5003 sample body
-        // exactly: {"id":1,"is_mobile":false,"table_id":"top_games"} - no "type" key.
+    void serializedJson_matchesActualProductionSerializer() {
+        // GameUrlService.formDataBuilder ships this DTO via new Gson().toJson(...), not Jackson -
+        // asserting against Gson's own output is what actually pins the real outbound payload
+        // shape (Gson only serializes declared fields, so isExactlyOneOfTypeTableIdCategorySet()
+        // was never at risk of leaking here regardless of any Jackson annotation). Matches the
+        // OAS-5003 sample body exactly: {"id":1,"is_mobile":false,"table_id":"top_games"}.
         PrdDto dto = validBase();
         dto.setTable_id("12345");
 
-        JsonNode json = new ObjectMapper().valueToTree(dto);
+        JsonObject json = new Gson().toJsonTree(dto).getAsJsonObject();
 
-        assertThat(json.fieldNames()).toIterable().containsExactlyInAnyOrder("id", "is_mobile", "table_id");
+        assertThat(json.keySet()).containsExactlyInAnyOrder("id", "is_mobile", "table_id");
     }
 }
