@@ -22,8 +22,7 @@ public class PrdDto {
 
     // type=0 is a legitimate value (VendorService.setPrdDto's default lobbyCode is "0"), so
     // PositiveOrZero - not Positive. Not @NotNull: VendorService.setPrdDto's live-game branch
-    // sets table_id or category instead and never touches type, so type is null on every such
-    // launch - the real invariant (exactly one of type/table_id/category) is enforced below.
+    // sets table_id or category instead and never touches type, so type is null on every such launch.
     @PositiveOrZero
     private Integer type;
 
@@ -33,6 +32,12 @@ public class PrdDto {
     @Size(max = 255)
     private String category;
 
+    // NOTE: this constraint is NOT enforced automatically - GameUrlService.formDataBuilder
+    // serializes this DTO via Gson with no @Valid/validator.validate() anywhere on the path, so
+    // isExactlyOneOfTypeTableIdCategorySet() only runs when a test calls the validator directly.
+    // The actual runtime guard is the explicit isExactlyOneOfTypeTableIdCategorySet() check inside
+    // VendorService.setPrdDto, which throws InvalidFormatException before returning a bad DTO.
+    //
     // Jackson auto-detects isXxx() as a getter for a "exactlyOneOfTypeTableIdCategorySet"
     // property - without @JsonIgnore this phantom boolean gets sent to the vendor on every
     // WhiteCliff launch request (this DTO is serialized as the outbound payload).

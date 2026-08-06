@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.whitecliff.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.SettledBetService;
@@ -25,7 +26,7 @@ public class VendorService extends BaseVendorService {
 
     private GameSessionService gameSessionService;
 
-    private static final Integer CATEGORY_LOBBY_SUBCATEGORY_ID = 111;
+    private static final String CATEGORY_LOBBY_SUBCATEGORY_CODE = "WCLIVE_LOBBY";
 
     @Autowired
     public VendorService(GameSessionService gameSessionService) {
@@ -43,7 +44,7 @@ public class VendorService extends BaseVendorService {
         return userDto;
     }
 
-    public static PrdDto setPrdDto(GameSession gameSession, String productId, GameLaunchDataService.GameSubcategoryInfo subcategoryInfo) {
+    public static PrdDto setPrdDto(GameSession gameSession, String productId, GameLaunchDataService.GameSubcategoryInfo subcategoryInfo) throws InvalidFormatException {
         PrdDto prdDto = new PrdDto();
         prdDto.setId(Integer.valueOf(productId));
 
@@ -52,7 +53,7 @@ public class VendorService extends BaseVendorService {
 
         // if is live game and not lobby game then map to table id (or category, for category-launch games)
         if (gameSession.getGameCategoryId() == 5 && !gameSession.getVendorGameCode().equals(lobbyCode)) {
-            if (subcategoryInfo != null && CATEGORY_LOBBY_SUBCATEGORY_ID.equals(subcategoryInfo.id())) {
+            if (subcategoryInfo != null && CATEGORY_LOBBY_SUBCATEGORY_CODE.equals(subcategoryInfo.code())) {
                 prdDto.setCategory(gameSession.getVendorGameCode());
             } else {
                 prdDto.setTable_id(gameSession.getVendorGameCode());
@@ -62,6 +63,14 @@ public class VendorService extends BaseVendorService {
         }
 
         prdDto.setIs_mobile(gameSession.getVendorPlatformCode().equals("H5"));
+
+        // GameUrlService.formDataBuilder serializes this DTO via Gson with no @Valid anywhere on
+        // the path, so PrdDto's @AssertTrue constraint never actually runs in production - this is
+        // the one place that can still catch a malformed DTO before it ships to the vendor.
+        if (!prdDto.isExactlyOneOfTypeTableIdCategorySet()) {
+            throw new InvalidFormatException("PrdDto must have exactly one of type, table_id or category set");
+        }
+
         return prdDto;
     }
 
