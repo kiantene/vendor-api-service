@@ -18,6 +18,10 @@ public class BetAndResultRequestMapper implements BetResultContextMapper<BetAndR
                 .winAmount(request.getWinloseAmount())
                 .vendorPlayerUsername(request.getUsername())
                 .roundEnded(true)
+                // BetNSettleDto.getVendorBetTime()/getVendorSettleTime() - same wagersTime*1000
+                // value for both, since v2 bet+result settles in one shot.
+                .vendorBetTime(request.getWagersTime() * 1000)
+                .vendorSettleTime(request.getWagersTime() * 1000)
                 .build();
     }
 }
