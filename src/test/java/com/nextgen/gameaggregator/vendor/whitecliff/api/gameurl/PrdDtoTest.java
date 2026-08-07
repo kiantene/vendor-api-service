@@ -2,13 +2,10 @@ package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,9 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * with no "type" key); every other launch sets only type. validBase() intentionally leaves all
  * three unset, mirroring the DTO's state before that branch runs, so no test accidentally
  * exercises a shape ("type=0" alongside table_id/category) production never produces.
+ * <p>
+ * isExactlyOneOfTypeTableIdCategorySet() is a plain method, not a Bean Validation constraint (see
+ * its Javadoc on PrdDto) - tests for it call it directly rather than going through
+ * validator.validate(), since nothing in production does either.
  */
 class PrdDtoTest {
-    private static final String INVARIANT_MESSAGE = "exactly one of type, table_id or category must be set";
 
     private static Validator validator;
 
@@ -43,6 +43,7 @@ class PrdDtoTest {
         dto.setType(0);
 
         assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
     }
 
     @Test
@@ -51,6 +52,7 @@ class PrdDtoTest {
         dto.setTable_id("12345");
 
         assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
     }
 
     @Test
@@ -59,6 +61,7 @@ class PrdDtoTest {
         dto.setCategory("12345");
 
         assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
     }
 
     @Test
@@ -67,9 +70,7 @@ class PrdDtoTest {
         dto.setTable_id("12345");
         dto.setCategory("12345");
 
-        Set<ConstraintViolation<PrdDto>> violations = validator.validate(dto);
-
-        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isFalse();
     }
 
     @Test
@@ -78,18 +79,12 @@ class PrdDtoTest {
         dto.setType(0);
         dto.setTable_id("12345");
 
-        Set<ConstraintViolation<PrdDto>> violations = validator.validate(dto);
-
-        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isFalse();
     }
 
     @Test
     void noneOfTypeTableIdCategorySet_isRejected() {
-        // Matches what @NotNull on type used to catch, but for the right reason: nothing was
-        // ever supposed to be entirely absent, not specifically "type must always be present".
-        Set<ConstraintViolation<PrdDto>> violations = validator.validate(validBase());
-
-        assertThat(violations).anyMatch(v -> v.getMessage().equals(INVARIANT_MESSAGE));
+        assertThat(validBase().isExactlyOneOfTypeTableIdCategorySet()).isFalse();
     }
 
     @Test
@@ -118,6 +113,7 @@ class PrdDtoTest {
         dto.setCategory("");
 
         assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
     }
 
     @Test

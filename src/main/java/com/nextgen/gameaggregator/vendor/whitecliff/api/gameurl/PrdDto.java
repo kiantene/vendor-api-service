@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -31,16 +30,15 @@ public class PrdDto {
     @Size(max = 255)
     private String category;
 
-    // NOTE: this constraint is NOT enforced automatically - GameUrlService.formDataBuilder
-    // serializes this DTO via Gson (new Gson().toJson(...)) with no @Valid/validator.validate()
-    // anywhere on the path, so this method only runs when a test calls the validator directly.
-    // The actual runtime guard is the explicit isExactlyOneOfTypeTableIdCategorySet() check inside
-    // VendorService.setPrdDto, which throws InvalidFormatException before returning a bad DTO.
+    // Plain method, not a Bean Validation constraint: nothing runs @Valid/validator.validate() on
+    // this DTO in production (GameUrlService.formDataBuilder ships it via new Gson().toJson(...)),
+    // so an @AssertTrue here would never fire outside a test calling the validator directly - that
+    // would be decorative. The real runtime guard is VendorService.setPrdDto calling this method
+    // directly and throwing InvalidFormatException if it returns false.
     //
-    // No @JsonIgnore needed: Gson's default reflective serialization only visits declared fields,
-    // never methods (confirmed: new Gson().toJson(dto) never includes this method's value under
-    // any name) - unlike Jackson, it does not auto-detect isXxx()/getXxx() as bean properties.
-    @AssertTrue(message = "exactly one of type, table_id or category must be set")
+    // No @JsonIgnore needed either: Gson's default reflective serialization only visits declared
+    // fields, never methods (confirmed: new Gson().toJson(dto) never includes this method's value
+    // under any name) - unlike Jackson, it does not auto-detect isXxx()/getXxx() as bean properties.
     public boolean isExactlyOneOfTypeTableIdCategorySet() {
         int setCount = 0;
         if (type != null) {
