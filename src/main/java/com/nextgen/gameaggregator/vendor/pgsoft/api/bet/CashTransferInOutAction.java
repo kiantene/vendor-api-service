@@ -196,11 +196,11 @@ public class CashTransferInOutAction {
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
+            parentResponseVo.setError(ResponseCodes.BET_FAILED);
             httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (DisabledGameException disabledGameException) {
-            parentResponseVo.setError(ResponseCodes.BET_FAILED);
+            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
