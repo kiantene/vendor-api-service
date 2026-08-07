@@ -203,4 +203,51 @@ class ResettleActionTest {
         // Assert resettle WAS executed for legacy payloads without extraInfo
         verify(sportWalletService).resettle(eq("trace-12345"), any(ResettleTransactionDto.class), eq(httpRequestLog));
     }
+
+    @Test
+    @DisplayName("When extraInfo is empty object and isOnlyWinlostDateChanged is null, should call sportWalletService.resettle()")
+    void action_WhenExtraInfoIsPresentButFieldIsNull_ShouldProcessResettle() throws Exception {
+        // JSON payload where extraInfo exists but contains no isOnlyWinlostDateChanged field
+        String jsonPayload = """
+                {
+                  "key": "test_key",
+                  "message": {
+                    "action": "Resettle",
+                    "operationId": "4200500_1_25",
+                    "txns": [
+                      {
+                        "userId": "player01",
+                        "refId": "4200500_555",
+                        "txId": 339482738748,
+                        "updateTime": "2021-09-08T04:49:32.383-04:00",
+                        "winlostDate": "2021-09-08T00:00:00.000-04:00",
+                        "status": "won",
+                        "payout": 3.5600,
+                        "creditAmount": 3.5600,
+                        "debitAmount": 0.0,
+                        "extraStatus": "",
+                        "settlementTime": "2021-09-08T04:49:26.3",
+                        "extraInfo": {}
+                      }
+                    ]
+                  }
+                }
+                """;
+
+        httpRequestLog.setRequestBody(jsonPayload);
+
+        when(vendorService.generateBatchProcessId(anyString(), anyString())).thenReturn("batch_4200500_1_25");
+        when(rawBatchProcessIdempotentLogService.checkExists("batch_4200500_1_25")).thenReturn(null);
+
+        // Act
+        GeneralVo response = resettleAction.action(httpServletRequest);
+
+        // Assertions
+        assertNotNull(response);
+        assertEquals(ResponseCode.SUCCESS.status, response.getStatus());
+        assertFalse(response.hasError());
+
+        // Assert resettle WAS executed when extraInfo exists but contains null field
+        verify(sportWalletService).resettle(eq("trace-12345"), any(ResettleTransactionDto.class), eq(httpRequestLog));
+    }
 }
