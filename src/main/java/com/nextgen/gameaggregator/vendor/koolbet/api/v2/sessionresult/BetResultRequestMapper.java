@@ -28,6 +28,8 @@ public class BetResultRequestMapper implements BetResultContextMapper<SessionBet
                 .vendorPlayerUsername(request.getUsername())
                 .roundEnded(request.getIsOver())
                 //.roundEnded(false)
+                //set wagers time to settle time
+                .vendorSettleTime(request.getWagersTime() * 1000)
                 .build();
     }
 
