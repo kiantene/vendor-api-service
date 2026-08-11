@@ -53,8 +53,8 @@ public class AuthenticateService {
             authBalanceVo.setSerialNo(traceId);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
-            // Get game session with player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            // Get the exact game session created for this launch token.
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
