@@ -65,7 +65,7 @@ public class RollbackAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getPlayerId(), dto.getGameCode());
+            GameSession gameSession = this.getGameSession(dto, httpRequestLog.getId());
 
             this.doVerification(dto, gameSession);
 
@@ -76,13 +76,6 @@ public class RollbackAction {
             vo.setResponseDateTime(dto.getRequestDateTime());
             vo.setOldBalance(walletRequest.getBalanceBefore().setScale(4, RoundingMode.DOWN));
             vo.setNewBalance(walletRequest.getBalanceAfter().setScale(4, RoundingMode.DOWN));
-
-        } catch (AuthenticationException e) {
-            vo.setResponseCodes(ResponseCodes.INTERNAL_SERVER_ERROR);
-            vo.setResponseDateTime(dto.getRequestDateTime()); //set for vendor acceptance test
-            vo.setOldBalance(BigDecimal.ZERO);
-            vo.setNewBalance(BigDecimal.ZERO);
-            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_SIGNATURE);
@@ -176,5 +169,20 @@ public class RollbackAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
+    }
+
+    private GameSession getGameSession(RollbackDto rollbackDto, String traceId) throws InvalidPlayerException,
+            GameNotSupportedException, VendorCurrencyNotSupportException {
+        GameSession gameSession;
+        try {
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(rollbackDto.getPlayerId(), rollbackDto.getGameCode());
+        } catch (AuthenticationException e) {
+            gameSession = gameSessionService.generateNewSessionToken(rollbackDto.getPlayerId());
+            gameSessionService.updateByVendorGameCode(gameSession, rollbackDto.getGameCode());
+            gameSessionService.updateByVendorCurrencyId(gameSession);
+            gameSession.setToken(traceId);
+            gameSession.setVendorToken(traceId);
+        }
+        return gameSession;
     }
 }

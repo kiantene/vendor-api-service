@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playtech.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playtech.dto.GameRoundCloseDto;
+import com.nextgen.gameaggregator.vendor.playtech.dto.LiveTableDetailsDto;
 import com.nextgen.gameaggregator.vendor.playtech.dto.PayDto;
 import com.nextgen.gameaggregator.vendor.playtech.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
@@ -42,6 +43,8 @@ public class CommonGameRoundDto extends CommonDto implements BetResultData, Roll
     @JsonIgnore
     private Long timeStamp = System.currentTimeMillis();
 
+    @JsonProperty("liveTableDetails")
+    private LiveTableDetailsDto liveTableDetails;
 
     @Override
     public String getExternalTransactionId() {

@@ -4,7 +4,7 @@ import java.io.StringWriter;
 import java.io.PrintWriter;
 
 public class StackTraceUtils {
-    public static String getStackTraceAsString(Exception e) {
+    public static String getStackTraceAsString(Throwable e) {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
 

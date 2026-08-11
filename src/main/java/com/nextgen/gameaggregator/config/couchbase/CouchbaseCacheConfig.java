@@ -85,6 +85,11 @@ public class CouchbaseCacheConfig {
     }
 
     @Bean
+    public Collection kafkaProducerRetryJobsCollection(@Qualifier("retryScope") Scope scope) {
+        return scope.collection("kafka_producer_retry_jobs");
+    }
+
+    @Bean
     public Collection httpRetryJobsCollection(@Qualifier("retryScope") Scope scope) {
         return scope.collection("http_retry_jobs");
     }

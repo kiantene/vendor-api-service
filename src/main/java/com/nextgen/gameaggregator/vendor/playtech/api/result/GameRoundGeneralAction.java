@@ -67,6 +67,10 @@ public class GameRoundGeneralAction {
 
             gameSession = gameSessionService.verifyToken(removedPrefix);
 
+            String vendorGameCode = VendorService.resolveVendorGameCode(commonGameRoundDto.getGameCodeName(), commonGameRoundDto.getLiveTableDetails());
+            if (!vendorGameCode.equals(gameSession.getVendorGameCode())) {
+                vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(vendorGameCode, gameSession);
+            }
             this.doVerification(commonGameRoundDto, gameSession);
 
             if (commonGameRoundDto.getPay() != null && "REFUND".equals(commonGameRoundDto.getPay().getType())) {
@@ -98,7 +102,7 @@ public class GameRoundGeneralAction {
             commonBalanceVo.setTimestamp(VendorService.returnTime());
             settleVo.setBalance(commonBalanceVo);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException | GameNotSupportedException e) {
             settleVo.setError(ErrorVo.from(ResponseCodes.ERR_PLAYER_NOT_FOUND));
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
@@ -150,9 +154,6 @@ public class GameRoundGeneralAction {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(kioskPrefix + "_" + gameSession.getVendorPlayerUsername(),
                 commonGameRoundDto.getUserName(), InvalidPlayerException::new);
-
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), commonGameRoundDto.getGameCodeName(),
-                InvalidPlayerException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
