@@ -53,7 +53,9 @@ public class ResettleAction {
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
                 this.doValidation(txn);
                 txn.setOperationId(dtos.getMessage().getOperationId());
-                sportWalletService.resettle(traceId, txn, httpRequestLog);
+                if (!txn.isOnlyWinLostDateChanged()) {
+                    sportWalletService.resettle(traceId, txn, httpRequestLog);
+                }
             }
 
             RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
