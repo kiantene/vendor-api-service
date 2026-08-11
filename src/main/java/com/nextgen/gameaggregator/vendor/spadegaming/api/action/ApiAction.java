@@ -42,7 +42,7 @@ public class ApiAction {
     public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction,
                                     @RequestHeader Map<String, String> requestHeaders,
                                     HttpServletRequest request) {
-        log.info("SpadeGaming request headers: {}", requestHeaders);
+        log.debug("SpadeGaming request headers: {}", requestHeaders);
 
         // Switch statement to determine which action to take based on the API request header
         switch (apiAction) {
