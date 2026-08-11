@@ -195,9 +195,13 @@ public class CashTransferInOutAction {
             parentResponseVo.setError(ResponseCodes.OPERATION_FAILED);
             httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
-        } catch (GameNotSupportedException | DisabledGameException gameNotSupportedException) {
-            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            parentResponseVo.setError(ResponseCodes.BET_FAILED);
             httpService.logError(httpRequestLog, gameNotSupportedException);
+
+        } catch (DisabledGameException disabledGameException) {
+            parentResponseVo.setError(ResponseCodes.GAME_DOES_NOT_EXIST);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
@@ -281,9 +285,6 @@ public class CashTransferInOutAction {
             CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException,
             DisabledVendorLineException, GameTerminatedException {
 
-        //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.isBetAllowed(gameSession, dto.getPlayerName());
-
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
         // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
@@ -292,28 +293,52 @@ public class CashTransferInOutAction {
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameService.getByVendorGameCodeAndVendorId(" + dto.getGameId() + "," + gameSession.getVendorId() + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
         //update session games while player is using session that is not matched with the game which played.
-        if (!vendorGame.getId().equals(gameSession.getVendorGameId())) {
+        Integer originalVendorGameId = gameSession.getVendorGameId();
+        String originalVendorGameCode = gameSession.getVendorGameCode();
+        String originalGameCode = gameSession.getGameCode();
+        Integer originalGameCategoryId = gameSession.getGameCategoryId();
+        boolean isUsingDifferentGame = !vendorGame.getId().equals(originalVendorGameId);
+        if (isUsingDifferentGame) {
             gameSession.setVendorGameId(vendorGame.getId());
             gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
             gameSession.setGameCode(vendorGame.getCode());
             gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
-            gameSessionService.updateSession(gameSession);
         }
 
-        // 3. Verify vendor currency code is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
+        boolean verificationPassed = false;
+        try {
+            //1. validate vendor username, agent vendor line, player status, and requested game status
+            validationService.isBetAllowed(gameSession, dto.getPlayerName());
 
-        // 4. Retrieve vendor line credentials and secretKey to verify with raw request from vendor
-        loggingService.logStart();
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.SECRET_KEY + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
-        ValidationUtils.isEquals(secretKey, dto.getSecretKey(), InvalidSignatureException::new);
+            // 3. Verify vendor currency code is the same from game session
+            ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
 
-        // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
-        loggingService.logStart();
-        String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
-        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
-        ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
+            // 4. Retrieve vendor line credentials and secretKey to verify with raw request from vendor
+            loggingService.logStart();
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.SECRET_KEY + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
+            ValidationUtils.isEquals(secretKey, dto.getSecretKey(), InvalidSignatureException::new);
+
+            // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
+            loggingService.logStart();
+            String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
+            loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
+            ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
+
+            verificationPassed = true;
+        } finally {
+            if (!verificationPassed && isUsingDifferentGame) {
+                gameSession.setVendorGameId(originalVendorGameId);
+                gameSession.setVendorGameCode(originalVendorGameCode);
+                gameSession.setGameCode(originalGameCode);
+                gameSession.setGameCategoryId(originalGameCategoryId);
+            }
+        }
+
+        //persist session game update after requested game validation passed.
+        if (isUsingDifferentGame) {
+            gameSessionService.updateSession(gameSession);
+        }
 
     }
 
