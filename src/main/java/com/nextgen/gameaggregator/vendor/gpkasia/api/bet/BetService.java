@@ -443,8 +443,12 @@ public class BetService {
             // does not handle mini game un-finished settled request coz it is win status
             // does not handle slot game normal lose coz it is one time settlement
 
+            // GPK API upgrade V1: a payout request is now sent on every bet (win or lose), with
+            // money=0 on loss, and dealid is no longer null in that case - so money==0 alone (not
+            // gated by dealid==null) is what identifies a zero-win finished round, matching the
+            // winAmount>0 ? WIN : END convention used by every other vendor in this codebase.
             if (dto.getFinished().equals(BetType.FINISHED)) {
-                if (dto.getMoney().compareTo(BigDecimal.ZERO) == 0 && dto.getDealid() == null) {
+                if (dto.getMoney().compareTo(BigDecimal.ZERO) == 0) {
                     resultType = ResultType.END;
                 }
             }
