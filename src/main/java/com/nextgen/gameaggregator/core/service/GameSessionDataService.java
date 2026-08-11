@@ -101,7 +101,7 @@ public class GameSessionDataService {
         }
     }
 
-    @Cacheable(value = "GameSessions", key = "{#username, #context.vendorGameCode}", cacheManager = "cacheManager")
+    @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getByVendorPlayerUsername(String username, VendorRequestContext context) {
         List<GameSession> gameSessionList = repository.findByVendorPlayerUsername(username);
 
@@ -109,9 +109,12 @@ public class GameSessionDataService {
             throw new GameSessionExpiredException(context, "Game session has expired");
         }
 
+        // Return the player's latest launched session regardless of the request game code.
+        // A Vendor Lobby ("More Games") switch sends a game code different from the launched
+        // game; filtering by it here would drop the real session and force a lossy rebuild
+        // (missing platformId/languageId). Game-code reconciliation is done at validation
+        // time on a request-local copy (see BetValidator), so the real session is preserved.
         return gameSessionList.stream()
-                .filter(g -> context.getVendorGameCode() == null // if vendorGameCode is null, means vendor did not provide
-                        || g.getVendorGameCode().equals(context.getVendorGameCode())) // if not null then we match the game code
                 .max(Comparator.comparingLong(GameSession::getCreateTime))
                 .orElseThrow(() -> new GameSessionExpiredException(context, "Game session has expired"));
     }
