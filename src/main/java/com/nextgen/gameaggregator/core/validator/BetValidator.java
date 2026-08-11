@@ -60,6 +60,17 @@ public class BetValidator {
             return session;
         }
 
+        // The overlay relies on BaseEnricher#enrichVendorGame having resolved the request
+        // game. In every real call path it runs before validation, but guard anyway: if the
+        // request game is unresolved (vendorGameId null), overlaying nulls would poison
+        // ValidationService.isBetAllowed (game-category/vendor-game-id lookups). Fall back to
+        // validating the launched session rather than a null-poisoned view.
+        if (game.getVendorGameId() == null) {
+            log.warn("[GAME_SWITCH] Request game unresolved (vendorGameId null); validating launched session. TraceId: {}, Request: {}",
+                    context.getTraceId(), requestGameCode);
+            return session;
+        }
+
         log.info("[GAME_SWITCH] Validating request game over launched session. TraceId: {}, Session: {}, Request: {}",
                 context.getTraceId(), session.getVendorGameCode(), requestGameCode);
 

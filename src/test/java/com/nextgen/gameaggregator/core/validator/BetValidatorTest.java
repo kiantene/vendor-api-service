@@ -96,4 +96,18 @@ class BetValidatorTest {
 
         verify(validationService).isBetAllowed(same(session), eq("player1"));
     }
+
+    @Test
+    void validateBusinessState_switchButUnresolvedGame_fallsBackToRealSession() throws Exception {
+        GameSession session = launchedSession();
+        // Switched game code, but the enricher did not resolve it (vendorGameId null).
+        // Guard must NOT overlay nulls onto the view — fall back to the launched session.
+        BetResultContext context = BetResultContext.builder()
+                .vendorGameCode("GAME_B")
+                .build(); // vendorGameId/gameCode/gameCategoryId all null
+
+        betValidator.validateBusinessState(session, "player1", context);
+
+        verify(validationService).isBetAllowed(same(session), eq("player1"));
+    }
 }
