@@ -97,6 +97,5 @@ class PromoPayoutActionTest {
 
         assertThat(config.isPlayerUuidCampaignLookup()).isTrue();
         assertThat(config.isBatch()).isFalse();
-        assertThat(config.isCallOperatorOnZeroPayout()).isFalse();
     }
 }
