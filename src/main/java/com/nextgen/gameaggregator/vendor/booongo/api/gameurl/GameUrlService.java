@@ -5,15 +5,16 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.GeoIpUtil;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.booongo.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
@@ -34,12 +35,22 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
+        String ipAddress = gameSession.getIpAddress();
+        String country = GeoIpUtil.getCountryCode(ipAddress);
+
         formData.add("platform", gameSession.getVendorPlatformCode());
         if (!isLobbyGame(gameCode)) {
             formData.add("game", gameCode);
         }
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("token", gameSession.getToken());
+        
+        if (StringUtils.hasText(country)) {
+            formData.add("country", country);
+        } else {
+            log.warn("GeoIP lookup failed or returned null for IP: [{}]. Skipping 'country' parameter in Booongo launch request.", ipAddress);
+        }
+
         return formData;
     }
 
@@ -55,7 +66,7 @@ public class GameUrlService implements GameUrl {
 
         formData.add("WL", credentials.get(Credentials.WL));
 
-        //combine all string and generate game url
+        // combine all strings and generate game url
         gameUrlVo.setGameUrl(generateGameUrl(apiUrl, vendorPagePath, formData));
 
         return gameUrlVo;

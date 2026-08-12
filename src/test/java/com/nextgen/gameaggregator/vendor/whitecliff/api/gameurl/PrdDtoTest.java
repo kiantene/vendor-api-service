@@ -1,0 +1,133 @@
+package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Exactly one of type/table_id/category is set by construction in VendorService.setPrdDto: the
+ * live-game branch sets table_id or category and never touches type (so type is null on every
+ * such launch - matches the OAS-5003 sample body {"id":1,"is_mobile":false,"table_id":"top_games"}
+ * with no "type" key); every other launch sets only type. validBase() intentionally leaves all
+ * three unset, mirroring the DTO's state before that branch runs, so no test accidentally
+ * exercises a shape ("type=0" alongside table_id/category) production never produces.
+ * <p>
+ * isExactlyOneOfTypeTableIdCategorySet() is a plain method, not a Bean Validation constraint (see
+ * its Javadoc on PrdDto) - tests for it call it directly rather than going through
+ * validator.validate(), since nothing in production does either.
+ */
+class PrdDtoTest {
+
+    private static Validator validator;
+
+    @BeforeAll
+    static void setUpValidator() {
+        validator = Validation.buildDefaultValidatorFactory().getValidator();
+    }
+
+    private PrdDto validBase() {
+        PrdDto dto = new PrdDto();
+        dto.setId(1);
+        dto.setIs_mobile(false);
+        return dto;
+    }
+
+    @Test
+    void typeOnly_hasNoViolations() {
+        PrdDto dto = validBase();
+        dto.setType(0);
+
+        assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
+    }
+
+    @Test
+    void tableIdOnly_hasNoViolations() {
+        PrdDto dto = validBase();
+        dto.setTable_id("12345");
+
+        assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
+    }
+
+    @Test
+    void categoryOnly_hasNoViolations() {
+        PrdDto dto = validBase();
+        dto.setCategory("12345");
+
+        assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
+    }
+
+    @Test
+    void bothTableIdAndCategorySet_isRejected() {
+        PrdDto dto = validBase();
+        dto.setTable_id("12345");
+        dto.setCategory("12345");
+
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isFalse();
+    }
+
+    @Test
+    void typeAndTableIdBothSet_isRejected() {
+        PrdDto dto = validBase();
+        dto.setType(0);
+        dto.setTable_id("12345");
+
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isFalse();
+    }
+
+    @Test
+    void noneOfTypeTableIdCategorySet_isRejected() {
+        assertThat(validBase().isExactlyOneOfTypeTableIdCategorySet()).isFalse();
+    }
+
+    @Test
+    void oversizedTableId_isRejected() {
+        PrdDto dto = validBase();
+        dto.setTable_id("x".repeat(256));
+
+        assertThat(validator.validate(dto)).isNotEmpty();
+    }
+
+    @Test
+    void oversizedCategory_isRejected() {
+        PrdDto dto = validBase();
+        dto.setCategory("x".repeat(256));
+
+        assertThat(validator.validate(dto)).isNotEmpty();
+    }
+
+    @Test
+    void blankTableIdAndCategory_withTypeSet_hasNoViolations() {
+        // "" must mean "not set", same as null - but something else (type) must still be set,
+        // since blank table_id/category don't count towards the exactly-one tally.
+        PrdDto dto = validBase();
+        dto.setType(0);
+        dto.setTable_id("");
+        dto.setCategory("");
+
+        assertThat(validator.validate(dto)).isEmpty();
+        assertThat(dto.isExactlyOneOfTypeTableIdCategorySet()).isTrue();
+    }
+
+    @Test
+    void serializedJson_matchesActualProductionSerializer() {
+        // GameUrlService.formDataBuilder ships this DTO via new Gson().toJson(...), not Jackson -
+        // asserting against Gson's own output is what actually pins the real outbound payload
+        // shape (Gson only serializes declared fields, so isExactlyOneOfTypeTableIdCategorySet()
+        // was never at risk of leaking here regardless of any Jackson annotation). Matches the
+        // OAS-5003 sample body exactly: {"id":1,"is_mobile":false,"table_id":"top_games"}.
+        PrdDto dto = validBase();
+        dto.setTable_id("12345");
+
+        JsonObject json = new Gson().toJsonTree(dto).getAsJsonObject();
+
+        assertThat(json.keySet()).containsExactlyInAnyOrder("id", "is_mobile", "table_id");
+    }
+}

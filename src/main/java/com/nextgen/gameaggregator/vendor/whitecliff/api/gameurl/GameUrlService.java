@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.whitecliff.api.gameurl;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.engine.game.url.GameLaunchDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
@@ -35,6 +36,9 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
     @Autowired
     private GameSessionService gameSessionService;
 
+    @Autowired
+    private GameLaunchDataService gameLaunchDataService;
+
     private String agCode;
     private String agToken;
     private String productId;
@@ -55,9 +59,13 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         this.agToken = ValidationUtils.validateCredential(credentials.get(Credentials.AG_TOKEN));
         this.productId = ValidationUtils.validateCredential(credentials.get(Credentials.PRODUCT_ID));
 
+        GameLaunchDataService.GameSubcategoryInfo subcategoryInfo = gameLaunchDataService
+                .getBackfacingGameSubcategoryByVendorGameCodeAndVendorId(gameSession.getVendorGameCode(), gameSession.getVendorId())
+                .orElse(null);
+
         // set DTO
         UserDto userDto = VendorService.setUserDto(gameSession);
-        PrdDto prdDto = VendorService.setPrdDto(gameSession, this.getProductId());
+        PrdDto prdDto = VendorService.setPrdDto(gameSession, this.getProductId(), subcategoryInfo);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("user", userDto);

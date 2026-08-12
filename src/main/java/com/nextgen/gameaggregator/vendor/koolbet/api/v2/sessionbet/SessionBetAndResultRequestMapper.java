@@ -16,6 +16,9 @@ public class SessionBetAndResultRequestMapper implements BetContextMapper<Sessio
                 .betAmount(request.getBetAmount())
                 .token(request.getToken())
                 .vendorPlayerUsername(request.getUsername())
+                // the enricher left betTime null and bet history stored 0. BetContext.timestamp
+                // is the "Vendor bet time" field here (BetResultContext uses vendorBetTime instead).
+                .timestamp(request.getWagersTime() * 1000)
                 .build();
     }
 }

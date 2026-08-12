@@ -37,7 +37,12 @@ import java.util.stream.Collectors;
 @Component
 public class GameUrlEncodingFixer {
 
-    private static final Set<String> NESTED_URL_PARAM_NAMES = Set.of("homepage", "lobbyUrl", "lobby_url", "return_url");
+    // TODO(tech-debt): this whitelist grows one entry per vendor's callback-param naming
+    // convention (homepage/lobbyUrl/lobby_url/return_url/leaveUrl so far) and will keep growing
+    // indefinitely as new vendors are onboarded. Revisit with a vendor-agnostic detection instead
+    // of a hardcoded name list - e.g. treat any query param whose value itself parses as an
+    // absolute URL as a candidate for repair, rather than matching by param name.
+    private static final Set<String> NESTED_URL_PARAM_NAMES = Set.of("homepage", "lobbyUrl", "lobby_url", "return_url", "leaveUrl");
 
     private static final Pattern TOP_LEVEL_QUERY_PARAM =
             Pattern.compile("([^&=?]+)=([^&]*)");

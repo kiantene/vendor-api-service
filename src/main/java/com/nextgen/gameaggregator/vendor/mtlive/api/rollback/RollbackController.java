@@ -1,15 +1,10 @@
 package com.nextgen.gameaggregator.vendor.mtlive.api.rollback;
 
-import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.AbstractBetRollbackController;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.BetRollbackConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.WalletRollbackServiceWrapper;
 import com.nextgen.gameaggregator.core.engine.wallet.rollback.enums.RollbackType;
-import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.mtlive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.mtlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.mtlive.response.SuccessResponse;
 import com.nextgen.gameaggregator.vendor.mtlive.util.VendorUtil;
@@ -24,14 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class RollbackController extends AbstractBetRollbackController<RollbackRequest, SuccessResponse> {
-    private final VendorLineService vendorLineService;
+    private final VendorUtil vendorUtil;
 
     public RollbackController(RollbackRequestMapper requestMapper,
                               RollbackResponseMapper responseMapper,
                               WalletRollbackServiceWrapper walletService,
-                              VendorLineService vendorLineService) {
+                              VendorUtil vendorUtil) {
         super(requestMapper, responseMapper, walletService);
-        this.vendorLineService = vendorLineService;
+        this.vendorUtil = vendorUtil;
     }
 
     @PostMapping(path = EndPoints.ROLLBACK)
@@ -39,14 +34,7 @@ public class RollbackController extends AbstractBetRollbackController<RollbackRe
     public ResponseEntity<String> rollback(
             @Valid @ModelAttribute RollbackRequest request) {
         SuccessResponse response = processRequest(request);
-        VendorCredentialAccessor accessor;
-        try {
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.SYSTEM_CODE, request.getSystem_code());
-            accessor = new VendorCredentialAccessor(vendorLineService.mapCredentialsByName(vendorLineId));
-        } catch (CredentialNotFoundException ex) {
-            throw new InternalConfigurationException(Credentials.SYSTEM_CODE + " not found", ex);
-        }
-        return VendorUtil.encryptResponse(response, accessor);
+        return vendorUtil.encryptResponse(response, request.getUser_id());
     }
 
     @Override
