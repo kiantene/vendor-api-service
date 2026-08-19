@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Locale;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -78,7 +79,13 @@ public class WinDto extends CallbackDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        var details = this.getData().getDetailsDto();
+        if (details == null) {
+            return 0;
+        }
+        return Boolean.parseBoolean(details.getFreespin())
+                || isBonusSpins(details.getRound_mode())
+                || isBonusSpins(details.getExtrabonus_type()) ? 1 : 0;
     }
 
     @Override
@@ -87,5 +94,9 @@ public class WinDto extends CallbackDto implements BetResultData {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;
+    }
+
+    private boolean isBonusSpins(String value) {
+        return value != null && "bonus_spins".equals(value.trim().toLowerCase(Locale.ROOT));
     }
 }
