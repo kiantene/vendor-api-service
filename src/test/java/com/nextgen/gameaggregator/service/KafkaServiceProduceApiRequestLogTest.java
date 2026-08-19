@@ -6,6 +6,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.logging.ApiRequestLog;
+import com.nextgen.gameaggregator.service.kafka.KafkaDlqService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,8 @@ class KafkaServiceProduceApiRequestLogTest {
     private VendorPlayerService vendorPlayerService;
     @Mock
     private S3BetService s3BetService;
+    @Mock
+    private KafkaDlqService kafkaDlqService;
 
     private KafkaService kafkaService;
     private ListAppender<ILoggingEvent> logAppender;
@@ -56,7 +59,7 @@ class KafkaServiceProduceApiRequestLogTest {
     void setUp() {
         kafkaService = new KafkaService(stringKafkaTemplate, jsonSchemaKafkaTemplate, apiRequestLogKafkaTemplate,
                 currencyConversionService, warehouseBetHistoryService, agentPlayerService, vendorPlayerService,
-                s3BetService);
+                s3BetService, kafkaDlqService);
         ReflectionTestUtils.setField(kafkaService, "logToKafka", true);
 
         logAppender = new ListAppender<>();
