@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -21,7 +20,6 @@ public class ActionDto {
     @Size(min = 1, max = 64)
     private String secret;
 
-    @NotNull
     private Integer gameId;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -29,7 +27,7 @@ public class ActionDto {
 
     // Getter methods set to avoid crash name in BetResultData
     public String getGameId() {
-        return this.gameId.toString();
+        return this.gameId != null ? this.gameId.toString() : null;
     }
 
     public String getRoundId() {
