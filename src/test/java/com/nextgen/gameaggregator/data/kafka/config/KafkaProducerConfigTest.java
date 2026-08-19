@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.S3BetService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.service.WarehouseBetHistoryService;
+import com.nextgen.gameaggregator.service.kafka.KafkaDlqService;
 import io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializerConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -134,6 +135,7 @@ class KafkaProducerConfigTest {
         ctx.getBeanFactory().registerSingleton("agentPlayerService", mock(AgentPlayerService.class));
         ctx.getBeanFactory().registerSingleton("vendorPlayerService", mock(VendorPlayerService.class));
         ctx.getBeanFactory().registerSingleton("s3BetService", mock(S3BetService.class));
+        ctx.getBeanFactory().registerSingleton("kafkaDlqService", mock(KafkaDlqService.class));
         ctx.register(PropertySourcesPlaceholderConfigurer.class, KafkaProducerConfig.class, KafkaService.class);
         ctx.refresh();
         return ctx;
