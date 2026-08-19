@@ -105,7 +105,6 @@ public class GeneralAction {
     }
 
     private void doValidation(ActionDto dto) throws InvalidRequestException {
-        // General validation
         ValidationUtils.validateRequest(dto);
     }
 }

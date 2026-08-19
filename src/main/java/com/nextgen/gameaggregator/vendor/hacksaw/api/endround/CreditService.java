@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.hacksaw.api.promopayout.HacksawPromoPayoutService;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksaw.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksaw.vo.ResponseVo;
@@ -34,6 +35,7 @@ public class CreditService {
     private final HttpService httpService;
     private final VendorService vendorService;
     private final RequestIdempotentLogService requestIdempotentLogService;
+    private final HacksawPromoPayoutService promoPayoutService;
 
     @Autowired
     public CreditService(GameSessionService gameSessionService,
@@ -41,7 +43,8 @@ public class CreditService {
                          WalletService walletService,
                          HttpService httpService,
                          VendorService vendorService,
-                         RequestIdempotentLogService requestIdempotentLogService) {
+                         RequestIdempotentLogService requestIdempotentLogService,
+                         HacksawPromoPayoutService promoPayoutService) {
 
         this.gameSessionService = gameSessionService;
         this.vendorLineService = vendorLineService;
@@ -49,6 +52,7 @@ public class CreditService {
         this.httpService = httpService;
         this.vendorService = vendorService;
         this.requestIdempotentLogService = requestIdempotentLogService;
+        this.promoPayoutService = promoPayoutService;
     }
 
     public ResponseVo credit(HttpRequestLog httpRequestLog, String traceId) {
@@ -67,6 +71,11 @@ public class CreditService {
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(creditDto);
+
+            // Free round win — delegate to promo payout flow
+            if (creditDto.getFreeRoundData() != null) {
+                return promoPayoutService.handleFromCredit(creditDto, httpRequestLog);
+            }
 
             // request idempotent checking.
             if (requestIdempotentLogService.checkExists(creditDto, creditDto.getExternalPlayerId()) == null) {
@@ -149,6 +158,10 @@ public class CreditService {
         Optional.ofNullable(dto.getBetTransactionId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
+        // type=free must have freeRoundData
+        if ("free".equals(dto.getType()) && dto.getFreeRoundData() == null) {
+            throw new InvalidRequestException("freeRoundData is required when type is free");
+        }
     }
 
     private void doVerification(CreditDto dto, GameSession gameSession)
