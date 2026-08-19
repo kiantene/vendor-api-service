@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.mtlive.validator;
 
 import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.core.exception.InternalServerException;
 import com.nextgen.core.exception.SignatureValidationException;
 import com.nextgen.gameaggregator.core.entity.VendorPlayer;
@@ -9,7 +10,9 @@ import com.nextgen.gameaggregator.core.exception.mapper.VendorErrorResponse;
 import com.nextgen.gameaggregator.core.security.signature.ValidationResult;
 import com.nextgen.gameaggregator.core.service.VendorPlayerDataService;
 import com.nextgen.gameaggregator.core.util.VendorCredentialAccessor;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.entity.ga.VendorLineCredential;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.mtlive.config.MtliveConfig;
 import com.nextgen.gameaggregator.vendor.mtlive.constant.Credentials;
@@ -81,8 +84,6 @@ class MtliveSignatureValidatorTest {
 
     @AfterEach
     void tearDown() {
-        // Error-path resolvers read the current request via RequestContextHolder; clear it so a
-        // test that binds one cannot leak into another (e.g. the all-strategies-fail case).
         RequestContextHolder.resetRequestAttributes();
     }
 
@@ -95,10 +96,10 @@ class MtliveSignatureValidatorTest {
 
     private Map<String, VendorLineCredential> validCredsMap() {
         Map<String, VendorLineCredential> creds = new HashMap<>();
-        creds.put(Credentials.CLIENT_SECRET, credential(Credentials.CLIENT_SECRET, "testSecret"));
-        creds.put(Credentials.CLIENT_ID, credential(Credentials.CLIENT_ID, "testClientId"));
-        creds.put(Credentials.DES_KEY, credential(Credentials.DES_KEY, "12345678")); // 8 bytes for DES
-        creds.put(Credentials.DES_IV, credential(Credentials.DES_IV, "87654321"));   // 8 bytes for DES
+        creds.put(Credentials.CLIENT_SECRET, credential(Credentials.CLIENT_SECRET, CLIENT_SECRET));
+        creds.put(Credentials.CLIENT_ID, credential(Credentials.CLIENT_ID, CLIENT_ID));
+        creds.put(Credentials.DES_KEY, credential(Credentials.DES_KEY, "12345678"));
+        creds.put(Credentials.DES_IV, credential(Credentials.DES_IV, "87654321"));
         return creds;
     }
 
@@ -107,18 +108,10 @@ class MtliveSignatureValidatorTest {
         when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
         when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
 
-        doReturn(credentialAccessor)
-                .when(validator)
-                .getCredentialAccessorByKeyValue(eq(MtliveConfig.ID), eq(Credentials.CLIENT_ID), eq(CLIENT_ID));
-        // The validator reads the client secret off the resolved accessor to rebuild the
-        // signing key; without this stub validateHeadersAndSignature() short-circuits with
-        // "Missing Credentials clientSecret" and no test ever reaches its target assertion.
-        when(credentialAccessor.getValue(Credentials.CLIENT_SECRET)).thenReturn(CLIENT_SECRET);
+        lenient().when(vendorLineService.mapCredentialsByName(VENDOR_LINE_ID)).thenReturn(validCredsMap());
     }
 
     private String calculateMD5Reverse(String msg, String key) {
-        // MD5_REVERSE == Md5SignatureStrategy(SECRET_PAYLOAD) -> md5(secret + payload),
-        // where here secret == timestamp+clientSecret+clientId (the "key") and payload == msg.
         return DigestUtils.md5Hex(key + msg);
     }
 
@@ -133,9 +126,6 @@ class MtliveSignatureValidatorTest {
             formFields.put("user_id", invalidUserId);
         }
 
-        String validSig = calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + CLIENT_ID);
-        mockSecurityHeadersAndCredentials(validSig);
-
         SignatureValidationException exception = assertThrows(
                 SignatureValidationException.class,
                 () -> validator.validate(request, formFields, "")
@@ -146,13 +136,19 @@ class MtliveSignatureValidatorTest {
     }
 
     @Test
-    @DisplayName("validate should throw SignatureValidationException with PlayerNotFoundException cause when player is unknown")
-    void validate_UnknownPlayer_ThrowsSignatureValidationException() {
-        String validSig = calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + CLIENT_ID);
-        mockSecurityHeadersAndCredentials(validSig);
-
+    @DisplayName("validate: unknown player WITH a valid signature still yields PLAYER_NOT_FOUND (signal preserved for authenticated MTLive)")
+    void validate_UnknownPlayer_ValidSignature_ThrowsPlayerNotFound() {
+        // Player unknown -> no line; the signature is still verified via the clientId fallback.
         when(vendorPlayerDataService.getByUsername(VALID_USER_ID))
                 .thenThrow(new EntityNotFoundException(VendorPlayer.class, "username", VALID_USER_ID));
+        when(request.getHeader(Headers.API_SI))
+                .thenReturn(calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + CLIENT_ID));
+        when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
+        when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
+        // Unknown-player fallback: resolve the secret by clientId SOLELY to verify the signature.
+        doReturn(new VendorCredentialAccessor(validCredsMap()))
+                .when(validator)
+                .getCredentialAccessorByKeyValue(eq(MtliveConfig.ID), eq(Credentials.CLIENT_ID), eq(CLIENT_ID));
 
         SignatureValidationException exception = assertThrows(
                 SignatureValidationException.class,
@@ -165,13 +161,55 @@ class MtliveSignatureValidatorTest {
     }
 
     @Test
+    @DisplayName("validate: unknown player with an INVALID signature fails as a signature error, NOT PLAYER_NOT_FOUND (no enumeration oracle)")
+    void validate_UnknownPlayer_InvalidSignature_DoesNotRevealPlayerNotFound() {
+        when(vendorPlayerDataService.getByUsername(VALID_USER_ID))
+                .thenThrow(new EntityNotFoundException(VendorPlayer.class, "username", VALID_USER_ID));
+        when(request.getHeader(Headers.API_SI)).thenReturn("wrong-signature");
+        when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
+        when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
+        doReturn(new VendorCredentialAccessor(validCredsMap()))
+                .when(validator)
+                .getCredentialAccessorByKeyValue(eq(MtliveConfig.ID), eq(Credentials.CLIENT_ID), eq(CLIENT_ID));
+
+        SignatureValidationException exception = assertThrows(
+                SignatureValidationException.class,
+                () -> validator.validate(request, formFields, "")
+        );
+
+        // The signature check fails first, so an unknown player is indistinguishable from a known
+        // player with a bad signature -> no existence leak. The cause must NOT be PlayerNotFound.
+        assertEquals("Signature does not match", exception.getMessage());
+        assertFalse(exception.getCause() instanceof PlayerNotFoundException);
+    }
+
+    @Test
+    @DisplayName("validate: unknown player + unknown clientId surfaces a generic signature error, NOT a raw InternalConfigurationException (no clientId oracle)")
+    void validate_UnknownPlayer_UnknownClientId_ThrowsSignatureValidationException() {
+        when(vendorPlayerDataService.getByUsername(VALID_USER_ID))
+                .thenThrow(new EntityNotFoundException(VendorPlayer.class, "username", VALID_USER_ID));
+        when(request.getHeader(Headers.API_SI)).thenReturn("any-signature");
+        when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
+        when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
+        // Unknown clientId: the fallback lookup fails as InternalConfigurationException (no MTLive line).
+        doThrow(new InternalConfigurationException("clientID not found"))
+                .when(validator)
+                .getCredentialAccessorByKeyValue(eq(MtliveConfig.ID), eq(Credentials.CLIENT_ID), eq(CLIENT_ID));
+
+        // It must be converted to a generic signature error (indistinguishable from a bad signature),
+        // NOT bubble out as InternalConfigurationException -> raw 500 (which would leak clientId validity).
+        SignatureValidationException exception = assertThrows(
+                SignatureValidationException.class,
+                () -> validator.validate(request, formFields, "")
+        );
+
+        assertEquals("Signature does not match", exception.getMessage());
+        assertFalse(exception.getCause() instanceof PlayerNotFoundException);
+    }
+
+    @Test
     @DisplayName("validate should surface a retriable server error (not INVALID_PARAMETER) when player lookup fails on a backend fault")
     void validate_PlayerLookupBackendFault_ThrowsInternalServerException() {
-        String validSig = calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + CLIENT_ID);
-        mockSecurityHeadersAndCredentials(validSig);
-
-        // A transient infra fault (e.g. DB/cache down) surfaces as a generic RuntimeException,
-        // NOT EntityNotFoundException. It must not be reported to the vendor as a bad request.
         when(vendorPlayerDataService.getByUsername(VALID_USER_ID))
                 .thenThrow(new RuntimeException("connection pool exhausted"));
 
@@ -179,6 +217,34 @@ class MtliveSignatureValidatorTest {
                 InternalServerException.class,
                 () -> validator.validate(request, formFields, "")
         );
+    }
+
+    @Test
+    @DisplayName("validate should throw InternalConfigurationException when credentials cannot be resolved for vendorLineId")
+    void validate_MissingCredentials_ThrowsInternalConfigurationException() {
+        // 1. Mock required security headers so initial header validation succeeds
+        String validSig = calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + CLIENT_ID);
+        when(request.getHeader(Headers.API_SI)).thenReturn(validSig);
+        when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
+        when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
+
+        // 2. Mock player lookup returning a valid player with vendorLineId
+        VendorPlayer mockPlayer = new VendorPlayer();
+        mockPlayer.setUsername(VALID_USER_ID);
+        mockPlayer.setVendorLineId(VENDOR_LINE_ID);
+        when(vendorPlayerDataService.getByUsername(VALID_USER_ID)).thenReturn(mockPlayer);
+
+        // 3. Provide CLIENT_ID so header validation passes, but omit CLIENT_SECRET to trigger InternalConfigurationException
+        Map<String, VendorLineCredential> incompleteCredsMap = new HashMap<>();
+        incompleteCredsMap.put(Credentials.CLIENT_ID, credential(Credentials.CLIENT_ID, CLIENT_ID));
+        when(vendorLineService.mapCredentialsByName(VENDOR_LINE_ID)).thenReturn(incompleteCredsMap);
+
+        InternalConfigurationException exception = assertThrows(
+                InternalConfigurationException.class,
+                () -> validator.validate(request, formFields, "")
+        );
+
+        assertTrue(exception.getMessage().contains(Credentials.CLIENT_SECRET));
     }
 
     @Test
@@ -196,18 +262,14 @@ class MtliveSignatureValidatorTest {
 
         assertNotNull(result);
         assertTrue(result.valid());
-        // The decrypted form fields must be returned so the controller can bind the payload
-        // (they reach the controller only via enrichRequestFields(additionalFields)).
         assertEquals(VALID_USER_ID, result.additionalFields().get("user_id"));
         assertEquals(MSG_PAYLOAD, result.additionalFields().get("msg"));
-        // The resolved vendorLineId is carried as a trusted request attribute, NOT a form field
-        // (so a raw-body value can never shadow it).
         verify(request).setAttribute(VendorUtil.RESOLVED_VENDOR_LINE_ATTR, VENDOR_LINE_ID);
         assertFalse(result.additionalFields().containsKey("vendor_line_id"));
         verify(vendorPlayerDataService, times(1)).getByUsername(VALID_USER_ID);
     }
 
-    // --- error-path credential resolution chain (resolveCredentialAccessorForError) ---
+    // --- error-path credential resolution chain ---
 
     @Test
     @DisplayName("error-path resolves credentials by user_id and does not consult the X-API-CI header fallback")
@@ -216,24 +278,20 @@ class MtliveSignatureValidatorTest {
         player.setUsername(VALID_USER_ID);
         player.setVendorLineId(VENDOR_LINE_ID);
         when(vendorPlayerDataService.getByUsername(VALID_USER_ID)).thenReturn(player);
-        // getCredentialAccessorByVendorLineId(100) -> new VendorCredentialAccessor(mapCredentialsByName(100))
         when(vendorLineService.mapCredentialsByName(VENDOR_LINE_ID)).thenReturn(validCredsMap());
 
         VendorErrorResponse resp = validator.onInvalidSignature(new SignatureValidationException("INVALID_PARAMETER"), formFields);
 
         assertEquals(200, resp.getStatusCode().value());
         assertNotNull(resp.getBody());
-        // user_id resolved directly; the header fallback must never be consulted.
         verify(validator, never()).getCredentialAccessorByKeyValue(any(), any(), any());
     }
 
     @Test
     @DisplayName("error-path falls back to the X-API-CI header when user_id cannot be resolved")
     void onPlayerNotFound_FallsBackToHeaderClientId() {
-        // user_id resolution fails (player not found) ...
         when(vendorPlayerDataService.getByUsername(VALID_USER_ID))
                 .thenThrow(new EntityNotFoundException(VendorPlayer.class, "username", VALID_USER_ID));
-        // ... so the chain falls back to the mandatory X-API-CI header (read via RequestContextHolder).
         when(request.getHeader(Headers.API_CI)).thenReturn(CLIENT_ID);
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         doReturn(new VendorCredentialAccessor(validCredsMap()))
@@ -249,15 +307,154 @@ class MtliveSignatureValidatorTest {
     }
 
     @Test
+    @DisplayName("onPlayerNotFound returns encrypted BAD_REQUEST fallback when no resolution strategy succeeds")
+    void onPlayerNotFound_AllStrategiesFail_ReturnsBadRequest() {
+        formFields.remove("user_id");
+
+        VendorErrorResponse resp = validator.onPlayerNotFound(new SignatureValidationException("INVALID_PARAMETER"), formFields);
+
+        assertEquals(400, resp.getStatusCode().value());
+        assertEquals("Player not found and credentials unavailable", resp.getBody());
+        verify(vendorPlayerDataService, never()).getByUsername(any());
+    }
+
+    @Test
     @DisplayName("error-path returns encrypted BAD_REQUEST fallback when no resolution strategy succeeds")
     void onInvalidSignature_AllStrategiesFail_ReturnsBadRequest() {
-        formFields.remove("user_id");            // resolveByUserId -> empty (blank guard)
-        // no RequestContextHolder bound -> resolveByHeaderClientId -> empty
+        formFields.remove("user_id");
 
         VendorErrorResponse resp = validator.onInvalidSignature(new SignatureValidationException("Signature does not match"), formFields);
 
         assertEquals(400, resp.getStatusCode().value());
         assertEquals("Invalid signature or missing credentials", resp.getBody());
         verify(vendorPlayerDataService, never()).getByUsername(any());
+    }
+
+    // --- getCredentialAccessorByKeyValue tests ---
+
+    @Test
+    @DisplayName("getCredentialAccessorByKeyValue returns accessor when vendor line exists and belongs to expected vendor")
+    void getCredentialAccessorByKeyValue_Success() throws CredentialNotFoundException {
+        VendorLine vendorLine = new VendorLine();
+        vendorLine.setId(VENDOR_LINE_ID);
+        vendorLine.setVendorId(MtliveConfig.ID);
+
+        when(vendorLineService.getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID))
+                .thenReturn(VENDOR_LINE_ID);
+        when(vendorLineService.getVendorLine(VENDOR_LINE_ID))
+                .thenReturn(vendorLine);
+        when(vendorLineService.mapCredentialsByName(VENDOR_LINE_ID))
+                .thenReturn(validCredsMap());
+
+        VendorCredentialAccessor accessor = validator.getCredentialAccessorByKeyValue(
+                MtliveConfig.ID, Credentials.CLIENT_ID, CLIENT_ID);
+
+        assertNotNull(accessor);
+        assertEquals(CLIENT_SECRET, accessor.getValue(Credentials.CLIENT_SECRET));
+        assertEquals(CLIENT_ID, accessor.getValue(Credentials.CLIENT_ID));
+        verify(vendorLineService).getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID);
+        verify(vendorLineService).getVendorLine(VENDOR_LINE_ID);
+        verify(vendorLineService).mapCredentialsByName(VENDOR_LINE_ID);
+    }
+
+    @Test
+    @DisplayName("getCredentialAccessorByKeyValue throws InternalConfigurationException when credential is not found")
+    void getCredentialAccessorByKeyValue_CredentialNotFound_ThrowsInternalConfigurationException() throws CredentialNotFoundException {
+        when(vendorLineService.getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID))
+                .thenThrow(new CredentialNotFoundException("Not found"));
+
+        InternalConfigurationException exception = assertThrows(
+                InternalConfigurationException.class,
+                () -> validator.getCredentialAccessorByKeyValue(MtliveConfig.ID, Credentials.CLIENT_ID, CLIENT_ID)
+        );
+
+        assertTrue(exception.getMessage().contains(Credentials.CLIENT_ID + " not found"));
+        verify(vendorLineService).getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID);
+        verify(vendorLineService, never()).getVendorLine(any());
+    }
+
+    @Test
+    @DisplayName("getCredentialAccessorByKeyValue throws InternalConfigurationException when resolved line belongs to another vendor")
+    void getCredentialAccessorByKeyValue_VendorMismatch_ThrowsInternalConfigurationException() throws CredentialNotFoundException {
+        Integer otherVendorId = 999;
+        VendorLine otherVendorLine = new VendorLine();
+        otherVendorLine.setId(VENDOR_LINE_ID);
+        otherVendorLine.setVendorId(otherVendorId);
+
+        when(vendorLineService.getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID))
+                .thenReturn(VENDOR_LINE_ID);
+        when(vendorLineService.getVendorLine(VENDOR_LINE_ID))
+                .thenReturn(otherVendorLine);
+
+        InternalConfigurationException exception = assertThrows(
+                InternalConfigurationException.class,
+                () -> validator.getCredentialAccessorByKeyValue(MtliveConfig.ID, Credentials.CLIENT_ID, CLIENT_ID)
+        );
+
+        assertEquals(
+                String.format("Credential %s=%s resolved to line %d belonging to vendorId %d, expected vendorId %d",
+                        Credentials.CLIENT_ID, CLIENT_ID, VENDOR_LINE_ID, otherVendorId, MtliveConfig.ID),
+                exception.getMessage()
+        );
+        verify(vendorLineService).getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID);
+        verify(vendorLineService).getVendorLine(VENDOR_LINE_ID);
+        verify(vendorLineService, never()).mapCredentialsByName(any());
+    }
+
+    @Test
+    @DisplayName("getCredentialAccessorByKeyValue throws InternalConfigurationException when vendor line does not exist")
+    void getCredentialAccessorByKeyValue_NullVendorLine_ThrowsInternalConfigurationException() throws CredentialNotFoundException {
+        when(vendorLineService.getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID))
+                .thenReturn(VENDOR_LINE_ID);
+        when(vendorLineService.getVendorLine(VENDOR_LINE_ID))
+                .thenReturn(null);
+
+        InternalConfigurationException exception = assertThrows(
+                InternalConfigurationException.class,
+                () -> validator.getCredentialAccessorByKeyValue(MtliveConfig.ID, Credentials.CLIENT_ID, CLIENT_ID)
+        );
+
+        assertEquals(
+                String.format("Vendor line %d not found for credential %s=%s", VENDOR_LINE_ID, Credentials.CLIENT_ID, CLIENT_ID),
+                exception.getMessage()
+        );
+        verify(vendorLineService).getVendorLineIdListByNameAndValue(Credentials.CLIENT_ID, CLIENT_ID);
+        verify(vendorLineService).getVendorLine(VENDOR_LINE_ID);
+        verify(vendorLineService, never()).mapCredentialsByName(any());
+    }
+
+    @Test
+    @DisplayName("validate should throw SignatureValidationException when request X-API-CI header mismatches player line credentials")
+    void validate_MismatchedClientIdHeader_ThrowsSignatureValidationException() {
+        String requestHeaderClientId = "op-A-clientId";
+        String lineCredentialClientId = "op-B-clientId";
+
+        // 1. Mock request with Header X-API-CI = op-A-clientId
+        String validSig = calculateMD5Reverse(MSG_PAYLOAD, TIMESTAMP + CLIENT_SECRET + requestHeaderClientId);
+        when(request.getHeader(Headers.API_SI)).thenReturn(validSig);
+        when(request.getHeader(Headers.API_CI)).thenReturn(requestHeaderClientId);
+        when(request.getHeader(Headers.API_TS)).thenReturn(TIMESTAMP);
+
+        // 2. Mock resolved player with valid vendorLineId
+        VendorPlayer mockPlayer = new VendorPlayer();
+        mockPlayer.setUsername(VALID_USER_ID);
+        mockPlayer.setVendorLineId(VENDOR_LINE_ID);
+        when(vendorPlayerDataService.getByUsername(VALID_USER_ID)).thenReturn(mockPlayer);
+
+        // 3. Mock player line credentials where CLIENT_ID = op-B-clientId
+        Map<String, VendorLineCredential> playerLineCredsMap = new HashMap<>();
+        playerLineCredsMap.put(Credentials.CLIENT_SECRET, credential(Credentials.CLIENT_SECRET, CLIENT_SECRET));
+        playerLineCredsMap.put(Credentials.CLIENT_ID, credential(Credentials.CLIENT_ID, lineCredentialClientId));
+        when(vendorLineService.mapCredentialsByName(VENDOR_LINE_ID)).thenReturn(playerLineCredsMap);
+
+        // 4. Validate that the mismatch guard triggers and throws expected exception
+        SignatureValidationException exception = assertThrows(
+                SignatureValidationException.class,
+                () -> validator.validate(request, formFields, "")
+        );
+
+        assertEquals("Header X-API-CI does not match player vendor line credentials", exception.getMessage());
+        verify(vendorPlayerDataService, times(1)).getByUsername(VALID_USER_ID);
+        verify(vendorLineService, times(1)).mapCredentialsByName(VENDOR_LINE_ID);
     }
 }
