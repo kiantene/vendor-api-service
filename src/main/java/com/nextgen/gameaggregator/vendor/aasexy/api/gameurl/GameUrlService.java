@@ -47,6 +47,7 @@ public class GameUrlService extends BaseGameUrlService<GameUrlVo> {
         formData.add("isMobileLogin", gameSession.getPlatformId().equals(1) ? "true" : "false");
         formData.add("externalURL", gameSession.getLobbyUrl());
         formData.add("language", gameSession.getVendorLanguageCode());
+        formData.add("betLimit", this.betLimit);
         formData.add("platform", "SEXYBCRT");
         formData.add("gameType", "LIVE");
 
