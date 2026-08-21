@@ -1,10 +1,12 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.freespin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.core.exception.EntityNotFoundException;
+import com.nextgen.core.exception.InternalConfigurationException;
+import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -36,30 +37,20 @@ public class FreeSpinResultAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    private DotConnectionsFreeSpinResultHandler freeSpinResultHandler;
 
     @PostMapping(path = EndPoints.FREE_SPIN_RESULT)
-    public ResponseVo balance(HttpServletRequest request) {
+    public ResponseVo freeSpinResult(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         ResponseVo responseVo = new ResponseVo();
-        ResponseDataVo responseDataVo = new ResponseDataVo();
 
-        String traceId = httpRequestLog.getId();
         GameSession gameSession = null;
 
         try {
 
             String body = httpRequestLog.getRequestBody();
-
-            /*
-            TODO: This endpoint will only be triggered if Free Spin Campaign is set up.
-             To update this endpoint if Free Spin Campaign is required to set up.
-             Simulating a free spin result for vendor's test cases for now
-             */
 
             FreeSpinResultDto dto = HttpService.convertJsonToDto(body, FreeSpinResultDto.class);
 
@@ -72,23 +63,16 @@ public class FreeSpinResultAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Process free spin result as BET_WIN
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, httpRequestLog);
-
-            // Set Vendor player username + Balance + Currency
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(balance);
-
-            // Set data for response vo
-            responseVo.setCode(ResponseCodes.SUCCESS);
-            responseVo.setData(responseDataVo);
+            // Credit the free round win against the campaign the freespin_id was granted from.
+            // Replaces the previous BET_WIN booking: a free round has no stake, and the operator tracks
+            // it through /v1/promo/payout rather than /wallet/bet_result.
+            responseVo = freeSpinResultHandler.process(dto);
 
         } catch (InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
-        } catch(AuthenticationException authenticationException){
+        } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.INVALID_BRAND_UID);
             httpService.logError(httpRequestLog, authenticationException);
 
@@ -100,30 +84,24 @@ public class FreeSpinResultAction {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
             httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (DisabledGameException disabledGameException) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
-            httpService.logError(httpRequestLog, disabledGameException);
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
-            httpService.logError(httpRequestLog, insufficientBalanceException);
-
-        } catch (BetNotFoundException betNotFoundException) {
-            // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
-            httpService.logError(httpRequestLog, betNotFoundException);
-
-        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            // get current balance
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
+        } catch (DuplicateRequestException duplicateRequestException) {
+            // Replay of a wager_id we have already paid out — echo the balance recorded at the time.
+            ResponseDataVo responseDataVo = new ResponseDataVo();
+            responseDataVo.setBrandUid(gameSession != null ? gameSession.getVendorPlayerUsername() : null);
+            responseDataVo.setCurrency(duplicateRequestException.getCurrency());
+            responseDataVo.setBalance(duplicateRequestException.getBalance());
             responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            httpService.logError(httpRequestLog, duplicateRequestException);
+
+        } catch (EntityNotFoundException campaignNotFoundException) {
+            // No CampaignPlayer carries this freespin_id as its grant reference.
+            responseVo.setCode(ResponseCodes.FREE_SPIN_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, campaignNotFoundException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -147,18 +125,13 @@ public class FreeSpinResultAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
-        } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 CredentialNotFoundException |
-                 InvalidAgentApiCredentialException |
+        } catch (CredentialNotFoundException |
                  JsonProcessingException |
-                 TransactionStillProcessingException systemErrorException) {
+                 InternalConfigurationException systemErrorException) {
+            // InternalConfigurationException is what BaseEnricher raises when brand_uid, its vendor line
+            // or its currency cannot be resolved — a configuration fault on our side, not the caller's.
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, systemErrorException);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
@@ -182,13 +155,8 @@ public class FreeSpinResultAction {
             throws
             InvalidPlayerException,
             CurrencyNotSupportedException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
             CredentialNotFoundException,
-            AuthenticationException,
             InvalidSignatureException,
-            InvalidRequestException,
             InvalidProviderException,
             GameNotSupportedException {
 
