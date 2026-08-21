@@ -121,10 +121,9 @@ public class CallbackAction {
             // the request is authenticated and validated here, but the operator/wallet call
             // has not run yet. Recording intent up-front pins the round to v1 even if
             // processing later throws after persisting state — closing the persist-then-throw
-            // split-brain window. Only for routing-relevant actions, symmetric with
-            // EvoplayRouteResolver#shouldRouteToV1. markAsV1 swallows its own failures, so it
-            // never breaks the v1 callback.
-            markRoundAsV1IfRelevant(callbackDto);
+            // split-brain window. Marker writes swallow their own failures, so they never
+            // break the v1 callback.
+            markRoundForV1(callbackDto);
 
             switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
@@ -204,12 +203,22 @@ public class CallbackAction {
 
     /**
      * Tags the round as handled by v1 in Couchbase so in-flight rounds finish on v1 after
-     * the v2 cutover. Scoped to the routing-relevant actions ({@code bet}, {@code win},
-     * {@code refund}) so the write side stays symmetric with the read side in
-     * {@link com.nextgen.gameaggregator.vendor.evoplay.config.EvoplayRouteResolver}.
-     * {@code markAsV1} swallows its own failures, so this never breaks the v1 callback.
+     * the v2 cutover.
+     *
+     * <p>Only the round-opening bet may <em>claim</em> a round (GA-15041). During a cutover the
+     * routing flag propagates to instances at slightly different times, so a round opened on v2
+     * can have a later callback land on an instance still serving v1. If that callback were
+     * allowed to write the marker it would pin a v2-owned round to v1 for the marker's lifetime,
+     * and every retry would then look for the bet in the v1 unsettled collection where it does
+     * not exist. Non-opening callbacks therefore only extend an existing marker.</p>
+     *
+     * <p>The read side in
+     * {@link com.nextgen.gameaggregator.vendor.evoplay.config.EvoplayRouteResolver} stays on the
+     * full routing set ({@code bet}, {@code win}, {@code refund}) — narrowing it would un-pin
+     * genuinely v1-owned rounds at settlement.</p>
      */
-    private void markRoundAsV1IfRelevant(CallbackDto callbackDto) {
+    // package-private for testing
+    void markRoundForV1(CallbackDto callbackDto) {
         if (callbackDto == null || callbackDto.getName() == null || callbackDto.getData() == null) {
             return;
         }
@@ -221,9 +230,25 @@ public class CallbackAction {
         if (roundId == null || roundId.isBlank()) {
             return;
         }
-        migrationRoundDataService.markAsV1(EvoplayConfig.CLASS_NAME, roundId);
+
+        if (ActionName.bet.name().equals(action)) {
+            migrationRoundDataService.markOnRoundOpen(EvoplayConfig.CLASS_NAME, roundId);
+        } else {
+            migrationRoundDataService.touchMarker(EvoplayConfig.CLASS_NAME, roundId);
+        }
     }
 
+    /**
+     * Whether this callback may claim the round for v1.
+     *
+     * <p>Only the round-opening bet establishes ownership: a round can carry several bets (free
+     * spins, multi-action rounds) and the later ones must not re-claim it.</p>
+     *
+     * <p>When the flag is absent or the payload cannot be read this returns {@code true} without
+     * knowing whether the bet actually opens the round. That is a deliberate policy choice rather
+     * than an assertion — leaving an in-flight v1-owned round unclaimed is worse than
+     * over-claiming, so the unknown case keeps the pre-GA-15041 behaviour of pinning to v1.</p>
+     */
     private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo, HttpRequestLog httpRequestLog) {
         try {
             ResponseDataVo responseDataVo = new ResponseDataVo();
