@@ -13,6 +13,12 @@ import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceIncr
 import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinDto;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayBalanceIncreaseValidator;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayFreeRoundPayoutRequest;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayFreeRoundPayoutRequestFactory;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayFreeRoundPayoutResult;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayFreeRoundPayoutService;
+import com.nextgen.gameaggregator.vendor.evoplay.api.freeround.EvoplayFreeRoundResponseAdapter;
 import com.nextgen.gameaggregator.vendor.evoplay.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.evoplay.config.EvoplayConfig;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.ActionName;
@@ -26,6 +32,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.MultiValueMap;
@@ -38,6 +45,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping(EndPoints.PATH)
 public class CallbackAction {
@@ -64,6 +72,14 @@ public class CallbackAction {
     private UnsettledBetCachingService unsettledBetCachingService;
     @Autowired
     private MigrationRoundDataService migrationRoundDataService;
+    @Autowired
+    private EvoplayBalanceIncreaseValidator evoplayBalanceIncreaseValidator;
+    @Autowired
+    private EvoplayFreeRoundPayoutRequestFactory evoplayFreeRoundPayoutRequestFactory;
+    @Autowired
+    private EvoplayFreeRoundPayoutService evoplayFreeRoundPayoutService;
+    @Autowired
+    private EvoplayFreeRoundResponseAdapter evoplayFreeRoundResponseAdapter;
 
     // Handle incoming API requests
     @PostMapping
@@ -87,6 +103,9 @@ public class CallbackAction {
 
             // Increase Balance request Vendor didn't send token and signature, so we get gameSession by vendorPlayerUsername and skip verified signature
             if (callbackDto.getName().toLowerCase().equals("balanceincrease")) {
+                if (isFreeRoundWin(callbackDto)) {
+                    evoplayBalanceIncreaseValidator.validateV1(callbackDto);
+                }
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(callbackDto.getData().getUser_id());
 
             } else {
@@ -133,7 +152,15 @@ public class CallbackAction {
                     responseVo = betService.bet(callbackDto, gameSession, body, traceId, httpRequestLog);
                 }
                 case "win" -> {
-                    responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
+                    ensureDetailsDto(callbackDto);
+                    if (isPromoPayoutWin(callbackDto)) {
+                        validatePromoPayoutWin(callbackDto, gameSession);
+                        EvoplayFreeRoundPayoutRequest payoutRequest = evoplayFreeRoundPayoutRequestFactory.fromV1Win(callbackDto, gameSession);
+                        EvoplayFreeRoundPayoutResult payoutResult = evoplayFreeRoundPayoutService.payout(payoutRequest, httpRequestLog);
+                        responseVo = evoplayFreeRoundResponseAdapter.toV1(payoutResult);
+                    } else {
+                        responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
+                    }
                 }
                 case "refund" -> {
                     responseVo = refundService.refund(callbackDto, gameSession, traceId, httpRequestLog);
@@ -176,6 +203,11 @@ public class CallbackAction {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
             httpService.logError(httpRequestLog, e);
 
+        } catch (IllegalArgumentException e) {
+            responseVo.setResponseCode(ResponseCodes.INVALID_REQUEST_ERROR);
+            log.warn("Rejected Evoplay callback request, traceId={}, reason={}", traceId, e.getMessage(), e);
+            httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException |
                  InvalidVendorLineException |
                  InvalidPlayerException |
@@ -199,6 +231,62 @@ public class CallbackAction {
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
+    }
+
+    private boolean isFreeRoundWin(CallbackDto callbackDto) {
+        return evoplayBalanceIncreaseValidator.isFreeRoundWin(
+                callbackDto == null ? null : callbackDto.getName(),
+                callbackDto == null || callbackDto.getData() == null ? null : callbackDto.getData().getType()
+        );
+    }
+
+    private boolean isPromoPayoutWin(CallbackDto callbackDto) {
+        if (callbackDto == null || callbackDto.getData() == null || !"win".equalsIgnoreCase(callbackDto.getName())) {
+            return false;
+        }
+
+        DetailsDto details = callbackDto.getData().getDetailsDto();
+        if (details == null || isBlank(details.getExtrabonus_registration_id()) || isBlank(details.getPayout())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void validatePromoPayoutWin(CallbackDto callbackDto, GameSession gameSession) throws CurrencyNotSupportedException {
+        if (callbackDto == null || callbackDto.getData() == null) {
+            throw new IllegalArgumentException("data is required");
+        }
+        String amount = callbackDto.getData().getAmount();
+        if (isBlank(amount)) {
+            throw new IllegalArgumentException("data.amount is required");
+        }
+        if (new java.math.BigDecimal(amount).signum() < 0) {
+            throw new IllegalArgumentException("data.amount must be positive or zero");
+        }
+        if (isBlank(callbackDto.getData().getCurrency())) {
+            throw new IllegalArgumentException("data.currency is required");
+        }
+        ValidationUtils.isEquals(
+                gameSession.getVendorCurrencyCode(),
+                callbackDto.getData().getCurrency(),
+                CurrencyNotSupportedException::new
+        );
+    }
+
+    private void ensureDetailsDto(CallbackDto callbackDto) {
+        if (callbackDto == null || callbackDto.getData() == null || callbackDto.getData().getDetailsDto() != null) {
+            return;
+        }
+        String details = callbackDto.getData().getDetails();
+        if (isBlank(details)) {
+            return;
+        }
+        callbackDto.getData().setDetailsDto(new Gson().fromJson(details, DetailsDto.class));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /**

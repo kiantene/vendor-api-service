@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -103,20 +101,23 @@ public class GameSessionDataService {
 
     @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getByVendorPlayerUsername(String username, VendorRequestContext context) {
-        List<GameSession> gameSessionList = repository.findByVendorPlayerUsername(username);
-
-        if (gameSessionList.isEmpty()) {
-            throw new GameSessionExpiredException(context, "Game session has expired");
-        }
-
         // Return the player's latest launched session regardless of the request game code.
         // A Vendor Lobby ("More Games") switch sends a game code different from the launched
         // game; filtering by it here would drop the real session and force a lossy rebuild
         // (missing platformId/languageId). Game-code reconciliation is done at validation
         // time on a request-local copy (see BetValidator), so the real session is preserved.
-        return gameSessionList.stream()
-                .max(Comparator.comparingLong(GameSession::getCreateTime))
-                .orElseThrow(() -> new GameSessionExpiredException(context, "Game session has expired"));
+        //
+        // Push ORDER BY createTime DESC + LIMIT 1 into N1QL instead of fetching every session
+        // for the player and reducing in-JVM. findByVendorPlayerUsername returns the full
+        // history (doc id = token, one doc per launch, no TTL), which is O(N) in docs fetched
+        // and can reach multiple seconds for heavily-reused accounts.
+        GameSession gameSession = repository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(username);
+
+        if (gameSession == null) {
+            throw new GameSessionExpiredException(context, "Game session has expired");
+        }
+
+        return gameSession;
     }
 
     public void updateVendorToken(GameSession gameSession, String newToken) {

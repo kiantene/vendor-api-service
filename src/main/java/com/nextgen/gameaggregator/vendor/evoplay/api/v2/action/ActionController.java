@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.api.v2.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.balanceIncrease.BalanceIncreaseService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.bet.BetServices;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.dto.CallbackDto;
+import com.nextgen.gameaggregator.vendor.evoplay.api.v2.freeround.EvoplayV2FreeRoundPayoutService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.result.BetResultService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.rollback.RollbackService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.v2.vo.ResponseVo;
@@ -36,6 +37,7 @@ public class ActionController {
     private final BalanceService balanceService;
     private final BalanceIncreaseService balanceIncreaseService;
     private final ObjectMapper objectMapper;
+    private final EvoplayV2FreeRoundPayoutService evoplayV2FreeRoundPayoutService;
 
     public ActionController(
             BetServices betServices,
@@ -44,7 +46,8 @@ public class ActionController {
             HttpService httpService,
             BalanceService balanceService,
             BalanceIncreaseService balanceIncreaseService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            EvoplayV2FreeRoundPayoutService evoplayV2FreeRoundPayoutService) {
         this.betServices = betServices;
         this.betResultService = betResultService;
         this.rollbackService = rollbackService;
@@ -52,6 +55,7 @@ public class ActionController {
         this.balanceService = balanceService;
         this.balanceIncreaseService = balanceIncreaseService;
         this.objectMapper = objectMapper;
+        this.evoplayV2FreeRoundPayoutService = evoplayV2FreeRoundPayoutService;
     }
 
     @PostMapping
@@ -74,10 +78,20 @@ public class ActionController {
         return switch (ActionName.valueOf(action.toLowerCase())) {
             case init -> balanceService.getBalance(callbackDto);
             case bet -> betServices.bet(callbackDto);
-            case win -> betResultService.result(callbackDto);
+            case win -> {
+                if (evoplayV2FreeRoundPayoutService.supportsWin(callbackDto)) {
+                    response = evoplayV2FreeRoundPayoutService.payoutWin(callbackDto, httpRequestLog);
+                    yield ResponseEntity.ok(response);
+                }
+                yield betResultService.result(callbackDto);
+            }
             case refund -> rollbackService.rollback(callbackDto);
             case balanceincrease -> {
-                response = balanceIncreaseService.balanceIncrease(callbackDto, traceId, httpRequestLog);
+                if (evoplayV2FreeRoundPayoutService.supports(callbackDto)) {
+                    response = evoplayV2FreeRoundPayoutService.payout(callbackDto, httpRequestLog);
+                } else {
+                    response = balanceIncreaseService.balanceIncrease(callbackDto, traceId, httpRequestLog);
+                }
                 yield ResponseEntity.ok(response);
             }
             default -> {

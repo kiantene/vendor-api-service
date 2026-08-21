@@ -8,8 +8,6 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -43,12 +41,11 @@ class GameSessionDataServiceTest {
     @Test
     void getByVendorPlayerUsername_returnsLatestSession_ignoringSwitchedGameCode() {
         // Player launched GAME_A, then switched to GAME_B via the Vendor Lobby.
-        // The latest launched session is GAME_A (higher createTime); the request
-        // carries GAME_B. The real (latest) session must still be returned, with
-        // platformId/languageId intact — NOT filtered out into a lossy rebuild.
+        // The latest launched session (GAME_A) is what the top-1 finder returns; the
+        // request carries GAME_B. The real (latest) session must still be returned, with
+        // platformId/languageId intact — the method must NOT re-filter by request game code.
         GameSession launched = session("GAME_A", 200L);
-        GameSession older = session("GAME_C", 100L);
-        when(repository.findByVendorPlayerUsername("player1")).thenReturn(List.of(older, launched));
+        when(repository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc("player1")).thenReturn(launched);
 
         GameSession result = dataService.getByVendorPlayerUsername("player1", contextForGame("GAME_B"));
 
@@ -59,19 +56,22 @@ class GameSessionDataServiceTest {
     }
 
     @Test
-    void getByVendorPlayerUsername_returnsLatestByCreateTime() {
-        GameSession newer = session("GAME_A", 300L);
-        GameSession older = session("GAME_A", 100L);
-        when(repository.findByVendorPlayerUsername("player1")).thenReturn(List.of(older, newer));
+    void getByVendorPlayerUsername_usesOrderedTop1Finder_notFetchAll() {
+        // The latest-by-createTime selection is pushed to the DB (ORDER BY createTime DESC
+        // LIMIT 1). Guard against regressing to the fetch-all-then-reduce-in-JVM pattern.
+        GameSession latest = session("GAME_A", 300L);
+        when(repository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc("player1")).thenReturn(latest);
 
         GameSession result = dataService.getByVendorPlayerUsername("player1", contextForGame("GAME_A"));
 
-        assertSame(newer, result);
+        assertSame(latest, result);
+        verify(repository).findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc("player1");
+        verify(repository, never()).findByVendorPlayerUsername(anyString());
     }
 
     @Test
     void getByVendorPlayerUsername_throwsWhenNoSession() {
-        when(repository.findByVendorPlayerUsername("player1")).thenReturn(List.of());
+        when(repository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc("player1")).thenReturn(null);
 
         assertThrows(GameSessionExpiredException.class,
                 () -> dataService.getByVendorPlayerUsername("player1", contextForGame("GAME_A")));

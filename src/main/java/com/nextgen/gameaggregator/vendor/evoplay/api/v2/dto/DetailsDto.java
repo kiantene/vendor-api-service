@@ -27,6 +27,7 @@ public class DetailsDto {
     private String balance_after_pay;
     private String payout;
     private String lent_pack_id;
+    private String extrabonus_registration_id;
     private String freespin;
     private String single_spin;
     private String freespins_left;
