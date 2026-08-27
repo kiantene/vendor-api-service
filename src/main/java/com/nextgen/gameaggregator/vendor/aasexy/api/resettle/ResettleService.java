@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aasexy.api.resettle;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -36,7 +37,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class ResettleService {
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexy-resettle"));
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;

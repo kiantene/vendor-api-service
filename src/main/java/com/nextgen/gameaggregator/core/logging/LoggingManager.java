@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.logging;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import java.util.concurrent.Executors;
 public class LoggingManager {
     private final LogContextService logContextService;
     private static final Integer THREAD_SIZE = 32;
-    private static final ExecutorService asyncLogger = Executors.newFixedThreadPool(THREAD_SIZE);
+    private static final ExecutorService asyncLogger = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("async-logger"));
 
     public LogContext onRequestStart(HttpServletRequest request) {
         LogContext logContext = new LogContext();
