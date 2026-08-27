@@ -24,10 +24,10 @@ public class CreatePlayerService {
                     logContext.setErrorMessage(ex.getMessage());
 
                     Throwable cause = ex.getCause();
-                    while (cause.getCause() != null && cause.getCause() != cause) {
+                    while (cause != null && cause.getCause() != null && cause.getCause() != cause) {
                         cause = cause.getCause();
                     }
-                    logContext.setRootCause(cause.toString());
+                    logContext.setRootCause(cause == null ? ex.toString() : cause.toString());
                 });
     }
 }
