@@ -108,7 +108,12 @@ public class TransactionService {
             vo.setResponseCodes(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
-        } catch (DisabledVendorLineException | DisabledGameException | InvalidOperatorResponseException |
+        } catch (InvalidOperatorResponseException e) {
+            // Only this status code makes the vendor actually trigger a rollback on failure.
+            vo.setResponseCodes(ResponseCodes.GENERAL_OR_SERVER_ERROR);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (DisabledVendorLineException | DisabledGameException |
                  InvalidAgentApiCredentialException | TransactionStillProcessingException e) {
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
