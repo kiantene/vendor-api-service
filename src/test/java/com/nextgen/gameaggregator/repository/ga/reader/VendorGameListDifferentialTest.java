@@ -42,10 +42,10 @@ import org.springframework.data.jpa.repository.Query;
  *   -Dga.test.user=root -Dga.test.password=...
  * </pre>
  *
- * <p>Two things this deliberately does not cover. It does not go through Spring Data, so the
- * {@code LIMIT} the framework appends around the statement is not exercised — only the paging
- * inside it. And it drives the statement directly rather than through {@code GameListService},
- * so nothing here checks how the page is assembled into a response.
+ * <p>What this does not reach: it drives the statement over JDBC rather than through Spring
+ * Data, so nothing here proves Hibernate binds the parameters or appends the page clause the
+ * way the paging test assumes it does — that test writes the outer clause itself. Nor does it
+ * go through {@code GameListService}, so how the page becomes a response is unchecked.
  */
 @EnabledIfSystemProperty(named = "ga.test.jdbcUrl", matches = ".+")
 public class VendorGameListDifferentialTest {
@@ -205,10 +205,9 @@ public class VendorGameListDifferentialTest {
     private String pinnedPreFixQuery() throws IOException {
         try (InputStream in = getClass().getClassLoader()
                 .getResourceAsStream("oneapi-529/main-query-before.sql")) {
-            String text = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            return text.lines()
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8).lines()
                     .filter(line -> !line.startsWith("--"))
-                    .reduce("", (a, b) -> a + "\n" + b);
+                    .collect(java.util.stream.Collectors.joining("\n"));
         }
     }
 
