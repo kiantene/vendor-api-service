@@ -44,9 +44,15 @@ public class GameListService {
         List<Sort.Order> orders = this.generateOrder();
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
+        // ONEAPI-529: the query pages the games it aggregates, so it has to reach every row the
+        // requested page can land on -- everything up to and including it. The framework then
+        // takes the page itself out of that. Slice 2 moves the offset into the query and drops
+        // this, once the page is assembled here rather than by Spring Data.
+        int innerLimit = dto.getPageNo() * dto.getPageSize();
+
         Page<Object> gameList = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
                 (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl,
-                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), pagingSort);
+                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), innerLimit, pagingSort);
 
         gameListData.setHeaders(this.getHeaders());
         gameListData.setGames(gameList.getContent());
