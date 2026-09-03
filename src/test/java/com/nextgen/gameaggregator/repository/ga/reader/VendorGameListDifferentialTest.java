@@ -188,6 +188,45 @@ public class VendorGameListDifferentialTest {
         return rows.stream().map(row -> row.substring(0, row.indexOf(FIELD_SEPARATOR))).toList();
     }
 
+    /**
+     * The total beside the list has to be the number of games the list can actually return.
+     * The count statement filters more loosely than the list does — it never joins languages,
+     * platforms or vendors — so a game the list drops for an unresolved dimension is still
+     * counted. The reader sees a total the pages cannot add up to.
+     */
+    @Test
+    void countIsTheNumberOfGamesTheListCanReturn() throws Exception {
+        params.put("innerLimit", NO_PAGING);
+        params.put("limit", NO_PAGING);
+        params.put("offset", 0);
+
+        long listed = runToRows(productionQuery()).size();
+        long counted = countFrom(countStatement());
+
+        assertEquals(listed, counted,
+                "the list returns " + listed + " games but the total says " + counted);
+    }
+
+    /**
+     * The reproduction for the count. It answers with a single number, so there is no page to
+     * bound it against — what it must not do is build the same per-game product the list used
+     * to. Bounded against the games it counts, not against games times currencies.
+     */
+    @Test
+    void countDoesNotMultiplyRowsBeforeCounting() throws Exception {
+        params.put("innerLimit", NO_PAGING);
+        params.put("limit", NO_PAGING);
+        params.put("offset", 0);
+
+        long counted = countFrom(countStatement());
+        long rows = widestPlanNode(countStatement());
+        long allowed = MAX_AGGREGATION_ROWS_PER_PAGE_ROW * Math.max(counted, 1);
+
+        assertTrue(rows <= allowed,
+                "widest plan node handled " + rows + " rows to count " + counted
+                        + " games; " + allowed + " or fewer is the catalogue's worth");
+    }
+
     // ---------------------------------------------------------------- the statements
 
     /** Looked up by name, so a change to the method's parameters does not break this. */
@@ -200,6 +239,38 @@ public class VendorGameListDifferentialTest {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("no @Query on the game list method"))
                 .value();
+    }
+
+    /**
+     * The count statement, wherever production currently keeps it. Spring Data carries it as the
+     * {@code countQuery} attribute beside the list query; once the page is assembled by hand it
+     * becomes a repository method of its own. Looked up in both places so the same check spans
+     * that move rather than being rewritten across it.
+     */
+    private String countStatement() {
+        return java.util.Arrays.stream(VendorGameReaderRepository.class.getMethods())
+                .filter(m -> m.getName().toLowerCase().startsWith("count"))
+                .map(m -> m.getAnnotation(Query.class))
+                .filter(java.util.Objects::nonNull)
+                .map(Query::value)
+                .findFirst()
+                .orElseGet(() -> java.util.Arrays.stream(
+                                VendorGameReaderRepository.class.getMethods())
+                        .filter(m -> m.getName()
+                                .equals("findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency"))
+                        .map(m -> m.getAnnotation(Query.class))
+                        .filter(java.util.Objects::nonNull)
+                        .map(Query::countQuery)
+                        .filter(q -> !q.isEmpty())
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("no count statement found")));
+    }
+
+    private long countFrom(String namedSql) throws SQLException {
+        try (PreparedStatement ps = prepare(namedSql); ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getLong(1);
+        }
     }
 
     private String pinnedPreFixQuery() throws IOException {
