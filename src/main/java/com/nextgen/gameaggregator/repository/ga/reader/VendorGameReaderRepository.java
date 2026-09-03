@@ -133,7 +133,7 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             @Param("masterAgentId") Integer masterAgentId,
             @Param("agentId") Integer agentId,
             @Param("limit") Integer limit,
-            @Param("offset") Integer offset);
+            @Param("offset") Long offset);
 
     // ONEAPI-529: counts games over GAME_LIST_FILTER, the same filter the list pages, so the
     // total and the pages cannot disagree. No join multiplication and no GROUP BY -- the

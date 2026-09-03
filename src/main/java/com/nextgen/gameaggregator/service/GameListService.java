@@ -41,8 +41,11 @@ public class GameListService {
         // to Spring Data made it wrap the statement in a second page clause and run its count on
         // every call whose first page came back full -- and that count was the same heavy shape
         // as the list. Both statements now share one filter, so the total and the pages agree.
+        // pageNo is validated as 1..Integer.MAX_VALUE, so the offset must be computed as a long
+        // or a legitimately large page number overflows to a negative one. PageRequest.getOffset()
+        // used to do this; nothing does it now except this cast.
         int pageSize = dto.getPageSize();
-        int offset = (dto.getPageNo() - 1) * pageSize;
+        long offset = (long) (dto.getPageNo() - 1) * pageSize;
 
         List<Object> games = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
                 (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl,
