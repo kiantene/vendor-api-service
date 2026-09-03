@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,12 +58,28 @@ import org.springframework.data.jpa.repository.Query;
 public class VendorGameListDifferentialTest {
 
     /**
-     * The page's worth of aggregation the rewrite is allowed. Each game contributes roughly one
-     * row per language-platform pair plus one per currency — a low three-figure multiple. The
-     * bound is deliberately generous: what it rules out is multiplication by catalogue size,
-     * which lands three orders of magnitude above it.
+     * How many passes over the vendor's candidate rows the statement may make.
+     *
+     * <p>Bounding against page size was wrong, and staging showed why. The filter has to consult
+     * every active code row the vendor has in order to know which games qualify — you cannot page
+     * before you filter — so the floor is the vendor's catalogue, not the page. A bound of
+     * 200 x page size happens to hold for a 1,438-game vendor and would fail a larger one for no
+     * defect at all.
+     *
+     * <p>Passes over that floor is the relationship that actually distinguishes the three states
+     * seen so far. The defect multiplied by the currency count; the category cross-join
+     * multiplied by four; the statement should make about one pass.
+     *
+     * <pre>
+     *   pre-ONEAPI-529, local      7,750,000 / 61,692 = 125x
+     *   category cross-join, stg     245,632 / 61,408 =   4x
+     *   after both fixes, local       62,000 / 61,692 =   1x
+     * </pre>
      */
-    private static final long MAX_AGGREGATION_ROWS_PER_PAGE_ROW = 200L;
+    private static final long MAX_PASSES_OVER_CANDIDATE_ROWS = 3L;
+
+    /** Collected on the way through, printed once, so a passing run reports its numbers. */
+    private static final Map<String, String> MEASUREMENTS = new LinkedHashMap<>();
 
     /** Joins a row's columns into one comparable value; cannot occur in the data. */
     private static final char FIELD_SEPARATOR = '\u0000';
@@ -126,8 +143,15 @@ public class VendorGameListDifferentialTest {
     void rewrittenQueryReturnsTheSameRowsAsTheStatementItReplaces() throws Exception {
         setPaging(NO_PAGING, 0);
 
+        long t0 = System.nanoTime();
         List<String> before = runToRows(pinnedPreFixQuery());
+        long beforeMs = millisSince(t0);
+        long t1 = System.nanoTime();
         List<String> after = runToRows(productionQuery());
+        long afterMs = millisSince(t1);
+
+        record("list: games returned", before.size() + " before, " + after.size() + " after");
+        record("list: wall clock, whole catalogue", beforeMs + " ms before, " + afterMs + " ms after");
 
         assertEquals(before.size(), after.size(),
                 "the rewrite returned a different number of games");
@@ -145,12 +169,20 @@ public class VendorGameListDifferentialTest {
     void rewrittenQueryAggregatesOnlyThePageItReturns() throws Exception {
         setPaging(PAGE_SIZE, 0);
 
+        long candidates = candidateRows();
+        long t0 = System.nanoTime();
         long rows = widestPlanNode(productionQuery());
-        long allowed = MAX_AGGREGATION_ROWS_PER_PAGE_ROW * PAGE_SIZE;
+        long ms = millisSince(t0);
+        long allowed = MAX_PASSES_OVER_CANDIDATE_ROWS * candidates;
+
+        record("vendor candidate rows (active codes)", String.valueOf(candidates));
+        record("list: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
+        record("list: wall clock, one page of " + PAGE_SIZE, ms + " ms");
 
         assertTrue(rows <= allowed,
-                "widest plan node handled " + rows + " rows to return a page of " + PAGE_SIZE
-                        + "; the page's worth is " + allowed + " or fewer");
+                "widest plan node handled " + rows + " rows against " + candidates
+                        + " candidate rows — " + passes(rows, candidates) + ", and at most "
+                        + MAX_PASSES_OVER_CANDIDATE_ROWS + "x is one pass plus slack");
     }
 
     /**
@@ -191,13 +223,49 @@ public class VendorGameListDifferentialTest {
         List<String> paged = new ArrayList<>();
         for (int pageNo = 1; pageNo <= 3; pageNo++) {
             setPaging(pageSize, (pageNo - 1) * pageSize);
+            long t0 = System.nanoTime();
             paged.addAll(firstColumn(runToRows(productionQuery())));
+            record("paging: page " + pageNo + " of " + pageSize, millisSince(t0) + " ms");
         }
 
         assertEquals(unpaged.subList(0, paged.size()), paged,
                 "paging the statement did not reproduce the unpaged order");
         assertEquals(paged.size(), paged.stream().distinct().count(),
                 "a game appeared on more than one page");
+    }
+
+    /** Active code rows for this vendor — the floor no rewrite can go below. */
+    private long candidateRows() throws SQLException {
+        try (PreparedStatement ps = prepare(
+                "SELECT COUNT(*) FROM vendor_game_codes vgc"
+                        + " WHERE vgc.vendor_id = :vendorId AND vgc.status = :status");
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return rs.getLong(1);
+        }
+    }
+
+    private static long millisSince(long nanos) {
+        return (System.nanoTime() - nanos) / 1_000_000L;
+    }
+
+    private static String passes(long rows, long candidates) {
+        return candidates <= 0 ? "?" : String.format("%.1fx", (double) rows / candidates);
+    }
+
+    private static void record(String name, String value) {
+        MEASUREMENTS.put(name, value);
+    }
+
+    @AfterAll
+    static void reportMeasurements() {
+        if (MEASUREMENTS.isEmpty()) {
+            return;
+        }
+        StringBuilder out = new StringBuilder("\n  ONEAPI-529 /game/list measurements\n");
+        int width = MEASUREMENTS.keySet().stream().mapToInt(String::length).max().orElse(0);
+        MEASUREMENTS.forEach((k, v) -> out.append(String.format("    %-" + width + "s   %s%n", k, v)));
+        System.out.println(out);
     }
 
     /** The pre-fix statement carries none of these; unused parameters bind harmlessly. */
@@ -221,7 +289,9 @@ public class VendorGameListDifferentialTest {
         setPaging(NO_PAGING, 0);
 
         long listed = runToRows(productionQuery()).size();
+        long t0 = System.nanoTime();
         long counted = countFrom(countStatement());
+        record("count: total", counted + " (" + millisSince(t0) + " ms)");
 
         assertEquals(listed, counted,
                 "the list returns " + listed + " games but the total says " + counted);
@@ -236,13 +306,16 @@ public class VendorGameListDifferentialTest {
     void countDoesNotMultiplyRowsBeforeCounting() throws Exception {
         setPaging(NO_PAGING, 0);
 
-        long counted = countFrom(countStatement());
+        long candidates = candidateRows();
         long rows = widestPlanNode(countStatement());
-        long allowed = MAX_AGGREGATION_ROWS_PER_PAGE_ROW * Math.max(counted, 1);
+        long allowed = MAX_PASSES_OVER_CANDIDATE_ROWS * candidates;
+
+        record("count: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
 
         assertTrue(rows <= allowed,
-                "widest plan node handled " + rows + " rows to count " + counted
-                        + " games; " + allowed + " or fewer is the catalogue's worth");
+                "widest plan node handled " + rows + " rows against " + candidates
+                        + " candidate rows — " + passes(rows, candidates) + ", and at most "
+                        + MAX_PASSES_OVER_CANDIDATE_ROWS + "x is one pass plus slack");
     }
 
     // ---------------------------------------------------------------- the statements
