@@ -11,10 +11,6 @@ import com.nextgen.gameaggregator.repository.ga.reader.VendorGameReaderRepositor
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -41,24 +37,26 @@ public class GameListService {
             gameCategoryIds.add(agentVendorLine.getGameCategoryId());
         }
 
-        List<Sort.Order> orders = this.generateOrder();
-        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
+        // ONEAPI-529: the page is taken inside the query and assembled here. Handing a Pageable
+        // to Spring Data made it wrap the statement in a second page clause and run its count on
+        // every call whose first page came back full -- and that count was the same heavy shape
+        // as the list. Both statements now share one filter, so the total and the pages agree.
+        int pageSize = dto.getPageSize();
+        int offset = (dto.getPageNo() - 1) * pageSize;
 
-        // ONEAPI-529: the query pages the games it aggregates, so it has to reach every row the
-        // requested page can land on -- everything up to and including it. The framework then
-        // takes the page itself out of that. Slice 2 moves the offset into the query and drops
-        // this, once the page is assembled here rather than by Spring Data.
-        int innerLimit = dto.getPageNo() * dto.getPageSize();
-
-        Page<Object> gameList = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
+        List<Object> games = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
                 (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl,
-                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), innerLimit, pagingSort);
+                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), pageSize, offset);
+
+        long totalItems = vendorGameReaderRepository.countByVendorIdAndStatusAndCategoryAndCurrency
+                (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds,
+                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId());
 
         gameListData.setHeaders(this.getHeaders());
-        gameListData.setGames(gameList.getContent());
-        gameListData.setCurrentPage(gameList.getNumber() + 1);
-        gameListData.setTotalItems(gameList.getTotalElements());
-        gameListData.setTotalPages(gameList.getTotalPages());
+        gameListData.setGames(games);
+        gameListData.setCurrentPage(dto.getPageNo());
+        gameListData.setTotalItems(totalItems);
+        gameListData.setTotalPages((int) Math.ceil((double) totalItems / pageSize));
         return gameListData;
     }
 
@@ -75,25 +73,6 @@ public class GameListService {
         }});
 
         return sortByValue(hm);
-    }
-
-    //TODO add order by param
-    private List<Sort.Order> generateOrder() {
-        List<Sort.Order> orders = new ArrayList<Sort.Order>();
-        //region TODO sorting
-//            if (sort[0].contains(",")) {
-//                // will sort more than 2 fields
-//                // sortOrder="field, direction"
-//                for (String sortOrder : sort) {
-//                    String[] _sort = sortOrder.split(",");
-//                    orders.add(new Order(getSortDirection(_sort[1]), _sort[0]));
-//                }
-//            } else {
-//                // sort=[field, direction]
-//                orders.add(new Order(getSortDirection(sort[1]), sort[0]));
-//            }
-        //endregion
-        return orders;
     }
 
     public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm) {

@@ -44,8 +44,8 @@ import org.springframework.data.jpa.repository.Query;
  *
  * <p>What this does not reach: it drives the statement over JDBC rather than through Spring
  * Data, so nothing here proves Hibernate binds the parameters or appends the page clause the
- * way the paging test assumes it does — that test writes the outer clause itself. Nor does it
- * go through {@code GameListService}, so how the page becomes a response is unchecked.
+ * way it is written. Nor does it go through {@code GameListService}, so how the page and the
+ * total become a response is unchecked.
  */
 @EnabledIfSystemProperty(named = "ga.test.jdbcUrl", matches = ".+")
 public class VendorGameListDifferentialTest {
@@ -103,7 +103,7 @@ public class VendorGameListDifferentialTest {
      */
     @Test
     void rewrittenQueryReturnsTheSameRowsAsTheStatementItReplaces() throws Exception {
-        params.put("innerLimit", NO_PAGING);
+        setPaging(NO_PAGING, 0);
 
         List<String> before = runToRows(pinnedPreFixQuery());
         List<String> after = runToRows(productionQuery());
@@ -122,7 +122,7 @@ public class VendorGameListDifferentialTest {
      */
     @Test
     void rewrittenQueryAggregatesOnlyThePageItReturns() throws Exception {
-        params.put("innerLimit", PAGE_SIZE);
+        setPaging(PAGE_SIZE, 0);
 
         long rows = widestPlanNode(productionQuery());
         long allowed = MAX_AGGREGATION_ROWS_PER_PAGE_ROW * PAGE_SIZE;
@@ -142,7 +142,7 @@ public class VendorGameListDifferentialTest {
      */
     @Test
     void aGameWhosePlatformRowsDisagreeOnItsNameIsReturnedOnce() throws Exception {
-        params.put("innerLimit", NO_PAGING);
+        setPaging(NO_PAGING, 0);
 
         String gameCode = makeOneGamesPlatformNamesDisagree();
 
@@ -155,33 +155,34 @@ public class VendorGameListDifferentialTest {
     }
 
     /**
-     * The statement pages the games it aggregates, and Spring Data appends a second
-     * {@code LIMIT} around the result for the page itself. Two limits in one statement is the
-     * part of this most likely to be wrong, so it is checked directly: consecutive pages must
-     * not overlap, must not skip, and must come back in the same order as one unpaged read.
-     *
-     * <p>The outer clause is written here the way Hibernate's MySQL dialect writes it. That
-     * makes this a check of the statement, not of the framework — nothing here proves Hibernate
-     * binds {@code :innerLimit}, only that the two limits compose the way the design assumes.
+     * The statement takes its own page now, so consecutive pages must not overlap, must not
+     * skip, and must come back in the order one unpaged read gives. vg.code is unique, which is
+     * what makes the boundary deterministic — the statement this replaced ordered only inside
+     * its derived table, where the order is not guaranteed to survive.
      */
     @Test
     void consecutivePagesDoNotOverlapOrSkipGames() throws Exception {
         int pageSize = 10;
 
-        params.put("innerLimit", NO_PAGING);
+        setPaging(NO_PAGING, 0);
         List<String> unpaged = firstColumn(runToRows(productionQuery()));
 
         List<String> paged = new ArrayList<>();
         for (int pageNo = 1; pageNo <= 3; pageNo++) {
-            params.put("innerLimit", pageNo * pageSize);
-            paged.addAll(firstColumn(runToRows(productionQuery()
-                    + " limit " + ((pageNo - 1) * pageSize) + ", " + pageSize)));
+            setPaging(pageSize, (pageNo - 1) * pageSize);
+            paged.addAll(firstColumn(runToRows(productionQuery())));
         }
 
         assertEquals(unpaged.subList(0, paged.size()), paged,
                 "paging the statement did not reproduce the unpaged order");
         assertEquals(paged.size(), paged.stream().distinct().count(),
                 "a game appeared on more than one page");
+    }
+
+    /** The pre-fix statement carries none of these; unused parameters bind harmlessly. */
+    private void setPaging(int limit, int offset) {
+        params.put("limit", limit);
+        params.put("offset", offset);
     }
 
     private List<String> firstColumn(List<String> rows) {
@@ -196,9 +197,7 @@ public class VendorGameListDifferentialTest {
      */
     @Test
     void countIsTheNumberOfGamesTheListCanReturn() throws Exception {
-        params.put("innerLimit", NO_PAGING);
-        params.put("limit", NO_PAGING);
-        params.put("offset", 0);
+        setPaging(NO_PAGING, 0);
 
         long listed = runToRows(productionQuery()).size();
         long counted = countFrom(countStatement());
@@ -214,9 +213,7 @@ public class VendorGameListDifferentialTest {
      */
     @Test
     void countDoesNotMultiplyRowsBeforeCounting() throws Exception {
-        params.put("innerLimit", NO_PAGING);
-        params.put("limit", NO_PAGING);
-        params.put("offset", 0);
+        setPaging(NO_PAGING, 0);
 
         long counted = countFrom(countStatement());
         long rows = widestPlanNode(countStatement());
