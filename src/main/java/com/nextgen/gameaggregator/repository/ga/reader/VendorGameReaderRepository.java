@@ -58,6 +58,7 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             "   AND vgcurrency.currency_id IN (:currencyIds) " +
             ") " +
             "AND EXISTS ( SELECT 1 FROM vendors v WHERE v.id = vg.vendor_id ) " +
+            "AND EXISTS ( SELECT 1 FROM game_categories gc WHERE gc.id = vg.game_category_id ) " +
             "AND NOT EXISTS ( " +
             "   SELECT 1 FROM vendor_game_deactivated as game_deactived " +
             "   WHERE game_deactived.vendor_game_id = vg.id " +
@@ -78,7 +79,7 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
     @Query(value = "SELECT " +
             "paged.gameCode, " +
             "IFNULL(langList.langName, paged.gameName) AS name, " +
-            "paged.categoryCode, " +
+            "pagedCategory.code AS categoryCode, " +
             "IFNULL( concat(:gameUrl, (IFNULL(langList.langImageSquare, paged.defaultImageSquare))), null) AS imageSquare, " +
             "IFNULL( concat( :gameUrl, (IFNULL(langList.langImageLandscape, paged.defaultImageLanscape))), null) AS imageLanscape, " +
             "codeList.languageCode, " +
@@ -89,12 +90,17 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             "vg.id AS gameID, " +
             "vg.code AS gameCode, vg.name AS gameName, " +
             "vg.image_square AS defaultImageSquare, vg.image_landscape AS defaultImageLanscape, " +
-            "gc.code AS categoryCode " +
+            // The category is carried as an id and resolved to a code after the page is taken.
+            // Joining game_categories here instead cost a cartesian product: MySQL hash-joined
+            // the vendor's whole active code set against the requested category rows with no
+            // condition -- 61,408 x 4 = 245,632 rows on staging, none of it page-proportional.
+            // The row must still exist, which GAME_LIST_FILTER now requires.
+            "vg.game_category_id AS gameCategoryId " +
             "FROM vendor_games vg " +
-            "INNER JOIN game_categories gc on gc.id = vg.game_category_id " +
             "WHERE " + GAME_LIST_FILTER +
             "ORDER BY vg.code " +
             "LIMIT :limit OFFSET :offset) AS paged " +
+            "INNER JOIN game_categories pagedCategory ON pagedCategory.id = paged.gameCategoryId " +
             "LEFT JOIN LATERAL ( SELECT " +
             "GROUP_CONCAT(DISTINCT l.code SEPARATOR ',') AS languageCode, " +
             "GROUP_CONCAT(DISTINCT p.code SEPARATOR ',') AS platformCode " +
@@ -139,9 +145,7 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
     // total and the pages cannot disagree. No join multiplication and no GROUP BY -- the
     // statement this replaces built the whole per-game product to produce one number, and ran
     // on every call whose first page came back full.
-    @Query(value = "SELECT COUNT(*) FROM vendor_games vg " +
-            "INNER JOIN game_categories gc on gc.id = vg.game_category_id " +
-            "WHERE " + GAME_LIST_FILTER,
+    @Query(value = "SELECT COUNT(*) FROM vendor_games vg WHERE " + GAME_LIST_FILTER,
             nativeQuery = true)
     long countByVendorIdAndStatusAndCategoryAndCurrency(
             @Param("vendorId") Integer vendorId,

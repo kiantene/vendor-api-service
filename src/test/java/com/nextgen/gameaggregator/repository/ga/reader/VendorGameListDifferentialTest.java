@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.data.jpa.repository.Query;
 
 /**
@@ -37,17 +37,23 @@ import org.springframework.data.jpa.repository.Query;
  * is supplied, because CI has no such database.
  *
  * <pre>
- * mvn test -Dtest=VendorGameListDifferentialTest \
- *   -Dga.test.jdbcUrl="jdbc:mysql://127.0.0.1:3306/game_aggregator" \
- *   -Dga.test.user=root -Dga.test.password=...
+ * export GA_TEST_JDBC_URL="jdbc:mysql://127.0.0.1:3306/game_aggregator"
+ * export GA_TEST_USER=root GA_TEST_PASSWORD=...
+ * mvn test -Dtest=VendorGameListDifferentialTest
  * </pre>
+ *
+ * <p>Prefer the environment variables. The {@code -Dga.test.password} form still works, but a
+ * system property is part of the JVM's command line, so the password is readable by anyone who
+ * can run {@code ps} for as long as the run lasts — and it lands in any log that captures the
+ * process. That is not hypothetical: it is how the staging credential was exposed while this
+ * test was being written.
  *
  * <p>What this does not reach: it drives the statement over JDBC rather than through Spring
  * Data, so nothing here proves Hibernate binds the parameters or appends the page clause the
  * way it is written. Nor does it go through {@code GameListService}, so how the page and the
  * total become a response is unchecked.
  */
-@EnabledIfSystemProperty(named = "ga.test.jdbcUrl", matches = ".+")
+@EnabledIf("hasDatabase")
 public class VendorGameListDifferentialTest {
 
     /**
@@ -68,15 +74,30 @@ public class VendorGameListDifferentialTest {
     private static final Pattern PLAN_ROWS =
             Pattern.compile("rows=([0-9.eE+]+) loops=([0-9.eE+]+)");
 
+    /** Skipped unless a database is named, by either route. */
+    @SuppressWarnings("unused")
+    static boolean hasDatabase() {
+        return !setting("GA_TEST_JDBC_URL", "ga.test.jdbcUrl", "").isBlank();
+    }
+
     private Connection connection;
     private Map<String, Object> params;
+
+    /** Environment first, then the system property. See the note on the class about why. */
+    private static String setting(String envName, String propertyName, String fallback) {
+        String value = System.getenv(envName);
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(propertyName);
+        }
+        return (value == null || value.isBlank()) ? fallback : value;
+    }
 
     @BeforeEach
     void openConnection() throws SQLException {
         connection = DriverManager.getConnection(
-                System.getProperty("ga.test.jdbcUrl"),
-                System.getProperty("ga.test.user", "root"),
-                System.getProperty("ga.test.password", ""));
+                setting("GA_TEST_JDBC_URL", "ga.test.jdbcUrl", ""),
+                setting("GA_TEST_USER", "ga.test.user", "root"),
+                setting("GA_TEST_PASSWORD", "ga.test.password", ""));
         connection.setAutoCommit(false);
         // The pre-fix statement selects columns it does not group by, so it cannot run under
         // ONLY_FULL_GROUP_BY. The replacement can; nothing below relaxes the mode for it.
@@ -355,11 +376,27 @@ public class VendorGameListDifferentialTest {
         p.put("masterAgentId", Integer.getInteger("ga.test.masterAgentId", 1));
         p.put("agentId", Integer.getInteger("ga.test.agentId", 1));
         p.put("gameUrl", System.getProperty("ga.test.gameUrl", "https://img.example/"));
-        // A multi-currency agent is what makes this endpoint slow, so take every currency and
-        // every category rather than a narrow slice.
-        p.put("currencyIds", idsFrom("SELECT id FROM currencies"));
-        p.put("categoryIds", idsFrom("SELECT id FROM game_categories"));
+        // A multi-currency agent is what makes this endpoint slow, so the default is every
+        // currency and every category. Against a real environment that is wider than any agent
+        // actually asks for, and the pre-fix statement's cost scales with it — so both accept an
+        // override naming the ids a specific agent's vendor lines produce, which is where
+        // GameListAction gets them.
+        p.put("currencyIds", idsFrom("ga.test.currencyIds", "SELECT id FROM currencies"));
+        p.put("categoryIds", idsFrom("ga.test.categoryIds", "SELECT id FROM game_categories"));
         return p;
+    }
+
+    /** A comma-separated override if the property is set, otherwise whatever the query returns. */
+    private List<Integer> idsFrom(String property, String sql) throws SQLException {
+        String override = System.getProperty(property);
+        if (override != null && !override.isBlank()) {
+            List<Integer> ids = new ArrayList<>();
+            for (String id : override.split(",")) {
+                ids.add(Integer.parseInt(id.trim()));
+            }
+            return ids;
+        }
+        return idsFrom(sql);
     }
 
     private List<Integer> idsFrom(String sql) throws SQLException {
