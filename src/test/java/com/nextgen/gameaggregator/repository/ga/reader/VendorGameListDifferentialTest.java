@@ -177,6 +177,8 @@ public class VendorGameListDifferentialTest {
 
         record("vendor candidate rows (active codes)", String.valueOf(candidates));
         record("list: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
+        record("list: widest node is", widestPlanNodeDescription);
+        keepPlan("list");
         record("list: wall clock, one page of " + PAGE_SIZE, ms + " ms");
 
         assertTrue(rows <= allowed,
@@ -311,6 +313,8 @@ public class VendorGameListDifferentialTest {
         long allowed = MAX_PASSES_OVER_CANDIDATE_ROWS * candidates;
 
         record("count: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
+        record("count: widest node is", widestPlanNodeDescription);
+        keepPlan("count");
 
         assertTrue(rows <= allowed,
                 "widest plan node handled " + rows + " rows against " + candidates
@@ -391,21 +395,51 @@ public class VendorGameListDifferentialTest {
         return rows;
     }
 
-    /** The largest number of rows any node of the executed plan handled, rows times loops. */
+    /**
+     * The largest number of rows any node of the executed plan handled, rows times loops.
+     *
+     * <p>Also keeps the node's own text in {@link #widestPlanNodeDescription}. A bare number
+     * says work is being done but not by what, and reconstructing the statement by hand to find
+     * out proved unreliable — a plan for a statement with literal values is not necessarily the
+     * plan for the same statement with bound parameters, which is what production runs.
+     */
     private long widestPlanNode(String namedSql) throws SQLException {
         long widest = 0;
+        widestPlanNodeDescription = "(no plan node matched)";
+        StringBuilder plan = new StringBuilder();
         try (PreparedStatement ps = prepare("EXPLAIN ANALYZE " + namedSql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                Matcher m = PLAN_ROWS.matcher(rs.getString(1));
-                while (m.find()) {
-                    long handled = Math.round(
-                            Double.parseDouble(m.group(1)) * Double.parseDouble(m.group(2)));
-                    widest = Math.max(widest, handled);
+                plan.append(rs.getString(1)).append('\n');
+                for (String node : rs.getString(1).split("\n")) {
+                    Matcher m = PLAN_ROWS.matcher(node);
+                    if (m.find()) {
+                        long handled = Math.round(
+                                Double.parseDouble(m.group(1)) * Double.parseDouble(m.group(2)));
+                        if (handled > widest) {
+                            widest = handled;
+                            widestPlanNodeDescription = node.trim();
+                        }
+                    }
                 }
             }
         }
+        lastPlan = plan.toString();
         return widest;
+    }
+
+    private String widestPlanNodeDescription = "";
+    private String lastPlan = "";
+
+    /** The whole plan, so a surprising number can be explained without rebuilding the query. */
+    private void keepPlan(String name) {
+        try {
+            java.nio.file.Path dir = java.nio.file.Path.of("target", "oneapi-529-plans");
+            java.nio.file.Files.createDirectories(dir);
+            java.nio.file.Files.writeString(dir.resolve(name + ".txt"), lastPlan);
+        } catch (java.io.IOException e) {
+            System.out.println("could not keep the plan: " + e.getMessage());
+        }
     }
 
     /** Expands {@code :name} placeholders, list parameters included, and binds in order. */
