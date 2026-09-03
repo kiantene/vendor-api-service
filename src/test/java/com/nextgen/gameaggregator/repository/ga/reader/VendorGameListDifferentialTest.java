@@ -58,25 +58,26 @@ import org.springframework.data.jpa.repository.Query;
 public class VendorGameListDifferentialTest {
 
     /**
-     * How many passes over the vendor's candidate rows the statement may make.
+     * How much more work the statement may do for many currencies than for two.
      *
-     * <p>Bounding against page size was wrong, and staging showed why. The filter has to consult
-     * every active code row the vendor has in order to know which games qualify — you cannot page
-     * before you filter — so the floor is the vendor's catalogue, not the page. A bound of
-     * 200 x page size happens to hold for a 1,438-game vendor and would fail a larger one for no
-     * defect at all.
+     * <p>Two earlier bounds were wrong, both because they asserted a mechanism rather than the
+     * defect. Against page size: the filter must consult every active code row the vendor has to
+     * know which games qualify, so the floor is the catalogue, not the page. Against passes over
+     * that floor: MySQL is free to rewrite EXISTS into a join, and does, so a statement can be
+     * correct and fast while making several passes.
      *
-     * <p>Passes over that floor is the relationship that actually distinguishes the three states
-     * seen so far. The defect multiplied by the currency count; the category cross-join
-     * multiplied by four; the statement should make about one pass.
+     * <p>The defect was specific. The two detail tables joined at the same level, so work grew
+     * with the number of currencies the operator asked for. That is what this measures: run the
+     * same statement over a couple of currencies and over all of them, and the work must not
+     * follow. It holds on any dataset, and no optimiser decision satisfies it accidentally.
      *
-     * <pre>
-     *   pre-ONEAPI-529, local      7,750,000 / 61,692 = 125x
-     *   category cross-join, stg     245,632 / 61,408 =   4x
-     *   after both fixes, local       62,000 / 61,692 =   1x
-     * </pre>
+     * <p>Requesting fewer currencies also admits fewer games, lowering the narrow side further.
+     * That makes this conservative rather than lenient.
      */
-    private static final long MAX_PASSES_OVER_CANDIDATE_ROWS = 3L;
+    private static final double MAX_WORK_RATIO = 2.0;
+
+    /** Currencies in the narrow run. Two, so a per-currency multiplier has room to show. */
+    private static final int NARROW_CURRENCIES = 2;
 
     /** Collected on the way through, printed once, so a passing run reports its numbers. */
     private static final Map<String, String> MEASUREMENTS = new LinkedHashMap<>();
@@ -161,30 +162,23 @@ public class VendorGameListDifferentialTest {
     }
 
     /**
-     * Dataset A — the reproduction. The statement must aggregate a page, not the catalogue.
-     * Measured on the plan MySQL actually executed, because rows-examined understates a
-     * join that multiplies before it groups.
+     * Dataset A, the reproduction. A game's language-and-platform rows used to be multiplied by
+     * its currency rows, so asking for more currencies cost proportionally more. They add now.
+     * Measured on the plan MySQL actually executed, because rows-examined understates a join
+     * that multiplies before it groups.
      */
     @Test
-    void rewrittenQueryAggregatesOnlyThePageItReturns() throws Exception {
+    void listWorkDoesNotGrowWithTheNumberOfCurrenciesRequested() throws Exception {
         setPaging(PAGE_SIZE, 0);
 
-        long candidates = candidateRows();
         long t0 = System.nanoTime();
-        long rows = widestPlanNode(productionQuery());
-        long ms = millisSince(t0);
-        long allowed = MAX_PASSES_OVER_CANDIDATE_ROWS * candidates;
-
-        record("vendor candidate rows (active codes)", String.valueOf(candidates));
-        record("list: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
+        long wide = widestPlanNode(productionQuery());
+        record("list: wall clock, one page of " + PAGE_SIZE, millisSince(t0) + " ms");
+        record("list: widest plan node", String.format("%,d rows, all currencies", wide));
         record("list: widest node is", widestPlanNodeDescription);
-        keepPlan("list");
-        record("list: wall clock, one page of " + PAGE_SIZE, ms + " ms");
 
-        assertTrue(rows <= allowed,
-                "widest plan node handled " + rows + " rows against " + candidates
-                        + " candidate rows — " + passes(rows, candidates) + ", and at most "
-                        + MAX_PASSES_OVER_CANDIDATE_ROWS + "x is one pass plus slack");
+        long narrow = withNarrowCurrencies(() -> widestPlanNode(productionQuery()));
+        assertWorkDidNotFollowCurrencyCount("list", wide, narrow);
     }
 
     /**
@@ -236,23 +230,8 @@ public class VendorGameListDifferentialTest {
                 "a game appeared on more than one page");
     }
 
-    /** Active code rows for this vendor — the floor no rewrite can go below. */
-    private long candidateRows() throws SQLException {
-        try (PreparedStatement ps = prepare(
-                "SELECT COUNT(*) FROM vendor_game_codes vgc"
-                        + " WHERE vgc.vendor_id = :vendorId AND vgc.status = :status");
-             ResultSet rs = ps.executeQuery()) {
-            rs.next();
-            return rs.getLong(1);
-        }
-    }
-
     private static long millisSince(long nanos) {
         return (System.nanoTime() - nanos) / 1_000_000L;
-    }
-
-    private static String passes(long rows, long candidates) {
-        return candidates <= 0 ? "?" : String.format("%.1fx", (double) rows / candidates);
     }
 
     private static void record(String name, String value) {
@@ -300,26 +279,57 @@ public class VendorGameListDifferentialTest {
     }
 
     /**
-     * The reproduction for the count. It answers with a single number, so there is no page to
-     * bound it against — what it must not do is build the same per-game product the list used
-     * to. Bounded against the games it counts, not against games times currencies.
+     * The same reproduction for the count. It answers with a single number, so there is no page
+     * to bound it against; what it must not do is build the per-game product the list used to.
      */
     @Test
-    void countDoesNotMultiplyRowsBeforeCounting() throws Exception {
+    void countWorkDoesNotGrowWithTheNumberOfCurrenciesRequested() throws Exception {
         setPaging(NO_PAGING, 0);
 
-        long candidates = candidateRows();
-        long rows = widestPlanNode(countStatement());
-        long allowed = MAX_PASSES_OVER_CANDIDATE_ROWS * candidates;
-
-        record("count: widest plan node", rows + "  (" + passes(rows, candidates) + " over candidates)");
+        long wide = widestPlanNode(countStatement());
+        record("count: widest plan node", String.format("%,d rows, all currencies", wide));
         record("count: widest node is", widestPlanNodeDescription);
-        keepPlan("count");
 
-        assertTrue(rows <= allowed,
-                "widest plan node handled " + rows + " rows against " + candidates
-                        + " candidate rows — " + passes(rows, candidates) + ", and at most "
-                        + MAX_PASSES_OVER_CANDIDATE_ROWS + "x is one pass plus slack");
+        long narrow = withNarrowCurrencies(() -> widestPlanNode(countStatement()));
+        assertWorkDidNotFollowCurrencyCount("count", wide, narrow);
+    }
+
+    /** Runs the body with only {@link #NARROW_CURRENCIES} currencies, then restores the set. */
+    @SuppressWarnings("unchecked")
+    private long withNarrowCurrencies(SqlSupplier body) throws SQLException {
+        List<Integer> all = (List<Integer>) params.get("currencyIds");
+        if (all.size() < NARROW_CURRENCIES * 2) {
+            throw new IllegalStateException(
+                    "need more than " + (NARROW_CURRENCIES * 2) + " currencies to detect a "
+                            + "per-currency multiplier; this agent has " + all.size());
+        }
+        params.put("currencyIds", all.subList(0, NARROW_CURRENCIES));
+        try {
+            return body.get();
+        } finally {
+            params.put("currencyIds", all);
+        }
+    }
+
+    private interface SqlSupplier {
+        long get() throws SQLException;
+    }
+
+    /** The plan is kept only when this fails; a green run leaves nothing behind. */
+    private void assertWorkDidNotFollowCurrencyCount(String which, long wide, long narrow) {
+        int all = ((List<?>) params.get("currencyIds")).size();
+        double ratio = narrow == 0 ? Double.MAX_VALUE : (double) wide / narrow;
+        record(which + ": work at " + all + " currencies vs " + NARROW_CURRENCIES,
+                String.format("%,d vs %,d rows = %.2fx", wide, narrow, ratio));
+
+        if (ratio > MAX_WORK_RATIO) {
+            keepPlan(which);
+        }
+        assertTrue(ratio <= MAX_WORK_RATIO, String.format(
+                "%s handled %,d rows for %d currencies but only %,d for %d, a %.2fx growth. "
+                        + "Work is following the currency count, which is the defect; at most "
+                        + "%.1fx is the fixed shape. Full plan in target/oneapi-529-plans/%s.txt",
+                which, wide, all, narrow, NARROW_CURRENCIES, ratio, MAX_WORK_RATIO, which));
     }
 
     // ---------------------------------------------------------------- the statements
