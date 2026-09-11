@@ -17,9 +17,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Pinning the context classloader here makes worker threads independent of who created them.
  *
- * <p>Threads are deliberately <strong>non-daemon</strong>, matching
- * {@link java.util.concurrent.Executors#defaultThreadFactory()}. Making them daemon would let
- * in-flight API-request-log sends and wallet retries be killed at JVM exit.
+ * <p>Threads are <strong>non-daemon</strong> at {@code NORM_PRIORITY}, matching
+ * {@link java.util.concurrent.Executors#defaultThreadFactory()} — which is what these pools used
+ * before this class existed, so the semantics are unchanged. Both must be set <em>explicitly</em>
+ * (ONEAPI-859): {@code new Thread(runnable, name)} <em>inherits</em> daemon status and priority
+ * from the creating thread, and the creating thread is whoever submitted the first task. In the
+ * very scenario this class exists for that submitter is a {@code ForkJoinPool.commonPool} worker,
+ * which <em>is</em> a daemon thread — so without these two lines the factory silently produces
+ * daemon workers, and in-flight {@code api_request_log} sends and wallet retries are killed at
+ * JVM exit.
  */
 public final class AppThreadFactory implements ThreadFactory {
 
@@ -36,10 +42,22 @@ public final class AppThreadFactory implements ThreadFactory {
         return new AppThreadFactory(namePrefix);
     }
 
+    /**
+     * The application classloader, for the handful of thread factories that cannot use this class
+     * because they are deliberately daemon (see {@code LogContextService},
+     * {@code KafkaDlqService}) and only need the context classloader pinned.
+     */
+    public static ClassLoader appClassLoader() {
+        return APP_CLASSLOADER;
+    }
+
     @Override
     public Thread newThread(Runnable runnable) {
         Thread thread = new Thread(runnable, namePrefix + "-" + sequence.incrementAndGet());
         thread.setContextClassLoader(APP_CLASSLOADER);
+        // Never inherit from the submitting thread — see the class Javadoc.
+        thread.setDaemon(false);
+        thread.setPriority(Thread.NORM_PRIORITY);
         return thread;
     }
 }

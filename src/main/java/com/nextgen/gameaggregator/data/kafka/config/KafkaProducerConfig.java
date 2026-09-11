@@ -33,10 +33,16 @@ public class KafkaProducerConfig {
      * <em>every</em> producer construction for <em>every</em> topic fails until the application
      * is restarted.
      *
-     * <p>Initialising it here, before any pool worker or common-pool task exists, makes that
-     * impossible. {@code @PostConstruct} on a {@code @Configuration} singleton is load-bearing:
-     * it is strictly ordered before {@code @Scheduled} tasks start (those begin only after
-     * context refresh completes). Do not move this to an {@code ApplicationRunner} or
+     * <p>{@link KafkaProducerWarmUp} now covers this and more, by realising the producers
+     * themselves on the startup thread. This guard is kept as the unconditional backstop
+     * (ONEAPI-859): the warm-up can be switched off with
+     * {@code kafka.producer.warm-up.enabled=false}, and that escape hatch must not also switch
+     * off the classloader protection. One {@code Class.forName} with no I/O is a cheap price for
+     * that. If the toggle is ever removed, this method can go with it.
+     *
+     * <p>{@code @PostConstruct} on a {@code @Configuration} singleton is load-bearing: it is
+     * strictly ordered before {@code @Scheduled} tasks start (those begin only after context
+     * refresh completes). Do not move this to an {@code ApplicationRunner} or
      * {@code CommandLineRunner} — those run after refresh, concurrent with an already-started
      * scheduler, and the ordering guarantee is lost.
      */
