@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * Realises every Kafka producer during startup, on the context-refresh thread, whose context
@@ -40,10 +40,11 @@ import java.util.List;
 @Component
 public class KafkaProducerWarmUp implements SmartInitializingSingleton {
 
-    private final List<ProducerFactory<?, ?>> producerFactories;
+    /** Keyed by bean name, so a warm-up failure names the factory that failed. */
+    private final Map<String, ProducerFactory<?, ?>> producerFactories;
     private final boolean enabled;
 
-    public KafkaProducerWarmUp(List<ProducerFactory<?, ?>> producerFactories,
+    public KafkaProducerWarmUp(Map<String, ProducerFactory<?, ?>> producerFactories,
                                @Value("${kafka.producer.warm-up.enabled:true}") boolean enabled) {
         this.producerFactories = producerFactories;
         this.enabled = enabled;
@@ -56,17 +57,18 @@ public class KafkaProducerWarmUp implements SmartInitializingSingleton {
                     + "producers will be built lazily on first send — see ONEAPI-834");
             return;
         }
-        for (ProducerFactory<?, ?> factory : producerFactories) {
+        producerFactories.forEach((beanName, factory) -> {
             try {
                 // The factory caches the shared producer and closes it via destroy() — not closed here.
                 factory.createProducer();
-                log.info("Kafka producer warmed up: {}", factory.getClass().getSimpleName());
+                log.info("Kafka producer warmed up: {}", beanName);
             } catch (Exception e) {
-                // Deliberately not rethrown — see the class Javadoc.
+                // Deliberately not rethrown — see the class Javadoc. Each factory is independent,
+                // so one failure must not stop the rest being warmed.
                 log.error("Kafka producer warm-up failed for {}; the serializer classes are still "
                         + "initialised on this thread, so the ONEAPI-834 guard holds. Producer will "
-                        + "be retried lazily on first send.", factory.getClass().getSimpleName(), e);
+                        + "be retried lazily on first send.", beanName, e);
             }
-        }
+        });
     }
 }
