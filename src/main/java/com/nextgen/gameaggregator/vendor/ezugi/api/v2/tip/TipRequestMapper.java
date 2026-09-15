@@ -16,7 +16,7 @@ public class TipRequestMapper implements BetResultContextMapper<BetRequest> {
                 .token(vendorRequest.getToken())
                 .vendorPlayerUsername(vendorRequest.getUid())
                 .vendorBetId(vendorRequest.getTransactionId())
-                .roundId(vendorRequest.getTransactionId())
+                .roundId(String.valueOf(vendorRequest.getRoundId()))
                 .vendorGameCode(vendorRequest.getGameId().toString())
                 .currencyCode(vendorRequest.getCurrency())
                 .betAmount(vendorRequest.getDebitAmount())

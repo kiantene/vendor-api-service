@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
 import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContext;
-import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
 import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -55,7 +54,8 @@ public class BetResultController extends AbstractBetResultController<BetResultRe
                         enrichResponse(resp, request);
                         emitRawBetDetail(ctx);
                     });
-            }
+        }
+
         return ResponseEntity.ok(response);
     }
 
