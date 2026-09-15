@@ -1,12 +1,9 @@
 package com.nextgen.gameaggregator.core.engine.operator;
 
-import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.math.BigDecimal;
 
 /**
  * Concrete implementation of OperatorScenario for settling results on a per-round basis.

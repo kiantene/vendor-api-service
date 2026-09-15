@@ -10,7 +10,8 @@ public class BetRollbackRequestMapper implements BetRollbackContextMapper<BetRes
     public BetRollbackContext toInternal(BetResultRequest request) {
         return BetRollbackContext.builder()
                 .idempotencyKey(request.getTransactionId())
-                .roundId(request.getDebitTransactionId())
+                //Rollback BY_BET, function after mapping update
+                .roundId(String.valueOf(request.getRoundId()))
                 .vendorGameCode(String.valueOf(request.getTableId()))
                 .vendorPlayerUsername(request.getUid())
                 .vendorCurrency(request.getCurrency())
