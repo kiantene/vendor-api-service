@@ -7,9 +7,11 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bglive.api.settlement.OrdersDto;
@@ -170,6 +172,19 @@ public class VendorService extends BaseVendorService {
 
         SettledBet settledBet =
                 settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), externalId);
+
+        // ONEAPI-293: settled_bet can be stale - status REFUNDED/CANCELLED, or the
+        // last operator push explicitly failed (operatorStatus set but != SC_OK) while
+        // status still reads SETTLED. operatorStatus is null on the EndRoundProcessor
+        // multi-bet-per-round path (never set there), so null must NOT be treated as a
+        // failed push - only an explicit non-SC_OK value counts.
+        boolean refundedOrCancelled = BetStatus.REFUNDED.code.equals(settledBet.getStatus())
+                || BetStatus.CANCELLED.code.equals(settledBet.getStatus());
+        boolean lastOperatorPushFailed = settledBet.getOperatorStatus() != null
+                && !ResponseCodes.Status.SC_OK.code.equals(settledBet.getOperatorStatus());
+        if (refundedOrCancelled || lastOperatorPushFailed) {
+            return QueryStatus.NO_BET;
+        }
 
         BigDecimal winLoss = settledBet.getWinLoss();
         if (winLoss.compareTo(BigDecimal.ZERO) > 0) {
