@@ -4,6 +4,8 @@ import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutContext;
 import com.nextgen.gameaggregator.enums.PromoType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
@@ -25,7 +27,7 @@ class PromoPayoutRequestMapperTest {
             "SmartTournamentMonetaryReward",
             "CashReward"
     })
-    void toInternal_mapsAllPromoTransactionTypesTypeAgnostically(String transactionType) {
+    void toInternal_mapsCommonFieldsForEveryPromoTransactionType(String transactionType) {
         PromoPayoutRequestDto request = request(transactionType, "voucher-123");
 
         PromoPayoutContext context = mapper.toInternal(request);
@@ -38,9 +40,36 @@ class PromoPayoutRequestMapperTest {
         assertThat(context.getVendorCampaignCode()).isEqualTo("voucher123");
         assertThat(context.getVendorPayoutAmount()).isEqualByComparingTo("12.345678");
         assertThat(context.getVendorTransactionTime()).isNull();
-        assertThat(context.getPromoType()).isEqualTo(PromoType.FREE_ROUND);
         assertThat(context).isInstanceOf(EvolutionPromoPayoutContext.class);
         assertThat(((EvolutionPromoPayoutContext) context).getVendorRequestUuid()).isEqualTo("request-123");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // free-round and reward-game families
+            "FreeRoundPlayableSpent,      FREE_ROUND",
+            "RewardGamePlayableSpent,     FREE_ROUND",
+            "SmartSpinsMonetaryReward,    FREE_ROUND",
+            // reclassified
+            "SmartTournamentMonetaryReward, TOURNAMENT",
+            "RtrMonetaryReward,           TOURNAMENT",
+            "JackpotWin,                  JACKPOT",
+            "CashReward,                  BONUS"
+    })
+    void toInternal_derivesPromoTypeFromTransactionType(String transactionType, PromoType expected) {
+        PromoPayoutContext context = mapper.toInternal(request(transactionType, "voucher-123"));
+
+        assertThat(context.getPromoType()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"SomeFutureEvolutionType"})
+    void toInternal_fallsBackToFreeRoundForUnknownTypes(String transactionType) {
+        // an unrecognised type must not fail a payout that would otherwise succeed
+        PromoPayoutContext context = mapper.toInternal(request(transactionType, "voucher-123"));
+
+        assertThat(context.getPromoType()).isEqualTo(PromoType.FREE_ROUND);
     }
 
     @Test
