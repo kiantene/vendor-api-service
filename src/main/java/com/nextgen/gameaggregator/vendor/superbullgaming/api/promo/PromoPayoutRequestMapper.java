@@ -20,7 +20,7 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<BetNSe
 
     @Override
     public PromoPayoutContext toInternal(BetNSettleDto vendorRequest) {
-        PromoType promoType = Optional.of(PROMO_TYPE_MAP.get(vendorRequest.getPromoType()))
+        PromoType promoType = Optional.ofNullable(PROMO_TYPE_MAP.get(vendorRequest.getPromoType()))
                 .orElseThrow(() -> new InvalidRequestException("Invalid promo type: " + vendorRequest.getPromoType()));
 
         return PromoPayoutContext.builder()
