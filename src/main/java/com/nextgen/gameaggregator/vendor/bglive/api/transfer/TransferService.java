@@ -8,10 +8,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.service.OperatorWalletService;
-import com.nextgen.gameaggregator.service.AgentPlayerService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bglive.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bglive.constant.ResponseCodes;
@@ -28,6 +25,7 @@ public class TransferService {
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;
+    private final VendorGameService vendorGameService;
     private final WalletRequestService walletRequestService;
     private final OperatorWalletService operatorWalletService;
     private final RequestIdempotentLogService requestIdempotentLogService;
@@ -37,6 +35,7 @@ public class TransferService {
                            VendorLineService vendorLineService,
                            AgentPlayerService agentPlayerService,
                            VendorService vendorService,
+                           VendorGameService vendorGameService,
                            WalletRequestService walletRequestService,
                            OperatorWalletService operatorWalletService,
                            RequestIdempotentLogService requestIdempotentLogService) {
@@ -45,6 +44,7 @@ public class TransferService {
         this.vendorLineService = vendorLineService;
         this.agentPlayerService = agentPlayerService;
         this.vendorService = vendorService;
+        this.vendorGameService = vendorGameService;
         this.walletRequestService = walletRequestService;
         this.operatorWalletService = operatorWalletService;
         this.requestIdempotentLogService = requestIdempotentLogService;
@@ -54,10 +54,11 @@ public class TransferService {
         CommonVo commonVo = new CommonVo();
         boolean isRequestExists = false;
         TransferDto transferDto = new TransferDto();
+        WalletRequest walletRequest = null;
         try {
             String body = httpRequestLog.getRequestBody();
             transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
-            WalletRequest walletRequest = WalletRequestService.init(httpRequestLog);
+            walletRequest = WalletRequestService.init(httpRequestLog);
             this.doValidation(transferDto);
             GameSession gameSession = getGameSession(transferDto.getParamsDto().getLoginId());
             this.doVerification(transferDto, gameSession);
@@ -106,8 +107,21 @@ public class TransferService {
 
         } finally {
             if (!isRequestExists) {
-                // first request (not request exist) will delete log after process finish.
-                requestIdempotentLogService.delete(transferDto, transferDto.getParamsDto().getLoginId());
+                // Wrap idempotency cleanup in try-catch to avoid suppressing core logic/logging
+                try {
+                    requestIdempotentLogService.delete(transferDto, transferDto.getParamsDto().getLoginId());
+                } catch (Exception e) {
+                    httpService.logError(httpRequestLog, e);
+                }
+            }
+
+            // Guard walletRequest against null on early error paths and pass the populated commonVo
+            if (walletRequest != null) {
+                try {
+                    walletRequestService.end(walletRequest, httpRequestLog, commonVo);
+                } catch (Exception e) {
+                    httpService.logError(httpRequestLog, e);
+                }
             }
         }
         return commonVo;
@@ -132,7 +146,8 @@ public class TransferService {
             DisabledAgentPlayerException,
             InvalidPlayerException,
             CredentialNotFoundException,
-            InvalidFormatException {
+            InvalidFormatException,
+            GameNotSupportedException {
 
         String snCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SN_CODE);
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -147,6 +162,8 @@ public class TransferService {
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        // Verify vendor game is active
+        vendorGameService.getByVendorGameCodeAndVendorId(transferDto.getGameId(), gameSession.getVendorId());
     }
 
     private WalletRequest processTransferInOut(TransferDto transferDto,
@@ -179,7 +196,6 @@ public class TransferService {
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(transferDto.getVendorBetId());
-        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
         BigDecimal amount = transferDto.getBetAmount().abs();
         walletRequest.setTransferAmount(amount);
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
@@ -191,7 +207,7 @@ public class TransferService {
         walletRequest.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
         walletRequest.setExternalTransactionId(transferDto.getRoundId());
         walletRequest.setRoundId(transferDto.getRoundId());
-        walletRequest.setVendorGameCode(gameSession.getVendorGameCode());
+        walletRequest.setVendorGameCode(transferDto.getGameId());
         walletRequest.setTimestamp(System.currentTimeMillis());
         walletRequest.setToken(gameSession.getToken());
         walletRequest.setVendorBetId(transferDto.getVendorBetId());
@@ -210,4 +226,3 @@ public class TransferService {
         walletRequest.setVendorSettleTime(System.currentTimeMillis());
     }
 }
-

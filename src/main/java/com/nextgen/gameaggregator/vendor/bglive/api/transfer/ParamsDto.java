@@ -22,6 +22,11 @@ public class ParamsDto extends CommonParamsDto {
 
     @NotBlank
     @Size(max = 255)
+    @JsonProperty("gameId")
+    private String gameId;
+
+    @NotBlank
+    @Size(max = 255)
     @JsonProperty("bizId")
     private String bizId;
 
