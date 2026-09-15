@@ -14,6 +14,7 @@ public class PromoPayoutMapper {
                 .username(context.getAgent().playerUsername())
                 .transactionId(context.getTransactionId())
                 .campaignId(context.getCampaignUuid())
+                .promoType(context.getPromoType().code)
                 .currency(context.getCurrencyCode())
                 .amount(context.getPayout().amount())
                 .timestamp(context.getVendorTransactionTime())
@@ -30,6 +31,8 @@ public class PromoPayoutMapper {
                 .username(context.getAgent().playerUsername()) // TODO: potential issue if txn username != context username
                 .transactionId(txn.getTransactionId())
                 .campaignId(context.getCampaignUuid())
+                // promoType lives on the context; batch children do not carry their own
+                .promoType(context.getPromoType().code)
                 .currency(context.getCurrencyCode())
                 .amount(txn.getPayout().amount())
                 .timestamp(txn.getVendorTransactionTime())
