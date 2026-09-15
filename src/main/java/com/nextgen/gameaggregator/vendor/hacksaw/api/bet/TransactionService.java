@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -76,6 +77,15 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
 
+            if (isZeroAmountFreeRoundBet(transactionDto)) {
+                // If freeSpin is created through BO. PromoPayout will handle the payout.
+                // Ignore the bet flow so no wallet debit or unsettled bet is created.
+                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+                vo.setAccountBalance(balance.longValue());
+                vo.setExternalTransactionId(transactionDto.getExternalTransactionId());
+                return vo;
+            }
+
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
@@ -116,7 +126,7 @@ public class TransactionService {
         } catch (Exception e) {
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
-            
+
         } finally {
             if (!isRequestExists) {
                 requestIdempotentLogService.delete(transactionDto, transactionDto.getExternalPlayerId());
@@ -149,5 +159,9 @@ public class TransactionService {
 
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalPlayerId(), InvalidPlayerException::new);
+    }
+
+    private boolean isZeroAmountFreeRoundBet(TransactionDto dto) {
+        return dto.getFreeRoundData() != null && Long.valueOf(0L).equals(dto.getAmount());
     }
 }
