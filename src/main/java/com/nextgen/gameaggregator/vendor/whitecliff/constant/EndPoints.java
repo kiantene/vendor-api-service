@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.whitecliff.constant;
 
 public class EndPoints {
 
-    public static final String PATH = "api/v1/whitecliff";
+    public static final String CLASS_NAME = "whitecliff";
+
+    public static final String PATH = "api/v1/" + CLASS_NAME;
 
     public static final String API_URL = "/auth";
 
