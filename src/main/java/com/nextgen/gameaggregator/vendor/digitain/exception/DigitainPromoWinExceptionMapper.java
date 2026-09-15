@@ -60,12 +60,13 @@ public class DigitainPromoWinExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        BigDecimal balance = (ex.getTransaction() != null && ex.getTransaction().getBalance() != null)
-                ? ex.getTransaction().getBalance().setScale(4, RoundingMode.DOWN)
-                : BigDecimal.ZERO;
+        // Since ONEAPI-372 this runs on the promo-payout path, whose duplicate guard attaches a
+        // RequestIdempotentLog rather than a GameTransaction -- getTransaction() is null there, so read
+        // through the exception accessors, which fall back to the log and then to zero.
+        BigDecimal balance = ex.getBalance().setScale(4, RoundingMode.DOWN);
 
         ErrorResponse errorResponse = new ErrorResponse(ResponseCode.TRANSACTION_ALREADY_EXISTS);
-        errorResponse.setTxid(ex.getTransaction().getTransactionId());
+        errorResponse.setTxid(ex.getTransactionId());
         errorResponse.setBln(balance);
         return new VendorErrorResponse(HttpStatus.OK, errorResponse);
     }

@@ -19,6 +19,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     private static final String ACTION = "payout";
     private final DuplicateRequestGuard guard;
     private final PromoPayoutContextEnricher enricher;
+    private final PromoPayoutValidator validator;
     private final PromoPayoutProcessor processor;
     private final RequestIdempotencyService requestIdempotencyService;
 
@@ -34,6 +35,8 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
             );
 
             enricher.enrich(context);
+
+            validator.validateOrThrow(context);
 
             PromoPayoutConfig config = state().getConfig();
 
