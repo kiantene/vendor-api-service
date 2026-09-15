@@ -47,7 +47,9 @@ public class CreatePlayerHandler extends AbstractGameLaunchHandler<CreatePlayerR
                 .sn(sn)
                 .id(context.getToken())
                 .method(Method.CREATE_PLAYER)
-                .playerName(context.getAgentPlayerUsername())
+                // ONEAPI-244: use the vendor username (hyphen-free) instead of the agent username
+                // for PlayerName too - Lucky365 rejects CreatePlayer when PlayerName has a hyphen.
+                .playerName(context.getVendorPlayerUsername())
                 .playerCode(context.getVendorPlayerUsername())
                 .signature(signature)
                 .build();
