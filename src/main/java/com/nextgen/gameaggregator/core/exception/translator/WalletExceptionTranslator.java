@@ -171,6 +171,12 @@ public class WalletExceptionTranslator {
             translatedException = new com.nextgen.gameaggregator.core.exception.BetNotFoundException(context, ex.getMessage(), ex);
         }
 
+        else if (ex instanceof InvalidOperatorResponseException) {
+            translatedException = InternalServerException.causedBy(ex, Map.of(
+                    VendorRequestContext.KEY, context
+            ));
+        }
+
         if (translatedException != null) return translatedException;
 
         if (ex instanceof RuntimeException runtimeException) {
