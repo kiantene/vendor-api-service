@@ -20,6 +20,10 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LogContext {
     private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
+    // Shared, thread-safe mapper. Also used to coerce Object payload fields to a stable JSON String
+    // (see asLogString) so OpenSearch never sees the same field as object on one doc and string on another.
+    private static final ObjectMapper LOG_MAPPER = new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
     private final Map<String, Object> extraFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
     // Move to use nextgen-core log context
     private final Map<String, Object> customFields = new LinkedHashMap<>(); // LinkedHashMap to maintain field ordering
@@ -184,12 +188,12 @@ public class LogContext {
             base.put("start", start);
             base.put("end", end);
             base.put("timeTaken", timeTaken);
-            base.put("body", body);
-            base.put("response", response);
+            base.put("body", asLogString(body));
+            base.put("response", asLogString(response));
             base.put("apiUrl", apiUrl);
             base.put("apiHeader", apiHeaders != null && !apiHeaders.isEmpty() ? apiHeaders.toString() : null);
-            base.put("apiBody", apiBody);
-            base.put("apiResponse", apiResponse);
+            base.put("apiBody", asLogString(apiBody));
+            base.put("apiResponse", asLogString(apiResponse));
             base.put("apiStart", apiStart);
             base.put("apiEnd", apiEnd);
             base.put("apiTimeTaken", apiTimeTaken);
@@ -207,13 +211,32 @@ public class LogContext {
                 base.putAll(extraFields);
             }
 
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-            return mapper.writeValueAsString(base);
+            return LOG_MAPPER.writeValueAsString(base);
 
         } catch (JsonProcessingException jsonProcessingException) {
             return this.toString();
+        }
+    }
+
+    /**
+     * Coerce a log payload field to a stable JSON String.
+     * <p>
+     * {@code body}/{@code response}/{@code apiBody}/{@code apiResponse} are typed {@code Object} and were
+     * historically serialized as-is, so the same field could reach OpenSearch as a JSON object on one
+     * document and as a String on another (e.g. a settlement POJO vs a raw request body). Because OpenSearch
+     * dynamic mapping is first-doc-wins per daily index, the two shapes conflict and the losing shape is
+     * rejected with {@code mapper_parsing_exception}. Emitting every payload as a String keeps the mapped
+     * type deterministic (text) regardless of what the caller set. Strings pass through unchanged; POJOs/Maps
+     * are JSON-serialized; on failure we fall back to {@link String#valueOf(Object)}.
+     */
+    private static Object asLogString(Object value) {
+        if (value == null || value instanceof String) {
+            return value;
+        }
+        try {
+            return LOG_MAPPER.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            return String.valueOf(value);
         }
     }
 
