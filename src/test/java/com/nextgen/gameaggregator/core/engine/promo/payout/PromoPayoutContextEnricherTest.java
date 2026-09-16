@@ -40,6 +40,7 @@ class PromoPayoutContextEnricherTest {
     @Mock private VendorDataService vendorDataService;
     @Mock private AgentDataService agentDataService;
     @Mock private CampaignDataService campaignDataService;
+    @Mock private GameSessionDataService gameSessionDataService;
 
     @Mock private Agent stubAgent;
     @Mock private Vendor stubVendor;
@@ -53,7 +54,8 @@ class PromoPayoutContextEnricherTest {
         enricher = new PromoPayoutContextEnricher(
                 agentPlayerDataService, vendorPlayerDataService, vendorGameDataService,
                 currencyDataService, vendorCurrencyDataService,
-                vendorDataService, agentDataService, campaignDataService);
+                vendorDataService, agentDataService, campaignDataService,
+                gameSessionDataService);
 
         lenient().when(agentDataService.get(any())).thenReturn(stubAgent);
         lenient().when(vendorDataService.get(any())).thenReturn(stubVendor);

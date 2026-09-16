@@ -23,7 +23,4 @@ public class BonusPayoutRequest {
 
     /** From {@code GameSession.vendorCurrencyCode}. */
     private final String vendorCurrency;
-
-    /** From {@code GameSession.vendorGameCode}. */
-    private final String vendorGameCode;
 }

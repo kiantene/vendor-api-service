@@ -17,6 +17,10 @@ public class FreeRoundPayoutRequestMapper implements PromoPayoutContextMapper<Be
                 .token(VendorUtil.extractTokenFromSessionId(request.getGamesessionid()))
                 .vendorFreeRoundBonusId(request.getFrbid())
                 .vendorPlayerUsername(request.getAccountid())
+                // Groove's gameid is vendor_game.vendor_game_code verbatim: GameLaunchContext sends
+                // vendorGameCode to Groove as nogsgameid at launch, and the callbacks echo it back as
+                // gameid (see GrooveGameLauncher and VendorUtil's nogsgameid/gameid alias).
+                .vendorGameCode(request.getGameid())
                 .vendorPayoutAmount(request.getResult())
                 .promoType(PromoType.FREE_ROUND)
                 .build();

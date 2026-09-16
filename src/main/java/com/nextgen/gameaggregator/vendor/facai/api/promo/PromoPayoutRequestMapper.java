@@ -37,6 +37,7 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
         PayoutTransaction tx = payoutTransactions.get(0);
         context.setVendorCampaignCode(tx.getVendorCampaignCode());
         context.setIdempotencyKey(tx.getVendorTransactionId());
+        context.setVendorGameCode(tx.getVendorGameCode());
 
         return context;
     }

@@ -20,6 +20,7 @@ public class PromoPayoutContext extends PayoutTransaction implements VendorPlaye
     private PromoType promoType;
     private String campaignUuid;
     private String vendorCampaignName;
+    private String gameCode;
 
     private List<PayoutTransaction> payoutTransactions;
 

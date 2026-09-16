@@ -11,6 +11,7 @@ import java.math.BigInteger;
 public class JiliFreeSpinPayoutRequest {
     private String vendorPlayerUsername;
     private String vendorCurrencyCode;
+    private String vendorGameCode;
     private String token;
     private String reqId;
     private String round;

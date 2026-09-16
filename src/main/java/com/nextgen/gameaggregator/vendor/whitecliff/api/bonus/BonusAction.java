@@ -94,7 +94,6 @@ public class BonusAction {
                                 .bonus(bonusDto)
                                 .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
                                 .vendorCurrency(gameSession.getVendorCurrencyCode())
-                                .vendorGameCode(gameSession.getVendorGameCode())
                                 .build(),
                         httpRequestLog);
             } else {

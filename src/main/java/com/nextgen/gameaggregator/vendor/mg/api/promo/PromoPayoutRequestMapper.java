@@ -19,6 +19,7 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<Update
                 // promo payout history
                 .vendorCampaignCode(vendorRequest.getMetaData().getFreeGame().getOfferGuid())
                 .vendorTransactionId(vendorRequest.getTxnId())
+                .vendorGameCode(vendorRequest.getContentCode())
                 .vendorPayoutAmount(vendorRequest.getAmount())
                 .vendorTransactionTime(vendorRequest.getCreationTimeMs())
                 .vendorCurrency(vendorRequest.getCurrency())

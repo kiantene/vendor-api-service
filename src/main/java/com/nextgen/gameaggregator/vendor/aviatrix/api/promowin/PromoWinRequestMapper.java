@@ -18,11 +18,22 @@ import java.util.Optional;
  * request nor {@code promo_payout_history} has a field for a vendor-side promo reference. Mapping it
  * would only invite the same wrong assumption again.
  *
- * <p>{@code productId} is deliberately not mapped to {@code vendorGameCode}. Doing so makes
- * {@code BaseEnricher.enrichVendorGame} resolve the game and throw {@code InternalConfigurationException}
- * when it is absent from {@code vendor_game} — indistinguishable from the player-lookup failure that
- * throws the same type, so the two could not be mapped to Aviatrix's distinct {@code Product not found}
- * and {@code Player not found} responses. {@code PromoWinAction} verifies the request up front instead.
+ * <p>{@code productId} is Aviatrix's game identifier and maps to {@code vendorGameCode}. It was
+ * deliberately unmapped until ONEAPI-420, when carrying it would have triggered
+ * {@code BaseEnricher.enrichVendorGame} and thrown {@code InternalConfigurationException} for a game
+ * absent from {@code vendor_game} — indistinguishable from the player-lookup failure that throws the
+ * same type, so neither could be mapped to Aviatrix's distinct {@code Product not found} and
+ * {@code Player not found} responses. That no longer applies: {@code PromoPayoutContext} is still not
+ * {@code VendorGameAware}, so {@code enrichVendorGame} stays a no-op, and
+ * {@code PromoPayoutContextEnricher.populateGame} resolves the game itself — logging
+ * {@code [PROMO_GAME_UNRESOLVED]} and leaving {@code gameCode} unset rather than failing the payout.
+ *
+ * <p>That tag should never fire for this vendor: {@code PromoWinAction.doVerification} already rejects
+ * an unknown product up front with {@code Product not found}, before enrichment runs.
+ *
+ * <p>Expect benign {@code [PROMO_GAME_MISMATCH]} warnings. As {@code doVerification} documents, a promo
+ * can arrive while the player's newest session belongs to a different game; the check logs the
+ * difference and forwards the request's game, which is the one the prize was won in.
  */
 @Component
 public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinDto> {
@@ -53,6 +64,7 @@ public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinD
                 .vendorSessionToken(vendorRequest.getSessionToken())
                 .vendorCurrency(vendorRequest.getCurrency())
                 .vendorPayoutAmount(vendorRequest.getPayoutAmount())
+                .vendorGameCode(vendorRequest.getProductId())
                 .promoType(promoType)
                 .build();
     }

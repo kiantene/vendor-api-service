@@ -49,6 +49,7 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
                 .vendorPayoutAmount(transaction.getAmount())
                 .promoType(resolvePromoType(transaction.getType()))
                 .vendorRequestUuid(vendorRequest.getUuid())
+                .vendorGameCode(vendorRequest.getGame() == null ? null : vendorRequest.getGame().getId())
                 .build();
     }
 

@@ -13,7 +13,7 @@ public class TournamentPayoutRequestMapper implements PromoPayoutContextMapper<T
                 .idempotencyKey(vendorRequest.getReference())
                 .vendorPlayerUsername(vendorRequest.getUserId())
                 .vendorCurrency(vendorRequest.getCurrency())
-//                .vendorGameCode(vendorRequest.getGameId())
+                .vendorGameCode(vendorRequest.getGameId())
                 // promo payout history
                 .vendorCampaignCode(vendorRequest.getCampaignId())
                 .vendorTransactionId(vendorRequest.getReference())

@@ -28,6 +28,7 @@ public class JiliFreeSpinPayoutProcessor {
         JiliFreeSpinPayoutRequest request = JiliFreeSpinPayoutRequest.builder()
                 .vendorPlayerUsername(vendorPlayerUsername)
                 .vendorCurrencyCode(vendorCurrencyCode)
+                .vendorGameCode(String.valueOf(betDto.getGame()))
                 .token(token)
                 .reqId(betDto.getReqId())
                 .round(String.valueOf(betDto.getRound()))
