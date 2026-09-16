@@ -63,6 +63,16 @@ public class BetRollbackContext extends VendorRequestContext implements
     private String gameName;
     private Integer gameCategoryId;
 
+    /**
+     * The specific amount requested to be rolled back.
+     * <b>Requirement:</b> This field is mandatory if the vendor configuration has
+     * {@code config.isValidateAmountWithBet()} enabled. If the flag is active and this field
+     * is left null, {@link RollbackPolicy} will reject the request with a
+     * "rollbackAmount not provided" reason.
+     * </p>
+     */
+    private BigDecimal rollbackAmount;
+
     @Builder.Default
     private Currency currency = new Currency();
 
