@@ -43,7 +43,7 @@
         <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
         <ga-core.version>1.0.42</ga-core.version>
         <mockito.version>5.11.0</mockito.version>
-        <nextgen-core.version>1.0.47</nextgen-core.version>
+        <nextgen-core.version>1.0.48</nextgen-core.version>
     </properties>
 
     <dependencies>
@@ -244,6 +244,12 @@
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
             <version>4.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

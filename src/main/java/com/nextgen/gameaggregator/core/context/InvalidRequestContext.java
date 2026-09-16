@@ -20,9 +20,9 @@ public class InvalidRequestContext {
                                            Map<String, Object> responseBody) {
         return InvalidRequestContext.builder()
                 .request(request)
-                .parsedFields(Map.copyOf(parsedFields))
+                .parsedFields(parsedFields != null ? Collections.unmodifiableMap(new LinkedHashMap<>(parsedFields)) : Collections.emptyMap())
                 // Map.copyOf rejects null values; responseBody may contain nulls from POJO conversion.
-                .responseBody(Collections.unmodifiableMap(new LinkedHashMap<>(responseBody)))
+                .responseBody(responseBody != null ? Collections.unmodifiableMap(new LinkedHashMap<>(responseBody)) : Collections.emptyMap())
                 .build();
     }
 

@@ -21,6 +21,7 @@ public class HacksawPromoPayoutRequestMapper implements PromoPayoutContextMapper
                 .vendorPayoutAmount(BigDecimal.valueOf(request.getAmount()))
                 .vendorPlayerUsername(request.getExternalPlayerId())
                 .vendorCurrency(request.getCurrency())
+                .vendorGameCode(request.getGameId())
                 .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
+import com.nextgen.core.exception.EntityNotFoundException;
 import com.nextgen.core.util.UuidUtil;
 import com.nextgen.gameaggregator.core.context.BaseEnricher;
 import com.nextgen.gameaggregator.core.engine.promo.campaign.CampaignResolveStrategy;
@@ -10,8 +11,10 @@ import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.core.logging.LogContextService;
 import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.core.service.data.CampaignDataService;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
 import com.nextgen.gameaggregator.service.data.model.TxnAmount;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,11 +23,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext> {
     private final VendorDataService vendorDataService;
     private final AgentDataService agentDataService;
     private final CampaignDataService campaignDataService;
+    private final VendorGameDataService vendorGameDataService;
+    private final GameSessionDataService gameSessionDataService;
 
     public PromoPayoutContextEnricher(AgentPlayerDataService agentPlayerDataService,
                                       VendorPlayerDataService vendorPlayerDataService,
@@ -33,12 +39,15 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
                                       VendorCurrencyDataService vendorCurrencyDataService,
                                       VendorDataService vendorDataService,
                                       AgentDataService agentDataService,
-                                      CampaignDataService campaignDataService) {
+                                      CampaignDataService campaignDataService,
+                                      GameSessionDataService gameSessionDataService) {
 
         super(agentPlayerDataService, vendorPlayerDataService, vendorGameDataService, currencyDataService, vendorCurrencyDataService);
         this.vendorDataService = vendorDataService;
         this.agentDataService = agentDataService;
         this.campaignDataService = campaignDataService;
+        this.vendorGameDataService = vendorGameDataService;
+        this.gameSessionDataService = gameSessionDataService;
     }
 
     @Override
@@ -78,6 +87,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         this.populateAgent(context);
         this.populateVendor(context);
         this.populateCampaign(context);
+        this.populateGame(context);
 
         logContext.setVendorId(context.getVendor().id());
         logContext.setAgentId(context.getAgent().id());
@@ -125,6 +135,42 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
         }
         if (campaign.getCampaignName() != null) {
             context.setVendorCampaignName(campaign.getCampaignName());
+        }
+    }
+    private void populateGame(PromoPayoutContext context) {
+        String vendorGameCode = context.getVendorGameCode();
+        Integer vendorId = context.getVendor().id();
+        if (vendorGameCode == null || vendorGameCode.isBlank() || vendorId == null) {
+            return;                                  // gameCode stays null → omitted from the DTO
+        }
+        try {
+            context.setGameCode(vendorGameDataService
+                    .getByVendorGameCodeAndVendorId(vendorGameCode, vendorId).getCode());
+        } catch (EntityNotFoundException e) {
+            log.warn("[PROMO_GAME_UNRESOLVED] traceId={} vendorId={} vendorGameCode={}",
+                    context.getTraceId(), vendorId, vendorGameCode);
+        }
+        verifyAgainstSession(context, vendorGameCode);
+    }
+
+    /**
+     * Reconciles the request's game against the launched session. Diagnostic only - the request's game
+     * is what reaches the operator either way, because a promo payout legitimately settles outside the
+     * current session: a tournament prize paid hours after play, or a vendor lobby game switch.
+     *
+     * <p>A mismatch is therefore not automatically an error. Some vendors launch from a lobby and leave
+     * a placeholder code on the session (see the PGSoft promo mapper), which warns on every payout for
+     * those players - check the vendor's mapper before treating this tag as an alert.
+     */
+    private void verifyAgainstSession(PromoPayoutContext context, String vendorGameCode) {
+        try {
+            GameSession session = gameSessionDataService.getGameSession(context);
+            if (!vendorGameCode.equals(session.getVendorGameCode())) {
+                log.warn("[PROMO_GAME_MISMATCH] traceId={} session={} request={} - forwarding request's game",
+                        context.getTraceId(), session.getVendorGameCode(), vendorGameCode);
+            }
+        } catch (Exception e) {
+            log.debug("[PROMO_GAME_CHECK] no session to reconcile, traceId={}", context.getTraceId());
         }
     }
 

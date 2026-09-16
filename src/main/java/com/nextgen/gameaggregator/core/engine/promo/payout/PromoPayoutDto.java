@@ -46,6 +46,22 @@ public class PromoPayoutDto {
     // Optional field
     private final String campaignId;
 
+    // Optional field
+    private final String gameCode;
+
+    /**
+     * Classification of the promotion this payout belongs to. Values: {@code FREEROUND},
+     * {@code TOURNAMENT}, {@code PRIZEDROP}, {@code BONUS}, {@code JACKPOT}.
+     *
+     * <p>Particularly relevant for vendor-originated payouts, where the promotion is run by the vendor's
+     * own engine and there is no OneAPI campaign, so {@code campaignId} is absent and this is the only
+     * description of what the credit is.
+     *
+     * <p>See {@code PromoType#code}.
+     */
+    @NotBlank(message = "Promo type is required and cannot be blank.")
+    private final String promoType;
+
     /**
      * The currency in which the promotion payout is being made (e.g., "USD", "SGD", "EUR").
      */

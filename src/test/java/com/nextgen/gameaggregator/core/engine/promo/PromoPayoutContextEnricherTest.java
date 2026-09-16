@@ -35,6 +35,7 @@ class PromoPayoutContextEnricherTest {
     @Mock private VendorDataService vendorDataService;
     @Mock private AgentDataService agentDataService;
     @Mock private CampaignDataService campaignDataService;
+    @Mock private GameSessionDataService gameSessionDataService;
 
     private PromoPayoutContext context;
 

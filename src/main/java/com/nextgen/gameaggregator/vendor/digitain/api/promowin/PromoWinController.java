@@ -1,10 +1,8 @@
 package com.nextgen.gameaggregator.vendor.digitain.api.promowin;
 
 import com.nextgen.gameaggregator.annotation.VendorExceptionHandler;
-import com.nextgen.gameaggregator.core.engine.wallet.result.AbstractBetResultController;
-import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultConfig;
-import com.nextgen.gameaggregator.core.engine.wallet.result.WalletBetResultServiceWrapper;
-import com.nextgen.gameaggregator.core.engine.wallet.result.enums.SettleType;
+import com.nextgen.gameaggregator.core.engine.promo.payout.AbstractPromoPayoutController;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutService;
 import com.nextgen.gameaggregator.vendor.digitain.constant.EndPoints;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -12,12 +10,22 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
-public class PromoWinController extends AbstractBetResultController<PromoWinRequest, PromoWinResponse> {
+/**
+ * Digitain promo-win payout.
+ *
+ * <p>Moved off {@code AbstractBetResultController} in ONEAPI-372. These wins have no bet behind them —
+ * Digitain's spec says so outright — but the bet-result engine booked each one into bet history as a
+ * zero-stake win, so vendor-side GGR exceeded operator-side and reconciliation drifted. They now go to the
+ * operator via {@code /v1/promo/payout} and land in {@code promo_payout_history} with a {@code promo_type}.
+ *
+ * <p>No {@code configure()} override: Digitain resolves no campaign, so there is no strategy to select.
+ */
+public class PromoWinController extends AbstractPromoPayoutController<PromoWinRequest, PromoWinResponse> {
 
     public PromoWinController(PromoWinRequestMapper requestMapper,
                               PromoWinResponseMapper responseMapper,
-                              WalletBetResultServiceWrapper walletService) {
-        super(requestMapper, responseMapper, walletService);
+                              PromoPayoutService promoPayoutService) {
+        super(requestMapper, responseMapper, promoPayoutService);
     }
 
     @PostMapping(path = EndPoints.PROMOWIN)
@@ -29,12 +37,5 @@ public class PromoWinController extends AbstractBetResultController<PromoWinRequ
         return ResponseEntity.ok()
                 .header("SecretKey", authorization)
                 .body(response);
-    }
-
-    @Override
-    public void configure(BetResultConfig config, PromoWinRequest request) {
-        config.betAndResult(true)
-                .allowResultBeforeBet(true)
-                .setSettleType(SettleType.BET);
     }
 }

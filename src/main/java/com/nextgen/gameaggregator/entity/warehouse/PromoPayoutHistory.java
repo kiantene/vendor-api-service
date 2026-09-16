@@ -21,6 +21,9 @@ public class PromoPayoutHistory {
     @JsonProperty("campaign_uuid")
     private String campaignUuid;
 
+    @JsonProperty("game_code")
+    private String gameCode;
+
     @JsonProperty("agent_player_id")
     private Long agentPlayerId;
 

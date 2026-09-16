@@ -29,6 +29,9 @@ class PayoutTransactionMapper {
                 .vendorPlayerUsername(payout.getMemberAccount())
                 .vendorCurrency(currency)
                 .vendorCampaignCode(payout.getEventID())
+                // Objects.toString, not String.valueOf: gameID is a nullable Long and String.valueOf would
+                // resolve to the Object overload and yield the literal "null".
+                .vendorGameCode(Objects.toString(payout.getGameID(), null))
                 .vendorTransactionTime(vendorTransactionTime)
                 .vendorPayoutAmount(payout.getPoints())
                 .build();

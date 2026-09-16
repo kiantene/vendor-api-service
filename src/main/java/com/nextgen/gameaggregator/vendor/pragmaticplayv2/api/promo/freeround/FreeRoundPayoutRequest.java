@@ -57,4 +57,14 @@ public class FreeRoundPayoutRequest {
     private String token;
 
     private String bonusCode;
+
+    /*
+    Symbolic unique identifier of the game. Optional - carried when PP sends it and omitted when it
+    does not, so an empty game_code here is unremarkable rather than a defect. Unlike promoWin, whose
+    spec states exactly which campaign types populate this field, the bonusWin conditions have not been
+    confirmed against PP's spec.
+     */
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String gameId;
 }

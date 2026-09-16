@@ -42,7 +42,7 @@ public class BetDetailService implements BetDetailUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String prdId = credentials.get(Credentials.PRODUCT_ID);
-        String txnId = iBetDetailUrlInfo.getExternalTransactionId();
+        String txnId = iBetDetailUrlInfo.getVendorBetId();
         //setup form data
         formData.add("lang", vendorLanguageCode.getLanguageCode());
         formData.add("prd_id", prdId);

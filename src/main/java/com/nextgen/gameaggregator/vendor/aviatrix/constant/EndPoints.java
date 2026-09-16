@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.aviatrix.constant;
 
 public class EndPoints {
-    public static final String PATH = "/api/v1/aviatrix";
+    public static final String CLASS_NAME = "aviatrix";
+    public static final String PATH = "/api/v1/" + CLASS_NAME;
+    public static final String GAME_URL = "/game/url";
     public static final String PLAYER_INFO = "/playerInfo";
     public static final String BET = "/bet";
     public static final String WIN = "/win"; //is actually result

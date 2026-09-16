@@ -19,6 +19,7 @@ public class JiliFreeSpinPayoutRequestMapper implements PromoPayoutContextMapper
                 .vendorPayoutAmount(request.getWinloseAmount())
                 .vendorPlayerUsername(request.getVendorPlayerUsername())
                 .vendorCurrency(request.getVendorCurrencyCode())
+                .vendorGameCode(request.getVendorGameCode())
                 .token(request.getToken())
                 .vendorTransactionTime(request.getWagersTime().longValueExact() * 1000L)
                 .build();

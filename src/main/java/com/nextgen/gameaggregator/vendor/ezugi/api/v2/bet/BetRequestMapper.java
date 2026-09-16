@@ -13,7 +13,7 @@ public class BetRequestMapper implements BetContextMapper<BetRequest> {
                 .vendorSessionToken(vendorRequest.getToken())
                 .vendorPlayerUsername(vendorRequest.getUid())
                 .vendorBetId(vendorRequest.getTransactionId())
-                .roundId(vendorRequest.getTransactionId())
+                .roundId(String.valueOf(vendorRequest.getRoundId()))
                 .vendorGameCode(vendorRequest.getTableId().toString())
                 .vendorCurrency(vendorRequest.getCurrency())
                 .betAmount(vendorRequest.getDebitAmount())

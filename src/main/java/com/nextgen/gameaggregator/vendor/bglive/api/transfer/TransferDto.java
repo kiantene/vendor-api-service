@@ -38,7 +38,7 @@ public class TransferDto extends CommonDto implements BetResultData, RequestIdem
 
     @Override
     public String getGameId() {
-        return null;
+        return paramsDto.getGameId();
     }
 
     @Override

@@ -54,7 +54,7 @@ class BetRollbackProcessor {
         GameTransaction betTxn = gameTransactionService.getOrThrow(rollbackTxn.getRollbackId());
         GameRound round = gameRoundService.getOrThrow(betTxn.getRoundDocId());
 
-        RollbackDecision decision = RollbackPolicy.decide(betTxn, round, config);
+        RollbackDecision decision = RollbackPolicy.decide(betTxn, round, config, context.getRollbackAmount());
         decision.throwIfRejected(context);
 
         if (decision.isNoOp()) {

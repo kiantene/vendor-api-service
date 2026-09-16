@@ -21,8 +21,14 @@ public class PromoWinRequest {
     @JsonProperty("pid")
     private String pid;
 
-    //testing vendor giving integer
-    @NotBlank
+    /**
+     * Game id. <b>Optional</b> — the Digitain spec states it is "sometimes not available, for example, in
+     * tournament wins", which is exactly {@code opt} 85. It carried {@code @NotBlank} until ONEAPI-372, so
+     * a tournament prize win with no {@code gid} failed bean validation before reaching the controller and
+     * came back as {@code err: 999 GeneralError} — a valid payload rejected, with no clue as to why.
+     *
+     * <p>Typed String although the spec says integer; Jackson coerces either way and nothing parses it.
+     */
     @Size(max = 255)
     @JsonProperty("gid")
     private String gid;

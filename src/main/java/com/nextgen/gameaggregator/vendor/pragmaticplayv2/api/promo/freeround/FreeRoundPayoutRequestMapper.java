@@ -12,6 +12,7 @@ public class FreeRoundPayoutRequestMapper implements PromoPayoutContextMapper<Fr
         return PromoPayoutContext.builder()
                 .idempotencyKey(vendorRequest.getReference())
                 .vendorPlayerUsername(vendorRequest.getUserId())
+                .vendorGameCode(vendorRequest.getGameId())
                 // promo payout history
                 .vendorCampaignCode(vendorRequest.getBonusCode())
                 .vendorTransactionId(vendorRequest.getReference())

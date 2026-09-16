@@ -11,11 +11,23 @@ public class BetRollbackConfig {
     private boolean validateSessionToken;
     private boolean allowRollbackWhenRoundHasResult;
 
+    /**
+     * Feature flag to validate that the incoming rollback amount perfectly matches
+     * the original bet amount stored in the database.
+     * <p>
+     * <b>Important Scope Restriction:</b> This configuration is strictly scoped to
+     * transaction-level rollbacks ({@code RollbackType.BY_BET}). It has <b>no effect</b>
+     * on round-level rollbacks ({@code RollbackType.BY_ROUND}).
+     * </p>
+     */
+    private boolean validateAmountWithBet;
+
     public BetRollbackConfig() {
         this.allowRollbackForSettledBet = false;
         this.returnSuccessOnDuplicate = false;
         this.validateSessionToken = false;
         this.allowRollbackWhenRoundHasResult = true;
+        this.validateAmountWithBet = false;
     }
 
     @Deprecated(forRemoval = true)
@@ -46,6 +58,11 @@ public class BetRollbackConfig {
 
     public BetRollbackConfig allowRollbackWhenRoundHasResult(boolean flag) {
         this.allowRollbackWhenRoundHasResult = flag;
+        return this;
+    }
+
+    public BetRollbackConfig validateAmountWithBet(boolean flag) {
+        this.validateAmountWithBet = flag;
         return this;
     }
 

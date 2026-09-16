@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.whitecliff.api.bonus;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -22,27 +23,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class BonusAction {
+    /** {@code game_category} id for live casino. Matches the checks in {@code DebitDto}/{@code CreditDto}. */
+    private static final Integer LIVE_GAME_CATEGORY_ID = 5;
+
     private final HttpService httpService;
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final ValidationService validationService;
     private final VendorLineService vendorLineService;
     private SettledBetService settledBetService;
+    private final WhiteCliffBonusPayoutService bonusPayoutService;
 
     @Autowired
-    public BonusAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService) {
+    public BonusAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService, VendorLineService vendorLineService, SettledBetService settledBetService, WhiteCliffBonusPayoutService bonusPayoutService) {
         this.httpService = httpService;
         this.gameSessionService = gameSessionService;
         this.walletService = walletService;
         this.validationService = validationService;
         this.vendorLineService = vendorLineService;
         this.settledBetService = settledBetService;
+        this.bonusPayoutService = bonusPayoutService;
     }
 
     @PostMapping(path = EndPoints.BONUS)
@@ -78,12 +85,24 @@ public class BonusAction {
                 throw new BetResultIdempotentViolationException();
             }
 
-            BigDecimal balance;
-
-            balance = walletService.processBetResult(traceId, gameSession, bonusDto, ResultType.BET_WIN, vendorService, httpRequestLog);
-            responseVo.setBalance(balance);
-
-            responseVo.setStatus(ResponseCodes.SUCCESS);
+            if (BonusPayoutRequestMapper.isPromoPayout(bonusDto.getType())) {
+                this.logGameCodeMismatch(bonusDto, gameSession, traceId);
+                // Promotion and Jackpot are free, non-billable payouts: they belong in
+                // promo_payout_history and go to the operator via /v1/promo/payout, not into bet history.
+                responseVo = bonusPayoutService.payout(
+                        BonusPayoutRequest.builder()
+                                .bonus(bonusDto)
+                                .vendorPlayerUsername(gameSession.getVendorPlayerUsername())
+                                .vendorCurrency(gameSession.getVendorCurrencyCode())
+                                .build(),
+                        httpRequestLog);
+            } else {
+                // In Game Bonus is won inside a round, so it stays a bet win.
+                BigDecimal balance = walletService.processBetResult(
+                        traceId, gameSession, bonusDto, ResultType.BET_WIN, vendorService, httpRequestLog);
+                responseVo.setBalance(balance);
+                responseVo.setStatus(ResponseCodes.SUCCESS);
+            }
 
         } catch (GameNotSupportedException |
                  DisabledVendorLineException |
@@ -100,6 +119,10 @@ public class BonusAction {
         } catch (BetResultIdempotentViolationException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
             responseVo.setError(ResponseError.DUPLICATE_BONUS);
+            httpService.logError(httpRequestLog, e);
+        } catch (DuplicateRequestException e) {
+            responseVo.setStatus(ResponseCodes.FAILED);
+            responseVo.setError(e.getCurrency() == null ? ResponseError.UNKNOWN_ERROR : ResponseError.DUPLICATE_BONUS);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidSignatureException e) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -118,6 +141,39 @@ public class BonusAction {
         }
         return responseVo;
 
+    }
+
+    /**
+     * Warns when a promo bonus names a game other than the one the session was launched with.
+     *
+     * <p>Observation only: nothing is rejected and the session is not re-pointed. {@code /bonus} never
+     * reconciles the session against the request the way {@code DebitAction} and {@code CreditAction} do,
+     * so {@code GameSession.vendorGameCode} is the last game the session was pointed at rather than
+     * necessarily the game this bonus belongs to, and the payout carries no game either way. Rejecting on
+     * a mismatch is not an option — PGSoft's equivalent check was disabled under GA-119 because vendors
+     * legitimately transact against a game other than the session's.
+     *
+     * <p>Live tables can never match and are logged separately: the session holds WhiteCliff's
+     * {@code table_id} (what game launch sends for category 5, e.g. {@code "baccarat0001"}) while
+     * {@code /bonus} carries only the numeric {@code game_id} and has no {@code table_id} field. That line
+     * answers a different question — whether live tables produce promo bonuses at all.
+     */
+    private void logGameCodeMismatch(BonusDto bonusDto, GameSession gameSession, String traceId) {
+        String requestGameCode = bonusDto.getGameId();
+        String sessionGameCode = gameSession.getVendorGameCode();
+
+        if (Objects.equals(requestGameCode, sessionGameCode)) {
+            return;
+        }
+
+        if (LIVE_GAME_CATEGORY_ID.equals(gameSession.getGameCategoryId())) {
+            log.warn("[MISMATCH] VendorGameCode not comparable on live table. TraceId: {}, Request game_id: {}, Session table_id: {}",
+                    traceId, requestGameCode, sessionGameCode);
+            return;
+        }
+
+        log.warn("[MISMATCH] VendorGameCode: TraceId: {}, Request: {}, Session: {}, GameCategory: {}",
+                traceId, requestGameCode, sessionGameCode, gameSession.getGameCategoryId());
     }
 
     private void doValidation(BonusDto bonusDto) throws InvalidRequestException {

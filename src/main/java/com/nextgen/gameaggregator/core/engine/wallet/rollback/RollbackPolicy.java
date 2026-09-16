@@ -8,12 +8,40 @@ import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 
+import java.math.BigDecimal;
+
 public class RollbackPolicy {
 
     private RollbackPolicy() {
     }
 
-    public static RollbackDecision decide(GameTransaction betTxn, GameRound round, BetRollbackConfig config) {
+    public static RollbackDecision decide(GameTransaction betTxn, GameRound round, BetRollbackConfig config, BigDecimal rollbackAmount) {
+        if (config.getRollbackType() == null) {
+            return RollbackDecision.reject(
+                    "Invalid configuration state: rollbackType is not explicitly defined.",
+                    RollbackNotAllowedException.class
+            );
+        }
+
+        // Ensure amount validation only executes for rollbackType (BY_BET);
+        // aggregate round-scoped rollbacks (BY_ROUND) bypass single-transaction amount matching.
+        if (config.isValidateAmountWithBet() && config.isRollbackByBet()) {
+            if (rollbackAmount == null) {
+                return RollbackDecision.reject("Rollback rejected: rollbackAmount not provided",
+                        RollbackNotAllowedException.class);
+            }
+
+            if (betTxn.getBetAmount() == null) {
+                return RollbackDecision.reject("Rollback rejected: betAmount not available on original bet transaction",
+                        RollbackNotAllowedException.class);
+            }
+
+            if (rollbackAmount.compareTo(betTxn.getBetAmount()) != 0) {
+                return RollbackDecision.reject("Rollback rejected: Amount Mismatch.",
+                        RollbackNotAllowedException.class);
+            }
+        }
+
         if (betTxn.isRefunded()) {
             return RollbackDecision.noop("Already refunded");
         }
@@ -53,11 +81,6 @@ public class RollbackPolicy {
             return RollbackDecision.reject(
                     round.getId() + " already void",
                     RoundAlreadyVoidException.class);
-        }
-        //Not Allow Rollback When Round Has Result
-        if (!config.isAllowRollbackWhenRoundHasResult() && round.hasResultTransaction()) {
-            return RollbackDecision.reject("Rollback rejected: round Id = " + round.getRoundId() + " already has a successful result",
-                    RollbackNotAllowedException.class);
         }
 
 //        if (round.isUnsettled()) {
