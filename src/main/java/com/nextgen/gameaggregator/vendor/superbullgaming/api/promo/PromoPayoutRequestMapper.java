@@ -31,6 +31,7 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<BetNSe
                 .vendorTransactionId(vendorRequest.getBetId())
                 .vendorPayoutAmount(vendorRequest.getPayout())
                 .vendorTransactionTime(vendorRequest.getProcessedTime())
+                .vendorGameCode(vendorRequest.getGameCode())
                 .promoType(promoType)
                 .build();
     }

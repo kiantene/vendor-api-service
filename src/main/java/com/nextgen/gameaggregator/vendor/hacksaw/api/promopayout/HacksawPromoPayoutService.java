@@ -63,6 +63,7 @@ public class HacksawPromoPayoutService {
             dto.setExternalPromoId(creditDto.getFreeRoundData().getExternalId());
             dto.setAmount(creditDto.getAmount());
             dto.setCurrency(creditDto.getCurrency());
+            dto.setGameId(creditDto.getGameId());
 
             ValidationUtils.validateRequest(dto);
             vo = handler.process(dto);

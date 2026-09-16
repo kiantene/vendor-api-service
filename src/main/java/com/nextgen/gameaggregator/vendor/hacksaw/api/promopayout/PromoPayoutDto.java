@@ -38,4 +38,6 @@ public class PromoPayoutDto {
     @NotBlank
     @Size(max = 4)
     private String currency;
+
+    private String gameId;
 }

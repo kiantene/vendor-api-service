@@ -60,4 +60,14 @@ public class TournamentPayoutRequest {
     @Size(min = 1, max = 32)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String reference;
+
+    /*
+    Symbolic unique identifier of the game the prize was played or won in. Optional per the promoWin
+    spec, and absent by campaign type rather than by configuration: it is returned for Tournament (T),
+    Missions (M) and Prize Drop (MR), and is NOT returned for Community Jackpot (CJP) or Cashback (CB).
+    Those two therefore always land with an empty game_code, which is expected rather than a gap.
+     */
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String gameId;
 }

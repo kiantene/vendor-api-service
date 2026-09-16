@@ -57,6 +57,7 @@ public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinR
                 .idempotencyKey(vendorRequest.getTxid())
                 .vendorTransactionId(vendorRequest.getTxid())
                 .vendorPlayerUsername(vendorRequest.getPid())
+                .vendorGameCode(vendorRequest.getGid())
                 // cid is the player's currency, not a brand or channel id.
                 .vendorCurrency(vendorRequest.getCid())
                 .vendorPayoutAmount(vendorRequest.getPwa())

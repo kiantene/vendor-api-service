@@ -54,12 +54,16 @@ public class BonusPayoutRequestMapper implements PromoPayoutContextMapper<BonusP
     @Override
     public PromoPayoutContext toInternal(BonusPayoutRequest vendorRequest) {
         BonusDto bonus = vendorRequest.getBonus();
+        if (bonus == null) {
+            throw new InvalidRequestException("bonus is required");
+        }
 
         return PromoPayoutContext.builder()
                 .idempotencyKey(bonus.getTxnId())
                 .vendorTransactionId(bonus.getTxnId())
                 .vendorPlayerUsername(vendorRequest.getVendorPlayerUsername())
                 .vendorCurrency(vendorRequest.getVendorCurrency())
+                .vendorGameCode(bonus.getGameId())
                 .vendorSessionToken(bonus.getSid())
                 .vendorPayoutAmount(bonus.getAmount())
                 .promoType(resolvePromoType(bonus.getType()))
