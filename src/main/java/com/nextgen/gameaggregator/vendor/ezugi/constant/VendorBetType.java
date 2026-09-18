@@ -13,7 +13,8 @@ public enum VendorBetType {
     TEN_20                  ("Ten20", BetType.TEN_20),
     PERFECT_11              ("Perfect11", BetType.PERFECT_11),
     PLAYER_BET              ("PlayerBet", BetType.NORMAL_BET),
-    RAZZ_BONUS              ("RazzBonus", BetType.RAZZ_BONUS)
+    RAZZ_BONUS              ("RazzBonus", BetType.RAZZ_BONUS),
+    BUST_IT                 ("BustIt", BetType.BUST_IT)
     ;
 
     private final String vendorValue;
