@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bglive.api.query;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.WalletTransaction;
@@ -27,7 +28,7 @@ import java.util.concurrent.Executors;
 
 @Service
 public class QueryService {
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(ThreadSize.THREAD_SIZE, AppThreadFactory.named("bglive-query"));
     private final GameSessionService gameSessionService;
     private final HttpService httpService;
     private final VendorService vendorService;

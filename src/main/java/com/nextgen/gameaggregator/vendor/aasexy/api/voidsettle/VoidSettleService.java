@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aasexy.api.voidsettle;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -35,7 +36,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class VoidSettleService {
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexy-voidsettle"));
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.data.kafka.config;
 
 import io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer;
 import io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializerConfig;
+import jakarta.annotation.PostConstruct;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SaslConfigs;
@@ -17,6 +18,39 @@ import java.util.HashMap;
 
 @Configuration
 public class KafkaProducerConfig {
+
+    /**
+     * Initialises {@link KafkaJsonSchemaSerializerConfig} on the main thread, whose context
+     * classloader is Spring Boot's {@code LaunchedURLClassLoader}.
+     *
+     * <p><strong>DO NOT DELETE — see ONEAPI-834.</strong> This looks like dead code and is not.
+     * The class's static initialiser resolves the {@code context.name.strategy} default
+     * ({@code io.confluent.kafka.serializers.context.NullContextNameStrategy}) through the
+     * <em>thread context classloader</em>. In a fat jar that class lives in {@code BOOT-INF/lib},
+     * which the system classloader cannot see. If the class is first initialised on a thread
+     * carrying the system classloader — any thread created by a {@code ForkJoinPool.commonPool}
+     * worker — the initialiser throws, the JVM marks the class permanently erroneous, and
+     * <em>every</em> producer construction for <em>every</em> topic fails until the application
+     * is restarted.
+     *
+     * <p>{@link KafkaProducerWarmUp} now covers this and more, by realising the producers
+     * themselves on the startup thread. This guard is kept as the unconditional backstop
+     * (ONEAPI-859): the warm-up can be switched off with
+     * {@code kafka.producer.warm-up.enabled=false}, and that escape hatch must not also switch
+     * off the classloader protection. One {@code Class.forName} with no I/O is a cheap price for
+     * that. If the toggle is ever removed, this method can go with it.
+     *
+     * <p>{@code @PostConstruct} on a {@code @Configuration} singleton is load-bearing: it is
+     * strictly ordered before {@code @Scheduled} tasks start (those begin only after context
+     * refresh completes). Do not move this to an {@code ApplicationRunner} or
+     * {@code CommandLineRunner} — those run after refresh, concurrent with an already-started
+     * scheduler, and the ordering guarantee is lost.
+     */
+    @PostConstruct
+    void initSerializerConfigClass() throws ClassNotFoundException {
+        Class.forName(KafkaJsonSchemaSerializerConfig.class.getName(), true,
+                KafkaProducerConfig.class.getClassLoader());
+    }
 
     @Value(value = "${spring.kafka.properties.bootstrap.servers}")
     private String bootstrapServers;

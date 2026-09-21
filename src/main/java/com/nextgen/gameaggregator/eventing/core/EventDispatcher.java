@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.eventing.core;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -9,7 +10,7 @@ public class EventDispatcher<T extends Event> {
 
     // TODO: to review whether THREAD_POOL should move to EventDispatcherSystem
     private static final Integer THREAD_SIZE = 8;
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("event-dispatcher"));
 
     private final List<EventListener<T>> listeners = new ArrayList<>();
 

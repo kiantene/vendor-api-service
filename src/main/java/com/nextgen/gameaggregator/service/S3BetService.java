@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,7 +42,7 @@ public class S3BetService {
     }
 
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("s3-bet-service"));
 
     public void uploadBetHistoryJsonFileAsync(com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory) {
 

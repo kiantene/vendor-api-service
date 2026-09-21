@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.core.util.JsonUtils;
 import com.nextgen.gameaggregator.core.RequestIdempotency;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.core.engine.wallet.result.BetResultContextHolder;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetActionLog;
@@ -42,7 +43,7 @@ public class HttpService {
     public static final Integer ERROR = -1;
 
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("api-request-log"));
     private final KafkaService kafkaService;
     private final RequestIdempotentLogService requestIdempotentLogService;
     private final LoggingService loggingService;

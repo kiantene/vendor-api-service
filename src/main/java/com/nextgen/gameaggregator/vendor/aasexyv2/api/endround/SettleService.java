@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.RequestIdempotentLogService;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -37,7 +38,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class SettleService {
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexyv2-endround"));
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;
@@ -62,7 +63,7 @@ public class SettleService {
 
     public SettleVo settle(HttpRequestLog httpRequestLog, HttpServletRequest request) {
         SettleVo vo = new SettleVo();
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexyv2-endround"));
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();

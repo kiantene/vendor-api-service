@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -39,7 +40,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class KafkaConsumerService {
     private static final Integer THREAD_SIZE = 64;
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("kafka-consumer-service"));
     private final WalletBetResultAction walletBetResultAction;
     private final WalletRollbackAction walletRollbackAction;
     private final SettledBetService settledBetService;

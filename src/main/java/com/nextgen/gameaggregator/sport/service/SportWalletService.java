@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -14,7 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public interface SportWalletService {
-    ExecutorService THREAD_POOL = Executors.newFixedThreadPool(32);
+    ExecutorService THREAD_POOL = Executors.newFixedThreadPool(32, AppThreadFactory.named("sport-wallet-service"));
 
     WalletRequest placeBet(WalletRequest walletRequest)
             throws InsufficientBalanceException, InvalidOperatorResponseException,
