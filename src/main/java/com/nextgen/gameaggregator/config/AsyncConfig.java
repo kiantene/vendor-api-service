@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.config;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.data.kafka.betdetails.DropAndCountRejectionPolicy;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
@@ -22,7 +23,7 @@ public class AsyncConfig {
         ex.setCorePoolSize(32);          // number of threads always kept alive
         ex.setMaxPoolSize(128);          // upper cap
         ex.setQueueCapacity(2000);       // backlog before rejecting
-        ex.setThreadNamePrefix("endround-");
+        ex.setThreadFactory(AppThreadFactory.named("endround"));
         ex.setAllowCoreThreadTimeOut(false); // Core threads won't die when idle
         ex.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy()); // This slows down the producer, providing back-pressure instead of dropping tasks or throwing exceptions.
         ex.setWaitForTasksToCompleteOnShutdown(true); // graceful shutdown
@@ -59,7 +60,7 @@ public class AsyncConfig {
         ex.setCorePoolSize(8);
         ex.setMaxPoolSize(32);
         ex.setQueueCapacity(5000);
-        ex.setThreadNamePrefix("raw-sports-bet-details-emit-");
+        ex.setThreadFactory(AppThreadFactory.named("raw-sports-bet-details-emit"));
         ex.setRejectedExecutionHandler(new DropAndCountRejectionPolicy("raw_sports_bet_details", registry));
         ex.setWaitForTasksToCompleteOnShutdown(true);
         ex.setAwaitTerminationSeconds(5);
@@ -85,7 +86,7 @@ public class AsyncConfig {
         ex.setCorePoolSize(8);
         ex.setMaxPoolSize(32);
         ex.setQueueCapacity(5000);
-        ex.setThreadNamePrefix("raw-bet-details-emit-");
+        ex.setThreadFactory(AppThreadFactory.named("raw-bet-details-emit"));
         ex.setRejectedExecutionHandler(new DropAndCountRejectionPolicy("raw_bet_details", registry));
         ex.setWaitForTasksToCompleteOnShutdown(true);
         ex.setAwaitTerminationSeconds(5);

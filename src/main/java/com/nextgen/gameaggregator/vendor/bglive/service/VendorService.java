@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bglive.service;
 
 import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -251,7 +252,7 @@ public class VendorService extends BaseVendorService {
 
     public ExecutorService createThreadPool(int orderCount) {
         int threadCount = Math.min(orderCount, ThreadSize.THREAD_SIZE);
-        return Executors.newFixedThreadPool(threadCount);
+        return Executors.newFixedThreadPool(threadCount, AppThreadFactory.named("bglive-vendorservice"));
     }
 
 

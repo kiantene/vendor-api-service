@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.logging;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.core.context.VendorPlayerAware;
@@ -48,6 +49,11 @@ public class LogContextService {
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "api-request-log-publisher-" + seq.incrementAndGet());
+            // ONEAPI-859: pin the context classloader, same reason as AppThreadFactory — these
+            // workers are created lazily by whoever submits first, which may be a common-pool
+            // thread that cannot see BOOT-INF/lib. Daemon is INTENTIONAL here and must stay:
+            // @PreDestroy below drains in-flight publishes and dumps the rest locally.
+            t.setContextClassLoader(AppThreadFactory.appClassLoader());
             t.setDaemon(true);
             return t;
         }

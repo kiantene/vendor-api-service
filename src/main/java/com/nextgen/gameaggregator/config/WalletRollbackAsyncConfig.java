@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.config;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -16,7 +17,7 @@ public class WalletRollbackAsyncConfig {
         executor.setCorePoolSize(10);
         executor.setMaxPoolSize(30);
         executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("wallet-rollback-event-");
+        executor.setThreadFactory(AppThreadFactory.named("wallet-rollback-event"));
         executor.initialize();
         return executor;
     }

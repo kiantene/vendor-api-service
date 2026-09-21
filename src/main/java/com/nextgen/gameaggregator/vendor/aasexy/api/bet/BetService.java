@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.aasexy.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -36,7 +37,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class BetService {
     private static final Integer THREAD_SIZE = 32;
-    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexy-bet"));
     private final GameSessionService gameSessionService;
     private final WalletService walletService;
     private final HttpService httpService;
@@ -64,7 +65,7 @@ public class BetService {
         RequestDto<BetDto> dto = null;
         GameSession gameSession = null;
         boolean processFailed = false;
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_SIZE, AppThreadFactory.named("aasexy-bet"));
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();

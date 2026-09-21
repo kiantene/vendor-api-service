@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.config;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -12,6 +13,7 @@ public class ThreadPoolTaskSchedulerConfig {
     public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(POOL_SIZE);
+        scheduler.setThreadFactory(AppThreadFactory.named("task-scheduler"));
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(30);
         scheduler.initialize();

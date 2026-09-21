@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service.kafka;
 
+import com.nextgen.gameaggregator.core.concurrent.AppThreadFactory;
 import com.couchbase.client.java.Collection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.KafkaProducerRetryJob;
@@ -80,6 +81,10 @@ public class KafkaDlqService {
                 new ArrayBlockingQueue<>(PERSIST_QUEUE_CAPACITY),
                 runnable -> {
                     Thread t = new Thread(runnable, "kafka-dlq-persist-" + threadNo.incrementAndGet());
+                    // ONEAPI-859: pin the context classloader, same reason as AppThreadFactory.
+                    // Daemon is INTENTIONAL here and must stay: @PreDestroy below waits 30s for
+                    // in-flight fallback writes (financial records) to finish.
+                    t.setContextClassLoader(AppThreadFactory.appClassLoader());
                     t.setDaemon(true);
                     return t;
                 },
