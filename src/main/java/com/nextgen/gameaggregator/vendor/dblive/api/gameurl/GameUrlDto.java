@@ -12,4 +12,5 @@ public class GameUrlDto {
     private String gameTypeId;
     private long timestamp;
     private String playerLanguageV2;
+    private String ip;
 }
