@@ -20,6 +20,7 @@ public class PromoPayoutMapper {
                 .currency(context.getCurrencyCode())
                 .amount(context.getPayout().amount())
                 .timestamp(context.getVendorTransactionTime())
+                .extra(extra(context))
                 .build();
     }
 
@@ -39,7 +40,25 @@ public class PromoPayoutMapper {
                 .currency(context.getCurrencyCode())
                 .amount(txn.getPayout().amount())
                 .timestamp(txn.getVendorTransactionTime())
+                .extra(extra(context))
                 .build();
+    }
+
+    /**
+     * The {@code extra} block, or null when there is nothing to put in it - an absent player id leaves
+     * the key out of the payload rather than sending {@code "extra": {"playerId": null}}.
+     *
+     * <p>Batch children share the context's player: the batch overload already takes
+     * {@code username} from the context for the same reason.
+     */
+    private PromoPayoutExtra extra(PromoPayoutContext context) {
+        Long playerId = context.getAgent().playerId();
+        if (playerId == null) {
+            return null;
+        }
+        PromoPayoutExtra extra = new PromoPayoutExtra();
+        extra.setPlayerId(String.valueOf(playerId));
+        return extra;
     }
 
     /**

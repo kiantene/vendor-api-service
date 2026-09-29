@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.enums.PromoType;
 import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,54 @@ class PromoPayoutMapperTest {
 
         assertThat(dto.getPromoType()).isEqualTo("JACKPOT");
         assertThat(dto.getTransactionId()).isEqualTo("child-txn-1");
+    }
+
+    @Test
+    void sendsPlayerIdInExtra() {
+        PromoPayoutContext context = contextWith(PromoType.TOURNAMENT);
+        context.getAgent().playerId(1234567L);
+
+        PromoPayoutDto dto = mapper.toPromoPayoutRequest(context);
+
+        assertThat(dto.getExtra()).isNotNull();
+        assertThat(dto.getExtra().getPlayerId()).isEqualTo("1234567");
+    }
+
+    @Test
+    void batchOverloadSendsPlayerIdFromTheContext() {
+        // children carry no player of their own; username comes from the context, so playerId must too
+        PromoPayoutContext context = contextWith(PromoType.JACKPOT);
+        context.getAgent().playerId(1234567L);
+
+        PromoPayoutDto dto = mapper.toPromoPayoutRequest(context, childTransaction());
+
+        assertThat(dto.getExtra().getPlayerId()).isEqualTo("1234567");
+    }
+
+    @Test
+    void omitsExtraEntirelyWhenThereIsNoPlayerId() {
+        // better an absent key than "extra": {"playerId": null}
+        PromoPayoutDto dto = mapper.toPromoPayoutRequest(contextWith(PromoType.TOURNAMENT));
+
+        assertThat(dto.getExtra()).isNull();
+    }
+
+    @Test
+    void serialisesExtraAsANestedObject() throws Exception {
+        PromoPayoutContext context = contextWith(PromoType.TOURNAMENT);
+        context.getAgent().playerId(1234567L);
+
+        String json = new ObjectMapper().writeValueAsString(mapper.toPromoPayoutRequest(context));
+
+        assertThat(json).contains("\"extra\":{\"playerId\":\"1234567\"}");
+    }
+
+    @Test
+    void omittedExtraIsAbsentFromTheJson() throws Exception {
+        String json = new ObjectMapper().writeValueAsString(
+                mapper.toPromoPayoutRequest(contextWith(PromoType.TOURNAMENT)));
+
+        assertThat(json).doesNotContain("extra");
     }
 
     @ParameterizedTest

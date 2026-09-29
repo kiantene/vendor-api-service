@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.core.common;
 import com.nextgen.core.exception.InternalConfigurationException;
 import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutDto;
 import com.nextgen.gameaggregator.core.context.OperatorRequestContext;
 import com.nextgen.gameaggregator.core.engine.operator.OperatorScenario;
 import com.nextgen.gameaggregator.core.entity.Agent;
@@ -63,6 +64,7 @@ public class ClientRequestService {
         ResolvedCredential resolved = loadCredential(agentId);
         AgentApiCredential credential = resolved.credential();
         stripRollbackMetaForNonTransferWallet(requestObject, resolved.transferWallet());
+        stripPromoExtraForNonTransferWallet(requestObject, resolved.transferWallet());
 
         return OperatorApiRequest.builder()
                 .traceId(traceId)
@@ -86,6 +88,7 @@ public class ClientRequestService {
         ResolvedCredential resolved = loadCredential(agentId);
         AgentApiCredential credential = resolved.credential();
         stripRollbackMetaForNonTransferWallet(context.request(), resolved.transferWallet());
+        stripPromoExtraForNonTransferWallet(context.request(), resolved.transferWallet());
 
         return OperatorApiRequest.builder()
                 .traceId(context.request().getTraceId())
@@ -160,6 +163,24 @@ public class ClientRequestService {
     void stripRollbackMetaForNonTransferWallet(Object requestObject, boolean transferWallet) {
         if (!transferWallet && requestObject instanceof WalletRollbackDto rollbackDto) {
             rollbackDto.setMeta(null);
+        }
+    }
+
+
+    /**
+     * The promo payout {@code extra} block is only meant for the internal transfer wallet, which asked
+     * for the raw player id alongside the encoded username. Every other operator implements the
+     * published promo payout contract and must not start receiving a field that is not in it.
+     *
+     * <p>Stripped here rather than left unset by {@code PromoPayoutMapper} for the same reason as
+     * {@link #stripRollbackMetaForNonTransferWallet}: the mapper cannot tell - {@code PromoPayoutContext}
+     * carries the agent's id, players and house, but not its seamless type, which only
+     * {@link #loadCredential} resolves. Runs before {@link #getHeaders}, so the signature covers the
+     * payload actually sent.
+     */
+    void stripPromoExtraForNonTransferWallet(Object requestObject, boolean transferWallet) {
+        if (!transferWallet && requestObject instanceof PromoPayoutDto promoPayoutDto) {
+            promoPayoutDto.setExtra(null);
         }
     }
 

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.jackson.Jacksonized;
 
 import java.math.BigDecimal;
@@ -50,6 +51,19 @@ public class PromoPayoutDto {
     private final String gameCode;
 
     /**
+     * Supplementary identifiers for the internal transfer wallet, nested under {@code extra}.
+     *
+     * <p>Only for the transfer wallet - stripped before this DTO can reach any other operator, the same
+     * way {@code RollbackMeta} is on wallet rollback. Omitted from the payload entirely when absent
+     * rather than serialized as {@code "extra": null}, via the class-level {@code @JsonInclude}.
+     *
+     * <p>The one non-final field on this DTO: the strip in {@code ClientRequestService} clears it after
+     * the mapper has built the request, because only credential loading knows the agent's seamless type.
+     */
+    @Setter
+    private PromoPayoutExtra extra;
+
+    /**
      * Classification of the promotion this payout belongs to. Values: {@code FREEROUND},
      * {@code TOURNAMENT}, {@code PRIZEDROP}, {@code BONUS}, {@code JACKPOT}.
      *
@@ -80,4 +94,5 @@ public class PromoPayoutDto {
      */
     @NotNull(message = "Timestamp is required.")
     private final Long timestamp;
+
 }
