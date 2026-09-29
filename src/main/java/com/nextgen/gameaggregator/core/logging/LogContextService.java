@@ -24,6 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 @Slf4j
 public class LogContextService {
+    // HttpRequestLog.status values, mirrored here so the new-framework side does not have to
+    // reach into the legacy HttpService for them.
+    public static final Integer STATUS_PROCESSING = 1;
+    public static final Integer STATUS_COMPLETED = 2;
+    public static final Integer STATUS_ERROR = -1;
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaService kafkaService;
 
@@ -174,14 +180,12 @@ public class LogContextService {
 
     // Backward compatible function
     public static HttpRequestLog toHttpRequestLog(LogContext logContext) {
-        final Integer PROCESSING = 1;
-
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         logContext.setTraceId(httpRequestLog.getId());
         httpRequestLog.setUrl(logContext.getUrl());
         httpRequestLog.setRequestBody(logContext.getBody() == null ? "" : logContext.getBody().toString());
         httpRequestLog.setBetStart(System.currentTimeMillis());
-        httpRequestLog.setStatus(PROCESSING);
+        httpRequestLog.setStatus(STATUS_PROCESSING);
         return httpRequestLog;
     }
 
@@ -266,12 +270,17 @@ public class LogContextService {
 
             if (logContext.getException() != null) {
                 String exception = logContext.getException();
-                httpRequestLog.setStatus(-1);
+                httpRequestLog.setStatus(STATUS_ERROR);
                 httpRequestLog.setErrorMessage(exception);
                 httpRequestLog.setExceptionMessage(logContext.getErrorMessage());
                 httpRequestLog.setRootCause(logContext.getRootCause());
-            } else {
-                httpRequestLog.setStatus(2);
+            } else if (!STATUS_ERROR.equals(httpRequestLog.getStatus())) {
+                // Preserve a failure already recorded directly on httpRequestLog (e.g. an
+                // operator error that was intentionally swallowed to return a force-success
+                // response, such as BetRollbackProcessor.callToOperator()) — logContext's own
+                // exception tracking never sees that error, so without this guard it gets
+                // laundered back to COMPLETED here.
+                httpRequestLog.setStatus(STATUS_COMPLETED);
             }
 
             ApiRequestLog apiRequestLog = new ApiRequestLog(httpRequestLog);

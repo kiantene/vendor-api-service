@@ -16,6 +16,8 @@ import com.nextgen.gameaggregator.core.webclient.OperatorApiRequest;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
 import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
+import com.nextgen.gameaggregator.core.logging.LogContextService;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackMeta;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.business.GameRoundService;
@@ -171,6 +173,14 @@ class BetRollbackProcessor {
             );
 
         } catch (Exception ex) { // only operator exception then send to retry queue
+            // Record the failure on this request's own log before defaulting to a "success"
+            // response — otherwise the operator-side failure never shows up in api-request-logs.
+            HttpRequestLog httpRequestLog = context.getHttpRequestLog();
+            if (httpRequestLog != null) {
+                httpRequestLog.setStatus(LogContextService.STATUS_ERROR);
+                httpRequestLog.setErrorMessage(ex.toString());
+            }
+
             if (RetryPolicy.shouldRetry(RetryOrigin.BET_ROLLBACK, ex)) {
                 retryQueueService
                         .enqueue(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.BET_ROLLBACK)

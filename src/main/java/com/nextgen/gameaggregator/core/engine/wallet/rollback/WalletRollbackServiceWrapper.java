@@ -274,6 +274,14 @@ public class WalletRollbackServiceWrapper {
 
             httpRequestLog.setVendorBetId(context.getVendorBetId());
             httpRequestLog.setRoundId(context.getRoundId());
+
+            // Make this same instance reachable from context.getHttpRequestLog() for the
+            // synchronous path too (previously only enrichByGameSession/enrichAsync did this),
+            // so downstream failure recording (BetRollbackProcessor.callToOperator()) has
+            // somewhere to write to.
+            if (context.getHttpRequestLog() == null) {
+                context.setHttpRequestLog(httpRequestLog);
+            }
         }
     }
 }
