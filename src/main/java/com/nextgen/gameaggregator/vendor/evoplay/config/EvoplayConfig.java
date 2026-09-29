@@ -23,9 +23,10 @@ public class EvoplayConfig extends AbstractVendorConfig {
 
     @Override
     protected void overrideDefaults() {
-        // v2 routing OFF by default; enabled per-region at runtime via the Couchbase
-        // VendorConfig (callbackRoutingEnabled). Keeps cutover a config toggle, not a deploy.
-        setCallbackRoutingEnabled(false);
+        // v2 routing is the post-cutover state; the Couchbase VendorConfig can still
+        // flip it per-region at runtime. Defaulting to true keeps a pod that boots
+        // before the first successful config refresh from sending v2 rounds down v1.
+        setCallbackRoutingEnabled(true);
         setWalletServiceLegacyEnabled(false);
     }
 
