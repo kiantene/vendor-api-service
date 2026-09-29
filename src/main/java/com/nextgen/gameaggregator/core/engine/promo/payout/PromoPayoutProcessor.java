@@ -100,6 +100,8 @@ public class PromoPayoutProcessor {
         OperatorApiRequest apiRequest = toApiRequest(context, requestDto);
 
         try {
+            // Point of no return: past here the operator may have paid, so the idempotency key must stay claimed.
+            context.setPayoutDispatched(true);
             ApiResult apiResult = operatorApiAdapter.execute(apiRequest);
             apiResult.throwIfError();
             ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
@@ -138,6 +140,9 @@ public class PromoPayoutProcessor {
                     context.getVendorCurrency()
             ));
         };
+
+        // Point of no return: past here the operator may have paid, so the idempotency key must stay claimed.
+        context.setPayoutDispatched(true);
 
         return reactiveApiAdapter.execute(apiRequest, logContext)
                 .map(apiResult -> {

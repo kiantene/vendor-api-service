@@ -13,9 +13,6 @@ import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-
 @Component
 public class PGSoftExceptionMapper implements VendorExceptionMapper {
 
@@ -56,29 +53,28 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper {
         return getErrorResponse(ResponseCodes.BET_FAILED_3073);
     }
 
-    // applicable for promo payout (return success)
+    /**
+     * Promo payout answers its own duplicates, in PGSoftPromoPayoutService, because a duplicate response
+     * has to carry real_transfer_amount and updated_time from the request — neither of which reaches a
+     * mapper, which is handed only the exception.
+     *
+     * <p>So this is the fallback for a duplicate arriving by some other route. It cannot build the
+     * response PG SOFT validates, and a success body missing those fields is what broke free-round
+     * resumption in the first place, so ask for the request again rather than answer it incompletely.
+     */
     @Override
     public VendorErrorResponse onDuplicateRequest(DuplicateRequestException ex) {
-        ResponseVo<CashTransferInOutVo> responseVo = new ResponseVo<>();
-        CashTransferInOutVo cashTransferInOutVo = new CashTransferInOutVo();
-        cashTransferInOutVo.setUpdatedTime(Instant.now().toEpochMilli());
-        cashTransferInOutVo.setBalanceAmount(BigDecimal.ZERO);
-//        cashTransferInOutVo.setCurrencyCode("");
-        responseVo.setData(cashTransferInOutVo);
-
-        return new VendorErrorResponse(HttpStatus.OK, responseVo);
+        return getErrorResponse(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
     }
 
+    /**
+     * Not reachable today: DuplicateBetException comes only from WalletExceptionTranslator, and neither
+     * PGSoft branch goes through it — the bet path handles its own exceptions inline and promo payout
+     * does not use the wallet wrappers. Kept safe rather than left returning a zero balance as success.
+     */
     @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
-        ResponseVo<CashTransferInOutVo> responseVo = new ResponseVo<>();
-        CashTransferInOutVo cashTransferInOutVo = new CashTransferInOutVo();
-        cashTransferInOutVo.setUpdatedTime(Instant.now().toEpochMilli());
-        cashTransferInOutVo.setBalanceAmount(BigDecimal.ZERO);
-//        cashTransferInOutVo.setCurrencyCode("");
-        responseVo.setData(cashTransferInOutVo);
-
-        return new VendorErrorResponse(HttpStatus.OK, responseVo);
+        return getErrorResponse(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
     }
 
     @Override
@@ -100,6 +96,7 @@ public class PGSoftExceptionMapper implements VendorExceptionMapper {
 
     private VendorErrorResponse getErrorResponse(ResponseCodes responseCodes) {
         ResponseVo<CashTransferInOutVo> responseVo = new ResponseVo<>();
+        responseVo.setData(null);
         responseVo.setError(responseCodes);
         return new VendorErrorResponse(HttpStatus.OK, responseVo);
     }
