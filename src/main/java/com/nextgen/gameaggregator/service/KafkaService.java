@@ -24,6 +24,7 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -201,7 +202,7 @@ public class KafkaService {
                     vendorPlayerUsername, warehouseFutureEntity);
 
             // GA-14578: send with durable fallback (keyless — preserve current partitioning).
-            String dedupKey = betHistory.getVendorId() + "::" + betHistory.getId() + "::" + betHistory.getRoundId();
+            String dedupKey = buildBetHistoryDedupKey(betHistory);
             kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING_V3, null, dedupKey,
                     betHistoryV3, KafkaSerializerType.JSON_SCHEMA);
 
@@ -314,7 +315,7 @@ public class KafkaService {
             String json = OBJECT_MAPPER.writeValueAsString(betHistoryV3);
 
             // GA-14578: send with durable fallback (keyless — preserve current partitioning).
-            String dedupKey = betHistoryV3.getVendorId() + "::" + betHistoryV3.getId() + "::" + betHistoryV3.getRoundId();
+            String dedupKey = buildBetHistoryDedupKey(betHistoryV3);
             kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_V4, null, dedupKey,
                     json, KafkaSerializerType.STRING);
         } catch (Exception ex) {
@@ -362,7 +363,7 @@ public class KafkaService {
             String json = objectMapper.writeValueAsString(betHistoryV3);
 
             // GA-14578: send with durable fallback (keyless — preserve current partitioning).
-            String dedupKey = betHistory.getVendorId() + "::" + betHistory.getId() + "::" + betHistory.getRoundId();
+            String dedupKey = buildBetHistoryDedupKey(betHistory);
             kafkaDlqService.sendWithFallback(KafkaConstant.TOPIC_BET_HISTORY_V4, null, dedupKey,
                     json, KafkaSerializerType.STRING);
 
@@ -449,5 +450,50 @@ public class KafkaService {
         } catch (Exception ex) {
             log.error(ex.getMessage() + " : " + message.toString() + " : " + username);
         }
+    }
+
+    /**
+     * Dedup key for the Kafka producer fallback buffer (ONEAPI-1349).
+     *
+     * <p>{@code vendorId::id::roundId} alone collapses every event of one bet onto a single buffered job.
+     * A cancel after a settle reuses the settle's {@code betId} — the rollback resolves the original
+     * {@code settled_bet} and {@code new BetHistory(settledBet)} copies {@code settledBet.getBetId()} — so
+     * during a Kafka outage the cancel payload would upsert over the still-unreplayed settle payload and the
+     * settle row would never reach the warehouse, leaving a negated amount with no original behind it.
+     *
+     * <p>Two orthogonal axes are needed to separate them:
+     * <ul>
+     *   <li>{@code resettleNum} — the <b>version</b> axis (settle 0, cancel 1, resettle 2, ...). It
+     *       accumulates: the rollback path bumps it off the stored value and {@code SettledBetService.save}
+     *       only defaults null to 0, never resets.</li>
+     *   <li>{@code status} — the <b>kind</b> axis. Required because {@code REFUNDED} is the one status that
+     *       never bumps: the legacy refund builds a fresh {@code SettledBet} without touching
+     *       {@code resettleNum}, and in the new framework {@code BetHistoryProducer} sets
+     *       {@code resettleNum = 1} on the CANCELLED branch but leaves its REFUNDED sibling at 0. A REFUNDED
+     *       row therefore always lands on whatever already occupies that number.</li>
+     * </ul>
+     *
+     * <p>A genuine vendor resend of the <em>same</em> event still produces the same key, so retries keep
+     * deduping to one job rather than replaying twice. A null {@code resettleNum} is normalised to 0 to match
+     * {@code BetHistory}'s own convention; a null {@code status} is left as-is so
+     * {@code KafkaDlqService}'s unusable-key guard falls back to the payload hash instead of merging
+     * distinct records.
+     */
+    private static String buildBetHistoryDedupKey(BetHistory betHistory) {
+        return buildBetHistoryDedupKey(betHistory.getVendorId(), betHistory.getId(), betHistory.getRoundId(),
+                betHistory.getStatus(), betHistory.getResettleNum());
+    }
+
+    /** @see #buildBetHistoryDedupKey(BetHistory) */
+    private static String buildBetHistoryDedupKey(BetHistoryV3 betHistoryV3) {
+        return buildBetHistoryDedupKey(betHistoryV3.getVendorId(), betHistoryV3.getId(), betHistoryV3.getRoundId(),
+                betHistoryV3.getStatus(), betHistoryV3.getResettleNum());
+    }
+
+    /** @see #buildBetHistoryDedupKey(BetHistory) */
+    private static String buildBetHistoryDedupKey(Integer vendorId, String id, String roundId,
+                                                  Integer status, Integer resettleNum) {
+        return vendorId + "::" + id + "::" + roundId + "::" + status + "::"
+                + Objects.requireNonNullElse(resettleNum, 0);
     }
 }
