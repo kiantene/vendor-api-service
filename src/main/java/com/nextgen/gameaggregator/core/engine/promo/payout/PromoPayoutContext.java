@@ -24,6 +24,13 @@ public class PromoPayoutContext extends PayoutTransaction implements VendorPlaye
 
     private List<PayoutTransaction> payoutTransactions;
 
+    /**
+     * Set the moment the payout is handed to the operator, so a later failure knows the money may
+     * already be out and must not release the idempotency key. Processing state, not identity.
+     */
+    @EqualsAndHashCode.Exclude
+    private boolean payoutDispatched;
+
     // For backward compatibility
     private HttpRequestLog httpRequestLog;
 

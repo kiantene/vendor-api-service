@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.core.engine.promo.payout;
 
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
+import com.nextgen.gameaggregator.core.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.core.idempotency.DuplicateRequestGuard;
 import com.nextgen.gameaggregator.core.idempotency.RequestIdempotencyService;
 import com.nextgen.gameaggregator.core.logging.LogContext;
@@ -26,6 +27,7 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
     @Override
     public PlayerBalanceData process(PromoPayoutContext context) {
         LogContext logContext = LogContextHolder.get().setLogGroup(LOG_GROUP).setType(ACTION);
+        boolean payoutDispatched = false;
 
         try {
             guard.ensureNotDuplicate(
@@ -43,11 +45,13 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
             // normal flow
             if (!config.isBatch()) {
                 PlayerBalanceData result = processor.process(context);
+                payoutDispatched = true;
                 rememberResponseData(context, result);
                 return result;
             }
 
             processor.processBatch(context).subscribe(); // fire and forget
+            payoutDispatched = true;
 
             PlayerBalanceData result = PlayerBalanceData.getDefault(
                     context.getVendorPlayerUsername(),
@@ -55,6 +59,22 @@ public class PromoPayoutServiceImpl implements PromoPayoutService {
             );
             rememberResponseData(context, result);
             return result;
+        } catch (DuplicateRequestException ex) {
+            // The idempotency record belongs to the original request, not this one — leave it alone.
+            throw ex;
+        } catch (Exception ex) {
+            // RequestIdempotentLog is written before any work and has no error state (unlike the wallet
+            // flows' GameTransaction), so deleting it is the only way to say "this payout did not happen".
+            // Left behind, every retry is answered as a duplicate — for PGSoft an HTTP 200 carrying a zero
+            // balance and no error, i.e. success — for a payout the player never received.
+            //
+            // Dispatch marks the point of no return, and the processor sets it on the context at the
+            // operator call itself; the local flag covers a subscribed batch, whose payouts run async.
+            // Past either, only bookkeeping remains and freeing the key would risk paying twice.
+            if (!payoutDispatched && !context.isPayoutDispatched()) {
+                guard.clear();
+            }
+            throw ex;
         } finally {
             cleanup();
             LogContextService.updateLogContextFromHttpRequestLog(logContext, context.getHttpRequestLog());

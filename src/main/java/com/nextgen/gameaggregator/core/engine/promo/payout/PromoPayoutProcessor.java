@@ -62,13 +62,17 @@ public class PromoPayoutProcessor {
 
         return Flux.fromIterable(transactions)
                 .flatMap(tx -> {
-                    tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
-                    tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
+                    tx.setTraceId(UuidUtil.newUuidV7String());
+                    tx.setTransactionId(UuidUtil.newUuidV7StringRaw());
                     if (shouldPublish(tx)) {
                         producer.publish(context, tx);
                     }
 
                     LogContext logContext = LogContextHolder.get().copy(); // create copy for this transaction
+
+                    // group every payout of this batch under the batch traceId in logs
+                    // payout's individual traceId and transactionId can be found in apiBody
+                    logContext.setTraceId(context.getTraceId());
 
                     return callToOperatorAsync(context, tx, logContext)
                             .doOnNext(balanceData -> LoggingManager.printLog(logContext))
@@ -100,6 +104,8 @@ public class PromoPayoutProcessor {
         OperatorApiRequest apiRequest = toApiRequest(context, requestDto);
 
         try {
+            // Point of no return: past here the operator may have paid, so the idempotency key must stay claimed.
+            context.setPayoutDispatched(true);
             ApiResult apiResult = operatorApiAdapter.execute(apiRequest);
             apiResult.throwIfError();
             ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
@@ -139,6 +145,9 @@ public class PromoPayoutProcessor {
             ));
         };
 
+        // Point of no return: past here the operator may have paid, so the idempotency key must stay claimed.
+        context.setPayoutDispatched(true);
+
         return reactiveApiAdapter.execute(apiRequest, logContext)
                 .map(apiResult -> {
                     apiResult.throwIfError();
@@ -156,7 +165,7 @@ public class PromoPayoutProcessor {
 
     private OperatorApiRequest toApiRequest(PromoPayoutContext context, PromoPayoutDto dto) {
         return clientRequestService.createOperatorApiRequest(
-                context.getTraceId(),
+                dto.getTraceId(),
                 context.getAgent().id(),
                 context.getAgent().playerUsername(),
                 EndPoints.PROMO_PAYOUT,

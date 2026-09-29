@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.KafkaService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 class LogContextServiceTest {
@@ -112,6 +114,55 @@ class LogContextServiceTest {
         // the JSON payload form (only logLocally emits it) must appear — the plain error log
         // uses roundId=[...] instead, so this fails if run() drops the logLocally fallback
         assertThat(localLogContainsEventually("\"roundId\":\"round-boom\"", 5000)).isTrue();
+    }
+
+    private ApiRequestLog awaitPublishedLog() {
+        ArgumentCaptor<ApiRequestLog> captor = ArgumentCaptor.forClass(ApiRequestLog.class);
+        verify(kafkaService, timeout(2000)).produceApiRequestLog(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void logApiRequestNoException_setsCompleted() {
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        httpRequestLog.setId("trace-1");
+        LogContext logContext = new LogContext();
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
+
+        logContextService.logApiRequest(logContext, "{}");
+
+        assertThat(awaitPublishedLog().getStatus()).isEqualTo(LogContextService.STATUS_COMPLETED);
+    }
+
+    @Test
+    void logApiRequestLogContextException_setsError() {
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        httpRequestLog.setId("trace-1");
+        LogContext logContext = new LogContext();
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
+        logContext.setException(new RuntimeException("operator failed"));
+
+        logContextService.logApiRequest(logContext, "{}");
+
+        assertThat(awaitPublishedLog().getStatus()).isEqualTo(LogContextService.STATUS_ERROR);
+    }
+
+    @Test
+    void logApiRequestPreRecordedErrorWithNoLogContextException_isNotLaunderedToCompleted() {
+        // ONEAPI-492/858/618 v2 counterpart: BetRollbackProcessor.callToOperator() swallows the
+        // operator exception (to return a force-success response + background retry) and writes
+        // ERROR directly onto httpRequestLog instead. logContext's own exception tracking never
+        // sees it, so buildApiRequestLog() must not blindly stamp COMPLETED over that.
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        httpRequestLog.setId("trace-1");
+        httpRequestLog.setStatus(LogContextService.STATUS_ERROR);
+        httpRequestLog.setErrorMessage("com.nextgen.gameaggregator.exception.InvalidOperatorResponseException: Data is empty");
+        LogContext logContext = new LogContext();
+        logContext.put(HttpRequestLog.class.getSimpleName(), httpRequestLog);
+
+        logContextService.logApiRequest(logContext, "{}");
+
+        assertThat(awaitPublishedLog().getStatus()).isEqualTo(LogContextService.STATUS_ERROR);
     }
 
     private boolean localLogContains(String needle) {
