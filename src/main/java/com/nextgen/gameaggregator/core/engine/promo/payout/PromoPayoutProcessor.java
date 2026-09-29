@@ -62,13 +62,17 @@ public class PromoPayoutProcessor {
 
         return Flux.fromIterable(transactions)
                 .flatMap(tx -> {
-                    tx.setTraceId(context.getTraceId()); // use same traceId so that we can group all payouts together
-                    tx.setTransactionId(UuidUtil.newUuidV7StringRaw()); // operator should use transactionId for idempotency
+                    tx.setTraceId(UuidUtil.newUuidV7String());
+                    tx.setTransactionId(UuidUtil.newUuidV7StringRaw());
                     if (shouldPublish(tx)) {
                         producer.publish(context, tx);
                     }
 
                     LogContext logContext = LogContextHolder.get().copy(); // create copy for this transaction
+
+                    // group every payout of this batch under the batch traceId in logs
+                    // payout's individual traceId and transactionId can be found in apiBody
+                    logContext.setTraceId(context.getTraceId());
 
                     return callToOperatorAsync(context, tx, logContext)
                             .doOnNext(balanceData -> LoggingManager.printLog(logContext))
@@ -161,7 +165,7 @@ public class PromoPayoutProcessor {
 
     private OperatorApiRequest toApiRequest(PromoPayoutContext context, PromoPayoutDto dto) {
         return clientRequestService.createOperatorApiRequest(
-                context.getTraceId(),
+                dto.getTraceId(),
                 context.getAgent().id(),
                 context.getAgent().playerUsername(),
                 EndPoints.PROMO_PAYOUT,
