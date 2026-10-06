@@ -151,4 +151,9 @@ public class CreditDto implements BetResultData, RollbackData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
+
+    @Override
+    public boolean getShouldSettleByBet() {
+        return true;
+    }
 }
