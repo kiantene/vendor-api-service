@@ -124,7 +124,28 @@ public class GameRoundService {
     }
 
     public void updateRoundTxn(GameTransaction txn, GameRoundState state) {
-        data.updateTxn(txn.getRoundDocId(), txn.getIdx(), Map.of("state", state));
+        Integer idx = txn.getIdx();
+
+        if (idx == null) {
+            // markSent() appends a bet's slot to the round before the operator is ever called,
+            // but only backfills idx onto the standalone txn doc once the bet's own
+            // markSuccess/markError eventually runs. A txn fetched in between (e.g. a rollback
+            // racing an in-flight bet) sees idx as null even though the round already has its
+            // slot - resolve the real index the same way addNewTxnToRound() already does for
+            // its own idempotency check, by matching the txn's deterministic id.
+            idx = get(txn.getRoundDocId())
+                    .map(round -> indexOfTxn(round, txn))
+                    .filter(i -> i >= 0)
+                    .orElse(null);
+        }
+
+        if (idx == null) {
+            log.warn("Could not resolve a round slot for txn {} ({}) - leaving its round-level state untouched",
+                    txn.getId(), txn.getRoundDocId());
+            return;
+        }
+
+        data.updateTxn(txn.getRoundDocId(), idx, Map.of("state", state));
     }
 
     private String getMeaningfulExceptionName(RuntimeException ex) {

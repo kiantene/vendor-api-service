@@ -13,14 +13,15 @@ import com.nextgen.gameaggregator.core.service.*;
 import com.nextgen.gameaggregator.core.service.data.CampaignDataService;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.promo.Campaign;
+import com.nextgen.gameaggregator.enums.PromoType;
 import com.nextgen.gameaggregator.service.data.model.TxnAmount;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -123,12 +124,21 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
 
     private void populateCampaign(PromoPayoutContext context) {
         PromoPayoutConfig config = PromoPayoutContextHolder.getConfig();
-        // Skip when there's nothing to resolve: no strategy configured and no campaign code to look up by.
-        if (config.getCampaignResolveStrategy() == null && Objects.isNull(context.getVendorCampaignCode())) {
-            return;
+        PromoType promoType = context.getPromoType();
+        Campaign campaign;
+        if (promoType != null && promoType != PromoType.FREE_ROUND) {
+            campaign = createPayoutCampaign(context);
+            if (campaign == null) {
+                return;
+            }
+        } else {
+            // Skip when there's nothing to resolve: no strategy configured and no campaign code to look up by.
+            // A blank code counts as none - looking it up can only fail, and would fail the payout with it.
+            if (config.getCampaignResolveStrategy() == null && !StringUtils.hasText(context.getVendorCampaignCode())) {
+                return;
+            }
+            campaign = resolveCampaign(context, config);
         }
-
-        Campaign campaign = resolveCampaign(context, config);
 
         if (campaign.getUuid() != null) {
             context.setCampaignUuid(campaign.getUuid());
@@ -137,6 +147,33 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             context.setVendorCampaignName(campaign.getCampaignName());
         }
     }
+    /**
+     * Every promo type but free round is run by the vendor, so the promo engine gets-or-creates a campaign
+     * from the payout itself. That campaign only labels the payout - its id and name reach the operator and
+     * promo_payout_history - so failing to create it must not fail a payout the player is owed. Nothing is
+     * cached on failure, so the next payout of the same campaign tries again.
+     */
+    private Campaign createPayoutCampaign(PromoPayoutContext context) {
+        try {
+            return campaignDataService.createPayoutCampaign(
+                    context.getPromoType().id,
+                    context.getVendor().id(),
+                    context.getVendor().lineId(),
+                    context.getVendorCampaignCode(),
+                    context.getVendorCampaignName(),
+                    context.getVendorTransactionId(),
+                    context.getCurrencyCode(),
+                    context.getVendorCurrency(),
+                    context.getVendorTransactionTime()
+            );
+        } catch (Exception e) {
+            log.warn("[PROMO_CAMPAIGN_CREATE_FAILED] traceId={} promoType={} vendorLineId={} vendorCampaignCode={} - paying out without a campaign",
+                    context.getTraceId(), context.getPromoType(), context.getVendor().lineId(),
+                    context.getVendorCampaignCode(), e);
+            return null;
+        }
+    }
+
     private void populateGame(PromoPayoutContext context) {
         String vendorGameCode = context.getVendorGameCode();
         Integer vendorId = context.getVendor().id();
@@ -192,7 +229,7 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             case USERNAME_AND_BONUS_ID -> {
                 String username = context.getVendorPlayerUsername();
                 String freeRoundBonusId = context.getVendorFreeRoundBonusId();
-                if (username == null || freeRoundBonusId == null) {
+                if (!StringUtils.hasText(username) || !StringUtils.hasText(freeRoundBonusId)) {
                     throw new IllegalStateException("username and vendorFreeRoundBonusId are required for USERNAME_AND_BONUS_ID");
                 }
                 yield Map.of("username", username, "freeRoundBonusId", freeRoundBonusId);
@@ -200,14 +237,14 @@ public class PromoPayoutContextEnricher extends BaseEnricher<PromoPayoutContext>
             case PLAYER_UUID -> {
                 // vendorCampaignCode carries the playerUuid for this strategy
                 String playerUuid = context.getVendorCampaignCode();
-                if (playerUuid == null) {
+                if (!StringUtils.hasText(playerUuid)) {
                     throw new IllegalStateException("vendorCampaignCode (playerUuid) is required for PLAYER_UUID strategy");
                 }
                 yield Map.of("playerUuid", playerUuid);
             }
             case VENDOR_LINE_AND_CODE -> {
                 String campaignCode = context.getVendorCampaignCode();
-                if (campaignCode == null) {
+                if (!StringUtils.hasText(campaignCode)) {
                     throw new IllegalStateException("vendorCampaignCode is required for VENDOR_LINE_AND_CODE strategy");
                 }
                 Map<String, String> params = new HashMap<>();

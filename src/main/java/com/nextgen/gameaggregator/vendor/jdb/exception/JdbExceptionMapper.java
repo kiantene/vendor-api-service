@@ -33,7 +33,9 @@ public class JdbExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onGameSessionExpired(GameSessionExpiredException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        // Used by Step 5 cutover (JdbPreflightService) for both AuthenticationException
+        // and InvalidPlayerException paths — both legacy services mapped these to PLAYER_NOT_FOUND.
+        return getErrorResponse(ResponseCode.PLAYER_NOT_FOUND);
     }
 
     @Override
@@ -43,17 +45,17 @@ public class JdbExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onInsufficientBalance(InsufficientBalanceException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        return getErrorResponse(ResponseCode.INSUFFICIENT_BALANCE);
     }
 
     @Override
     public VendorErrorResponse onPlayerDisabled(PlayerDisabledException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        return getErrorResponse(ResponseCode.PLAYER_NOT_FOUND);
     }
 
     @Override
     public VendorErrorResponse onBetNotAllowed(BetNotAllowedException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        return getErrorResponse(ResponseCode.FAILED);
     }
 
     @Override
@@ -63,12 +65,25 @@ public class JdbExceptionMapper implements VendorExceptionMapper {
 
     @Override
     public VendorErrorResponse onDuplicateBet(DuplicateBetException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        // Defensive: not expected to fire when the wrapper's returnSuccessOnDuplicate is true
+        // (idempotent replays are handled upstream as success + prior balance).
+        return getErrorResponse(ResponseCode.DUPLICATE_TRANSACTION);
     }
 
     @Override
     public VendorErrorResponse onBetResultRejected(BetResultRejectedException ex) {
-        throw new UnsupportedOperationException("Unsupported exception: " + ex.getClass().getName());
+        return getErrorResponse(ResponseCode.FAILED);
+    }
+
+    @Override
+    public VendorErrorResponse onRollbackNotAllowed(RollbackNotAllowedException ex) {
+        // Action 11 naming a debit that is already closed — settled, or cancelled under another
+        // transferId. Either way the cancel cannot be applied. A replay of the same transferId never
+        // reaches here: it is answered 0000 from the recorded result.
+        if (ex.isBetAlreadySettled() || ex.getCause() instanceof RoundAlreadyRefundedException) {
+            return getErrorResponse(ResponseCode.CANNOT_CANCEL);
+        }
+        return getErrorResponse(ResponseCode.FAILED);
     }
 
     @Override

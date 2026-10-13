@@ -82,7 +82,13 @@ public class SportRefundProcessor {
         Integer unsettleResettleNum = 0;
 
         // idempotentCheck
-        SportUnsettledBet sportUnsettledBet = sportUnsettledBetService.findByVendorPlayerUsernameAndVendorBetIdOrById(vendorPlayerUsername, vendorBetId);
+        // ONEAPI-974: was findByVendorPlayerUsernameAndVendorBetIdOrById(...), which returned null on a miss
+        // and NPE'd on the setStatus below, losing the refund with no retry log and no error to the vendor.
+        // awaitPlaceBetOutcome waits (bounded) for a racing placebet, and reports absence as an empty
+        // Optional rather than throwing here — see the not-found check below for why the order matters.
+        Optional<SportUnsettledBet> sportUnsettledBetOptional = sportUnsettledBetService.awaitPlaceBetOutcome(vendorPlayerUsername, vendorBetId);
+        SportUnsettledBet sportUnsettledBet;
+
         try {
             try {
                 //idempotent checking on couchbase sport_settled_bet collection
@@ -93,7 +99,9 @@ public class SportRefundProcessor {
                     if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                         throw new BetResultIdempotentViolationException("Process refund idempotent: " + walletRequest.getVendorPlayerUsername() + '_' + walletRequest.getExternalTransactionId());
                     } else {
-                        sportUnsettledBet.setInternalTransactionId(sportSettledBet.getInternalTransactionId());
+                        if (sportUnsettledBetOptional.isPresent()) {
+                            sportUnsettledBetOptional.get().setInternalTransactionId(sportSettledBet.getInternalTransactionId());
+                        }
                         walletRequest.setTransactionId(sportSettledBet.getInternalTransactionId());
                     }
 
@@ -106,6 +114,14 @@ public class SportRefundProcessor {
             } catch (BetNotFoundException e) {
                 //If the bet is not found in sportSettledBet, then the bet should continue and settle as usual.
             }
+
+            // ONEAPI-974: only NOW is an absent unsettled bet a genuine not-found. A successful refund
+            // deletes the unsettled bet, so a legitimate duplicate cancel always arrives here with nothing
+            // in sport_unsettled_bet — checking earlier would answer it BetNotFoundException instead of the
+            // BetResultIdempotentViolationException raised by the settled-bet check above. This also has to
+            // sit outside the inner catch, which would otherwise swallow it.
+            sportUnsettledBet = sportUnsettledBetOptional.orElseThrow(() -> new BetNotFoundException(
+                    "Cannot find unsettledBet for refund: " + vendorPlayerUsername + ", " + vendorBetId));
 
             sportUnsettledBet.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
 

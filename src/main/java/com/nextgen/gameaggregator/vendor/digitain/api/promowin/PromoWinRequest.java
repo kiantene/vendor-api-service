@@ -53,4 +53,12 @@ public class PromoWinRequest {
     @JsonProperty("txid")
     private String txid;
 
+    /**
+     * "Identifier of the promotion (Jackpot, Tournament, etc.)". Optional; the payout's campaign is keyed on
+     * it, and without it the promo engine creates one campaign per payout instead.
+     */
+    @Size(max = 255)
+    @JsonProperty("pmid")
+    private String pmid;
+
 }

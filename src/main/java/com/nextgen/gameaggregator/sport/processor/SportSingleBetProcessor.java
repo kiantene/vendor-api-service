@@ -64,6 +64,15 @@ public class SportSingleBetProcessor {
             unsettledBet.setInternalTransactionId(existsUnsettledBet.getInternalTransactionId());
         }
 
+        // ONEAPI-974 write-ahead: persist the bet BEFORE the operator debit is attempted. Previously the
+        // document only appeared after callToOperator returned, so a cancel arriving while placebet was
+        // still in flight found nothing and NPE'd in SportRefundProcessor.
+        // operatorStatus stays SC_TRANSACTION_STILL_PROCESSING until the outcome is known: the success path
+        // below stamps SC_OK and every catch stamps the operator error code. SportUnsettledBetService
+        // .awaitPlaceBetOutcome keys on exactly that to tell "still in flight" from "finished".
+        unsettledBet.setOperatorStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
+        sportUnsettledBetService.save(unsettledBet);
+
         try {
             VendorCurrency vendorCurrency = vendorCurrencyService.findByVendorIdAndCurrencyId(vendorId, currencyId);
             VendorGame vendorGame = vendorGameService.getByVendorGameId(vendorGameId);

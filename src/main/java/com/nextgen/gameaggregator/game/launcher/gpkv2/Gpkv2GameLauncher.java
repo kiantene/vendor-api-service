@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.gpkv2.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkv2.constant.EndPoints;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -48,6 +49,7 @@ public class Gpkv2GameLauncher extends AbstractGameLaunchHandler<GameLaunchReque
         String country = accessor.getValue(Credentials.COUNTRY);
         String apiToken = accessor.getValue(Credentials.API_TOKEN);
         String providerId = accessor.getValue(Credentials.PROVIDER_ID);
+        String lang = context.getVendorLanguageCode();
         return GameLaunchRequest.builder()
                 .api_token(apiToken)
                 .cid(cid)
@@ -61,6 +63,7 @@ public class Gpkv2GameLauncher extends AbstractGameLaunchHandler<GameLaunchReque
                 .ip(context.getIpAddress())
                 .country(country)
                 .return_url(context.getLobbyUrl())
+                .lang(StringUtils.hasText(lang) ? lang : null)
                 .client_type(context.getVendorPlatformCode())
                 .build();
     }

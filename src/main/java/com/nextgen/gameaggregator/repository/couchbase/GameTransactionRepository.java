@@ -62,6 +62,10 @@ public class GameTransactionRepository {
         var options = MutateInOptions.mutateInOptions().timeout(TIMEOUT);
         if (ttl != null) {
             options.expiry(ttl);
+        } else {
+            // ONEAPI-2065: a mutation without an expiry resets the doc to "never expire",
+            // which wiped the 3-day TTL of alias BET docs. Keep whatever expiry the doc has.
+            options.preserveExpiry(true);
         }
 
         collection.mutateIn(id, specs, options);

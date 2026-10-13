@@ -65,7 +65,8 @@ public class GameRoundRepository {
                 List.of(
                         MutateInSpec.arrayAppend("transactions", List.of(roundTxn)),
                         MutateInSpec.increment("txnCount", 1)
-                )
+                ),
+                keepExpiry()
         );
 
         long newCount = result.contentAs(APPEND_TXN_SPEC_INDEX_TXN_COUNT, Long.class);
@@ -80,7 +81,7 @@ public class GameRoundRepository {
 
         updates.forEach((k, v) -> specs.add(MutateInSpec.upsert(base + "." + k, v)));
 
-        collection.mutateIn(docId, specs);
+        collection.mutateIn(docId, specs, keepExpiry());
     }
 
     public GameRound applyTxnDelta(TxnDelta d, Duration ttl) {
@@ -97,6 +98,8 @@ public class GameRoundRepository {
         var opts = MutateInOptions.mutateInOptions();
         if (d.isEnded()) {
             opts.expiry(ttl);
+        } else {
+            opts.preserveExpiry(true);
         }
 
         collection.mutateIn(d.docId(), specs, opts);
@@ -130,12 +133,19 @@ public class GameRoundRepository {
         if (balance != null) {
             specs.add(MutateInSpec.upsert("lastBalance", balance.toPlainString()));
         }
-        collection.mutateIn(docId, specs);
+        collection.mutateIn(docId, specs, keepExpiry());
     }
 
     /** Subdocument path to the {@code idx}-th entry of the round's transactions array. */
     private static String txnPath(int idx) {
         return "transactions[" + idx + "]";
+    }
+
+    // ONEAPI-2091: a mutation without an expiry resets the doc to "never expire". A late
+    // write (e.g. a vendor retry after the round ended) wiped the 6h TTL of ended rounds.
+    // Writes that don't set a TTL themselves must keep whatever expiry the doc has.
+    private static MutateInOptions keepExpiry() {
+        return MutateInOptions.mutateInOptions().preserveExpiry(true);
     }
 
     private void addTransactionFieldUpdates(List<MutateInSpec> specs, TxnDelta d) {

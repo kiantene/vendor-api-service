@@ -19,8 +19,9 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
      * names (e.g. {@code FreeRoundPlayableSpent}, {@code RewardGame*}, {@code SmartSpinsMonetaryReward}),
      * and an unrecognised type must not fail a payout that would otherwise succeed.
      *
-     * <p>Safe to reclassify because {@code PromoPayoutAction} enables {@code playerUuidCampaignLookup},
-     * so {@code promoType} is never used as a campaign lookup key for this vendor.
+     * <p>The type decides how the campaign is resolved: free rounds are ours and are looked up by voucher
+     * ({@code playerUuidCampaignLookup}), while every type here is Evolution-run and goes to
+     * {@code createPayoutCampaign}, keyed on the vendor's own campaign id where the type carries one.
      */
     private static final Map<String, PromoType> PROMO_TYPE_BY_TRANSACTION_TYPE = Map.of(
             "SmartTournamentMonetaryReward", PromoType.TOURNAMENT,
@@ -35,19 +36,24 @@ public class PromoPayoutRequestMapper implements PromoPayoutContextMapper<PromoP
         if (voucherId != null) {
             voucherId = voucherId.replace("-", "");
         }
+        PromoType promoType = resolvePromoType(transaction.getType());
+        boolean freeRound = promoType == PromoType.FREE_ROUND;
 
         return EvolutionPromoPayoutContext.builder()
                 .idempotencyKey(transaction.getId())
                 .vendorSessionToken(vendorRequest.getSid())
                 .vendorPlayerUsername(vendorRequest.getUserId())
                 .vendorCurrency(vendorRequest.getCurrency())
-                // Evolution voucherId identifies the campaign-player allocation. Since
-                // PromoPayoutAction enables playerUuidCampaignLookup, the enricher interprets
-                // this value as campaign_players.uuid rather than a literal vendor campaign code.
-                .vendorCampaignCode(voucherId)
+                // Free round: voucherId identifies the campaign-player allocation. Since PromoPayoutAction
+                // enables playerUuidCampaignLookup, the enricher interprets it as campaign_players.uuid.
+                // Anything else is created from the payout, so it carries the vendor's campaign id instead -
+                // a per-player voucherId there would mint a campaign per player. Null when the type has
+                // none, and the promo engine then derives one campaign per payout.
+                .vendorCampaignCode(freeRound ? voucherId : transaction.resolveCampaignId())
+                .vendorCampaignName(freeRound ? null : transaction.getCampaignCode())
                 .vendorTransactionId(transaction.getId())
                 .vendorPayoutAmount(transaction.getAmount())
-                .promoType(resolvePromoType(transaction.getType()))
+                .promoType(promoType)
                 .vendorRequestUuid(vendorRequest.getUuid())
                 .vendorGameCode(vendorRequest.getGame() == null ? null : vendorRequest.getGame().getId())
                 .build();

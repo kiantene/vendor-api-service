@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.game.launcher.gpkv2;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,5 +19,8 @@ public class GameLaunchRequest {
     private String ip;
     private String country;
     private String return_url;
+    // optional: leave the key out rather than send null
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String lang;
     private String client_type;
 }
