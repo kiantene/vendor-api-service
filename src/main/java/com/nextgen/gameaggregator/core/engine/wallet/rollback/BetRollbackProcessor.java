@@ -71,12 +71,22 @@ class BetRollbackProcessor {
 
         enricher.enrichByGameRound(context, round, rollbackTxn, betTxn);
 
+        // Record the refund/bet-history bookkeeping up front, regardless of whether the
+        // operator call happens now or is deferred to retry - this mirrors the same
+        // "force success to vendor" behavior callToOperator() already falls back to when
+        // the operator call fails synchronously below. Only the operator call itself is
+        // ever deferred.
+        onBeforeSendBetRollback(context, round, betTxn, rollbackTxn);
+
         if (decision.isDefered()) {
             deferRollbackToRetryQueue(context, round, betTxn);
+            // Accepted Option-A residual: rollbackTxn stays at SENT indefinitely from here.
+            // The retry queue only replays the raw HTTP call spec to the operator - it never
+            // re-enters this method, so onAfterSendBetRollback() (markRollback + legacy
+            // cleanup) never runs for a deferred rollback, even once the deferred call
+            // eventually succeeds. Confirmed acceptable, not a follow-up gap.
             return PlayerBalanceData.getDefaultWithBalance(betTxn.getUsername(), betTxn.getCurrency(), round.getLastBalanceWithDefault());
         }
-
-        onBeforeSendBetRollback(context, round, betTxn, rollbackTxn);
 
         PlayerBalanceData balanceData = callToOperator(context, round, betTxn.getGaBetId(), betTxn.getTransactionId(), betTxn);
 
@@ -89,9 +99,18 @@ class BetRollbackProcessor {
         WalletRollbackDto requestDto = mapToClientRequest(context, round, betTxn.getGaBetId(), betTxn.getTransactionId(), betTxn);
         OperatorApiRequest apiRequest = operatorApiAdapter.toApiRequest(requestDto, round.getAgentMeta().getAgentId());
 
+        // The bet has already been marked refunded and bet-history already published
+        // (onBeforeSendBetRollback runs before this) - if this enqueue itself silently
+        // fails, no retry job ever exists to actually roll back the bet with the
+        // operator, and nothing would surface that. A bare subscribe() swallows any
+        // error from the reactive chain entirely, so log it explicitly here instead.
         retryQueueService
                 .enqueueWithDelay(RetryHelper.toHttpCallSpec(apiRequest), RetryOrigin.BET_ROLLBACK, Duration.ofSeconds(5))
-                .subscribe();
+                .subscribe(
+                        v -> {},
+                        ex -> log.error("Failed to enqueue deferred bet-rollback retry job for gaBetId={}, transactionId={}",
+                                betTxn.getGaBetId(), betTxn.getTransactionId(), ex)
+                );
     }
 
     public PlayerBalanceData processRollbackByRound(BetRollbackContext context, GameTransaction rollbackTxn, BetRollbackConfig config) {
