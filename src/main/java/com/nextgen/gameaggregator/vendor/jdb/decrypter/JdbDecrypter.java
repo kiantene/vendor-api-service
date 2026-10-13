@@ -53,7 +53,12 @@ public class JdbDecrypter extends AbstractVendorDecrypter {
         try {
             String decrypted = decrypt(encryptedParams, key, iv);
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, String> map = objectMapper.readValue(decrypted, new TypeReference<>(){});
+            // Action 10/11 payloads carry array-typed fields (refTransferIds), so
+            // parse loosely and coerce to String for the log-context injection
+            // contract on DecryptionResult.
+            Map<String, Object> raw = objectMapper.readValue(decrypted, new TypeReference<>(){});
+            Map<String, String> map = new java.util.LinkedHashMap<>();
+            raw.forEach((k, v) -> map.put(k, v == null ? null : String.valueOf(v)));
             return DecryptionResult.success(decrypted, map);
 
         } catch (JsonProcessingException ex) {

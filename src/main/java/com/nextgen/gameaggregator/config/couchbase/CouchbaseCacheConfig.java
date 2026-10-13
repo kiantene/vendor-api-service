@@ -78,6 +78,20 @@ public class CouchbaseCacheConfig {
         return scope.collection("game_rounds");
     }
 
+    // ---------------- Debit/credit framework (Slice 1b) ----------------
+
+    /** Holds {@code DebitTxn} + {@code CreditTxn} standalone docs (kind=DEBIT/CREDIT discriminator on the doc). */
+    @Bean
+    public Collection walletRoundTransactionsCollection(@Qualifier("gameScope") Scope scope) {
+        return scope.collection("wallet_round_transactions");
+    }
+
+    /** Holds {@code WalletRoundLedger} docs — round-level lifecycle for the debit/credit family. */
+    @Bean
+    public Collection walletRoundLedgersCollection(@Qualifier("gameScope") Scope scope) {
+        return scope.collection("wallet_round_ledgers");
+    }
+
     // ---------------- For http retry ----------------
     @Bean("retryScope")
     public Scope retryScope(@Qualifier("gaBucket") Bucket bucket) {

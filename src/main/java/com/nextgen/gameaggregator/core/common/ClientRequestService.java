@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.config.properties.WalletServiceProperties;
 import com.nextgen.gameaggregator.core.engine.PlayerBalanceData;
 import com.nextgen.gameaggregator.core.engine.promo.payout.PromoPayoutDto;
 import com.nextgen.gameaggregator.core.context.OperatorRequestContext;
+import com.nextgen.gameaggregator.core.engine.operator.OperatorCallContext;
 import com.nextgen.gameaggregator.core.engine.operator.OperatorScenario;
 import com.nextgen.gameaggregator.core.entity.Agent;
 import com.nextgen.gameaggregator.core.entity.AgentApiCredential;
@@ -89,6 +90,33 @@ public class ClientRequestService {
         AgentApiCredential credential = resolved.credential();
         stripRollbackMetaForNonTransferWallet(context.request(), resolved.transferWallet());
         stripPromoExtraForNonTransferWallet(context.request(), resolved.transferWallet());
+
+        return OperatorApiRequest.builder()
+                .traceId(context.request().getTraceId())
+                .agentId(agentId)
+                .agentPlayerUsername(context.request().getUsername())
+                .method(HttpMethod.POST)
+                .baseUrl(credential.getCallbackUrl())
+                .path(context.endpoint())
+                .body(context.request())
+                .headers(getHeaders(credential, context.request()))
+                .transactionTime(context.request().getTimestamp())
+                .timeout(context.timeoutInMillis())
+                .build();
+    }
+
+    /**
+     * Builds an {@link OperatorApiRequest} for callers on the new debit/credit framework
+     * call surface — reads {@code agentId} directly from {@link OperatorCallTarget}
+     * instead of digging into a transient {@code GameRound.agentMeta}.
+     */
+    public OperatorApiRequest createOperatorApiRequest(OperatorCallContext<OperatorRequestObject> context) {
+        Integer agentId = context.target().agentId();
+
+        validateInputs(agentId, context.endpoint(), context.request());
+        validateRequestObject(context.request());
+
+        AgentApiCredential credential = loadCredential(agentId).credential();
 
         return OperatorApiRequest.builder()
                 .traceId(context.request().getTraceId())

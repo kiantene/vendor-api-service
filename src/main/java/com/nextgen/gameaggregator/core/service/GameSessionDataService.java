@@ -48,6 +48,17 @@ public class GameSessionDataService {
     }
 
     public GameSession getOrCreate(VendorRequestContext context) {
+        return getOrCreate(context, false);
+    }
+
+    /**
+     * @param mintToken when {@code true} and the session has aged out, regeneration mints a fresh
+     *                  GA session token instead of forwarding the request's (null/expired) token.
+     *                  Callers whose downstream operator call requires a mandatory token (e.g. the
+     *                  credit {@code bet_credit} refund path)
+     *                  pass {@code true}; all others keep the legacy forward-the-request-token behaviour.
+     */
+    public GameSession getOrCreate(VendorRequestContext context, boolean mintToken) {
         try {
             return getGameSession(context);
         } catch (GameSessionExpiredException ex) {
@@ -55,14 +66,14 @@ public class GameSessionDataService {
             // some vendors don't provide username on api request, they only provide token
             // TODO: what if vendor sends a result, but token is not available due to TTL and no username present in request to regenerate token?
             if (context.getVendorPlayerUsername() != null) {
-                return regenerateGameSession(context);
+                return regenerateGameSession(context, mintToken);
             } else {
                 throw ex;
             }
         }
     }
 
-    private GameSession regenerateGameSession(VendorRequestContext context) {
+    private GameSession regenerateGameSession(VendorRequestContext context, boolean mintToken) {
         String vendorPlayerUsername = context.getVendorPlayerUsername();
         try {
             GameSession gameSession = gameSessionService.generateNewSessionToken(vendorPlayerUsername);
@@ -71,7 +82,22 @@ public class GameSessionDataService {
                 gameSessionService.updateByVendorGameCode(gameSession, vendorGameCode);
             }
             gameSessionService.updateByVendorCurrencyId(gameSession);
-            gameSession.setToken(context.getToken());
+            // A refund on an aged-out session carries no usable token. When the caller requires one
+            // (operator bet_credit mandates a token), mint a fresh GA token; otherwise preserve the
+            // legacy behaviour of forwarding whatever the request carried (may be null).
+            // NOTE: the minted token lives only on this in-memory GameSession and is intentionally
+            // NOT persisted — it exists solely to satisfy the one-shot bet_credit call. If any
+            // downstream flow ever calls back with it, getByToken will throw (session not stored).
+            if (mintToken) {
+                String mintedToken = UUID.randomUUID().toString();
+                gameSession.setToken(mintedToken);
+                // Also seed the context so CreditContextEnricher (which only backfills the token when
+                // context.getToken() == null) cannot silently discard the minted token for a vendor
+                // whose request carried a non-null but stale token. The minted token must win.
+                context.setToken(mintedToken);
+            } else {
+                gameSession.setToken(context.getToken());
+            }
             gameSession.setVendorToken(context.getVendorSessionToken());
 
             return gameSession;

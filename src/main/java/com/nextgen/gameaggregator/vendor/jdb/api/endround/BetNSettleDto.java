@@ -62,7 +62,9 @@ public class BetNSettleDto implements BetResultData {
     private String gameDate;
 
     @NotBlank
-    @Size(max = 3)
+    // JDB publishes 4-character currency codes alongside the 2- and 3-character ones
+    // (IRRK, KHRO, KRWK, VNDC, DOGE, mBTC, USDC, POGC, POSC), so max=3 rejected them.
+    @Size(max = 4)
     private String currency;
 
     @NotNull
