@@ -13,6 +13,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -213,6 +217,26 @@ class PromoPayoutContextEnricherTest {
                     .isInstanceOf(IllegalStateException.class);
         }
 
+        @ParameterizedTest
+        @CsvSource({
+                "user-1, ''",
+                "user-1, '   '",
+                "'',     frb-1",
+                "'   ',  frb-1"
+        })
+        @DisplayName("USERNAME_AND_BONUS_ID strategy with a blank username or freeRoundBonusId -> IllegalStateException")
+        void strategy_blankParams_throws(String username, String freeRoundBonusId) {
+            PromoPayoutContext ctx = baseContext();
+            ctx.setVendorPlayerUsername(username);
+            ctx.setVendorFreeRoundBonusId(freeRoundBonusId);
+
+            assertThatThrownBy(() -> runEnrich(ctx,
+                    new PromoPayoutConfig().campaignResolveStrategy(CampaignResolveStrategy.USERNAME_AND_BONUS_ID)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("USERNAME_AND_BONUS_ID");
+            verify(campaignDataService, never()).getByRef(any(), any());
+        }
+
         @Test
         @DisplayName("no strategy and no vendorCampaignCode -> resolution skipped (guard)")
         void noStrategyNoCode_skipsResolution() {
@@ -223,6 +247,21 @@ class PromoPayoutContextEnricherTest {
             verify(campaignDataService, never()).getByRef(any(), any());
             verify(campaignDataService, never()).getByPlayerUuid(any());
             verify(campaignDataService, never()).get(any(), any(), any());
+            assertThat(ctx.getCampaignUuid()).isNull();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"", "   "})
+        @DisplayName("no strategy and a blank vendorCampaignCode -> resolution skipped, like null")
+        void noStrategyBlankCode_skipsResolution(String blank) {
+            PromoPayoutContext ctx = baseContext();
+            ctx.setPromoType(PromoType.FREE_ROUND);
+            ctx.setVendorCampaignCode(blank);
+
+            runEnrich(ctx, new PromoPayoutConfig());
+
+            verify(campaignDataService, never()).get(any(), any(), any());
+            verify(campaignDataService, never()).getByPlayerUuid(any());
             assertThat(ctx.getCampaignUuid()).isNull();
         }
 
@@ -299,10 +338,13 @@ class PromoPayoutContextEnricherTest {
             assertThat(ctx.getCampaignUuid()).isEqualTo("c-9");
         }
 
-        @Test
-        @DisplayName("PLAYER_UUID strategy with null vendorCampaignCode -> IllegalStateException")
-        void playerUuid_strategy_nullCode_throws() {
-            PromoPayoutContext ctx = baseContext(); // vendorCampaignCode null
+        @ParameterizedTest
+        @NullSource
+        @ValueSource(strings = {"", "   "})
+        @DisplayName("PLAYER_UUID strategy with a null or blank vendorCampaignCode -> IllegalStateException")
+        void playerUuid_strategy_missingCode_throws(String code) {
+            PromoPayoutContext ctx = baseContext();
+            ctx.setVendorCampaignCode(code);
 
             assertThatThrownBy(() -> runEnrich(ctx,
                     new PromoPayoutConfig().campaignResolveStrategy(CampaignResolveStrategy.PLAYER_UUID)))
@@ -310,15 +352,70 @@ class PromoPayoutContextEnricherTest {
                     .hasMessageContaining("vendorCampaignCode");
         }
 
-        @Test
-        @DisplayName("VENDOR_LINE_AND_CODE strategy with null vendorCampaignCode -> IllegalStateException")
-        void vendorLineAndCode_strategy_nullCode_throws() {
-            PromoPayoutContext ctx = baseContext(); // vendorCampaignCode null
+        @ParameterizedTest
+        @NullSource
+        @ValueSource(strings = {"", "   "})
+        @DisplayName("VENDOR_LINE_AND_CODE strategy with a null or blank vendorCampaignCode -> IllegalStateException")
+        void vendorLineAndCode_strategy_missingCode_throws(String code) {
+            PromoPayoutContext ctx = baseContext();
+            ctx.setVendorCampaignCode(code);
 
             assertThatThrownBy(() -> runEnrich(ctx,
                     new PromoPayoutConfig().campaignResolveStrategy(CampaignResolveStrategy.VENDOR_LINE_AND_CODE)))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("vendorCampaignCode");
+        }
+
+        @Test
+        @DisplayName("vendor-run promo type creates a payout campaign instead of resolving, even with a strategy set")
+        void vendorRunPromo_createsPayoutCampaign() {
+            PromoPayoutContext ctx = baseContext();
+            ctx.getVendor().lineId(7);
+            ctx.setPromoType(PromoType.TOURNAMENT);
+            ctx.setVendorCampaignCode("12345");
+            ctx.setVendorCampaignName("SUMMER_SPRINT");
+            ctx.setVendorTransactionId("tx-1");
+            ctx.setVendorTransactionTime(12345L);
+
+            Campaign campaign = Campaign.builder().uuid("c-created").campaignName("SUMMER_SPRINT").build();
+            when(campaignDataService.createPayoutCampaign(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                    .thenReturn(campaign);
+
+            runEnrich(ctx, new PromoPayoutConfig().playerUuidCampaignLookup(true));
+
+            verify(campaignDataService).createPayoutCampaign(eq(PromoType.TOURNAMENT.id), eq(1), eq(7), eq("12345"),
+                    eq("SUMMER_SPRINT"), eq("tx-1"), any(), any(), eq(12345L));
+            verify(campaignDataService, never()).getByPlayerUuid(any());
+            verify(campaignDataService, never()).getByRef(any(), any());
+            assertThat(ctx.getCampaignUuid()).isEqualTo("c-created");
+            assertThat(ctx.getVendorCampaignName()).isEqualTo("SUMMER_SPRINT");
+        }
+
+        @Test
+        @DisplayName("payout campaign creation failure does not fail the payout - it goes through without a campaign")
+        void vendorRunPromo_createFails_continuesWithoutCampaign() {
+            PromoPayoutContext ctx = baseContext();
+            ctx.setPromoType(PromoType.JACKPOT);
+            ctx.setVendorTransactionId("tx-2");
+            ctx.setVendorCampaignName("vendor name");
+
+            when(campaignDataService.createPayoutCampaign(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                    .thenThrow(new IllegalStateException("createPayoutCampaign failed: status=SC_INVALID_REQUEST"));
+
+            runEnrich(ctx, new PromoPayoutConfig());
+
+            assertThat(ctx.getCampaignUuid()).isNull();
+            assertThat(ctx.getVendorCampaignName()).isEqualTo("vendor name");
+        }
+
+        @Test
+        @DisplayName("null promoType keeps the lookup path rather than creating")
+        void nullPromoType_neverCreates() {
+            PromoPayoutContext ctx = baseContext();   // promoType null, no strategy, no code
+
+            runEnrich(ctx, new PromoPayoutConfig());
+
+            verify(campaignDataService, never()).createPayoutCampaign(any(), any(), any(), any(), any(), any(), any(), any(), any());
         }
 
         private void runEnrich(PromoPayoutContext ctx, PromoPayoutConfig config) {

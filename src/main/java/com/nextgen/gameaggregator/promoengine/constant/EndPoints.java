@@ -8,5 +8,6 @@ public class EndPoints {
     public static final String FETCH_CAMPAIGN_BY_PLAYER = "/internal/fetchCampaignByPlayer";
     public static final String RESOLVE_CAMPAIGN = "/internal/resolveCampaign";
     public static final String FETCH_PLAYER_ACTIVE_CAMPAIGN = "/internal/fetchPlayerActiveCampaign";
+    public static final String CREATE_PAYOUT_CAMPAIGN = "/internal/createPayoutCampaign";
 }
 

@@ -51,16 +51,26 @@ class PromoWinRequestMapperTest {
     }
 
     /**
-     * Digitain sends {@code pmid}, but ga-promo-engine has no Digitain integration, so nothing can match
-     * it. Both campaign keys staying null is what makes the enricher skip resolution rather than call the
-     * promo engine for a lookup that cannot succeed.
+     * {@code pmid} identifies the Digitain promotion, so every payout from it lands on one campaign created
+     * by the promo engine. No resolve key is set: there is no Digitain campaign of ours to look up.
      */
     @Test
-    void resolvesNoCampaign() {
+    void keysTheCampaignOnThePromotionId() {
         PromoPayoutContext context = mapper.toInternal(PromoWinRequests.of("26"));
 
-        assertThat(context.getVendorCampaignCode()).isNull();
+        assertThat(context.getVendorCampaignCode()).isEqualTo("9001");
         assertThat(context.getVendorFreeRoundBonusId()).isNull();
+    }
+
+    /** No {@code pmid} still pays; the promo engine derives one campaign per payout from {@code txid}. */
+    @Test
+    void leavesTheCampaignCodeUnsetWithoutAPromotionId() {
+        PromoWinRequest request = PromoWinRequests.of("85");
+        request.setPmid(null);
+
+        PromoPayoutContext context = mapper.toInternal(request);
+
+        assertThat(context.getVendorCampaignCode()).isNull();
     }
 
     /**
