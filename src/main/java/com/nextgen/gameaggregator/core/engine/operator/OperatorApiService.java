@@ -61,4 +61,33 @@ public class OperatorApiService {
             return adapter.handleException(ex, apiRequest, context);
         }
     }
+
+    /**
+     * Executes an operator wallet API request for callers on the new debit/credit
+     * framework call surface. Mirrors {@link #execute(OperatorRequestAdapter, OperatorRequestContext, VendorRequestContext)}
+     * but is built around {@link OperatorCallContext} + {@link OperatorCallAdapter}
+     * so the new framework never sees a {@code GameRound}.
+     */
+    public PlayerBalanceData execute(OperatorCallAdapter adapter,
+                                     OperatorCallContext<OperatorRequestObject> context,
+                                     VendorRequestContext vendorContext) {
+
+        OperatorApiRequest apiRequest = clientRequestService.createOperatorApiRequest(context);
+
+        try {
+            ApiResult apiResult = operatorApiAdapter.execute(apiRequest);
+            apiResult.throwIfError();
+
+            ClientApiResponse response = apiResult.parseTo(ClientApiResponse.class);
+
+            adapter.validateClientResponse(response, context, vendorContext);
+
+            return response.getData();
+        } catch (Exception ex) {
+            log.warn("Exception occurred during operator API execution. TraceId={}, Error={}",
+                    context.request().getTraceId(),
+                    ex.getMessage(), ex);
+            return adapter.handleException(ex, apiRequest, context);
+        }
+    }
 }

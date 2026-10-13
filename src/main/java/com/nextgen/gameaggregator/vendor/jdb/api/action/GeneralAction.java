@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.core.filter.ResettableRequestWrapper;
+import com.nextgen.gameaggregator.core.engine.wallet.WalletRequestLog;
+import com.nextgen.gameaggregator.core.logging.LogContextHolder;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorLine;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
@@ -12,12 +14,12 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.balance.BalanceService;
-import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetService;
-import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
+import com.nextgen.gameaggregator.vendor.jdb.api.credit.JdbRefundController;
+import com.nextgen.gameaggregator.vendor.jdb.api.credit.JdbSettleController;
+import com.nextgen.gameaggregator.vendor.jdb.api.debit.JdbDebitController;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.promo.JdbPromoPayoutHandler;
-import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
@@ -50,13 +52,13 @@ public class GeneralAction {
     @Autowired
     private BetNSettleService betNSettleService;
     @Autowired
-    private BetService betService;
+    private JdbDebitController jdbDebitController;
     @Autowired
-    private CancelBetService cancelBetService;
+    private JdbRefundController jdbRefundController;
     @Autowired
     private CancelBetNSettleService cancelBetNSettleService;
     @Autowired
-    private SettleService settleService;
+    private JdbSettleController jdbSettleController;
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
@@ -79,6 +81,13 @@ public class GeneralAction {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
+
+        // JDB creates this log and publishes it below, and it must be this object rather than a
+        // framework one: the framework builds from logContext.getBody(), the raw encrypted body,
+        // while the decrypted payload is set on this one further down. Declaring it lets the
+        // debit/credit engine record the operator call on it without publishing a second row
+        // (OVI-3176). Inert for the legacy actions, which set those fields directly.
+        WalletRequestLog.declareVendorOwned(LogContextHolder.get(), httpRequestLog);
 
         // Construct VO
         CommonVo vo = new CommonVo();
@@ -155,9 +164,9 @@ public class GeneralAction {
             case Actions.GET_BALANCE ->
                     vo = balanceService.balance(actionDto, traceId, httpRequestLog, request, vendorLine);
             case Actions.BET_AND_SETTLE -> vo = betNSettleService.betNSettle(actionDto, traceId, httpRequestLog);
-            case Actions.BET -> vo = betService.bet(actionDto, traceId, httpRequestLog);
-            case Actions.SETTLE -> vo = settleService.settle(actionDto, traceId, httpRequestLog);
-            case Actions.CANCEL_BET -> vo = cancelBetService.cancelBet(actionDto, traceId, httpRequestLog);
+            case Actions.BET -> vo = jdbDebitController.handle(actionDto, traceId, httpRequestLog).getBody();
+            case Actions.SETTLE -> vo = jdbSettleController.handle(actionDto, traceId, httpRequestLog).getBody();
+            case Actions.CANCEL_BET -> vo = jdbRefundController.handle(actionDto, traceId, httpRequestLog).getBody();
             default -> vo.setErrorResponseCode(ResponseCode.INVALID_ACTION);
         }
 
