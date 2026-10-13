@@ -55,4 +55,19 @@ class GameTransactionServiceTest {
 
         verify(gameRoundService).updateTxnStateAndBalance(rollbackTxn, GameRoundState.COMPLETED, null);
     }
+
+    // markRefunded() always marks the standalone txn doc and delegates the round-slot
+    // annotation to GameRoundService.updateRoundTxn() - that method resolves idx itself
+    // (even when it's still unassigned on a bet still in flight), so this class no longer
+    // needs to branch on idx at all; see GameRoundServiceTest for that resolution logic.
+    @Test
+    void markRefunded_marksStandaloneDocAndDelegatesRoundStateUpdate() {
+        GameTransaction txn = new GameTransaction();
+        txn.setIdx(0);
+
+        gameTransactionService.markRefunded(txn);
+
+        verify(txnDataService).updateToRefunded(txn.getId());
+        verify(gameRoundService).updateRoundTxn(txn, GameRoundState.REFUNDED);
+    }
 }

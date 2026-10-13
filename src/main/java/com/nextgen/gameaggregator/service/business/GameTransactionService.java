@@ -189,6 +189,10 @@ public class GameTransactionService {
     public void markRefunded(GameTransaction txn) {
 
         txnDataService.updateToRefunded(txn.getId());
+
+        // updateRoundTxn() resolves the round slot itself even when txn.getIdx() is still
+        // unassigned (a bet still in flight has no idx backfilled onto its standalone doc yet,
+        // but the round already has its slot) - no idx guard needed here.
         gameRoundService.updateRoundTxn(txn, GameRoundState.REFUNDED);
     }
 
