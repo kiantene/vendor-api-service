@@ -91,6 +91,7 @@ public class SettleService {
 
             VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(Long.valueOf(messageDto.getUserId()), null);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(messageDto.getGameId()), gameSession);
 
             if (requestIdempotentLogService.checkExists(messageDto, vendorPlayer.getUsername()) == null) {
                 requestIdempotentLogService.create(messageDto, vendorPlayer.getUsername());
