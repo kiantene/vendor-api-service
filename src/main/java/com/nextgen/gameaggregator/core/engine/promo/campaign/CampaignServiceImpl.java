@@ -16,8 +16,10 @@ import java.util.Map;
 @Component
 public class CampaignServiceImpl implements CampaignService {
     private final PromoEngineApiAdapter apiAdapter;
-    private final FetchCampaignRequestMapper requestMapper;
-    private final FetchCampaignResponseMapper responseMapper;
+    private final FetchCampaignRequestMapper fetchCampaignRequestMapper;
+    private final FetchCampaignResponseMapper fetchCampaignResponseMapper;
+    private final CreatePayoutCampaignRequestMapper createPayoutCampaignRequestMapper;
+    private final CreatePayoutCampaignResponseMapper createPayoutCampaignResponseMapper;
 
     @Override
     public Campaign getCampaign(String vendorCampaignCode, Integer vendorLineId, Integer promoType) {
@@ -26,13 +28,13 @@ public class CampaignServiceImpl implements CampaignService {
 
         ApiRequest apiRequest = apiAdapter.ofFetchCampaign(
                 traceId,
-                requestMapper.toFetchCampaignRequest(traceId, vendorCampaignCode, vendorLineId, promoType)
+                fetchCampaignRequestMapper.toFetchCampaignRequest(traceId, vendorCampaignCode, vendorLineId, promoType)
         );
         ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
         apiResult.throwIfError();
         FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
 
-        return responseMapper.responseToCampaign(response);
+        return fetchCampaignResponseMapper.responseToCampaign(response);
     }
 
     @Override
@@ -48,7 +50,7 @@ public class CampaignServiceImpl implements CampaignService {
         apiResult.throwIfError();
         FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
 
-        return responseMapper.responseToCampaign(response);
+        return fetchCampaignResponseMapper.responseToCampaign(response);
     }
 
     @Override
@@ -64,6 +66,22 @@ public class CampaignServiceImpl implements CampaignService {
         apiResult.throwIfError();
         FetchCampaignResponse response = apiResult.parseTo(FetchCampaignResponse.class);
 
-        return responseMapper.responseToCampaign(response);
+        return fetchCampaignResponseMapper.responseToCampaign(response);
+    }
+
+    @Override
+    public Campaign createPayoutCampaign(Integer promoType, Integer vendorId, Integer vendorLineId, String vendorCampaignCode, String vendorCampaignName, String vendorTransactionId, String currencyCode, String vendorCurrencyCode, Long payoutTime) {
+        LogContext logContext = LogContextHolder.get().copy();
+        String traceId = logContext.getTraceId();
+
+        ApiRequest apiRequest = apiAdapter.ofCreatePayoutCampaign(
+                traceId,
+                createPayoutCampaignRequestMapper.toCreatePayoutCampaignRequest(traceId, promoType, vendorId, vendorLineId, vendorCampaignCode, vendorCampaignName, vendorTransactionId, currencyCode, vendorCurrencyCode, payoutTime)
+        );
+        ApiResult apiResult = apiAdapter.execute(apiRequest, new LoggingApiAdapterLifecycle(logContext));
+        apiResult.throwIfError();
+
+        CreatePayoutCampaignResponse response = apiResult.parseTo(CreatePayoutCampaignResponse.class);
+        return createPayoutCampaignResponseMapper.responseToCampaign(response);
     }
 }

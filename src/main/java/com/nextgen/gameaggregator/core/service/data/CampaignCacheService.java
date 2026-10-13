@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 @Service
 public class CampaignCacheService extends CouchbaseCacheService<Campaign> {
@@ -47,5 +48,10 @@ public class CampaignCacheService extends CouchbaseCacheService<Campaign> {
     public Campaign getByRef(CampaignResolveStrategy strategy, Map<String, String> params) {
         String key = buildCacheKey("resolveCampaign", strategy, new TreeMap<>(params));
         return get(key, () -> repository.getCampaignByRef(strategy, params));
+    }
+
+    public Campaign createPayoutCampaign(Integer promoType, Integer vendorLineId, String vendorCampaignCode, Supplier<Campaign> create) {
+        String key = buildCacheKey("payoutCampaign", promoType, vendorLineId, vendorCampaignCode);
+        return get(key, create);
     }
 }

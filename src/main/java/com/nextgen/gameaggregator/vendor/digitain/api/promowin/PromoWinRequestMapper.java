@@ -16,12 +16,11 @@ import java.util.Optional;
  * the whole amount in {@code jackpotAmount}, and {@code roundId} set to the transaction id — a round that
  * never happened. Digitain's own spec is explicit that "these wins do not have a bet associated with them".
  *
- * <p><b>No campaign is resolved.</b> Digitain sends {@code pmid}, "Identifier of the promotion (Jackpot,
- * Tournament, etc.)", but {@code ga-promo-engine} has no Digitain integration — no campaign is created and
- * no grant provisioned — so there is nothing for {@code pmid} to match. Leaving both the resolve strategy
- * and {@code vendorCampaignCode} unset makes the enricher skip resolution instead of calling the promo
- * engine for a lookup that cannot succeed. That is also what makes {@link PromoType#JACKPOT} (id 6) safe
- * here: the {@code CampaignType} ceiling of 2 binds only payouts that actually resolve a campaign.
+ * <p><b>The campaign is created, not resolved.</b> {@code ga-promo-engine} has no Digitain integration, so
+ * no campaign exists beforehand for a lookup to find. Every type here is vendor-run, and the enricher sends
+ * it to {@code createPayoutCampaign} instead, keyed on {@code pmid}, "Identifier of the promotion (Jackpot,
+ * Tournament, etc.)" — one campaign per Digitain promotion. A payout without {@code pmid} still pays; the
+ * promo engine then derives one campaign per payout from {@code txid}.
  */
 @Component
 public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinRequest> {
@@ -43,9 +42,6 @@ public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinR
      * <p>{@code 72} and {@code 76} are bet-less and so belong here, but their internal classification is
      * still pending; leaving them unmapped rejects them loudly rather than misfiling them. {@code 27} Tip
      * and {@code 75} Cashback are likewise unclassified and were not in the vendor's list.
-     *
-     * <p>{@link PromoType#JACKPOT} sits at id 6, above the promo-engine's {@code CampaignType} ceiling of
-     * 2 — safe only because Digitain resolves no campaign, so {@code campaignType} is never sent.
      */
     private static final Map<String, PromoType> PROMO_TYPE_BY_OPERATION_TYPE = Map.of(
             "26", PromoType.JACKPOT,     // Jackpot Win
@@ -61,6 +57,7 @@ public class PromoWinRequestMapper implements PromoPayoutContextMapper<PromoWinR
                 // cid is the player's currency, not a brand or channel id.
                 .vendorCurrency(vendorRequest.getCid())
                 .vendorPayoutAmount(vendorRequest.getPwa())
+                .vendorCampaignCode(vendorRequest.getPmid())
                 .promoType(resolvePromoType(vendorRequest.getOpt()))
                 .build();
     }

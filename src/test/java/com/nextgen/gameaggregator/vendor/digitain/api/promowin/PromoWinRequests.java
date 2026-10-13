@@ -17,6 +17,7 @@ final class PromoWinRequests {
         request.setPwa(new BigDecimal("75.3"));
         request.setCid("EUR");         // player currency
         request.setTxid("40439c1a12cbe8c68df1");
+        request.setPmid("9001");       // promotion id — optional per the spec
         return request;
     }
 }
