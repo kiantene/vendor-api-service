@@ -343,18 +343,14 @@ class BetResultProcessor {
                 .orElseThrow(() -> new BetNotFoundException(
                         round.getId() + " : " + resultTxn.getVendorBetId() + " cannot find unsettled bet"));
 
-        gameTransactionService.markSettled(betTxn.getId(), resultTxn.getSettleTime());
-
-        if (betTxn.hasAliasTxn(round.getClassName())) {
-            gameTransactionService.markSettled(betTxn.getRollbackId(round.getClassName()), resultTxn.getSettleTime());
-        }
+        gameTransactionService.markBetAndAliasSettled(betTxn, round.getClassName(), resultTxn.getSettleTime());
 
         return betTxn;
     }
 
     private void settleAllUnsettledBets(GameRound round, GameTransaction resultTxn) {
         getUnsettledBets(round)
-                .forEach(t -> gameTransactionService.markSettled(t.getId(), resultTxn.getSettleTime()));
+                .forEach(t -> gameTransactionService.markBetAndAliasSettled(t, round.getClassName(), resultTxn.getSettleTime()));
     }
 
     private Optional<RoundTxn> findUnsettledBet(GameRound round, String vendorBetId) {

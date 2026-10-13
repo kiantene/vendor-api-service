@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.entity.couchbase.AgentMeta;
 import com.nextgen.gameaggregator.entity.couchbase.GameRound;
 import com.nextgen.gameaggregator.entity.couchbase.GameTransaction;
+import com.nextgen.gameaggregator.entity.couchbase.RoundTxn;
 import com.nextgen.gameaggregator.enums.GameRoundState;
 import com.nextgen.gameaggregator.enums.TxnStatus;
 import com.nextgen.gameaggregator.enums.TxnType;
@@ -196,8 +197,27 @@ public class GameTransactionService {
         gameRoundService.updateRoundTxn(txn, GameRoundState.REFUNDED);
     }
 
-    public void markSettled(String txnId, long settledTime) {
+    private void markSettled(String txnId, long settledTime) {
         txnDataService.updateToSettled(txnId, settledTime);
+    }
+
+    /**
+     * ONEAPI-2065: settle a bet and, if it has one, its alias copy (keyed by vendorBetId).
+     * The alias is not a round slot, so it must be settled here or it stays UNSETTLED —
+     * rollback reads the alias state, and settling is what gives it the 3h TTL.
+     */
+    public void markBetAndAliasSettled(RoundTxn bet, String className, long settledTime) {
+        markSettled(bet.getId(), settledTime);
+
+        if (bet.hasAliasTxn(className)) {
+            String aliasId = bet.getRollbackId(className);
+            try {
+                markSettled(aliasId, settledTime);
+            } catch (DocumentNotFoundException e) {
+                // alias is created only after markSent and expires after 3 days
+                log.warn("Alias BET " + aliasId + " not found, skip settling it");
+            }
+        }
     }
 
     public void deleteById(String id) {
