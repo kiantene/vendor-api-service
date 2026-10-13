@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.BetNotAllowedException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.BetIdempotentLogService;
@@ -93,10 +94,26 @@ public class CancelBetAction {
                     try {
                         sportWalletService.refund(newWalletRequest);
 
+                    } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+                        // ONEAPI-974: this is the designed no-op, not a failure. It is how a resent cancel
+                        // re-driving a sibling txn that already refunded terminates, and it is raised before
+                        // callToOperator so no money moves. Clearing the marker or logging an error here
+                        // would keep the operation marker from ever sticking after a partial failure.
+                        log.info("Cancel refund already applied, treating as success [vendorBetId={}, externalTransactionId={}]",
+                                newWalletRequest.getVendorBetId(), newWalletRequest.getExternalTransactionId());
+
                     } catch (Exception exception) {
                         // throw to dlq
                         // TODO : after unsettle bet with retry still bet not found, need to add log error
                         // httpService.logError(httpRequestLog, exception);
+
+                        // ONEAPI-974: the idempotent marker is written up-front, before the refund runs.
+                        // Leaving it behind on a failure makes the loss permanent — SABA's resend of the same
+                        // operationId would hit DuplicateRequestException and be answered SUCCESS, so the
+                        // refund could never be retried. Clear it so the vendor can retry; a txn that DID
+                        // refund is still protected by the per-bet idempotent check in SportRefundProcessor.
+                        this.clearIdempotentMarker(idempotentKey);
+
                         this.logException(newWalletRequest, exception);
                         log.error(exception.getMessage());
                     } finally {
@@ -127,6 +144,19 @@ public class CancelBetAction {
         return vo;
     }
 
+
+    /**
+     * Best-effort removal of the cancel idempotent marker so the vendor can resend a cancel whose refund
+     * failed. Isolated in its own try/catch: a marker that cannot be cleared must not swallow or replace
+     * the original refund failure.
+     */
+    private void clearIdempotentMarker(String idempotentKey) {
+        try {
+            betIdempotentLogService.delete(idempotentKey);
+        } catch (Exception exception) {
+            log.error("Failed to clear cancel idempotent marker [key={}]: {}", idempotentKey, exception.getMessage());
+        }
+    }
 
     public static Throwable getRootCause(Throwable throwable) {
         Throwable cause = throwable;
